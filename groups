@@ -1,6 +1,7 @@
 # UUID                                  	Group Name
 #
 2ab434485216d6fecb7134050b5e3d2052c34e48	Non-Interactive sxp users
+c9025ab9ddc1e3171919e085449f22c54f8f7b54	GitHub Replication
 global:Anonymous-Users                  	Anonymous Users
 global:Registered-Users                 	Registered Users
 ldap:cn=gerrit-sxp-committers,ou=Groups,dc=opendaylight,dc=org	ldap/gerrit-sxp-committers
