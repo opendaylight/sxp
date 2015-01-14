@@ -1,0 +1,36 @@
+#!/bin/sh
+                               
+
+# ---------- LIBRARIES ----------
+
+LIB="./lib"
+
+LOG_PATH="$LIB/slf4j-api-1.7.7.jar:$LIB/slf4j-simple-1.7.7.jar"
+
+NETTY_PATH="$LIB/netty-all-4.0.21.Final.jar"
+        
+SWT_PATH="$LIB/swt.jar"
+
+TCPMD5PATH="$LIB/tcpmd5-api-1.0.0-20140910.150508-19.jar:$LIB/tcpmd5-jni-1.0.0-20140910.150512-19.jar:$LIB/tcpmd5-netty-1.0.0-20140910.150515-19.jar"
+
+# ---------- APPLICATION ---------
+
+TARGET="./target"
+
+CLASS_PATH="$TARGET/classes"
+
+JAR_PATH="$TARGET/org.opendaylight.sxp.sxp-runtime-1.0-SNAPSHOT-executable.jar"
+
+# ---------- LISTING -------------
+
+LIB_PATH="$LOG_PATH:$NETTY_PATH:$SWT_PATH:$TCPMD5PATH"
+
+APP_PATH="$JAR_PATH"
+
+# ---------- RUNTIME -------------
+CLASSPATHS="$LIB_PATH:$APP_PATH"
+JVM_PARAMS="-Xms16m -Xmx512m"
+# -Xss16m
+JVM_CLASS="org.opendaylight.sxp.Runtime"
+
+java -cp $CLASSPATHS $JVM_PARAMS $JVM_CLASS

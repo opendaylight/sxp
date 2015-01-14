@@ -1,0 +1,76 @@
+module sxp-controller-conf {
+    yang-version 1;
+    
+    namespace "urn:opendaylight:params:xml:ns:yang:controller:sxp:controller:conf";
+    prefix "sxpctrl-conf";
+
+    import config {prefix config; revision-date 2013-04-05;}
+    import opendaylight-md-sal-binding {prefix mdsal; revision-date 2013-10-28;}
+ 	import sxp-controller {prefix sxpctrl; revision-date "2014-10-02";}
+
+    description
+        "Module defines the base YANG definitions for ODL-SXP-aware network node configuration.";
+
+	revision "2014-10-02" {
+        description
+            "Reviewed revision of SXP controller configuration model";
+    }
+
+    // This is the definition of a service implementation
+    identity sxp-controller {
+    	base config:module-type;
+        config:java-name-prefix SxpController;
+    }
+
+	// ********************
+    // Global Configuration
+    // ********************
+
+    augment "/config:modules/config:module/config:configuration" {
+        case sxp-controller {
+            when "/config:modules/config:module/config:type = 'sxp-controller'";
+
+            container binding-broker {
+                uses config:service-ref {
+                    refine type {
+                        mandatory true;
+                        config:required-identity mdsal:binding-broker-osgi-registry;
+                    }
+                }
+            }
+           	
+           	container rpc-registry {
+                uses config:service-ref {
+                    refine type {
+                        mandatory true;
+                        config:required-identity mdsal:binding-rpc-registry;
+                    }
+                }
+            }
+
+            container notification-service {
+                uses config:service-ref {
+                    refine type {
+                        mandatory true;
+                        config:required-identity mdsal:binding-notification-service;
+                    }
+                }
+            }
+            
+            container data-broker {
+                uses config:service-ref {
+                    refine type {
+                        mandatory false;
+                        config:required-identity mdsal:binding-async-data-broker;
+                    }
+                }
+            }
+                			
+		    container sxp-controller {
+				list sxp-node { 
+    		    	uses sxpctrl:sxp-node-configuration;
+	        	}
+            }		    
+        }
+    }
+}

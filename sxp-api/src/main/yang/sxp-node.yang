@@ -1,0 +1,362 @@
+module sxp-node {
+	yang-version 1;
+	
+	namespace "urn:opendaylight:sxp:node";		
+	prefix "sxpnd";
+
+	import ietf-inet-types {prefix inet; revision-date "2010-09-24";}
+	import ietf-yang-types {prefix ietf-yang; revision-date "2010-09-24";}  
+	import network-topology {prefix nt; revision-date "2013-10-21";}
+	import sxp-database {prefix sxpdb; revision-date "2014-10-02";}
+	import sxp-protocol {prefix sxppt; revision-date "2014-10-02";}
+	import yang-ext {prefix ext; revision-date "2013-07-09";}
+ 	 
+	description 
+        "Module defines the base YANG definitions for SXP-aware network node.";
+        
+	revision "2014-10-02" {
+        description 
+        	"Reviewed revision of SXP node model";
+    }
+
+    // ***********************
+    // Common Types Definition
+    // ***********************
+    
+    typedef password-type {
+		type enumeration {
+			enum default;
+			enum none;
+		}
+	}
+	
+	typedef timer-type {
+		description "Timer types with their default values";
+		
+		type enumeration {
+			enum delete-hold-down-timer{
+				description "Non-configurable";
+	      	}
+			enum hold-timer;
+	      	enum hold-timer-max;
+	      	enum hold-timer-min;
+	        enum hold-timer-min-acceptable;
+	        enum keep-alive-timer;
+	        enum reconciliation-timer;
+	        enum retry-open-timer;
+		}
+	}	      	 
+	
+	// Enumeration now works with Hashmap and enum value is the unique key. 
+    // Default leaf type not work, still null (Configuration.java conversion is used).
+	container timer-default-values {
+		description "Timer types with their default values";
+		
+		leaf delete-hold-down-timer{
+			description "Non-configurable"; 
+			type int32;
+        	default "120";
+      	}
+		leaf hold-timer{
+			type int32;
+        	default "90";
+      	}
+		leaf hold-timer-max{
+			type int32;
+        	default "180";
+      	}
+		leaf hold-timer-min{
+			type int32;
+        	default "90";
+      	}
+		leaf hold-timer-min-acceptable{
+			type int32;
+        	default "120";
+      	} 
+		leaf keep-alive-timer{
+			type int32;
+        	default "30";
+      	}
+		leaf reconciliation-timer{
+			type int32;
+        	default "120";
+      	} 
+		leaf retry-open-timer{
+			type int32;
+        	default "120";
+      	}
+	}	      
+	
+	
+        
+	// ****************
+    // Common Groupings
+    // ****************
+    
+	grouping security-fields {
+		leaf password {
+			type string;
+			description "SXP password can be up to 80 ASCII characters";
+		}			
+		leaf md5-digest {
+			config false;
+			type string;
+			description "16 bytes MD5 digest formed using the password as the key";
+		}
+	}
+
+	grouping capabilities-fields {
+		container capabilities {
+			config false;
+				
+			leaf-list capability {
+				type sxppt:capability-type;
+				description "Supported connection capabilities";			
+			}	    
+		}
+	}
+	
+	// ******************
+    // SXP Node Groupings
+    // ******************    
+	
+	grouping sxp-node-fields {		
+		leaf name {
+			type string;
+	        description "SXP node name";
+	    }	
+		leaf enabled {
+		    type boolean;
+            description "SXP protocol enabled/disabled";
+        }
+		leaf source-ip {
+			type inet:ip-prefix;
+			description "Default source IP address";
+		}
+		leaf tcp-port {
+			type inet:port-number;
+			description "Server port";
+		}
+		leaf version {
+			type sxppt:version;
+			description "Default global supported protocol version";
+		}
+		
+		uses capabilities-fields;
+		
+		leaf mapping-expanded {
+			type int32;
+			description "Network mappings to be expanded <0-65635>";
+		}
+        leaf description {
+			type string;
+		}	
+        
+		container security {
+			uses security-fields;
+		}
+	}
+	
+	grouping sxp-databases-fields {	
+		container sxp-database {
+			description "SXP database";
+			
+			config false;
+			uses sxpdb:sxp-database-fields;
+						
+			list vpn {	
+				key "name";
+				
+				leaf name {
+					type string;
+					description "Assigned VPN label";
+				}
+				uses sxpdb:sxp-database-fields;				
+			}
+		}
+		
+		container master-database {
+			description "IP-SGT-Master database";
+			
+			config false;
+			uses sxpdb:master-database-fields;
+			
+			list vpn {	
+				key "name";
+				
+				leaf name {
+					type string;
+					description "Assigned VPN label";
+				}
+				uses sxpdb:master-database-fields;				
+			}
+		} 	
+	}
+	
+	grouping sxp-peer-fields  {
+		leaf peer-address {
+			mandatory true;
+    		type inet:ipv4-address;
+    		description "Address of the connected peer";
+        }
+	 	leaf node-id {
+			type sxppt:node-id;
+			description "SXP node ID";
+		}     
+      	leaf source-ip {
+    		type inet:ip-prefix;
+    		description "Connection source IP address";
+		}
+		leaf tcp-port {
+			type inet:port-number;
+			description "Port of the connected peer";
+			default "64999";
+		}
+		leaf mode-remote {
+        	mandatory true;
+        	type sxppt:connection-mode;
+        	description "Peer mode of the connection, i.e. uni-directional or bi-directional communication";
+        }          
+        leaf version-remote {
+        	type sxppt:version; 
+        	description "Peer version";
+        }
+	}
+	
+	grouping sxp-connection-fields  {
+		leaf vpn {
+			type string;
+			description "Assigned VPN label";
+		}
+		uses sxp-peer-fields;
+          	        			           
+        leaf password {
+			type password-type;
+			description "Default password will be used";
+		}	      
+        leaf state {
+         	config false; 
+        	type sxppt:connection-state;
+        	description "Current state of the connection";
+        	default "Off";
+        }                                    
+        leaf mode {
+        	mandatory true;
+        	type sxppt:connection-mode;
+        	description "Mode of the connection, i.e. uni-directional or bi-directional communication";
+        }            
+        leaf version {
+        	type sxppt:version; 
+        	description "Negotiated and running SXP version between peers";
+        }           
+        
+        uses capabilities-fields;
+        
+        leaf description {
+			type string;
+			description "Description of the connection";
+		}		
+		container connection-timers {
+			uses sxp-listener-time-settings-fields;
+			uses sxp-speaker-time-settings-fields;					
+		}   
+		
+		leaf purge-all-message-received {
+			type boolean;
+			default "false";
+		}	
+		leaf timestamp-update-message-export {
+			type ietf-yang:date-and-time;
+		}
+		leaf timestamp-update-or-keep-alive-message {
+			type ietf-yang:date-and-time; 
+		}
+		leaf update-all-exported {
+			type boolean;
+			default "false";
+		}
+		leaf update-exported {
+			type boolean;
+			default "false";
+		}
+	}
+	
+	grouping sxp-connections-fields  {
+		container connections {
+	    	list connection {
+	        	description "SXP connections to dedicated peers";
+	        		
+				key "peer-address tcp-port";				
+				uses sxp-connection-fields;
+	        }
+	    }
+    }
+   	
+	grouping sxp-node-time-settings-fields  {
+		leaf retry-open-time {
+			type uint16;
+			
+			description "Retry Open Timer: Default timer value is 120 sec. If zero, timer won’t be used.";
+		}
+	}
+		
+	grouping sxp-listener-time-settings-fields  {			
+		leaf delete-hold-down-time {
+			config false;
+			type uint16;
+			
+			description "Delete Hold-down Timer: Default timer value is 120 sec. and it’s not configurable.";
+		}		
+		leaf reconciliation-time {
+			type uint16;
+			
+			description "Reconciliation Timer: Default timer value is 120 sec. If zero, timer won’t be used.";
+		}		
+		leaf hold-time {
+			type uint16;
+			
+			description "Optional Hold Timer: Default timer value is 90 sec. and can be configurable. 
+				The actual value used for a connection is negotiated.";
+		}		
+		leaf hold-time-min {
+			type uint16;
+		}		
+		leaf hold-time-max {
+			type uint16;
+		}	
+	}
+	
+	grouping sxp-speaker-time-settings-fields  {
+		leaf hold-time-min-acceptable {
+			type uint16;
+		}		
+		leaf keep-alive-time {
+			type uint16;
+			
+			description "Optional Keep-alive Timer: Default timer value is 30 sec. and can be configurable. 
+				The actual value used for a connection is set to 1/3 of negotiated Hold Time and can be further
+				restarted with a random jitter.";
+		}
+	}
+    
+	// ********************
+    // Global Configuration
+    // ********************
+   	   	
+	augment /nt:network-topology/nt:topology/nt:node {
+        ext:augment-identifier "sxp-node-identity";
+		uses sxp-node-fields;
+		uses sxp-databases-fields;
+		uses sxp-connections-fields;
+		
+		container timers {
+			uses sxp-node-time-settings-fields;
+			container listener-profile {
+				uses sxp-listener-time-settings-fields;
+			}
+			container speaker-profile {
+				uses sxp-speaker-time-settings-fields;
+			}
+		}
+    }
+}

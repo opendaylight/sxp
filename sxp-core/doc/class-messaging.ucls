@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<class-diagram version="1.1.7" icons="true" automaticImage="PNG" always-add-relationships="true" generalizations="true" 
+  realizations="true" associations="true" dependencies="true" nesting-relationships="true">  
+  <class id="1" language="java" name="org.opendaylight.sxp.core.messaging.AttributeList" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/messaging/AttributeList.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="94" width="166" x="366" y="719"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <class id="2" language="java" name="org.opendaylight.sxp.core.messaging.AttributeFactory" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/messaging/AttributeFactory.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="94" width="166" x="366" y="853"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <class id="3" language="java" name="org.opendaylight.sxp.core.messaging.legacy.MappingRecordList" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/messaging/legacy/MappingRecordList.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="94" width="197" x="79" y="987"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <class id="4" language="java" name="org.opendaylight.sxp.core.messaging.PrefixTable" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/messaging/PrefixTable.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="94" width="166" x="553" y="987"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <class id="5" language="java" name="org.opendaylight.sxp.core.messaging.MessageFactory" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/messaging/MessageFactory.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="112" width="232" x="326" y="261"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <class id="6" language="java" name="org.opendaylight.sxp.core.messaging.legacy.LegacyAttributeFactory" 
+    project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/messaging/legacy/LegacyAttributeFactory.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="58" width="197" x="316" y="987"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <class id="7" language="java" name="org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory" 
+    project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/messaging/legacy/LegacyMessageFactory.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="94" width="232" x="94" y="853"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <class id="8" language="java" name="org.opendaylight.sxp.core.messaging.legacy.MappingRecord" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/messaging/legacy/MappingRecord.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="94" width="197" x="197" y="1121"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <enumeration id="9" language="java" name="org.opendaylight.sxp.core.SxpConnection.ChannelHandlerContextType" 
+    project="sxp-core" file="/sxp-core/src/main/java/org/opendaylight/sxp/core/SxpConnection.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="112" width="245" x="41" y="261"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </enumeration>  
+  <class id="10" language="java" name="org.opendaylight.sxp.core.SxpNode" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/SxpNode.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="418" width="240" x="598" y="261"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <class id="11" language="java" name="org.opendaylight.sxp.core.SxpConnection" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/SxpConnection.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="184" width="240" x="454" y="37"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <generalization id="12">    
+    <bendpoint x="219" y="719"/>    
+    <end type="SOURCE" refId="7"/>    
+    <end type="TARGET" refId="5"/>  
+  </generalization>  
+  <dependency id="13">    
+    <end type="SOURCE" refId="7"/>    
+    <end type="TARGET" refId="6"/>  
+  </dependency>  
+  <dependency id="14">    
+    <end type="SOURCE" refId="5"/>    
+    <end type="TARGET" refId="1"/>  
+  </dependency>  
+  <association id="15">    
+    <end type="SOURCE" refId="11" navigable="false">      
+      <attribute id="16" name="owner"/>      
+      <multiplicity id="17" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="10" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <dependency id="18">    
+    <bendpoint x="335" y="719"/>    
+    <end type="SOURCE" refId="5"/>    
+    <end type="TARGET" refId="2"/>  
+  </dependency>  
+  <dependency id="19">    
+    <end type="SOURCE" refId="2"/>    
+    <end type="TARGET" refId="4"/>  
+  </dependency>  
+  <dependency id="20">    
+    <end type="SOURCE" refId="3"/>    
+    <end type="TARGET" refId="8"/>  
+  </dependency>  
+  <association id="21">    
+    <end type="SOURCE" refId="11" navigable="false">      
+      <attribute id="22" name="ctxs"/>      
+      <multiplicity id="23" minimum="0" maximum="2147483647"/>    
+    </end>    
+    <end type="TARGET" refId="9" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <dependency id="24">    
+    <end type="SOURCE" refId="7"/>    
+    <end type="TARGET" refId="3"/>  
+  </dependency>  
+  <dependency id="25">    
+    <end type="SOURCE" refId="2"/>    
+    <end type="TARGET" refId="6"/>  
+  </dependency>  
+  <dependency id="26">    
+    <bendpoint x="868" y="261"/>    
+    <end type="SOURCE" refId="11"/>    
+    <end type="TARGET" refId="1"/>  
+  </dependency>  
+  <dependency id="27">    
+    <end type="SOURCE" refId="1"/>    
+    <end type="TARGET" refId="2"/>  
+  </dependency>  
+  <dependency id="28">    
+    <bendpoint x="562" y="719"/>    
+    <bendpoint x="562" y="853"/>    
+    <end type="SOURCE" refId="5"/>    
+    <end type="TARGET" refId="4"/>  
+  </dependency>  
+  <dependency id="29">    
+    <end type="SOURCE" refId="11"/>    
+    <end type="TARGET" refId="5"/>  
+  </dependency>  
+  <nesting id="30">    
+    <end type="SOURCE" refId="11"/>    
+    <end type="TARGET" refId="9"/>  
+  </nesting>  
+  <dependency id="31">    
+    <end type="SOURCE" refId="6"/>    
+    <end type="TARGET" refId="8"/>  
+  </dependency>  
+  <classifier-display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+    sort-features="false" accessors="true" visibility="true">    
+    <attributes public="true" package="true" protected="true" private="true" static="true"/>    
+    <operations public="false" package="false" protected="false" private="false" static="true"/>  
+  </classifier-display>  
+  <association-display labels="true" multiplicity="true"/>
+</class-diagram>

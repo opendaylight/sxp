@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<class-diagram version="1.1.7" icons="true" automaticImage="PNG" always-add-relationships="true" generalizations="true" 
+  realizations="true" associations="true" dependencies="true" nesting-relationships="true">  
+  <enumeration id="1" language="java" name="org.opendaylight.sxp.core.behavior.Sxpv4.OpenMessageType" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/behavior/Sxpv4.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="94" width="174" x="521" y="527"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </enumeration>  
+  <class id="2" language="java" name="org.opendaylight.sxp.core.behavior.StrategyFactory" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/behavior/StrategyFactory.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="58" width="157" x="284" y="37"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <class id="3" language="java" name="org.opendaylight.sxp.core.behavior.Sxpv4" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/behavior/Sxpv4.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="58" width="157" x="580" y="429"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <class id="4" language="java" name="org.opendaylight.sxp.core.behavior.Sxpv3" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/behavior/Sxpv3.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="58" width="157" x="479" y="331"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <interface id="5" language="java" name="org.opendaylight.sxp.core.behavior.Strategy" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/behavior/Strategy.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="76" width="157" x="62" y="661"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </interface>  
+  <class id="6" language="java" name="org.opendaylight.sxp.core.behavior.Sxpv2" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/behavior/Sxpv2.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="58" width="157" x="324" y="233"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <class id="7" language="java" name="org.opendaylight.sxp.core.behavior.Sxpv1" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/behavior/Sxpv1.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="58" width="157" x="85" y="135"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <class id="8" language="java" name="org.opendaylight.sxp.core.behavior.Context" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/behavior/Context.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="76" width="157" x="261" y="527"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <enumeration id="9" language="java" name="org.opendaylight.sxp.core.SxpConnection.ChannelHandlerContextType" 
+    project="sxp-core" file="/sxp-core/src/main/java/org/opendaylight/sxp/core/SxpConnection.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="112" width="245" x="492" y="1441"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </enumeration>  
+  <class id="10" language="java" name="org.opendaylight.sxp.core.SxpNode" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/SxpNode.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="418" width="240" x="136" y="777"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <class id="11" language="java" name="org.opendaylight.sxp.core.SxpConnection" project="sxp-core" 
+    file="/sxp-core/src/main/java/org/opendaylight/sxp/core/SxpConnection.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="166" width="240" x="418" y="1235"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="false" package="false" protected="false" private="false" static="true"/>    
+    </display>  
+  </class>  
+  <dependency id="12">    
+    <bendpoint x="105" y="777"/>    
+    <end type="SOURCE" refId="5"/>    
+    <end type="TARGET" refId="11"/>  
+  </dependency>  
+  <dependency id="13">    
+    <bendpoint x="448" y="331"/>    
+    <bendpoint x="448" y="429"/>    
+    <bendpoint x="448" y="527"/>    
+    <bendpoint x="469" y="661"/>    
+    <bendpoint x="469" y="777"/>    
+    <end type="SOURCE" refId="6"/>    
+    <end type="TARGET" refId="11"/>  
+  </dependency>  
+  <generalization id="14">    
+    <end type="SOURCE" refId="6"/>    
+    <end type="TARGET" refId="7"/>  
+  </generalization>  
+  <dependency id="15">    
+    <end type="SOURCE" refId="10"/>    
+    <end type="TARGET" refId="11"/>  
+  </dependency>  
+  <dependency id="16">    
+    <end type="SOURCE" refId="5"/>    
+    <end type="TARGET" refId="10"/>  
+  </dependency>  
+  <dependency id="17">    
+    <bendpoint x="314" y="331"/>    
+    <bendpoint x="314" y="429"/>    
+    <end type="SOURCE" refId="6"/>    
+    <end type="TARGET" refId="8"/>  
+  </dependency>  
+  <association id="18">    
+    <bendpoint x="427" y="777"/>    
+    <bendpoint x="427" y="661"/>    
+    <end type="SOURCE" refId="11" navigable="false">      
+      <attribute id="19" name="context">        
+        <position height="0" width="0" x="0" y="0"/>      
+      </attribute>      
+      <multiplicity id="20" minimum="0" maximum="1">        
+        <position height="0" width="0" x="0" y="0"/>      
+      </multiplicity>    
+    </end>    
+    <end type="TARGET" refId="8" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <dependency id="21">    
+    <bendpoint x="725" y="527"/>    
+    <bendpoint x="725" y="661"/>    
+    <bendpoint x="725" y="777"/>    
+    <end type="SOURCE" refId="3"/>    
+    <end type="TARGET" refId="11"/>  
+  </dependency>  
+  <dependency id="22">    
+    <bendpoint x="230" y="233"/>    
+    <bendpoint x="230" y="331"/>    
+    <bendpoint x="230" y="429"/>    
+    <bendpoint x="230" y="527"/>    
+    <bendpoint x="249" y="661"/>    
+    <end type="SOURCE" refId="7"/>    
+    <end type="TARGET" refId="10"/>  
+  </dependency>  
+  <dependency id="23">    
+    <bendpoint x="666" y="135"/>    
+    <bendpoint x="666" y="233"/>    
+    <bendpoint x="666" y="331"/>    
+    <end type="SOURCE" refId="2"/>    
+    <end type="TARGET" refId="3"/>  
+  </dependency>  
+  <dependency id="24">    
+    <bendpoint x="272" y="135"/>    
+    <bendpoint x="272" y="233"/>    
+    <bendpoint x="272" y="331"/>    
+    <bendpoint x="272" y="429"/>    
+    <end type="SOURCE" refId="2"/>    
+    <end type="TARGET" refId="8"/>  
+  </dependency>  
+  <dependency id="25">    
+    <bendpoint x="469" y="429"/>    
+    <end type="SOURCE" refId="4"/>    
+    <end type="TARGET" refId="8"/>  
+  </dependency>  
+  <dependency id="26">    
+    <end type="SOURCE" refId="3"/>    
+    <end type="TARGET" refId="8"/>  
+  </dependency>  
+  <association id="27">    
+    <bendpoint x="251" y="233"/>    
+    <bendpoint x="251" y="331"/>    
+    <bendpoint x="251" y="429"/>    
+    <end type="SOURCE" refId="7" navigable="false">      
+      <attribute id="28" name="context">        
+        <position height="0" width="0" x="0" y="0"/>      
+      </attribute>      
+      <multiplicity id="29" minimum="0" maximum="1">        
+        <position height="0" width="0" x="0" y="0"/>      
+      </multiplicity>    
+    </end>    
+    <end type="TARGET" refId="8" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <dependency id="30">    
+    <bendpoint x="746" y="527"/>    
+    <bendpoint x="746" y="661"/>    
+    <bendpoint x="746" y="777"/>    
+    <bendpoint x="746" y="1235"/>    
+    <end type="SOURCE" refId="3"/>    
+    <end type="TARGET" refId="9"/>  
+  </dependency>  
+  <generalization id="31">    
+    <end type="SOURCE" refId="4"/>    
+    <end type="TARGET" refId="6"/>  
+  </generalization>  
+  <association id="32">    
+    <end type="SOURCE" refId="11" navigable="false">      
+      <attribute id="33" name="owner">        
+        <position height="0" width="0" x="0" y="0"/>      
+      </attribute>      
+      <multiplicity id="34" minimum="0" maximum="1">        
+        <position height="0" width="0" x="0" y="0"/>      
+      </multiplicity>    
+    </end>    
+    <end type="TARGET" refId="10" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <nesting id="35">    
+    <end type="SOURCE" refId="11"/>    
+    <end type="TARGET" refId="9"/>  
+  </nesting>  
+  <dependency id="36">    
+    <bendpoint x="293" y="429"/>    
+    <bendpoint x="293" y="331"/>    
+    <bendpoint x="293" y="233"/>    
+    <bendpoint x="293" y="135"/>    
+    <end type="SOURCE" refId="8"/>    
+    <end type="TARGET" refId="2"/>  
+  </dependency>  
+  <dependency id="37">    
+    <bendpoint x="73" y="233"/>    
+    <bendpoint x="73" y="331"/>    
+    <bendpoint x="73" y="429"/>    
+    <bendpoint x="31" y="527"/>    
+    <bendpoint x="31" y="661"/>    
+    <bendpoint x="31" y="777"/>    
+    <end type="SOURCE" refId="7"/>    
+    <end type="TARGET" refId="11"/>  
+  </dependency>  
+  <nesting id="38">    
+    <end type="SOURCE" refId="3"/>    
+    <end type="TARGET" refId="1"/>  
+  </nesting>  
+  <association id="39">    
+    <bendpoint x="270" y="661"/>    
+    <end type="SOURCE" refId="8" navigable="false">      
+      <attribute id="40" name="owner">        
+        <position height="0" width="0" x="0" y="0"/>      
+      </attribute>      
+      <multiplicity id="41" minimum="0" maximum="1">        
+        <position height="0" width="0" x="0" y="0"/>      
+      </multiplicity>    
+    </end>    
+    <end type="TARGET" refId="10" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="42">    
+    <end type="SOURCE" refId="8" navigable="false">      
+      <attribute id="43" name="strategy">        
+        <position height="0" width="0" x="0" y="0"/>      
+      </attribute>      
+      <multiplicity id="44" minimum="0" maximum="1">        
+        <position height="0" width="0" x="0" y="0"/>      
+      </multiplicity>    
+    </end>    
+    <end type="TARGET" refId="5" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="45">    
+    <end type="SOURCE" refId="11" navigable="false">      
+      <attribute id="46" name="ctxs">        
+        <position height="0" width="0" x="0" y="0"/>      
+      </attribute>      
+      <multiplicity id="47" minimum="0" maximum="2147483647">        
+        <position height="0" width="0" x="0" y="0"/>      
+      </multiplicity>    
+    </end>    
+    <end type="TARGET" refId="9" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <dependency id="48">    
+    <bendpoint x="314" y="135"/>    
+    <end type="SOURCE" refId="2"/>    
+    <end type="TARGET" refId="6"/>  
+  </dependency>  
+  <dependency id="49">    
+    <end type="SOURCE" refId="2"/>    
+    <end type="TARGET" refId="7"/>  
+  </dependency>  
+  <dependency id="50">    
+    <bendpoint x="52" y="135"/>    
+    <bendpoint x="52" y="233"/>    
+    <bendpoint x="52" y="331"/>    
+    <bendpoint x="52" y="429"/>    
+    <bendpoint x="52" y="527"/>    
+    <end type="SOURCE" refId="2"/>    
+    <end type="TARGET" refId="5"/>  
+  </dependency>  
+  <realization id="51">    
+    <bendpoint x="94" y="233"/>    
+    <bendpoint x="94" y="331"/>    
+    <bendpoint x="94" y="429"/>    
+    <bendpoint x="94" y="527"/>    
+    <end type="SOURCE" refId="7"/>    
+    <end type="TARGET" refId="5"/>  
+  </realization>  
+  <dependency id="52">    
+    <bendpoint x="469" y="527"/>    
+    <bendpoint x="448" y="661"/>    
+    <end type="SOURCE" refId="3"/>    
+    <end type="TARGET" refId="10"/>  
+  </dependency>  
+  <dependency id="53">    
+    <bendpoint x="490" y="429"/>    
+    <bendpoint x="490" y="527"/>    
+    <bendpoint x="490" y="661"/>    
+    <bendpoint x="490" y="777"/>    
+    <end type="SOURCE" refId="4"/>    
+    <end type="TARGET" refId="11"/>  
+  </dependency>  
+  <dependency id="54">    
+    <bendpoint x="511" y="135"/>    
+    <bendpoint x="511" y="233"/>    
+    <end type="SOURCE" refId="2"/>    
+    <end type="TARGET" refId="4"/>  
+  </dependency>  
+  <dependency id="55">    
+    <bendpoint x="406" y="661"/>    
+    <bendpoint x="406" y="777"/>    
+    <end type="SOURCE" refId="8"/>    
+    <end type="TARGET" refId="11"/>  
+  </dependency>  
+  <generalization id="56">    
+    <end type="SOURCE" refId="3"/>    
+    <end type="TARGET" refId="4"/>  
+  </generalization>  
+  <classifier-display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+    sort-features="false" accessors="true" visibility="true">    
+    <attributes public="true" package="true" protected="true" private="true" static="true"/>    
+    <operations public="false" package="false" protected="false" private="false" static="true"/>  
+  </classifier-display>  
+  <association-display labels="true" multiplicity="true"/>
+</class-diagram>

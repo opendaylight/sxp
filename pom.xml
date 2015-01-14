@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  
+  <groupId>org.opendaylight.sxp</groupId>
+  <artifactId>sxp-parent</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <modules>
+    <module>sxp-api</module>
+    <module>sxp-controller</module>
+    <module>sxp-core</module>
+    <module>sxp-runtime</module>
+    <!-- Karaf -->
+    <module>sxp-config</module>
+    <module>features</module>
+    <module>sxp-karaf</module>
+  </modules>
+
+  <properties>
+    <!-- Optional TODO: Rename your configfile to taste -->
+    <configfile1local>12-sxp-controller-1local.xml</configfile1local>
+    <configfile1remote>12-sxp-controller-1remote.xml</configfile1remote>
+    <configfile2local>12-sxp-controller-2local.xml</configfile2local>
+    <configfiledevices>12-sxp-controller-devices.xml</configfiledevices>
+    <configfilenag>12-sxp-controller-nag.xml</configfilenag>
+   
+    <configfilebase>${configfiledevices}</configfilebase>
+                         
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <packaging-suffix>jar</packaging-suffix>
+
+    <config.output.base.dir>${project.build.directory}/generated-sources/config</config.output.base.dir>
+    <gencode.output.base.dir>${project.build.directory}/generated-sources/sal</gencode.output.base.dir>
+
+    <!-- Plugin Versions -->
+    <groupbasedpolicy.version>0.1.0-SNAPSHOT</groupbasedpolicy.version>  
+    <bundle.plugin.version>2.4.0</bundle.plugin.version>
+    <maven.clean.plugin.version>2.6</maven.clean.plugin.version>
+    <maven.jar.plugin.version>2.5</maven.jar.plugin.version>
+    <maven.shade.plugin.version>2.3</maven.shade.plugin.version>
+
+    <maven.compiler.source>1.7</maven.compiler.source>
+    <maven.compiler.target>1.7</maven.compiler.target>
+    <java.version.source>1.7</java.version.source>
+    <java.version.target>1.7</java.version.target>
+
+    <bundle.plugin.version>2.4.0</bundle.plugin.version>
+    <yangtools.version>0.7.0-SNAPSHOT</yangtools.version>   
+    <yangtools.feature.version>0.7.0-SNAPSHOT</yangtools.feature.version>   
+    <mdsal.version>1.2.0-SNAPSHOT</mdsal.version>
+    <config.version>0.3.0-SNAPSHOT</config.version>
+    <xtend.version>2.4.3</xtend.version>
+
+    <!-- Yang Module Versions -->
+    <ietf-inet-types.version>2010.09.24.7-SNAPSHOT</ietf-inet-types.version>
+    <ietf-yang-types.version>2010.09.24.7-SNAPSHOT</ietf-yang-types.version>
+    <yang-ext.version>2013.09.07.7-SNAPSHOT</yang-ext.version>
+    <yang-nt.version>2013.10.21.7-SNAPSHOT</yang-nt.version>
+
+    <!-- Utils Versions -->
+    <slf4j.version>1.7.2</slf4j.version>
+    <guava.version>14.0.1</guava.version>
+    <junit.version>4.11</junit.version>
+    <mockito.version>1.9.5</mockito.version>
+    <hamcrest.version>1.3</hamcrest.version>
+    <powermock.version>1.5.4</powermock.version>
+    <netty.version>4.0.24.Final</netty.version>
+    <tcpmd5.version>1.1.0-SNAPSHOT</tcpmd5.version>
+    <swt.version>4.4</swt.version>  
+    
+    <!--logback.version>1.0.9</logback.version-->
+                              
+  </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-artifact</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>${project.packaging}</type>
+                                    <destFileName>${project.groupId}.${project.artifactId}-${project.version}.${packaging-suffix}</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                            <outputDirectory>../target</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!--plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.6</version>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>../target/configuration-initial</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/resources/configuration/initial</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin-->
+        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <source>${maven.compiler.source}</source>
+                        <target>${maven.compiler.target}</target>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>${bundle.plugin.version}</version>
+                    <extensions>true</extensions>
+                    <configuration>
+                        <instructions>
+                            <Bundle-Name>${project.groupId}.${project.artifactId}</Bundle-Name>
+                        </instructions>
+                        <manifestLocation>${project.basedir}/META-INF</manifestLocation>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>1.8</version>
+                    <executions>
+                        <execution>
+                            <id>add-source</id>
+                            <phase>generate-sources</phase>
+                            <goals>
+                                <goal>add-source</goal>
+                            </goals>
+                            <configuration>
+                                <sources>
+                                    <source>${config.output.base.dir}</source>
+                                    <source>${gencode.output.base.dir}</source>
+                                    <source>src/main/xtend-gen</source>
+                                </sources>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.eclipse.xtend</groupId>
+                    <artifactId>xtend-maven-plugin</artifactId>
+                    <version>${xtend.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>compile</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${basedir}/src/main/xtend-gen</outputDirectory>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>${maven.clean.plugin.version}</version>
+                    <configuration>
+                        <filesets>
+                            <fileset>
+                                <directory>../../target</directory>
+                                <followSymlinks>false</followSymlinks>
+                            </fileset>
+                            <fileset>
+                                <directory>${basedir}/src/main/xtend-gen</directory>
+                                <includes>
+                                    <include>**</include>
+                                </includes>
+                            </fileset>
+                        </filesets>
+                    </configuration>
+                </plugin>
+                <!--This plugin's configuration is used to store Eclipse 
+                    m2e settings only. It has no influence on the Maven build itself. -->
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>
+                                            org.opendaylight.yangtools
+                                        </groupId>
+                                        <artifactId>
+                                            yang-maven-plugin
+                                        </artifactId>
+                                        <versionRange>
+                                            [0.5,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>
+                                                generate-sources
+                                            </goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore/>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <finalName>${project.groupId}.${project.artifactId}-${project.version}</finalName>
+    </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- project modules dependencies -->             
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>sxp-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>sxp-controller</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>sxp-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>sxp-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- yang model dependencies -->
+            <dependency>
+                <groupId>org.opendaylight.yangtools.model</groupId>
+                <artifactId>ietf-inet-types</artifactId>
+                <version>${ietf-inet-types.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opendaylight.yangtools.model</groupId>
+                <artifactId>ietf-yang-types</artifactId>
+                <version>${ietf-yang-types.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opendaylight.yangtools.model</groupId>
+                <artifactId>yang-ext</artifactId>
+                <version>${yang-ext.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opendaylight.yangtools.model</groupId>
+                <artifactId>ietf-topology</artifactId>
+                <version>${yang-nt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opendaylight.controller</groupId>
+                <artifactId>config-api</artifactId>
+                <version>${config.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opendaylight.controller</groupId>
+                <artifactId>sal-binding-config</artifactId>
+                <version>${mdsal.version}</version>
+            </dependency>
+
+            <!-- yangtools dependencies -->
+            <dependency>
+                <groupId>org.opendaylight.yangtools</groupId>
+                <artifactId>yang-binding</artifactId>
+                <version>${yangtools.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opendaylight.yangtools</groupId>
+                <artifactId>yang-common</artifactId>
+                <version>${yangtools.version}</version>
+            </dependency>
+
+            <!-- tcpmd5 dependencies -->
+            <dependency>
+                <groupId>org.opendaylight.tcpmd5</groupId>
+                <artifactId>tcpmd5-jni</artifactId>
+                <version>${tcpmd5.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opendaylight.tcpmd5</groupId>
+                <artifactId>tcpmd5-netty</artifactId>
+                <version>${tcpmd5.version}</version>
+            </dependency>
+            
+            <!-- md-sal dependecies -->
+            <dependency>
+                <groupId>org.opendaylight.controller</groupId>
+                <artifactId>sal-binding-api</artifactId>
+                <version>${mdsal.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opendaylight.controller</groupId>
+                <artifactId>sal-common-util</artifactId>
+                <version>${mdsal.version}</version>
+            </dependency>
+
+            <!-- utils dependencies -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-all</artifactId>
+                <version>${netty.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.swt</groupId>
+                <artifactId>org.eclipse.swt.win32.win32.x86_64</artifactId>
+                <version>${swt.version}</version>
+            </dependency>
+
+            <!-- testing dependencies -->
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-all</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+				        <artifactId>hamcrest-all</artifactId>
+                <version>${hamcrest.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <repositories>
+        <repository>
+            <id>opendaylight-release</id>
+            <name>opendaylight-release</name>
+            <url>http://nexus.opendaylight.org/content/repositories/opendaylight.release/</url>
+        </repository>
+        <repository>
+            <id>opendaylight-snapshot</id>
+            <name>opendaylight-snapshot</name>
+            <url>http://nexus.opendaylight.org/content/repositories/opendaylight.snapshot/</url>
+        </repository>
+        <repository>
+            <id>swt-repo</id>
+            <url>https://swt-repo.googlecode.com/svn/repo/</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>opendaylight-release</id>
+            <name>opendaylight-release</name>
+            <url>http://nexus.opendaylight.org/content/repositories/opendaylight.release/</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>opendaylight-snapshot</id>
+            <name>opendaylight-snapshot</name>
+            <url>http://nexus.opendaylight.org/content/repositories/opendaylight.snapshot/</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+</project>

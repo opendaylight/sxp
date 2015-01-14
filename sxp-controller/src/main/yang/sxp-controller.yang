@@ -1,0 +1,258 @@
+module sxp-controller {
+    yang-version 1;
+
+    namespace "urn:opendaylight:sxp:controller";
+    prefix "sxpctrl";
+
+	import ietf-inet-types {prefix inet; revision-date "2010-09-24";}
+  	import sxp-database {prefix sxpdb; revision-date "2014-10-02";}
+ 	import sxp-node {prefix sxpnd; revision-date "2014-10-02";}
+ 	import sxp-protocol {prefix sxppt; revision-date "2014-10-02";}
+ 	
+	description 
+        "Module defines the base YANG definitions for ODL-SXP-aware network node.";
+
+    revision "2014-10-02" {
+        description
+            "Reviewed revision of SXP controller model";
+    }
+    
+    // ************************
+    // SXP Controller Groupings
+    // ************************
+		
+    grouping sxp-node-configuration {	    
+     	leaf node-id {
+     		mandatory true;
+			type sxppt:node-id;
+			description "SXP node ID";
+		} 
+	 	uses sxpnd:sxp-node-fields;
+	 	uses sxpdb:master-database-configuration;
+	 	uses sxpnd:sxp-connections-fields;
+	 	
+		container timers {
+			uses sxpnd:sxp-speaker-time-settings-fields;		
+			uses sxpnd:sxp-listener-time-settings-fields;		
+			uses sxpnd:sxp-node-time-settings-fields;
+		}						
+    }    
+    
+    // ************************
+    // Notifications Definition
+    // ************************
+
+	notification exported-bindings {
+		description "Bindings currently sent to peer";
+		
+		list bindings {
+			leaf sgt {
+		    	mandatory true;
+		        type sxpdb:sgt;
+		        description "Assigned source group tag";
+		    }
+		    
+			uses sxpdb:master-database-binding-fields;
+        	
+        	leaf vpn-label {
+				type string;
+				description "Assigned VPN label";
+			}
+        }
+    }
+		    
+    // **************
+    // RPC Definition
+    // **************
+
+	rpc get-connections {
+		description "Get all connections status of a specified node";
+		input {
+			leaf requested-node {
+        		mandatory false;
+				type sxppt:node-id;
+		        description "Optional: SXP node ID";
+		    }	
+	    }
+	    
+	    output {
+		 	uses sxpnd:sxp-connections-fields;
+		}
+	}
+	
+	rpc add-connection {
+		description "Create a new connection for a specified node";
+		input {
+			leaf requested-node {
+				mandatory false;
+				type sxppt:node-id;
+		        description "Optional: SXP node ID";
+		    }	
+	        uses sxpnd:sxp-connections-fields;
+	    }
+	    output {
+		 	leaf result {
+				type boolean;
+			}
+		}
+	}
+	
+	rpc delete-connection {
+		description "Delete a connection of a specified node";
+	    input {
+	        leaf requested-node {
+	        	mandatory false;
+				type sxppt:node-id;
+		        description "Optional: SXP node ID";
+		    }	
+	       	leaf peer-address {
+				mandatory true;
+	    		type inet:ipv4-address;
+	    		description "Address of the connected peer";
+	        }
+	        leaf tcp-port {
+	        	type inet:port-number;
+				description "Port of the connected peer";
+				default "64999";
+			}
+	    }
+	    output {
+		 	leaf result {
+				type boolean;
+			}
+		}
+	}
+	
+	rpc add-entry {
+		description "Add a new IP-SGT binding into a node's master database";
+		input {
+			leaf requested-node {
+				mandatory false;
+				type sxppt:node-id;
+		        description "Optional: SXP node ID";
+		    }	
+		    leaf sgt {
+		    	mandatory true;
+		        type sxpdb:sgt;
+		        description "Assigned source group tag";
+		    }
+		    leaf ip-prefix {
+				mandatory true;
+	            type inet:ip-prefix;
+	            description "Assigned IP address";
+	        }        
+		}
+		output {
+		 	leaf result {
+				type boolean;
+			}
+		}
+	}
+	
+	rpc update-entry {
+		description "Update an IP-SGT binding in a node's master database";
+		input {
+			leaf requested-node {
+				mandatory false;
+				type sxppt:node-id;
+		        description "Optional: SXP node ID";
+		    }
+		    
+		    container original-binding {
+		    	leaf sgt {
+			    	mandatory true;
+			        type sxpdb:sgt;
+			        description "Assigned source group tag";
+			    }
+		    	leaf ip-prefix {
+					mandatory true;
+		            type inet:ip-prefix;
+		            description "Assigned IP address";
+		        }    
+		    }		    
+		    container new-binding {
+			    leaf sgt {
+			    	mandatory true;
+			        type sxpdb:sgt;
+			        description "Assigned source group tag";
+			    }
+		    	leaf ip-prefix {
+					mandatory true;
+		            type inet:ip-prefix;
+		            description "Assigned IP address";
+		        }    
+		    }
+		}
+		output {
+		 	leaf result {
+				type boolean;
+			}
+		}
+	}
+	
+	rpc delete-entry {
+		description "Delete an IP-SGT binding in a node's master database";
+		input {
+			leaf requested-node {
+				mandatory false;
+				type sxppt:node-id;
+		        description "Optional: SXP node ID";
+		    }
+		    leaf sgt {
+		    	mandatory true;
+		        type sxpdb:sgt;
+		        description "Assigned source group tag";
+		    }
+			leaf-list ip-prefix {
+		        type inet:ip-prefix;
+		        description "Assigned IPv4/IPv6 host IP or network address (prefix is less than 32/64).";
+	    	}
+		}
+		output {
+		 	leaf result {
+				type boolean;
+			}
+		}
+	}
+	
+	rpc get-binding-sgts {
+    	description "RPC returns the SGT for selected IP address";
+        input {
+        	leaf requested-node {
+        		mandatory false;
+				type sxppt:node-id;
+		        description "Optional: SXP node ID";
+		    }
+	        leaf ip-prefix {
+			 	mandatory true;
+	            type inet:ip-prefix;
+	            description "Assigned IP address";
+	        }	
+        }
+        output {            
+			leaf-list sgt {
+				type sxpdb:sgt;
+				description "Assigned source-group tag";
+			}		
+		}
+    }
+	
+	rpc get-node-bindings {
+    	description "RPC returns local IP-SGT bindings configuration of a specified node";
+        input {
+        	leaf local-requested-node {
+        		mandatory false;
+				type sxppt:node-id;
+		        description "Optional: SXP node ID";
+		    }
+        	leaf requested-node {
+        		mandatory true;
+				type sxppt:node-id;
+		        description "Node ID of the dedicated SXP source";
+		    }
+        }
+        output {            
+			uses sxpdb:master-database-configuration-fields;					
+		}
+    }
+}	
