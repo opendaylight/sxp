@@ -95,7 +95,8 @@ public class ManagedTimer {
     }
 
     public void stopForce() {
-        timer.cancel();
+        if (timer != null)
+            timer.cancel();
         running = false;
     }
 }

@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
@@ -577,8 +578,13 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
         return securityBuilder.build();
     }
 
-    public void setServerChannel(Channel serverChannel) {
+    public void setServerChannel(Channel serverChannel) throws Exception {
         this.serverChannel = serverChannel;
+
+        // Open connections (preliminarily)
+        openConnections();
+
+        this.serverChannelInit.set(false);
     }
 
     public void setSvcBindingDispatcherDispatch() {
@@ -608,6 +614,15 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
      * Administratively shutdown.
      */
     public synchronized void shutdown() {
+        // Wait until server channel ends its own initialization.
+        while (serverChannelInit.get()) {
+            try {
+                wait(THREAD_DELAY);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
         shutdownConnections();
 
         if (serverChannel != null) {
@@ -655,6 +670,8 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
         }
     }
 
+    private AtomicBoolean serverChannelInit = new AtomicBoolean(false);
+
     public void start() throws Exception {
         ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -689,10 +706,9 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
             @Override
             public void run() {
                 try {
-                    ConnectFacade.createServer(node, InetAddress.getLocalHost(), getServerPort(), handlerFactoryServer);
+                    serverChannelInit.set(true);
 
-                    // Open connections (preliminarily)
-                    openConnections();
+                    ConnectFacade.createServer(node, InetAddress.getLocalHost(), getServerPort(), handlerFactoryServer);
 
                 } catch (Exception e) {
                     LOG.warn(node + " {}", e.getMessage());

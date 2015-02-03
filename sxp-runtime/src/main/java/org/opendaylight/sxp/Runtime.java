@@ -48,6 +48,11 @@ public final class Runtime {
     }
 
     public static void main(String[] args) throws Exception {
+    	
+//    	 SxpNode node  = Topology.createLocalNode("R1", NodeIdConv.create(128), 51000, null, null);
+//    	 node.shutdown();
+//    	 LOG.info("exit");    	 
+    	 
         // Topology.DEFAULT_PASSWORD = "C!sco123";
         Topology.DEVICES_BIDIRECTIONAL = false;
         Topology.EXPANSION_QUANTITY = 0;

@@ -80,7 +80,7 @@ public final class BindingManager extends Service {
         return prefixGroup;
     }
 
-    private final BlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(8);
+    private final BlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(32);
 
     public BindingManager(SxpNode owner) {
         super(owner);
@@ -89,7 +89,7 @@ public final class BindingManager extends Service {
     @Override
     public void cancel() {
         super.cancel();
-        queue.add(false);
+        notifyChange(Boolean.FALSE); 
     }
 
     public void cleanUpBindings(NodeId nodeID) throws Exception {
@@ -228,7 +228,19 @@ public final class BindingManager extends Service {
 
     @Override
     public void notifyChange() {
-        queue.add(true);
+        notifyChange(Boolean.TRUE);                
+    }
+    
+    private void notifyChange(boolean notification) {
+        try {
+            queue.add(notification);
+        } catch (IllegalStateException e1) {
+            try {
+                queue.put(notification);
+            } catch (InterruptedException e2) {
+                e2.printStackTrace();
+            }
+        }        
     }
 
     public void purgeBindings(NodeId nodeID) throws Exception {
@@ -252,7 +264,7 @@ public final class BindingManager extends Service {
             if (!notification) {
                 break;
             } else if (!owner.isEnabled()) {
-                queue.add(notification);
+                notifyChange(notification);                
                 continue;
             }
 
