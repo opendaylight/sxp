@@ -119,5 +119,9 @@
         	<groupId>${project.groupId}</groupId>
             <artifactId>sxp-core</artifactId>
         </dependency>     
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>sxp-api</artifactId>
+        </dependency>
     </dependencies>
 </project>
