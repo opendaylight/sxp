@@ -58,7 +58,6 @@
     <yangtools.feature.version>0.7.0-SNAPSHOT</yangtools.feature.version>   
     <mdsal.version>1.2.0-SNAPSHOT</mdsal.version>
     <config.version>0.3.0-SNAPSHOT</config.version>
-    <xtend.version>2.4.3</xtend.version>
 
     <!-- Yang Module Versions -->
     <ietf-inet-types.version>2010.09.24.7-SNAPSHOT</ietf-inet-types.version>
@@ -168,23 +167,7 @@
                                 <sources>
                                     <source>${config.output.base.dir}</source>
                                     <source>${gencode.output.base.dir}</source>
-                                    <source>src/main/xtend-gen</source>
                                 </sources>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.eclipse.xtend</groupId>
-                    <artifactId>xtend-maven-plugin</artifactId>
-                    <version>${xtend.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>compile</goal>
-                            </goals>
-                            <configuration>
-                                <outputDirectory>${basedir}/src/main/xtend-gen</outputDirectory>
                             </configuration>
                         </execution>
                     </executions>
@@ -197,12 +180,6 @@
                             <fileset>
                                 <directory>../../target</directory>
                                 <followSymlinks>false</followSymlinks>
-                            </fileset>
-                            <fileset>
-                                <directory>${basedir}/src/main/xtend-gen</directory>
-                                <includes>
-                                    <include>**</include>
-                                </includes>
                             </fileset>
                         </filesets>
                     </configuration>
