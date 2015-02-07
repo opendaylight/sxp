@@ -18,7 +18,7 @@
     <module>sxp-api</module>
     <module>sxp-controller</module>
     <module>sxp-core</module>
-    <module>sxp-runtime</module>
+    <!-- module>sxp-runtime</module -->
     <!-- Karaf -->
     <module>sxp-config</module>
     <module>features</module>
