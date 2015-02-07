@@ -42,7 +42,6 @@
     <gencode.output.base.dir>${project.build.directory}/generated-sources/sal</gencode.output.base.dir>
 
     <!-- Plugin Versions -->
-    <groupbasedpolicy.version>0.1.0-SNAPSHOT</groupbasedpolicy.version>  
     <maven.clean.plugin.version>2.6</maven.clean.plugin.version>
     <maven.jar.plugin.version>2.5</maven.jar.plugin.version>
     <maven.shade.plugin.version>2.3</maven.shade.plugin.version>
@@ -68,9 +67,7 @@
     <netty.version>4.0.24.Final</netty.version>
     <tcpmd5.version>1.1.0-SNAPSHOT</tcpmd5.version>
     <swt.version>4.4</swt.version>  
-    
-    <!--logback.version>1.0.9</logback.version-->
-                              
+                                  
   </properties>
 
     <build>
@@ -323,6 +320,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
             </dependency>
 
             <dependency>
@@ -346,7 +344,7 @@
             </dependency>
             <dependency>
                 <groupId>org.hamcrest</groupId>
-	        <artifactId>hamcrest-all</artifactId>
+                <artifactId>hamcrest-all</artifactId>
                 <version>${hamcrest.version}</version>
                 <scope>test</scope>
             </dependency>
