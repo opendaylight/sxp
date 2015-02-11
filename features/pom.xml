@@ -99,6 +99,8 @@
       <type>xml</type>
     </dependency>
     
+    
+    
     <!--
       Necessary TODO: Put dependencies for bundles directly referenced
       in your features.xml file.  For every <bundle> reference in your
@@ -116,24 +118,27 @@
         <version>${project.version}</version>
       </dependency>
     -->
+    <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-all</artifactId>
+        <version>${netty.version}</version>
+    </dependency>
     
     <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-all</artifactId>
-      <version>${netty.version}</version>
-  	</dependency>   
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${junit.version}</version>
+    </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>   
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-all</artifactId>
+        <version>${mockito.version}</version>
+    </dependency>
     <dependency>
-			<groupId>org.hamcrest</groupId>
-			<artifactId>hamcrest-all</artifactId>
-      <version>${hamcrest.version}</version>
-			<scope>test</scope>
-		</dependency>       
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-all</artifactId>
+        <version>${hamcrest.version}</version>
+    </dependency>
     
     <!--
       Necessary TODO: Put dependencies for configfiles directly referenced

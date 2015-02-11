@@ -61,10 +61,10 @@
     <restconf.version>1.1.2-Helium-SR2</restconf.version>
     
     <!-- Yang Module Versions -->
-    <ietf-inet-types.version>2010.09.24.7-SNAPSHOT</ietf-inet-types.version>
-    <ietf-yang-types.version>2010.09.24.7-SNAPSHOT</ietf-yang-types.version>
-    <yang-ext.version>2013.09.07.7-SNAPSHOT</yang-ext.version>
-    <yang-nt.version>2013.10.21.7-SNAPSHOT</yang-nt.version>
+    <ietf-inet-types.version>2010.09.24.4.2-Helium-SR2</ietf-inet-types.version>
+    <ietf-yang-types.version>2010.09.24.4.2-Helium-SR2</ietf-yang-types.version>
+    <yang-ext.version>2013.09.07.4.2-Helium-SR2</yang-ext.version>
+    <yang-nt.version>2013.10.21.2.2-Helium-SR2</yang-nt.version>
 
     <!-- Utils Versions -->
     <!--slf4j.version>1.7.2</slf4j.version>
