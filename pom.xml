@@ -58,6 +58,7 @@
     <yangtools.feature.version>0.6.4-Helium-SR2</yangtools.feature.version>   
     <mdsal.version>1.1.2-Helium-SR2</mdsal.version>
     <config.version>0.2.7-Helium-SR2</config.version>
+    <restconf.version>1.1.2-Helium-SR2</restconf.version>
     
     <!-- Yang Module Versions -->
     <ietf-inet-types.version>2010.09.24.7-SNAPSHOT</ietf-inet-types.version>
@@ -73,7 +74,7 @@
     <hamcrest.version>1.3</hamcrest.version-->
     <powermock.version>1.5.4</powermock.version>
     <netty.version>4.0.24.Final</netty.version>
-    <tcpmd5.version>1.0.2-SNAPSHOT</tcpmd5.version>
+    <tcpmd5.version>1.0.2-Helium-SR2</tcpmd5.version>
     <swt.version>4.4</swt.version>
     <jacoco.version>0.6.2.201302030002</jacoco.version>
     
