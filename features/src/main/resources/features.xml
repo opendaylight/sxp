@@ -27,7 +27,7 @@
     <repository>mvn:org.opendaylight.controller/features-mdsal/${mdsal.version}/xml/features</repository>
     <repository>mvn:org.opendaylight.controller/features-config/${config.version}/xml/features</repository>
     <repository>mvn:org.opendaylight.tcpmd5/features-tcpmd5/${tcpmd5.version}/xml/features</repository>
-    <repository>mvn:org.opendaylight.controller/features-restconf/1.2.0-SNAPSHOT/xml/features</repository>
+    <repository>mvn:org.opendaylight.controller/features-restconf/${restconf.version}/xml/features</repository>
 
     <feature name='odl-sxp-all' version='${project.version}' description='OpenDaylight :: Sxp :: All'>
         <!--
@@ -112,7 +112,7 @@
       <feature version='${project.version}'>odl-sxp-api</feature>
       <feature version='${project.version}'>odl-sxp-core</feature>
       <feature version='${mdsal.version}'>odl-mdsal-broker</feature>
-      <feature version='${mdsal.version}'>odl-mdsal-apidocs</feature>
+      <!--feature version='${mdsal.version}'>odl-mdsal-apidocs</feature-->
       <feature>odl-restconf</feature>
       <feature>http</feature>
       <configfile finalname="etc/opendaylight/karaf/${configfilebase}">mvn:org.opendaylight.sxp/sxp-config/${project.version}/xml/${configfilebase}</configfile>    
