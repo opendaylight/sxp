@@ -92,7 +92,7 @@ public class Topology {
         }
         connectionBuilder.setPassword(PasswordType.None);
         connectionBuilder.setDescription("Connection to " + lname);
-        connections.add(connectionBuilder.build());
+        // connections.add(connectionBuilder.build());
 
         connectionBuilder = new ConnectionBuilder();
         if (DEVICES_BIDIRECTIONAL) {

@@ -29,7 +29,7 @@ public final class Runtime {
 
     private static List<PrefixGroup> prefixGroups;
 
-    private static TopologyType topologyType = TopologyType.TOPOLOGY_STAR_LOCAL;
+    private static TopologyType topologyType = TopologyType.TOPOLOGY_SXP_LAB;
 
     static {
         Configuration.initializeLogger();

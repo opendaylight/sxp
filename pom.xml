@@ -360,7 +360,10 @@
         </dependencies>
     </dependencyManagement>
 
-    <repositories>
+    <!-- Please follow recommended for ~/.m2/settings.xml
+      https://wiki.opendaylight.org/view/GettingStarted:Development_Environment_Setup#Edit_your_.7E.2F.m2.2Fsettings.xml
+    -->
+    <!--repositories>
         <repository>
             <id>opendaylight-release</id>
             <name>opendaylight-release</name>
@@ -388,6 +391,6 @@
             <name>opendaylight-snapshot</name>
             <url>http://nexus.opendaylight.org/content/repositories/opendaylight.snapshot/</url>
         </pluginRepository>
-    </pluginRepositories>
+    </pluginRepositories-->
 
 </project>
