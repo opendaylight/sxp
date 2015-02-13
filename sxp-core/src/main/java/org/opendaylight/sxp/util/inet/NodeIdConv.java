@@ -8,11 +8,12 @@
 
 package org.opendaylight.sxp.util.inet;
 
+import com.google.common.net.InetAddresses;
 import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
@@ -26,11 +27,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Node
 
 public final class NodeIdConv {
 
-    public static NodeId _decode(byte[] array) throws Exception {
+    public static NodeId _decode(byte[] array) throws UnknownHostException, UnknownNodeIdException {
         return createNodeId(InetAddress.getByAddress(ArraysUtil.readBytes(array, 0, 4)).toString());
     }
 
-    public static NodeId create(int nodeId) throws Exception {
+    public static NodeId create(int nodeId) throws UnknownHostException, UnknownNodeIdException {
         return NodeIdConv._decode(ArraysUtil.int2bytes(nodeId));
     }
 
@@ -41,7 +42,7 @@ public final class NodeIdConv {
         throw new UnknownNodeIdException("Not IPv4 format [\"" + inetAddress.toString() + "\"]");
     }
 
-    public static NodeId createNodeId(String prefix) throws Exception {
+    public static NodeId createNodeId(String prefix) throws UnknownNodeIdException {
         if (prefix == null || prefix.isEmpty()) {
             throw new UnknownNodeIdException("Not defined [\"" + prefix + "\"]");
         }
@@ -73,7 +74,7 @@ public final class NodeIdConv {
         return sourcesBuilder.build();
     }
 
-    public static List<NodeId> decode(byte[] array) throws Exception {
+    public static List<NodeId> decode(byte[] array) throws UnknownHostException, UnknownNodeIdException {
         List<NodeId> nodesIds = new ArrayList<NodeId>();
         do {
             NodeId nodeId = _decode(array);
@@ -135,7 +136,7 @@ public final class NodeIdConv {
         return result;
     }
 
-    public static byte[] toBytes(List<NodeId> nodesIds) throws Exception {
+    public static byte[] toBytes(List<NodeId> nodesIds) {
         byte[] array = new byte[0];
         for (NodeId nodeId : nodesIds) {
             array = ArraysUtil.combine(array, toBytes(nodeId));
@@ -143,7 +144,7 @@ public final class NodeIdConv {
         return array;
     }
 
-    public static byte[] toBytes(NodeId nodeId) throws Exception {
+    public static byte[] toBytes(NodeId nodeId) {
         String _prefix = new String(nodeId.getValue());
         if (_prefix.startsWith("/")) {
             _prefix = _prefix.substring(1);
@@ -152,7 +153,7 @@ public final class NodeIdConv {
         if (i != -1) {
             _prefix = _prefix.substring(0, i);
         }
-        return InetAddress.getByName(_prefix).getAddress();
+        return InetAddresses.forString(_prefix).getAddress();
     }
 
     private static String toString(List<NodeId> nodeIds) {
