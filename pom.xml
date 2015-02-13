@@ -69,7 +69,6 @@
     <netty.version>4.0.24.Final</netty.version>
     <tcpmd5.version>1.1.0-SNAPSHOT</tcpmd5.version>
     <swt.version>4.4</swt.version>
-    <jacoco.version>0.6.2.201302030002</jacoco.version>  
                                   
   </properties>
 

@@ -19,7 +19,6 @@
     not be correct.
   -->
    <artifactId>features</artifactId>
-   <groupId>org.opendaylight.sxp</groupId>
    <!-- Optional TODO: Uncomment version if you are not using a parent pom.xml
    <version>1.0-SNAPSHOT</version>
    -->
@@ -32,7 +31,6 @@
       <karaf.resources.version>1.4.2-SNAPSHOT</karaf.resources.version>
       <karaf.version>3.0.1</karaf.version>
       <karaf.empty.version>1.4.2-SNAPSHOT</karaf.empty.version>
-      <surefire.version>2.16</surefire.version>
    </properties>
    <dependencies>
     <!--
@@ -125,18 +123,15 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
-      <version>${mockito.version}</version>
     </dependency>   
     <dependency>
-			<groupId>org.hamcrest</groupId>
-			<artifactId>hamcrest-all</artifactId>
-      <version>${hamcrest.version}</version>
-		</dependency>       
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+    </dependency>
     
     <!--
       Necessary TODO: Put dependencies for configfiles directly referenced
@@ -225,7 +220,6 @@
          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>${surefire.version}</version>
             <configuration>
               <systemPropertyVariables>
                 <karaf.distro.groupId>org.opendaylight.controller</karaf.distro.groupId>
