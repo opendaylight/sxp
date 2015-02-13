@@ -31,7 +31,6 @@
       <branding.version>1.0.0-SNAPSHOT</branding.version>
       <karaf.resources.version>1.4.2-SNAPSHOT</karaf.resources.version>
       <karaf.version>3.0.1</karaf.version>
-      <feature.test.version>0.6.2-SNAPSHOT</feature.test.version>
       <karaf.empty.version>1.4.2-SNAPSHOT</karaf.empty.version>
       <surefire.version>2.16</surefire.version>
    </properties>
@@ -161,7 +160,7 @@
     <dependency>
       <groupId>org.opendaylight.yangtools</groupId>
       <artifactId>features-test</artifactId>
-      <version>${feature.test.version}</version>
+      <version>${yangtools.version}</version>
       <scope>test</scope>
     </dependency>
     <!-- dependency for opendaylight-karaf-empty for use by testing -->
