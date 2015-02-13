@@ -8,16 +8,18 @@
 
 package org.opendaylight.sxp.core.messaging.legacy;
 
+import com.google.common.net.InetAddresses;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
-
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.TlvNotFoundException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
@@ -38,7 +40,7 @@ public class MappingRecord extends ArrayList<Tlv> {
     /** */
     private static final long serialVersionUID = -6818880065966274888L;
 
-    private static Tlv _decode(byte[] array) throws Exception {
+    private static Tlv _decode(byte[] array) {
         TlvBuilder tlvBuilder = new TlvBuilder();
 
         tlvBuilder.setType(TlvType.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 0, 4))));
@@ -60,12 +62,12 @@ public class MappingRecord extends ArrayList<Tlv> {
     }
 
     public static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord create(
-            AttributeType operationCode, IpPrefix prefix) throws Exception {
+            AttributeType operationCode, IpPrefix prefix) {
         return create(operationCode, prefix, null);
     }
 
     public static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord create(
-            AttributeType operationCode, IpPrefix prefix, Sgt sgt) throws Exception {
+            AttributeType operationCode, IpPrefix prefix, Sgt sgt) {
         String _prefix = new String(prefix.getValue());
         if (_prefix.startsWith("/")) {
             _prefix = _prefix.substring(1);
@@ -76,7 +78,7 @@ public class MappingRecord extends ArrayList<Tlv> {
         }
 
         MappingRecord tlvs = new MappingRecord();
-        InetAddress inetAddress = InetAddress.getByName(_prefix);
+        InetAddress inetAddress = InetAddresses.forString(_prefix);
         int length = IpPrefixConv.getPrefixLength(prefix);
         if (inetAddress instanceof Inet4Address && length < 32 || inetAddress instanceof Inet6Address && length < 128) {
             tlvs.add(getTlvPrefixLength(length));
@@ -114,7 +116,7 @@ public class MappingRecord extends ArrayList<Tlv> {
     }
 
     public static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord decodeAddress(
-            AttributeType operationCode, int length, byte[] array) throws Exception {
+            AttributeType operationCode, int length, byte[] array) throws AddressLengthException, UnknownPrefixException, UnknownHostException {
         int addressLength;
         boolean add = false;
         switch (operationCode) {
@@ -168,7 +170,7 @@ public class MappingRecord extends ArrayList<Tlv> {
         return recordBuilder.build();
     }
 
-    private static TlvOptionalFields decodeTlvPrefixLength(byte[] value) throws Exception {
+    private static TlvOptionalFields decodeTlvPrefixLength(byte[] value) {
         PrefixLengthTlvAttributeBuilder _attributeBuilder = new PrefixLengthTlvAttributeBuilder();
         PrefixLengthTlvAttributesBuilder _attributesBuilder = new PrefixLengthTlvAttributesBuilder();
         _attributesBuilder.setPrefixLength(ArraysUtil.bytes2int(value));
@@ -176,7 +178,7 @@ public class MappingRecord extends ArrayList<Tlv> {
         return _attributeBuilder.build();
     }
 
-    private static TlvOptionalFields decodeTlvSourceGroupTag(byte[] value) throws Exception {
+    private static TlvOptionalFields decodeTlvSourceGroupTag(byte[] value) {
         SourceGroupTagTlvAttributeBuilder _attributeBuilder = new SourceGroupTagTlvAttributeBuilder();
         SourceGroupTagTlvAttributesBuilder _attributesBuilder = new SourceGroupTagTlvAttributesBuilder();
         _attributesBuilder.setSgt(ArraysUtil.bytes2int(value));
@@ -225,7 +227,7 @@ public class MappingRecord extends ArrayList<Tlv> {
         super(tlvs);
     }
 
-    public TlvOptionalFields get(TlvType type) throws Exception {
+    public TlvOptionalFields get(TlvType type) throws TlvNotFoundException {
         for (Tlv tlv : this) {
             if (tlv.getType().equals(type) && tlv instanceof Tlv) {
                 return tlv.getTlvOptionalFields();

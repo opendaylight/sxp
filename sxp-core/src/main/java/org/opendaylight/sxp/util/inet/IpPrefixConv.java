@@ -27,7 +27,7 @@ public final class IpPrefixConv {
         Ipv4Prefix, Ipv6Prefix
     }
 
-    private static IpPrefix _decode(IpPrefixType ipPrefixType, byte[] array, boolean compact) throws Exception {
+    private static IpPrefix _decode(IpPrefixType ipPrefixType, byte[] array, boolean compact) throws UnknownHostException, UnknownPrefixException {
         int blength = getBytesLength(array[0]);
         byte[] bprefix = ArraysUtil.readBytes(array, compact ? 1 : 4, blength);
 
@@ -53,7 +53,7 @@ public final class IpPrefixConv {
         return new IpPrefix(_prefix.toCharArray());
     }
 
-    public static IpPrefix createPrefix(String ipPrefix) throws Exception {
+    public static IpPrefix createPrefix(String ipPrefix) throws UnknownPrefixException {
         if (ipPrefix == null || ipPrefix.isEmpty()) {
             throw new UnknownPrefixException("Not defined [\"" + ipPrefix + "\"]");
         }
@@ -65,7 +65,7 @@ public final class IpPrefixConv {
     }
 
     private static List<IpPrefix> decode(IpPrefixConv.IpPrefixType ipPrefixType, byte[] array, boolean compact)
-            throws Exception {
+            throws UnknownHostException, UnknownPrefixException {
         List<IpPrefix> prefixes = new ArrayList<IpPrefix>();
         do {
             // Reserved octets (not)presented.
@@ -76,11 +76,11 @@ public final class IpPrefixConv {
         return prefixes;
     }
 
-    public static List<IpPrefix> decodeIpv4(byte[] array, boolean compact) throws Exception {
+    public static List<IpPrefix> decodeIpv4(byte[] array, boolean compact) throws UnknownHostException, UnknownPrefixException {
         return decode(IpPrefixType.Ipv4Prefix, array, compact);
     }
 
-    public static List<IpPrefix> decodeIpv6(byte[] array, boolean compact) throws Exception {
+    public static List<IpPrefix> decodeIpv6(byte[] array, boolean compact) throws UnknownHostException, UnknownPrefixException {
         return decode(IpPrefixType.Ipv6Prefix, array, compact);
     }
 
@@ -111,7 +111,7 @@ public final class IpPrefixConv {
         return result;
     }
 
-    public static InetSocketAddress parseInetPrefix(String ipPrefix) throws UnknownHostException {
+    public static InetSocketAddress parseInetPrefix(String ipPrefix) {
         if (ipPrefix.startsWith("/")) {
             ipPrefix = ipPrefix.substring(1);
         }
@@ -120,10 +120,10 @@ public final class IpPrefixConv {
 
         int i = ipPrefix.indexOf("/");
         if (i != -1) {
-            inetAddress = InetAddress.getByName(ipPrefix.substring(0, i));
+            inetAddress = InetAddresses.forString(ipPrefix.substring(0, i));
             prefix = Short.valueOf(ipPrefix.substring(i + 1));
         } else {
-            inetAddress = InetAddress.getByName(ipPrefix);
+            inetAddress = InetAddresses.forString(ipPrefix);
             if (inetAddress instanceof Inet4Address) {
                 prefix = 32;
             } else if (inetAddress instanceof Inet6Address) {
@@ -135,7 +135,7 @@ public final class IpPrefixConv {
         return new InetSocketAddress(inetAddress, prefix);
     }
 
-    public static byte[] toBytes(IpPrefix prefix) throws Exception {
+    public static byte[] toBytes(IpPrefix prefix) {
         String _prefix = new String(prefix.getValue());
         if (_prefix.startsWith("/")) {
             _prefix = _prefix.substring(1);
@@ -152,7 +152,7 @@ public final class IpPrefixConv {
         return ArraysUtil.combine(new byte[] { ArraysUtil.int2bytes(length)[3], 0x00, 0x00, 0x00 }, bprefix);
     }
 
-    public static byte[] toBytes(List<IpPrefix> prefixes) throws Exception {
+    public static byte[] toBytes(List<IpPrefix> prefixes) {
         byte[] array = new byte[0];
         for (IpPrefix prefix : prefixes) {
             array = ArraysUtil.combine(array, toBytes(prefix));
