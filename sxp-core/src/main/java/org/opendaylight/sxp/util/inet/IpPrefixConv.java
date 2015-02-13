@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.util.inet;
 
+import com.google.common.net.InetAddresses;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -15,7 +16,6 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
@@ -145,7 +145,7 @@ public final class IpPrefixConv {
             _prefix = _prefix.substring(0, i);
         }
         int length = getPrefixLength(prefix);
-        byte[] bprefix = trimPrefix(InetAddress.getByName(_prefix).getAddress(), getBytesLength(length));
+        byte[] bprefix = trimPrefix(InetAddresses.forString(_prefix).getAddress(), getBytesLength(length));
         if (Configuration.SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS) {
             return ArraysUtil.combine(new byte[] { ArraysUtil.int2bytes(length)[3] }, bprefix);
         }
