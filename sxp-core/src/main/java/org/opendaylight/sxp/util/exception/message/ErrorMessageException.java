@@ -32,7 +32,7 @@ public class ErrorMessageException extends Exception {
     public ErrorMessageException(ErrorCode errorCode, ErrorSubCode errorSubCode, byte[] data, Exception carriedException) {
         this.errorCode = errorCode;
         this.errorSubCode = errorSubCode;
-        this.data = data;
+        this.data = data == null ? null : data.clone();
         this.legacy = false;
         this.carriedException = carriedException;
     }
