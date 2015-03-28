@@ -1,0 +1,17 @@
+*.class
+**/target
+bin/
+dist
+**/logs
+products
+repository
+workspace
+*~
+target
+target-ide
+.classpath
+.project
+.settings
+MANIFEST.MF
+.idea/
+.checkstyle
