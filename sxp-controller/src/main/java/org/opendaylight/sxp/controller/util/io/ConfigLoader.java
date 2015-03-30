@@ -10,6 +10,7 @@ package org.opendaylight.sxp.controller.util.io;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -137,6 +138,13 @@ public class ConfigLoader {
             org.opendaylight.controller.config.yang.sxp.controller.conf.SxpNode configuration) {
         ConnectionsBuilder connectionsBuilder = new ConnectionsBuilder();
         List<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection> connections = new ArrayList<>();
+        if (configuration.getConnections() == null) {
+            LOG.info("No connections found in config file.");
+            return connectionsBuilder.setConnection(
+                Collections.<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection> emptyList())
+                    .build();
+        }
+
         for (Connection connection : configuration.getConnections().getConnection()) {
             ConnectionBuilder connectionBuilder = new ConnectionBuilder();
 
