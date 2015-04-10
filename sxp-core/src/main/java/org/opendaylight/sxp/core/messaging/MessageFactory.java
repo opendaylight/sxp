@@ -10,11 +10,9 @@ package org.opendaylight.sxp.core.messaging;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UnknownFormatConversionException;
-
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
 import org.opendaylight.sxp.util.ArraysUtil;
@@ -377,6 +375,15 @@ public class MessageFactory {
     private static Notification decode(Version version, byte[] headerType, byte[] payload) throws Exception {
         MessageType messageType = MessageType.forValue(ArraysUtil.bytes2int(headerType));
 
+        // Remote can send OpenResp with different version
+        if(messageType == MessageType.OpenResp) {
+            final Version remoteVersion = extractVersion(payload);
+            // Override version setting for parsing
+            if(remoteVersion != version) {
+                version = remoteVersion;
+            }
+        }
+
         if (isLegacy(version)) {
             switch (messageType) {
             case Open:
@@ -457,7 +464,7 @@ public class MessageFactory {
         messageBuilder.setLength(MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH + payload.length);
         messageBuilder.setPayload(payload);
 
-        Version version = Version.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(payload, 0, 4)));
+        Version version = extractVersion(payload);
         ConnectionMode nodeMode = ConnectionMode.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(payload, 4, 4)));
         AttributeList attributes = AttributeList.decode(ArraysUtil.readBytes(payload, 8));
 
@@ -473,7 +480,7 @@ public class MessageFactory {
         messageBuilder.setLength(MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH + payload.length);
         messageBuilder.setPayload(payload);
 
-        Version version = Version.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(payload, 0, 4)));
+        Version version = extractVersion(payload);
         ConnectionMode nodeMode = ConnectionMode.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(payload, 4, 4)));
         AttributeList attributes = AttributeList.decode(ArraysUtil.readBytes(payload, 8));
 
@@ -481,6 +488,10 @@ public class MessageFactory {
         messageBuilder.setSxpMode(nodeMode);
         messageBuilder.setAttribute(attributes);
         return messageBuilder.build();
+    }
+
+    public static Version extractVersion(final byte[] payload) {
+        return Version.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(payload, 0, 4)));
     }
 
     public static Notification decodePurgeAll(byte[] payload) {
