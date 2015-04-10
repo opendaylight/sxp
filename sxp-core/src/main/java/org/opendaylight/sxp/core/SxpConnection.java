@@ -162,6 +162,7 @@ public class SxpConnection {
                 }
             }
             for (ChannelHandlerContext _ctx : complements) {
+                LOG.info(this + " Dual channel closed {}", _ctx);
                 _ctx.close();
             }
 
@@ -173,7 +174,6 @@ public class SxpConnection {
             for (ChannelHandlerContext complement : complements) {
                 ctxs.remove(complement);
             }
-            LOG.info(this + " Dual channels closed {}/{}", complements, ctxs);
         }
     }
 
