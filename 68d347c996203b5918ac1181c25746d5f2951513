@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3aa0d159_3cbb1174",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/SxpNode.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 84
+      },
+      "writtenOn": "2015-04-13T16:00:22Z",
+      "side": 1,
+      "message": "Remove unused imports",
+      "revId": "68d347c996203b5918ac1181c25746d5f2951513",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3aa0d159_dcaf8d2a",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/service/ConnectFacade.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 179,
+      "author": {
+        "id": 84
+      },
+      "writtenOn": "2015-04-13T16:00:22Z",
+      "side": 1,
+      "message": "Remove tab",
+      "revId": "68d347c996203b5918ac1181c25746d5f2951513",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
