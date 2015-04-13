@@ -8,18 +8,21 @@
 
 package org.opendaylight.sxp.core;
 
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import io.netty.channel.Channel;
-
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -46,6 +49,7 @@ import org.opendaylight.sxp.util.time.node.TimerFactory;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
@@ -707,8 +711,7 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
             public void run() {
                 try {
                     serverChannelInit.set(true);
-
-                    ConnectFacade.createServer(node, InetAddress.getLocalHost(), getServerPort(), handlerFactoryServer);
+                    ConnectFacade.createServer(node, getServerPort(), handlerFactoryServer);
 
                 } catch (Exception e) {
                     LOG.warn(node + " {}", e.getMessage());
