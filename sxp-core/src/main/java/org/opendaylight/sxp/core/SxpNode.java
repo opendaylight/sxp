@@ -9,7 +9,6 @@
 package org.opendaylight.sxp.core;
 
 import io.netty.channel.Channel;
-
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -19,7 +18,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -707,8 +705,7 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
             public void run() {
                 try {
                     serverChannelInit.set(true);
-
-                    ConnectFacade.createServer(node, InetAddress.getLocalHost(), getServerPort(), handlerFactoryServer);
+                    ConnectFacade.createServer(node, getServerPort(), handlerFactoryServer);
 
                 } catch (Exception e) {
                     LOG.warn(node + " {}", e.getMessage());
