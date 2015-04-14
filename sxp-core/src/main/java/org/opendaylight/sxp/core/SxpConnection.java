@@ -874,7 +874,13 @@ public class SxpConnection {
             ChannelHandlerContextNotFoundException, ChannelHandlerContextDiscrepancyException {
         ChannelHandlerContext ctx = null;
         if (isModeBoth()) {
-            ctx = getChannelHandlerContext(ChannelHandlerContextType.ListenerContext);
+            // Only speaker can send keepalive messages so only the speaker context will be used to send keepalives
+            // Sending keepalives as listener is incorrect
+            if(timerType == TimerType.KeepAliveTimer) {
+                ctx = getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
+            } else {
+                ctx = getChannelHandlerContext(ChannelHandlerContextType.ListenerContext);
+            }
         } else {
             ctx = getChannelHandlerContext();
         }
