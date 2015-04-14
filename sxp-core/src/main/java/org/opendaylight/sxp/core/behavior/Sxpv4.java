@@ -250,7 +250,7 @@ public final class Sxpv4 extends Sxpv3 {
                      * following Speaker response, can decide which dual channel
                      * will be closed. Until then all Binding Dispatcher's
                      * parallel tasks that use channel contexts should wait.
-                     * 
+                     *
                      */
                 }
 
@@ -361,6 +361,8 @@ public final class Sxpv4 extends Sxpv3 {
             connection.setUpdateOrKeepaliveMessageTimestamp();
             return;
         }
+
+        LOG.warn("{} Cannot handle message, ignoring: {}", connection, MessageFactory.toString(message));
     }
 
     @Override
