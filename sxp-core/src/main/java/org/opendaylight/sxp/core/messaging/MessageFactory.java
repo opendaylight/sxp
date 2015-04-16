@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.core.messaging;
 
+import com.google.common.base.Charsets;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import java.util.ArrayList;
@@ -146,6 +147,19 @@ public class MessageFactory {
     }
 
     public static ByteBuf createUpdate(MasterDatabase masterDatabase, NodeId nodeId, boolean changed) throws Exception {
+        System.err.println("------------------");
+        for (Source source : masterDatabase.getSource()) {
+            for (PrefixGroup o : source.getPrefixGroup()                    ) {
+                for (Binding b : o.getBinding()) {
+                    System.err.println("Serializing binding " + b);
+                    System.err.println("Binding change" + b.isChanged());
+                    System.err.println("------------------");
+                }
+            }
+        }
+        System.err.println("------------------");
+        System.err.println("------------------");
+
         AttributeList attributes = new AttributeList();
         // 2. Processing of global optional attributes.
         for (Attribute attribute : masterDatabase.getAttribute()) {
@@ -288,7 +302,14 @@ public class MessageFactory {
         if (attributes.isEmpty()) {
             return null;
         }
-        return getMessage(MessageType.Update, attributes.toBytes());
+
+
+        System.err.println("Update attributes " + attributes);
+        final ByteBuf message = getMessage(MessageType.Update, attributes.toBytes());
+        message.resetReaderIndex();
+        System.err.println("Serialized " + message.toString(Charsets.UTF_8));
+        message.resetReaderIndex();
+        return message;
     }
 
     public static ByteBuf createUpdateAddPrefixes(NodeId nodeID, List<NodeId> peerSequence,
