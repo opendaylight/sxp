@@ -401,14 +401,16 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
             int n = 0;
 
             List<MasterBindingIdentity> bindingIdentities = MasterBindingIdentity.create(database, onlyChanged);
+
             for (MasterBindingIdentity bindingIdentity : bindingIdentities) {
                 boolean contains = false;
-                for (Source _source : databaseBuilder.getSource()) {
-                    if (_source.getBindingSource().equals(bindingIdentity.source.getBindingSource())) {
-                        contains = true;
-                        break;
-                    }
-                }
+//                for (Source _source : databaseBuilder.getSource()) {
+//                    if (_source.getBindingSource().equals(bindingIdentity.source.getBindingSource())) {
+//                        contains = true;
+//                        break;
+//                    }
+//                }
+
                 if (!contains) {
                     SourceBuilder sourceBuilder = new SourceBuilder(bindingIdentity.source);
                     sourceBuilder.setPrefixGroup(new ArrayList<PrefixGroup>());
@@ -417,12 +419,12 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
                 }
 
                 contains = false;
-                for (PrefixGroup _prefixGroup : source.getPrefixGroup()) {
-                    if (_prefixGroup.getSgt().getValue().equals(bindingIdentity.prefixGroup.getSgt().getValue())) {
-                        contains = true;
-                        break;
-                    }
-                }
+//                for (PrefixGroup _prefixGroup : source.getPrefixGroup()) {
+//                    if (_prefixGroup.getSgt().getValue().equals(bindingIdentity.prefixGroup.getSgt().getValue())) {
+//                        contains = true;
+//                        break;
+//                    }
+//                }
                 if (!contains) {
                     PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder(bindingIdentity.prefixGroup);
                     prefixGroupBuilder.setBinding(new ArrayList<Binding>());
@@ -439,6 +441,10 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
                 }
                 if (!contains) {
                     BindingBuilder bindingBuilder = new BindingBuilder(bindingIdentity.binding);
+                    //Delete replacements have to be marked as change to trigger their propagation
+                    if(bindingIdentity.isDeleteReplace()) {
+                        bindingBuilder.setChanged(true);
+                    }
                     prefixGroup.getBinding().add(bindingBuilder.build());
                     n++;
                 }
