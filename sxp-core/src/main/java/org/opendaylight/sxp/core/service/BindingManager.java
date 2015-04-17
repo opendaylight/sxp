@@ -160,7 +160,8 @@ public final class BindingManager extends Service {
                                         bindingContributedBuilder.setPeerSequence(_pathGroup.getPeerSequence());
                                         bindingContributedBuilder.setSources(NodeIdConv.createSources(null));
                                         bindingContributedBuilder.setIpPrefix(_binding.getIpPrefix());
-                                        bindingContributedBuilder.setTimestamp(_binding.getTimestamp());
+                                        //was generating duplicities of previously added timestamps
+                                        //bindingContributedBuilder.setTimestamp(_binding.getTimestamp());
                                     }
                                 }
                             }

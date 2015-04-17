@@ -404,35 +404,16 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
 
             for (MasterBindingIdentity bindingIdentity : bindingIdentities) {
                 boolean contains = false;
-//                for (Source _source : databaseBuilder.getSource()) {
-//                    if (_source.getBindingSource().equals(bindingIdentity.source.getBindingSource())) {
-//                        contains = true;
-//                        break;
-//                    }
-//                }
-
-                if (!contains) {
                     SourceBuilder sourceBuilder = new SourceBuilder(bindingIdentity.source);
                     sourceBuilder.setPrefixGroup(new ArrayList<PrefixGroup>());
                     source = sourceBuilder.build();
                     databaseBuilder.getSource().add(source);
-                }
 
-                contains = false;
-//                for (PrefixGroup _prefixGroup : source.getPrefixGroup()) {
-//                    if (_prefixGroup.getSgt().getValue().equals(bindingIdentity.prefixGroup.getSgt().getValue())) {
-//                        contains = true;
-//                        break;
-//                    }
-//                }
-                if (!contains) {
                     PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder(bindingIdentity.prefixGroup);
                     prefixGroupBuilder.setBinding(new ArrayList<Binding>());
                     prefixGroup = prefixGroupBuilder.build();
                     source.getPrefixGroup().add(prefixGroup);
-                }
 
-                contains = false;
                 for (Binding _binding : prefixGroup.getBinding()) {
                     if (_binding.getIpPrefix().equals(bindingIdentity.binding.getIpPrefix())) {
                         contains = true;

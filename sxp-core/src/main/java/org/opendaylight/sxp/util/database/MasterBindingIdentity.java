@@ -99,7 +99,7 @@ public class MasterBindingIdentity {
                     final int peerSequenceComparison = -1 * (o1.getPeerSequence().getPeer().size() - o2.getPeerSequence().getPeer().size());
                     if(peerSequenceComparison == 0) {
                         try {
-                            return Long.valueOf(TimeConv.toLong(o1.getTimestamp())).compareTo(TimeConv.toLong(o2.getTimestamp()));
+                            return Long.valueOf(TimeConv.toLong(o2.getTimestamp())).compareTo(TimeConv.toLong(o1.getTimestamp()));
                         // FIXME base exception type thrown
                         } catch (Exception e) {
                             throw new IllegalArgumentException("Unable to parse datetime to long", e);
@@ -110,7 +110,9 @@ public class MasterBindingIdentity {
             });
 
             // Adding the most fittest binding replacement for deleted IP
-            identities.add(candidates.get(0));
+            if(!candidates.isEmpty()) {
+                identities.add(candidates.get(0));
+            }
         }
         return identities;
     }
