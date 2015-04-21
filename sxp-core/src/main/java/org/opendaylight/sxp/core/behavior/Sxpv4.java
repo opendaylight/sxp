@@ -232,6 +232,7 @@ public final class Sxpv4 extends Sxpv3 {
                     } else if (connection.isStateDeleteHoldDown()) {
                         // Replace the existing one.
                         connection.closeChannelHandlerContextComplements(ctx);
+                        connection.setStatePendingOn();
                     } else {
                         // Close the current channel.
                         connection.closeChannelHandlerContext(ctx);
@@ -296,6 +297,7 @@ public final class Sxpv4 extends Sxpv3 {
                         if (connection.isStateDeleteHoldDown()) {
                             // Replace the existing one.
                             connection.closeChannelHandlerContextComplements(ctx);
+                            connection.setStatePendingOn();
                         } else {
                             // Close the current channel.
                             connection.closeChannelHandlerContext(ctx);
