@@ -721,6 +721,13 @@ public class SxpConnection {
             ctDeleteHoldDown.start();
         }
 
+        ManagedTimer ctReconciliation = getTimer(TimerType.ReconciliationTimer);
+        if(ctReconciliation!=null && ctReconciliation.isRunning()){
+            LOG.info("{} Stopping Reconciliation timer cause | Connection DOWN.",this);
+            ctReconciliation.stop();
+            setTimer(TimerType.ReconciliationTimer, null);
+        }
+
         setStateDeleteHoldDown();
     }
 
@@ -788,9 +795,9 @@ public class SxpConnection {
     }
 
     private void setReconciliationTimer() throws Exception {
-        if (isStateDeleteHoldDown()) {
-            if (getReconciliationTime() > 0) {
-
+        if (isStatePendingOn() && getReconciliationTime() > 0) {
+            ManagedTimer ctDeleteHoldDown = getTimer(TimerType.DeleteHoldDownTimer);
+            if(ctDeleteHoldDown != null && ctDeleteHoldDown.isRunning()) {
                 ManagedTimer ctReconciliation = getTimer(TimerType.ReconciliationTimer);
                 if (ctReconciliation == null) {
                     try {
@@ -812,8 +819,12 @@ public class SxpConnection {
                             return;
                         }
                     }
+                    LOG.info("{} Starting Reconciliation timer.", this);
                     ctReconciliation.start();
                 }
+                LOG.info("{} Stopping Delete Hold Down timer.", this);
+                ctDeleteHoldDown.stop();
+                setTimer(TimerType.DeleteHoldDownTimer, null);
             }
         }
     }
