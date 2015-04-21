@@ -177,6 +177,7 @@ public class SxpConnection {
         }
     }
 
+    //on inactive clear content
     public void closeChannelHandlerContexts() {
         synchronized (ctxs) {
             if (ctxs != null) {
@@ -407,8 +408,7 @@ public class SxpConnection {
         // related to channel context, i.e.
         // ChannelHandlerContextDiscrepancyException. This timer will be setup
         // during Binding Dispatcher runtime.
-        boolean disabled = false;
-        if (disabled && connectionMode.equals(ConnectionMode.Speaker)) {
+        if (connectionMode.equals(ConnectionMode.Speaker)) {
             ChannelHandlerContext ctx = null;
             if (isModeBoth()) {
                 ctx = getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
@@ -417,8 +417,11 @@ public class SxpConnection {
             }
 
             if (getKeepaliveTime() > 0) {
-                timers.put(TimerType.KeepAliveTimer,
+                ManagedTimer t = timers.put(TimerType.KeepAliveTimer,
                         TimerFactory.createTimer(TimerType.KeepAliveTimer, getKeepaliveTime(), owner, this, ctx));
+                if(t != null){
+                    t.stop();
+                }
             }
         }
     }
@@ -662,10 +665,9 @@ public class SxpConnection {
 
         // Peer parameters.
         int holdTimeMin = attHoldTime.getHoldTimeAttributes().getHoldTimeMinValue();
-        int holdTimeMax = attHoldTime.getHoldTimeAttributes().getHoldTimeMaxValue();
         // Keep-alive mechanism is not used.
-        if (holdTimeMin == 0 || holdTimeMax == 0) {
-            disableKeepAliveMechanism("Minimum and maximum hold time values are not used in peer");
+        if (holdTimeMin == 0) {
+            disableKeepAliveMechanism("Minimum hold time value set to ZERO ");
             return;
         }
 
@@ -683,13 +685,13 @@ public class SxpConnection {
             }
         }
         // The negotiation succeeds?
-        if (holdTimeMin < holdTimeMax && holdTimeMinAcc <= holdTimeMax) {
-            int holdTimeSelected = Math.max(holdTimeMinAcc, holdTimeMin);
+        if ( holdTimeMin >= holdTimeMinAcc ) {
             // Set unless a different keep-alive time is locally configured.
-            setKeepaliveTime((int) (1.0 / 3.0 * holdTimeSelected));
-            setHoldTimeMinAcceptable(holdTimeSelected);
+            setKeepaliveTime((int) (1.0 / 3.0 * holdTimeMin));
+            setHoldTimeMinAcceptable(holdTimeMin);
         } else {
-            disableKeepAliveMechanismConnectionTermination(holdTimeMin, holdTimeMinAcc, holdTimeMax);
+            //last param is ZERO because received max is insignificant
+            disableKeepAliveMechanismConnectionTermination(holdTimeMin, holdTimeMinAcc, 0);
             return;
         }
 
