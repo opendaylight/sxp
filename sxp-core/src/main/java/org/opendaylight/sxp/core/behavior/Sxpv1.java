@@ -57,6 +57,10 @@ public class Sxpv1 implements Strategy {
         ByteBuf message = LegacyMessageFactory.createOpen(connection.getVersion(), connectionMode);
         LOG.info("{} Sent OPEN {}", connection, MessageFactory.toString(message));
         ctx.writeAndFlush(message);
+        if(connection.isStateDeleteHoldDown()) {
+            connection.setReconciliationTimer();
+        }
+        connection.setStatePendingOn();
     }
 
     @Override
@@ -88,12 +92,10 @@ public class Sxpv1 implements Strategy {
         if (message instanceof OpenMessageLegacy) {
             OpenMessageLegacy _message = (OpenMessageLegacy) message;
             if (_message.getType().equals(MessageType.Open)) {
-                // Check the SXP version. If not compatible then send error
-                // response and terminate the connection.
-                if (!connection.getVersion().equals(_message.getVersion())) {
-                    throw new ErrorMessageException(ErrorCodeNonExtended.VersionMismatch,
-                            new IncompatiblePeerVersionException(connection.getVersion(), _message.getVersion()));
-                }
+                // Version negotiation to start connection on correct version.
+                Version version = Version.forValue(
+                        Math.min(connection.getVersion().getIntValue(),
+                                _message.getVersion().getIntValue()));
 
                 // The SXP-mode, if not configured explicitly within the device,
                 // is set to the opposite value of the one received in the OPEN
@@ -109,12 +111,15 @@ public class Sxpv1 implements Strategy {
                 }
                 // Close the dual channels.
                 connection.closeChannelHandlerContextComplements(ctx);
+                if(connection.isStateDeleteHoldDown()) {
+                    connection.setReconciliationTimer();
+                }
                 // Set connection state.
                 connection.setStateOn();
                 // Starts sending IP-SGT mappings using the SXP connection.
                 LOG.info("{} Connected", connection);
                 // Send the OPEN_RESP message with the chosen SXP version.
-                ByteBuf response = LegacyMessageFactory.createOpenResp(connection.getVersion(), connection.getMode());
+                ByteBuf response = LegacyMessageFactory.createOpenResp(version, connection.getMode());
                 LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
                 ctx.writeAndFlush(response);
                 return;

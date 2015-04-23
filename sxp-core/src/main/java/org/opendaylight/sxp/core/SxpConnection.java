@@ -787,7 +787,7 @@ public class SxpConnection {
         connectionBuilder.setPurgeAllMessageReceived(true);
     }
 
-    private void setReconciliationTimer() throws Exception {
+    public void setReconciliationTimer() throws Exception {
         if (isStateDeleteHoldDown()) {
             if (getReconciliationTime() > 0) {
 
