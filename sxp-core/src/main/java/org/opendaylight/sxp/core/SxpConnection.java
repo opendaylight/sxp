@@ -887,12 +887,14 @@ public class SxpConnection {
 
         ManagedTimer timer = org.opendaylight.sxp.util.time.connection.TimerFactory.createTimer(timerType, period,
                 owner, this, ctx);
-        this.timers.put(timerType, timer);
-        return timer;
+        return this.setTimer(timerType,timer);
     }
 
     public ManagedTimer setTimer(TimerType timerType, ManagedTimer timer) {
-        this.timers.put(timerType, timer);
+        ManagedTimer t = this.timers.put(timerType, timer);
+        if( t!=null ){
+            t.stop();
+        }
         return timer;
     }
 

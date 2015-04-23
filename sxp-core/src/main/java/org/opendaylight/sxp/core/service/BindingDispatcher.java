@@ -86,12 +86,12 @@ public final class BindingDispatcher extends Service {
                         LOG.error(connection + " {}", e.getClass().getSimpleName());
                         continue;
                     }
-                    try {
-                        ctKeepAlive.start();
-                    } catch (Exception e) {
-                        LOG.warn(connection + " Connection keepalive timer start | {} | [done='{}']", e.getClass()
-                                .getSimpleName(), ctKeepAlive.isDone());
-                    }
+                }
+                try {
+                    ctKeepAlive.start();
+                } catch (Exception e) {
+                    LOG.warn(connection + " Connection keepalive timer start | {} | [done='{}']", e.getClass()
+                            .getSimpleName(), ctKeepAlive.isDone());
                 }
             }
         }
