@@ -40,7 +40,7 @@ public final class Configuration {
 
     public static final int NETTY_CONNECT_TIMEOUT_MILLIS = 15000;
 
-    public static final int NETTY_HANDLER_TIMEOUT_MILLIS = 10000;
+    public static final int NETTY_HANDLER_TIMEOUT_MILLIS = 0;
 
     public static final boolean NETTY_LOGGER_HANDLER = false;
 

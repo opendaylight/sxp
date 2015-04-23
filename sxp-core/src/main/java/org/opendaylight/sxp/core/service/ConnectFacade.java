@@ -34,6 +34,8 @@ import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
@@ -94,7 +96,9 @@ public class ConnectFacade {
         bootstrap.handler(new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
-                ch.pipeline().addLast(new ReadTimeoutHandler(Configuration.NETTY_HANDLER_TIMEOUT_MILLIS));
+                if(Configuration.NETTY_HANDLER_TIMEOUT_MILLIS >0) {
+                    ch.pipeline().addLast(new ReadTimeoutHandler(Configuration.NETTY_HANDLER_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
+                }
                 ch.pipeline().addLast(hf.getDecoders());
                 ch.pipeline().addLast(hf.getEncoders());
             }
