@@ -33,9 +33,9 @@
 					
 					<sxp-controller>
 						<sxp-node>
-							<name>R10</name>
+							<!--name></name-->
 							<enabled>true</enabled>
-							<node-id>0.0.0.10</node-id>
+							<node-id>127.0.0.1</node-id>
 							<!--source-ip></source-ip-->
 							<tcp-port>64999</tcp-port>
 							<version>Version4</version>
@@ -44,78 +44,9 @@
 							</security--> 
 							<mapping-expanded>5</mapping-expanded>
 							<description>ODL SXP Controller</description>
-							
+
 							<!-- Binding format: prefix/length -->
-							<master-database>
-								<binding>
-									<sgt>10000</sgt>
-									<ip-prefix>192.168.0.1/32</ip-prefix>
-								</binding>
-								<binding>
-									<sgt>20000</sgt>
-									<ip-prefix>2020::1/64</ip-prefix>
-									<ip-prefix>10.10.10.10/29</ip-prefix>
-								</binding>
-								<binding>
-									<sgt>30000</sgt>
-									<ip-prefix>10.10.10.0/30</ip-prefix>
-								</binding>
-								<binding>
-									<sgt>40000</sgt>
-									<ip-prefix>10.11.11.0/29</ip-prefix>
-								</binding>
-								<binding>
-									<sgt>65000</sgt>
-									<ip-prefix>172.168.1.0/28</ip-prefix>
-								</binding>
-								
-								<!--vpn>
-								 	<name>vpn1</name>
-									<binding>
-										<sgt>10000</sgt>
-										<ip-prefix>192.168.0.1/32</ip-prefix>
-									</binding>
-									<binding>
-										<sgt>20000</sgt>
-										<ip-prefix>2020::1/64</ip-prefix>
-										<ip-prefix>10.10.10.10/29</ip-prefix>
-									</binding>
-									<binding>
-										<sgt>30000</sgt>
-										<ip-prefix>10.10.10.0/30</ip-prefix>
-									</binding>
-									<binding>
-										<sgt>40000</sgt>
-										<ip-prefix>10.11.11.0/29</ip-prefix>
-									</binding>
-									<binding>
-										<sgt>65000</sgt>
-										<ip-prefix>172.168.1.0/28</ip-prefix>
-									</binding>
-								</vpn-->
-							</master-database>
-							
-							<connections> 
-								<connection>
-									<!--vpn>vpn1</vpn-->
-									<peer-address>10.61.73.222</peer-address>
-									<!--source-ip></source-ip-->
-									<tcp-port>64999</tcp-port>
-									<!-- Password setup: Default | None -->
-									<password>Default</password>
-									<!-- Mode: Speaker/Listener/Both -->
-									<mode>Listener</mode>
-									<version>Version4</version>
-									<description>Connection to R2</description>
-									<!-- Timers setup: 0 to disable specific timer usability, the default value will be used -->
-									<connection-timers>
-										<!-- Speaker -->
-										<hold-time-min-acceptable>45</hold-time-min-acceptable>
-										<keep-alive-time>30</keep-alive-time>
-									</connection-timers>
-								</connection>
-							</connections>
-							
+							<master-database></master-database>
 							<!-- Timers setup: 0 to disable specific timer usability -->
 							<timers>
 								<!-- Common -->
@@ -129,7 +60,6 @@
 								<hold-time-max>180</hold-time-max>
 							</timers>
 						</sxp-node>
-					
 					</sxp-controller>
 				</module>
 			</modules>
