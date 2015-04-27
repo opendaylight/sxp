@@ -198,10 +198,6 @@ public class LegacyMessageFactory extends MessageFactory {
         messageBuilder.setPayload(payload);
 
         Version version = Version.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(payload, 0, 4)));
-        if (!isLegacy(version)) {
-            throw new ErrorMessageException(ErrorCodeNonExtended.VersionMismatch, new IncompatiblePeerVersionException(
-                    true, version));
-        }
         ConnectionMode nodeMode = ConnectionMode.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(payload, 4, 4)));
 
         messageBuilder.setVersion(version);
@@ -216,6 +212,10 @@ public class LegacyMessageFactory extends MessageFactory {
         messageBuilder.setPayload(payload);
 
         Version version = Version.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(payload, 0, 4)));
+        if (!isLegacy(version)) {
+            throw new ErrorMessageException(ErrorCodeNonExtended.VersionMismatch, new IncompatiblePeerVersionException(
+                    true, version));
+        }
         ConnectionMode nodeMode = ConnectionMode.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(payload, 4, 4)));
 
         messageBuilder.setVersion(version);
