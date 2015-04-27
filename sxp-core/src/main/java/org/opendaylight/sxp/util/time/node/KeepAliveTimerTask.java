@@ -43,6 +43,7 @@ public class KeepAliveTimerTask extends SyncTimerTask {
                 continue;
             }
             // Connection specific timer is used.
+            // TODO: Find out if we need this stuff
             if (connection.getTimer(TimerType.KeepAliveTimer) != null) {
                 continue;
             }
@@ -67,10 +68,11 @@ public class KeepAliveTimerTask extends SyncTimerTask {
                 e.printStackTrace();
                 continue;
             }
-
             ByteBuf keepalive = MessageFactory.createKeepalive();
-            LOG.info("{} Sent KEEPALIVE {}", connection, MessageFactory.toString(keepalive));
-            ctx.writeAndFlush(keepalive);
+            if(!ctx.isRemoved()){
+                LOG.info("{} Sent KEEPALIVE {}", connection, MessageFactory.toString(keepalive));
+                ctx.writeAndFlush(keepalive);
+            }else LOG.warn("{} Can not send KEEPALIVE {}", connection, MessageFactory.toString(keepalive));
         }
         done();
     }

@@ -35,11 +35,13 @@ public class KeepAliveTimerTask extends ConnectionTimerTask {
                 if (connection.getTimestampUpdateMessageExport() + getPeriod() * ManagedTimer.TIME_FACTOR <= System
                         .currentTimeMillis()) {
                     ByteBuf keepalive = MessageFactory.createKeepalive();
-                    LOG.info("{} Sent KEEPALIVE {}", connection, MessageFactory.toString(keepalive));
-                    ctx.writeAndFlush(keepalive);
+                    if(!ctx.isRemoved()) {
+                        LOG.info("{} Sent KEEPALIVE {}", connection, MessageFactory.toString(keepalive));
+                        ctx.writeAndFlush(keepalive);
+                    }else LOG.warn("{} Can not send KEEPALIVE {}", connection, MessageFactory.toString(keepalive));
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                LOG.warn("{} ERROR sending KEEPALIVE ", connection,e);
             }
         }
         done();
