@@ -274,6 +274,10 @@ public class SxpConnection {
         return destination;
     }
 
+    public InetSocketAddress getLocalAddress() {
+        return localAddress;
+    }
+
     public int getHoldTime() {
         if (connectionBuilder.getConnectionTimers() == null
                 || connectionBuilder.getConnectionTimers().getHoldTime() == null

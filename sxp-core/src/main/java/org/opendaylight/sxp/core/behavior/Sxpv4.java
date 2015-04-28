@@ -224,8 +224,8 @@ public final class Sxpv4 extends Sxpv3 {
                     // Node ID recognized.
                     SxpNodeIdAttribute peerNodeId = (SxpNodeIdAttribute) AttributeList.get(_message.getAttribute(),
                             AttributeType.SxpNodeId);
-                    if (InetAddressComparator.greaterThan(peerNodeId.getSxpNodeIdAttributes().getNodeId(),
-                            connection.getOwnerId())) {
+                    if (InetAddressComparator.greaterThan(connection.getDestination().getAddress(),
+                            connection.getLocalAddress().getAddress())) {
                         // Close the dual channel.
                         connection.closeChannelHandlerContextComplements(ctx);
 
@@ -291,8 +291,8 @@ public final class Sxpv4 extends Sxpv3 {
                     // Node ID recognized.
                     SxpNodeIdAttribute peerNodeId = (SxpNodeIdAttribute) AttributeList.get(_message.getAttribute(),
                             AttributeType.SxpNodeId);
-                    if (InetAddressComparator.greaterThan(peerNodeId.getSxpNodeIdAttributes().getNodeId(),
-                            connection.getOwnerId())) {
+                    if (InetAddressComparator.greaterThan(connection.getDestination().getAddress(),
+                            connection.getLocalAddress().getAddress())) {
 
                         if (connection.isStateDeleteHoldDown()) {
                             // Replace the existing one.
