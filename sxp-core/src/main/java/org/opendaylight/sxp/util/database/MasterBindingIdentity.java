@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.time.TimeConv;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.DateAndTime;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.SourceBuilder;
@@ -38,8 +39,8 @@ public class MasterBindingIdentity {
 
     public static List<MasterBindingIdentity> create(MasterDatabase database, boolean onlyChanged) {
         List<MasterBindingIdentity> identities = new ArrayList<>();
-        Map<String, Binding> deleted = Maps.newHashMap();
-        Multimap<String, MasterBindingIdentity> deletedReplacementCandidates = HashMultimap.create();
+        Map<DateAndTime, Binding> deleted = Maps.newHashMap();
+        Multimap<DateAndTime, MasterBindingIdentity> deletedReplacementCandidates = HashMultimap.create();
 
         if (database.getSource() != null) {
             for (Source source : database.getSource()) {
@@ -53,8 +54,7 @@ public class MasterBindingIdentity {
                                 }
 
                                 if(binding.getAction() == DatabaseAction.Delete) {
-                                    // Fixme string as key
-                                    deleted.put(new String(binding.getKey().getIpPrefix().getValue()), binding);
+                                    deleted.put(binding.getTimestamp(), binding);
                                 }
 
                                 if (!onlyChanged || changed) {
@@ -77,9 +77,8 @@ public class MasterBindingIdentity {
                                     continue;
                                 }
                                 // Add delete replacements
-                                final String key = new String(binding.getKey().getIpPrefix().getValue());
-                                if(deleted.containsKey(key)) {
-                                    deletedReplacementCandidates.put(key, new MasterBindingIdentity(binding, prefixGroup, source, true));
+                                if(!deleted.containsKey(binding.getTimestamp())) {
+                                    deletedReplacementCandidates.put(binding.getTimestamp(), new MasterBindingIdentity(binding, prefixGroup, source, true));
                                 }
                             }
                         }
@@ -89,7 +88,7 @@ public class MasterBindingIdentity {
         }
 
         ArrayList<MasterBindingIdentity> candidates;
-        for (String key : deletedReplacementCandidates.keySet()) {
+        for (DateAndTime key : deletedReplacementCandidates.keySet()) {
             candidates = Lists.newArrayList(deletedReplacementCandidates.get(key));
             Collections.sort(candidates, new Comparator<MasterBindingIdentity>() {
                 @Override
