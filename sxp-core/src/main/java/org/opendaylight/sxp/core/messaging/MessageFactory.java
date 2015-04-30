@@ -105,9 +105,9 @@ public class MessageFactory {
     private static AttributeList createOpenAttribute(Version version, ConnectionMode nodeMode, NodeId nodeID)
             throws Exception {
         AttributeList attributes = new AttributeList();
-        if (nodeMode.equals(ConnectionMode.Speaker)) {
-            attributes.add(AttributeFactory.createSxpNodeId(nodeID));
-        } else if (nodeMode.equals(ConnectionMode.Listener)) {
+        //Required attribute from v4 above
+        attributes.add(AttributeFactory.createSxpNodeId(nodeID));
+        if (nodeMode.equals(ConnectionMode.Listener)) {
             attributes.add(AttributeFactory.createCapabilities(version));
         }
         return attributes;
