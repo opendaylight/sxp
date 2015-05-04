@@ -221,40 +221,19 @@ public final class Sxpv4 extends Sxpv3 {
                  * Cisco device's implementation: Only the Speaker includes
                  * NODE_ID in OPEN message.
                  */
-                try {
-                    // Node ID recognized.
-                    SxpNodeIdAttribute peerNodeId = (SxpNodeIdAttribute) AttributeList.get(_message.getAttribute(),
-                            AttributeType.SxpNodeId);
-                    if (InetAddressComparator.greaterThan(connection.getDestination().getAddress(),
-                            connection.getLocalAddress().getAddress())) {
-                        // Close the dual channel.
-                        connection.closeChannelHandlerContextComplements(ctx);
+                if (InetAddressComparator.greaterThan(connection.getDestination().getAddress(),
+                        connection.getLocalAddress().getAddress())) {
+                    // Close the dual channel.
+                    connection.closeChannelHandlerContextComplements(ctx);
 
-                    } else if (connection.isStateDeleteHoldDown()) {
-                        // Replace the existing one.
-                        connection.closeChannelHandlerContextComplements(ctx);
-                    } else {
-                        // Close the current channel.
-                        connection.closeChannelHandlerContext(ctx);
-                        return;
-                    }
-
-                } catch (AttributeNotFoundException e) {
-                    /**
-                     * Node ID not recognized.
-                     * <p>
-                     * A case when the local node acts as a Speaker and the Peer
-                     * is a Listener (probably non-Cisco). We will respond to
-                     * the Listener created connection.
-                     * <p>
-                     * In this case only the Listener, after it receives the
-                     * following Speaker response, can decide which dual channel
-                     * will be closed. Until then all Binding Dispatcher's
-                     * parallel tasks that use channel contexts should wait.
-                     *
-                     */
+                } else if (connection.isStateDeleteHoldDown()) {
+                    // Replace the existing one.
+                    connection.closeChannelHandlerContextComplements(ctx);
+                } else if (connection.isStatePendingOn()) {
+                    // Close the current channel.
+                    connection.closeChannelHandlerContext(ctx);
+                    return;
                 }
-
                 // Setup connection parameters.
                 connection.setConnection(_message);
 
@@ -287,40 +266,21 @@ public final class Sxpv4 extends Sxpv3 {
                     return;
                 }
 
-                try {
-                    // Node ID recognized.
-                    SxpNodeIdAttribute peerNodeId = (SxpNodeIdAttribute) AttributeList.get(_message.getAttribute(),
-                            AttributeType.SxpNodeId);
-                    if (InetAddressComparator.greaterThan(connection.getDestination().getAddress(),
-                            connection.getLocalAddress().getAddress())) {
+                if (InetAddressComparator.greaterThan(connection.getDestination().getAddress(),
+                        connection.getLocalAddress().getAddress())) {
 
-                        if (connection.isStateDeleteHoldDown()) {
-                            // Replace the existing one.
-                            connection.closeChannelHandlerContextComplements(ctx);
-                        } else {
-                            // Close the current channel.
-                            connection.closeChannelHandlerContext(ctx);
-                            return;
-                        }
-                    } else {
-                        // Close the dual channel.
+                    if (connection.isStateDeleteHoldDown()) {
+                        // Replace the existing one.
                         connection.closeChannelHandlerContextComplements(ctx);
+                    } else if (connection.isStateOn()) {
+                        // Close the current channel.
+                        connection.closeChannelHandlerContext(ctx);
+                        return;
                     }
-
-                } catch (AttributeNotFoundException e) {
-                    /**
-                     * Node ID not recognized.
-                     * <p>
-                     * A case when the local node acts as a Speaker and the Peer
-                     * is a Listener (probably non-Cisco). We received a
-                     * response from the Listener so we will use finally the
-                     * Speaker created connection (our own).
-                     * <p>
-                     * Listener already decided what channel context to be used.
-                     */
+                } else {
+                    // Close the dual channel.
                     connection.closeChannelHandlerContextComplements(ctx);
                 }
-
                 // Setup connection parameters.
                 connection.setConnection(_message);
                 LOG.info("{} Connected", connection);
