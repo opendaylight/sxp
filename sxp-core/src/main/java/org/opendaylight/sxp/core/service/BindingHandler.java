@@ -66,6 +66,7 @@ import org.slf4j.LoggerFactory;
 public final class BindingHandler extends Service {
 
     protected static final Logger LOG = LoggerFactory.getLogger(BindingHandler.class.getName());
+    private final Object lock = new Object();
 
     private static List<PathGroup> getPathGroups(String updateMessage, List<PathGroup> pathGroups,
             List<NodeId> peerSequence, List<PrefixGroup> prefixGroups) throws Exception {
@@ -429,12 +430,9 @@ public final class BindingHandler extends Service {
 
     @Override
     public void cancel() {
-        super.cancel();
-
-        try {
-            processUpdateMessage((UpdateMessage) null, null);
-        } catch (Exception e) {
-            e.printStackTrace();
+        synchronized (lock) {
+            super.cancel();
+            lock.notify();
         }
     }
 
@@ -586,11 +584,17 @@ public final class BindingHandler extends Service {
     }
 
     public void processUpdateMessage(UpdateMessage message, SxpConnection connection) {
-        updateNotificationQueue.add(UpdateNotification.create(message, connection));
+        synchronized (lock) {
+            updateNotificationQueue.add(UpdateNotification.create(message, connection));
+            lock.notify();
+        }
     }
 
     public void processUpdateMessage(UpdateMessageLegacy message, SxpConnection connection) {
-        updateLegacyNotificationQueue.add(UpdateLegacyNotification.create(message, connection));
+        synchronized (lock) {
+            updateLegacyNotificationQueue.add(UpdateLegacyNotification.create(message, connection));
+            lock.notify();
+        }
     }
 
     private void processUpdateNotification(UpdateNotification updateNotification, ManagedTimer ntHoldTimer) {
@@ -677,45 +681,33 @@ public final class BindingHandler extends Service {
         LOG.debug(owner + " Starting {}", getClass().getSimpleName());
 
         List<SxpConnection> connections;
-        UpdateNotification updateNotification = null;
-        UpdateLegacyNotification updateLegacyNotification = null;
 
         ManagedTimer ntHoldTimer = owner.getTimer(TimerType.HoldTimer);
         while (!finished) {
-            try {
-                Thread.sleep(THREAD_DELAY);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                break;
+            synchronized (lock) {
+                if (updateNotificationQueue.isEmpty() && updateLegacyNotificationQueue.isEmpty()) {
+                    try {
+                        lock.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
-
-            if (!owner.isEnabled()) {
+            if (finished) {
+                break;
+            } else if (!owner.isEnabled()) {
                 continue;
             } else if (!updateNotificationQueue.isEmpty()) {
-                try {
+                UpdateNotification updateNotification = null;
+                synchronized (lock) {
                     updateNotification = updateNotificationQueue.remove(0);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    continue;
                 }
-                // Service shutdown.
-                if (updateNotification.getMessage() == null || updateNotification.getConnection() == null) {
-                    break;
-                }
-
                 processUpdateNotification(updateNotification, ntHoldTimer);
             } else if (!updateLegacyNotificationQueue.isEmpty()) {
-                try {
+                UpdateLegacyNotification updateLegacyNotification = null;
+                synchronized (lock) {
                     updateLegacyNotification = updateLegacyNotificationQueue.remove(0);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    continue;
                 }
-                // Service shutdown.
-                if (updateLegacyNotification.getMessage() == null || updateLegacyNotification.getConnection() == null) {
-                    break;
-                }
-
                 processUpdateLegacyNotification(updateLegacyNotification);
             }
 
