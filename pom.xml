@@ -359,38 +359,4 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <!-- Please follow recommended for ~/.m2/settings.xml
-      https://wiki.opendaylight.org/view/GettingStarted:Development_Environment_Setup#Edit_your_.7E.2F.m2.2Fsettings.xml
-    -->
-    <!--repositories>
-        <repository>
-            <id>opendaylight-release</id>
-            <name>opendaylight-release</name>
-            <url>http://nexus.opendaylight.org/content/repositories/opendaylight.release/</url>
-        </repository>
-        <repository>
-            <id>opendaylight-snapshot</id>
-            <name>opendaylight-snapshot</name>
-            <url>http://nexus.opendaylight.org/content/repositories/opendaylight.snapshot/</url>
-        </repository>
-        <repository>
-            <id>swt-repo</id>
-            <url>https://swt-repo.googlecode.com/svn/repo/</url>
-        </repository>
-    </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>opendaylight-release</id>
-            <name>opendaylight-release</name>
-            <url>http://nexus.opendaylight.org/content/repositories/opendaylight.release/</url>
-        </pluginRepository>
-        <pluginRepository>
-            <id>opendaylight-snapshot</id>
-            <name>opendaylight-snapshot</name>
-            <url>http://nexus.opendaylight.org/content/repositories/opendaylight.snapshot/</url>
-        </pluginRepository>
-    </pluginRepositories-->
-
 </project>
