@@ -25,11 +25,13 @@ public class DeleteHoldDownTimerTask extends ConnectionTimerTask {
 
     @Override
     protected void performAction() {
-        LOG.info(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
-        try {
-            connection.purgeBindings();
-        } catch (Exception e) {
-            LOG.warn(owner + " {} {} | {}", getClass().getSimpleName(), e.getClass().getSimpleName(), e.getMessage());
+        if (connection.isStateDeleteHoldDown()) {
+            LOG.info(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
+            try {
+                connection.purgeBindings();
+            } catch (Exception e) {
+                LOG.warn(owner + " {} {} | {}", getClass().getSimpleName(), e.getClass().getSimpleName(), e.getMessage());
+            }
         }
         done();
     }

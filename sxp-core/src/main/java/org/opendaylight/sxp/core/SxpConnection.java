@@ -936,6 +936,14 @@ public class SxpConnection {
     }
 
     public void shutdown() {
+        if (isModeListener()){
+            try {
+                LOG.info("{} PURGE bindings ", this);
+                purgeBindings();
+            } catch (Exception e) {
+                LOG.error(this + " Shutdown connection | {} | ", e.getClass().getSimpleName(), e);
+            }
+        }
         if (isModeSpeaker()) {
             ByteBuf message = MessageFactory.createPurgeAll();
             LOG.info("{} Sending PURGEALL {}", this, MessageFactory.toString(message));
@@ -947,7 +955,7 @@ public class SxpConnection {
                     getChannelHandlerContext().writeAndFlush(message);
                 }
             } catch (Exception e) {
-                LOG.error(this + " Shutdown connection | {} | {}", e.getClass().getSimpleName(), e.getMessage());
+                LOG.error(this + " Shutdown connection | {} | ", e.getClass().getSimpleName(), e);
             }
         }
         setStateOff();
