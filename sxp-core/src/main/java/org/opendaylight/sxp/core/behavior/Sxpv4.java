@@ -187,13 +187,14 @@ public final class Sxpv4 extends Sxpv3 {
 
                     if (_message.getSxpMode().equals(ConnectionMode.Listener)) {
                         if (!connection.isBidirectionalBoth()) {
-                            ByteBuf response = composeOpenRespHoldTimeMessage(connection, _message,
-                                    ConnectionMode.Speaker);
-                            LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
-                            ctx.writeAndFlush(response);
-
                             connection.markChannelHandlerContext(ctx, ChannelHandlerContextType.SpeakerContext);
                             connection.setConnectionSpeakerPart(_message);
+
+                            ByteBuf
+                                    response =
+                                    composeOpenRespHoldTimeMessage(connection, _message, ConnectionMode.Speaker);
+                            LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
+                            ctx.writeAndFlush(response);
                         }
 
                     } else if (_message.getSxpMode().equals(ConnectionMode.Speaker)) {
