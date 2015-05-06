@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3aa0d159_60d99f82",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/service/BindingHandler.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 587,
+      "author": {
+        "id": 84
+      },
+      "writtenOn": "2015-05-06T07:38:51Z",
+      "side": 1,
+      "message": "Wouldnt it be better to use a blocking queue instead ? You could avoid using a dedicated lock object.\n\nOne problem could be waiting for 2 blocking queues at the same time in the run method, but the 2 queues could be merged into one. If the notification and legacy notification have no super class/interface in common, just use Object type and do instanceof checks in run().",
+      "revId": "037d1782a865f14df5fb566d33426053bea961c0",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
