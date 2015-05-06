@@ -8,11 +8,6 @@
 
 package org.opendaylight.sxp.core.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
@@ -29,12 +24,17 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.SourceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public final class BindingManager extends Service {
 
@@ -99,79 +99,52 @@ public final class BindingManager extends Service {
 
     }
 
-    private void databaseArbitration(SxpDatabaseInf database) throws Exception {
+    private void databaseArbitration(List<SxpBindingIdentity> bindingIdentities) throws Exception {
+        Map<String, SxpBindingIdentity> biMap = new HashMap<>();
+
+        for (SxpBindingIdentity bindingIdentity : bindingIdentities) {
+            String key = new String(bindingIdentity.getBinding().getIpPrefix().getValue());
+            bindingIdentity.getBinding().isCleanUp();
+            if (!biMap.containsKey(key)) {
+                biMap.put(key, bindingIdentity);
+                continue;
+            }
+
+            SxpBindingIdentity temp = biMap.get(key);
+
+            int pathLength1 = NodeIdConv.getPeerSequence(temp.getPathGroup().getPeerSequence()).size();
+            int pathLength2 = NodeIdConv.getPeerSequence(bindingIdentity.getPathGroup().getPeerSequence()).size();
+
+            if (pathLength1 > pathLength2) {
+                biMap.put(key, bindingIdentity);
+                continue;
+            } else if (pathLength1 == pathLength2) {
+                Binding binding1 = temp.getBinding();
+                Binding binding2 = bindingIdentity.getBinding();
+
+                if (TimeConv.toLong(binding1.getTimestamp()) < TimeConv.toLong(binding2.getTimestamp())) {
+                    biMap.put(key, bindingIdentity);
+                }
+            }
+        }
         List<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup> masterPrefixGroupsContributed = new ArrayList<>();
 
         // Through all bindings in the arbitrated database: Find a related
         // contributed binding to each arbitrated binding.
-        for (SxpBindingIdentity bindingItentity : database.readBindings()) {
-            // Already processed.
-            if (contains(masterPrefixGroupsContributed, bindingItentity.getPrefixGroup().getSgt(), bindingItentity
-                    .getBinding().getIpPrefix())) {
-                continue;
-            }
-
-            // Get prefix group if already created.
+        for (SxpBindingIdentity bindingIdentity : biMap.values()) {
             org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup prefixGroup = getPrefixGroup(
-                    masterPrefixGroupsContributed, bindingItentity);
+                    masterPrefixGroupsContributed, bindingIdentity);
 
             BindingBuilder bindingContributedBuilder = new BindingBuilder();
             bindingContributedBuilder.setAction(DatabaseAction.Add);
             bindingContributedBuilder.setChanged(true);
-            bindingContributedBuilder.setIpPrefix(bindingItentity.getBinding().getIpPrefix());
-            bindingContributedBuilder.setPeerSequence(NodeIdConv.createPeerSequence(null));
+            bindingContributedBuilder.setIpPrefix(bindingIdentity.getBinding().getIpPrefix());
+            bindingContributedBuilder.setPeerSequence(bindingIdentity.getPathGroup().getPeerSequence());
             bindingContributedBuilder.setSources(NodeIdConv.createSources(null));
-            bindingContributedBuilder.setTimestamp(bindingItentity.getBinding().getTimestamp());
 
-            // Find binding with the short path or the best timestamp.
-            int pathLength = -1;
+            bindingContributedBuilder.setTimestamp(bindingIdentity.getBinding().getTimestamp());
+            prefixGroup.getBinding().add(bindingContributedBuilder.build());
 
-            if (database.get().getPathGroup() != null) {
-                for (PathGroup _pathGroup : database.get().getPathGroup()) {
-                    if (_pathGroup.getPrefixGroup() != null) {
-                        for (PrefixGroup _prefixGroup : _pathGroup.getPrefixGroup()) {
-                            boolean contains = false;
-                            if (_prefixGroup.getBinding() != null) {
-                                for (Binding _binding : _prefixGroup.getBinding()) {
-                                    if (IpPrefixConv.equalTo(_binding.getIpPrefix(), bindingItentity.getBinding()
-                                            .getIpPrefix())) {
-                                        contains = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (!contains) {
-                                continue;
-                            }
-                            bindingContributedBuilder.setPeerSequence(_pathGroup.getPeerSequence());
-                            bindingContributedBuilder.setSources(NodeIdConv.createSources(null));
-                            // Shortest Path rule.
-                            int _pathLength = NodeIdConv.getPeerSequence(_pathGroup.getPeerSequence()).size();
-                            if (_pathLength < pathLength || pathLength == -1) {
-                                pathLength = _pathLength;
-                            }
-                            // Test - Most Recently Received rule.
-                            else if (_pathLength == pathLength) {
-                                for (Binding _binding : _prefixGroup.getBinding()) {
-                                    if (IpPrefixConv.equalTo(_binding.getIpPrefix(),
-                                            bindingContributedBuilder.getIpPrefix())
-                                            && TimeConv.toLong(_binding.getTimestamp()) < TimeConv
-                                                    .toLong(bindingContributedBuilder.getTimestamp())) {
-                                        bindingContributedBuilder.setPeerSequence(_pathGroup.getPeerSequence());
-                                        bindingContributedBuilder.setSources(NodeIdConv.createSources(null));
-                                        bindingContributedBuilder.setIpPrefix(_binding.getIpPrefix());
-                                        //was generating duplicities of previously added timestamps
-                                        //bindingContributedBuilder.setTimestamp(_binding.getTimestamp());
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            if (pathLength != -1) {
-                prefixGroup.getBinding().add(bindingContributedBuilder.build());
-            }
         }
 
         // Detect sources for each unique binding.
@@ -180,10 +153,10 @@ public final class BindingManager extends Service {
                 for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding binding : prefixGroup
                         .getBinding()) {
 
-                    for (SxpBindingIdentity bindingItentity : database.readBindings()) {
-                        if (IpPrefixConv.equalTo(bindingItentity.getBinding().getIpPrefix(), binding.getIpPrefix())) {
-                            List<NodeId> peerSequence = NodeIdConv.getPeerSequence(bindingItentity.getPathGroup()
-                                    .getPeerSequence());
+                    for (SxpBindingIdentity bindingIdentity : biMap.values()) {
+                        if (IpPrefixConv.equalTo(bindingIdentity.getBinding().getIpPrefix(), binding.getIpPrefix())) {
+                            List<NodeId> peerSequence = NodeIdConv.getPeerSequence(
+                                    bindingIdentity.getPathGroup().getPeerSequence());
                             // Add the last one item.
                             if (peerSequence.size() > 0) {
                                 NodeId sourceId = peerSequence.get(peerSequence.size() - 1);
@@ -274,18 +247,18 @@ public final class BindingManager extends Service {
             queue.clear();
             try {
                 SxpDatabaseInf sxpDatabase = getBindingSxpDatabase();
+                List<SxpBindingIdentity> bindingIdentities;
                 synchronized (sxpDatabase) {
-                    databaseArbitration(sxpDatabase);
+                    bindingIdentities = sxpDatabase.readBindings();
+                }
+                databaseArbitration(bindingIdentities);
 
-                    // Listener databases clearing: Remove deleted bindings.
-                    if (!owner.isSvcBindingDispatcherStarted()) {
-                        MasterDatabaseProvider masterDatabase = getBindingMasterDatabase();
-                        synchronized (masterDatabase) {
-                            masterDatabase.purgeAllDeletedBindings();
-                        }
+                // Listener databases clearing: Remove deleted bindings.
+                if (!owner.isSvcBindingDispatcherStarted()) {
+                    MasterDatabaseProvider masterDatabase = getBindingMasterDatabase();
+                    synchronized (masterDatabase) {
+                        masterDatabase.purgeAllDeletedBindings();
                     }
-
-                    // LOG.info(owner + " {}", sxpDatabase);
                 }
                 owner.setSvcBindingDispatcherDispatch();
 
