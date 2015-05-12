@@ -112,7 +112,9 @@ public class MasterBindingIdentity {
 
             // Adding the most fittest binding replacement for deleted IP
             if(!candidates.isEmpty()) {
-                identities.add(candidates.get(0));
+                // TODO: retest if it is necessary because right now  it looks like it is not
+                // Temporally disabled => making duplicity in entries to be added.
+                //identities.add(candidates.get(0));
             }
         }
         return identities;

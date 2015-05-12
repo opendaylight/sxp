@@ -74,7 +74,8 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
                                         boolean contain3 = false;
                                         for (Binding binding : prefixGroup.getBinding()) {
                                             if (IpPrefixConv.equalTo(binding.getIpPrefix(),
-                                                    bindingIdentity.binding.getIpPrefix())) {
+                                                    bindingIdentity.binding.getIpPrefix()) && binding.getPeerSequence()
+                                                    .equals(bindingIdentity.getBinding().getPeerSequence())) {
                                                 contain3 = true;
                                                 break;
                                             }
