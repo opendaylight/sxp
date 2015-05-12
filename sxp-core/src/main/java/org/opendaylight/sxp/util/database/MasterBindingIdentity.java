@@ -77,9 +77,10 @@ public class MasterBindingIdentity {
                                     continue;
                                 }
                                 // Add delete replacements
-                                final String key = new String(binding.getKey().getIpPrefix().getValue());
-                                if(deleted.containsKey(key)) {
-                                    deletedReplacementCandidates.put(key, new MasterBindingIdentity(binding, prefixGroup, source, true));
+                                if(!deleted.isEmpty()) {
+                                    deletedReplacementCandidates.put(
+                                            new String(binding.getKey().getIpPrefix().getValue()),
+                                            new MasterBindingIdentity(binding, prefixGroup, source, true));
                                 }
                             }
                         }
