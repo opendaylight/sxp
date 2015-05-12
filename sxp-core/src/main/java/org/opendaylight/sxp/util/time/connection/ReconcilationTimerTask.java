@@ -25,11 +25,14 @@ public class ReconcilationTimerTask extends ConnectionTimerTask {
 
     @Override
     protected void performAction() {
-        LOG.info(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
-        try {
-            connection.cleanUpBindings();
-        } catch (Exception e) {
-            LOG.warn(owner + " {} {} | {}", getClass().getSimpleName(), e.getClass().getSimpleName(), e.getMessage());
+        if (connection.isStateOn()) {
+            LOG.info(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
+            try {
+                connection.cleanUpBindings();
+            } catch (Exception e) {
+                LOG.warn(owner + " {} {} | {}", getClass().getSimpleName(), e.getClass().getSimpleName(),
+                        e.getMessage());
+            }
         }
         done();
     }
