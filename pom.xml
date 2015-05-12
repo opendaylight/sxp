@@ -28,13 +28,7 @@
 
   <properties>
     <!-- Optional TODO: Rename your configfile to taste -->
-    <configfile1local>12-sxp-controller-1local.xml</configfile1local>
-    <configfile1remote>12-sxp-controller-1remote.xml</configfile1remote>
-    <configfile2local>12-sxp-controller-2local.xml</configfile2local>
-    <configfiledevices>12-sxp-controller-devices.xml</configfiledevices>
-    <configfilenag>12-sxp-controller-nag.xml</configfilenag>
-   
-    <configfilebase>${configfiledevices}</configfilebase>
+    <configfilebase>22-sxp-controller-one-node.xml</configfilebase>
                          
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <packaging-suffix>jar</packaging-suffix>

@@ -32,7 +32,7 @@
   <packaging>jar</packaging>
   <properties>
       <!-- Optional TODO: Rename your configfile to taste -->
-      <!--configfiledevices>12-sxp-controller-devices.xml</configfiledevices>
+      <!--configfiledevices>22-sxp-controller-one-node.xml</configfiledevices>
       <configfilelocal>12-sxp-controller-local.xml</configfilelocal>
       <configfilenag>12-sxp-controller-nag.xml</configfilenag-->
   </properties>
@@ -51,29 +51,9 @@
             <configuration>
               <artifacts>
                 <artifact>
-                  <file>${project.build.directory}/classes/${configfile1local}</file>
+                  <file>${project.build.directory}/classes/${configfilebase}</file>
                   <type>xml</type>
-                  <classifier>${configfile1local}</classifier>
-                </artifact>
-                <artifact>
-                  <file>${project.build.directory}/classes/${configfile1remote}</file>
-                  <type>xml</type>
-                  <classifier>${configfile1remote}</classifier>
-                </artifact>
-                <artifact>
-                  <file>${project.build.directory}/classes/${configfile2local}</file>
-                  <type>xml</type>
-                  <classifier>${configfile2local}</classifier>
-                </artifact>
-                <artifact>
-                  <file>${project.build.directory}/classes/${configfiledevices}</file>
-                  <type>xml</type>
-                  <classifier>${configfiledevices}</classifier>
-                </artifact>
-                <artifact>
-                  <file>${project.build.directory}/classes/${configfilenag}</file>
-                  <type>xml</type>
-                  <classifier>${configfilenag}</classifier>
+                  <classifier>${configfilebase}</classifier>
                 </artifact>
                 <!--
                   Optional TODO: Add additional config files

@@ -15,3 +15,5 @@ target-ide
 MANIFEST.MF
 .idea/
 .checkstyle
+*.iml
+
