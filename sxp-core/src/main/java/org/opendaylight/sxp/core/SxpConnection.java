@@ -43,15 +43,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerTyp
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.ConnectionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorSubCode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.OpenMessage;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.*;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.HoldTimeAttribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.SxpNodeIdAttribute;
 import org.slf4j.Logger;
@@ -617,13 +609,24 @@ public class SxpConnection {
             }
         }
         // The negotiation succeeds?
-        if (holdTimeMin < holdTimeMax && holdTimeMinAcc <= holdTimeMax) {
-            int holdTimeSelected = Math.max(holdTimeMinAcc, holdTimeMin);
-            setHoldTime(holdTimeSelected);
-            setHoldTimeMin(holdTimeSelected);
-        } else {
-            disableKeepAliveMechanismConnectionTermination(holdTimeMin, holdTimeMinAcc, holdTimeMax);
-            return;
+        if (message.getType().equals(MessageType.Open)) {
+            if (holdTimeMinAcc < holdTimeMin) {
+                setHoldTimeMin(holdTimeMinAcc);
+            }
+            if (holdTimeMinAcc > holdTimeMax) {
+                disableKeepAliveMechanismConnectionTermination(holdTimeMin, holdTimeMinAcc, holdTimeMax);
+                return;
+            } else if (holdTimeMinAcc >= holdTimeMin && holdTimeMinAcc <= holdTimeMax) {
+                setHoldTime(holdTimeMinAcc);
+                setHoldTimeMin(holdTimeMinAcc);
+            }
+        } else if (message.getType().equals(MessageType.OpenResp)) {
+            if (holdTimeMinAcc <= holdTimeMax && holdTimeMinAcc >= holdTimeMin) {
+                setHoldTime(holdTimeMinAcc);
+            } else {
+                disableKeepAliveMechanismConnectionTermination(holdTimeMin, holdTimeMinAcc, holdTimeMax);
+                return;
+            }
         }
 
         initializeTimers(ConnectionMode.Listener);
@@ -669,6 +672,7 @@ public class SxpConnection {
 
         // Peer parameters.
         int holdTimeMin = attHoldTime.getHoldTimeAttributes().getHoldTimeMinValue();
+        int holdTimeMax = attHoldTime.getHoldTimeAttributes().getHoldTimeMaxValue();
         // Keep-alive mechanism is not used.
         if (holdTimeMin == 0) {
             disableKeepAliveMechanism("Minimum hold time value set to ZERO ");
@@ -689,14 +693,22 @@ public class SxpConnection {
             }
         }
         // The negotiation succeeds?
-        if ( holdTimeMin >= holdTimeMinAcc ) {
-            // Set unless a different keep-alive time is locally configured.
-            setKeepaliveTime((int) (1.0 / 3.0 * holdTimeMin));
-            setHoldTimeMinAcceptable(holdTimeMin);
-        } else {
-            //last param is ZERO because received max is insignificant
-            disableKeepAliveMechanismConnectionTermination(holdTimeMin, holdTimeMinAcc, 0);
-            return;
+        if (message.getType().equals(MessageType.Open)) {
+            if (holdTimeMinAcc > holdTimeMax) {
+                disableKeepAliveMechanismConnectionTermination(holdTimeMin, holdTimeMinAcc, holdTimeMax);
+                return;
+            } else {
+                int holdTimeSelected = Math.max(holdTimeMin, holdTimeMinAcc);
+                setKeepaliveTime((int) (1.0 / 3.0 * holdTimeSelected));
+                setHoldTimeMinAcceptable(holdTimeSelected);
+            }
+        } else if (message.getType().equals(MessageType.OpenResp)) {
+            if (holdTimeMin < holdTimeMinAcc) {
+                disableKeepAliveMechanismConnectionTermination(holdTimeMin, holdTimeMinAcc, holdTimeMax);
+                return;
+            } else {
+                setKeepaliveTime((int) (1.0 / 3.0 * holdTimeMin));
+            }
         }
 
         initializeTimers(ConnectionMode.Speaker);
