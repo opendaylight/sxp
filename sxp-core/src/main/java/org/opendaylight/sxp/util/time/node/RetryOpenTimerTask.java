@@ -9,30 +9,28 @@
 package org.opendaylight.sxp.util.time.node;
 
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.util.time.SyncTimerTask;
+import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 
-public class RetryOpenTimerTask extends SyncTimerTask {
-    public static RetryOpenTimerTask create(SxpNode owner, int period) {
-        return new RetryOpenTimerTask(owner, period);
+public class RetryOpenTimerTask extends SxpTimerTask<Void> {
+
+    private final SxpNode owner;
+
+    public RetryOpenTimerTask(SxpNode owner, int period) {
+        super(period);
+        this.owner = owner;
     }
 
-    protected RetryOpenTimerTask(SxpNode owner, int period) {
-        super(TimerType.RetryOpenTimer, owner, period);
-    }
-
-    @Override
-    public void performAction() {
-        if (owner.getServerPort() < 1) {
-            done();
-            return;
+    @Override public Void call() throws Exception {
+        if (owner.getServerPort() >= 1) {
+            LOG.debug(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
+            try {
+                owner.openConnections();
+            } catch (Exception e) {
+                LOG.debug(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
+            }
         }
-        LOG.debug(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
-        try {
-            owner.openConnections();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        done();
+        owner.setTimer(TimerType.RetryOpenTimer, getPeriod());
+        return null;
     }
 }
