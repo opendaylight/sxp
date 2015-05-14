@@ -19,16 +19,12 @@ import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.messaging.legacy.MappingRecord;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
-import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
-import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessagePeerSequenceException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessagePrefixException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessagePrefixGroupsException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageSgtException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
-import org.opendaylight.sxp.util.time.ManagedTimer;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.DateAndTime;
@@ -39,7 +35,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.BindingBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
@@ -438,85 +433,6 @@ public final class BindingHandler extends Service {
         }
     }
 
-    private void processConnectionHoldTimer(List<SxpConnection> connections) {
-        for (SxpConnection connection : connections) {
-            if (!connection.isModeListener()) {
-                return;
-            } else if (connection.isVersion123()) {
-                continue;
-            } else if (connection.getHoldTime() <= 0) {
-                return;
-            }
-            ManagedTimer ctHoldTimer = connection.getTimer(TimerType.HoldTimer);
-            if (ctHoldTimer == null) {
-                try {
-                    ctHoldTimer = connection.setTimer(TimerType.HoldTimer, connection.getHoldTime());
-                } catch (UnknownTimerTypeException e) {
-                    LOG.warn(connection + " {} {} | {}", getClass().getSimpleName(), e.getClass().getSimpleName(),
-                            e.getMessage());
-                    cancel();
-                    return;
-                } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-                    LOG.warn(connection + " Connection hold timer | {} | Waiting", e.getClass().getSimpleName());
-                    continue;
-                }
-            }
-
-            if (!ctHoldTimer.isRunning()) {
-                if (ctHoldTimer.isDone()) {
-                    try {
-                        ctHoldTimer = connection.setTimer(TimerType.HoldTimer,
-                                org.opendaylight.sxp.util.time.connection.TimerFactory.copyTimer(ctHoldTimer));
-                    } catch (Exception e) {
-                        LOG.error(connection + " {}", e.getClass().getSimpleName());
-                        return;
-                    }
-                }
-                try {
-                    ctHoldTimer.start();
-                } catch (Exception e) {
-                    LOG.warn(connection + " Connection hold timer start | {} | [done='{}']", e.getClass()
-                            .getSimpleName(), ctHoldTimer.isDone());
-                }
-            }
-        }
-    }
-
-    private ManagedTimer processNodeHoldTimer(ManagedTimer ntHoldTimer) {
-        // Timer not used, keep-alive mechanism disabled.
-        if (owner.getHoldTime() == 0) {
-            return ntHoldTimer;
-        }
-        // Timer not defined.
-        else if (ntHoldTimer == null) {
-            try {
-                ntHoldTimer = owner.setTimer(TimerType.HoldTimer, owner.getHoldTime());
-            } catch (UnknownTimerTypeException e) {
-                LOG.warn(owner + " {} {} | {}", getClass().getSimpleName(), e.getClass().getSimpleName(),
-                        e.getMessage());
-                cancel();
-                return ntHoldTimer;
-            }
-        }
-        if (!ntHoldTimer.isRunning()) {
-            if (ntHoldTimer.isDone()) {
-                try {
-                    ntHoldTimer = org.opendaylight.sxp.util.time.node.TimerFactory.copyTimer(ntHoldTimer);
-                } catch (UnknownTimerTypeException e) {
-                    LOG.error(owner + " {}", e.getClass().getSimpleName());
-                    return ntHoldTimer;
-                }
-            }
-            try {
-                ntHoldTimer.start();
-            } catch (Exception e) {
-                LOG.warn(owner + " Node hold timer start | {} | [done='{}']", e.getClass().getSimpleName(),
-                        ntHoldTimer.isDone());
-            }
-        }
-        return ntHoldTimer;
-    }
-
     private void processUpdateLegacyNotification(UpdateLegacyNotification updateLegacyNotification) {
         // Validate message.
         try {
@@ -593,7 +509,7 @@ public final class BindingHandler extends Service {
         updateLegacyNotificationQueue.add(UpdateLegacyNotification.create(message, connection));
     }
 
-    private void processUpdateNotification(UpdateNotification updateNotification, ManagedTimer ntHoldTimer) {
+    private void processUpdateNotification(UpdateNotification updateNotification) {
         // Validate message.
         try {
             validateMessage(updateNotification.getMessage());
@@ -680,7 +596,7 @@ public final class BindingHandler extends Service {
         UpdateNotification updateNotification = null;
         UpdateLegacyNotification updateLegacyNotification = null;
 
-        ManagedTimer ntHoldTimer = owner.getTimer(TimerType.HoldTimer);
+        //ManagedTimer ntHoldTimer = owner.getTimer(TimerType.HoldTimer);
         while (!finished) {
             try {
                 Thread.sleep(THREAD_DELAY);
@@ -703,7 +619,7 @@ public final class BindingHandler extends Service {
                     break;
                 }
 
-                processUpdateNotification(updateNotification, ntHoldTimer);
+                processUpdateNotification(updateNotification);
             } else if (!updateLegacyNotificationQueue.isEmpty()) {
                 try {
                     updateLegacyNotification = updateLegacyNotificationQueue.remove(0);
@@ -718,14 +634,6 @@ public final class BindingHandler extends Service {
 
                 processUpdateLegacyNotification(updateLegacyNotification);
             }
-
-            connections = owner.getAllOnListenerConnections();
-            if (!connections.isEmpty()) {
-                // Process per-connection hold timer.
-                processConnectionHoldTimer(connections);
-            }
-            // Process default hold timer.
-            ntHoldTimer = processNodeHoldTimer(ntHoldTimer);
         }
 
         LOG.info(owner + " Shutdown {}", getClass().getSimpleName());
