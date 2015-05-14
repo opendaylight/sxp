@@ -23,9 +23,6 @@ import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
-import org.opendaylight.sxp.util.time.ManagedTimer;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,87 +46,6 @@ public final class BindingDispatcher extends Service {
 
     public void dispatch() {
         this.dispatch.set(true);
-    }
-
-    private void processConnectionKeepaliveTimer(List<SxpConnection> connections) {
-        for (SxpConnection connection : connections) {
-            if (!connection.isModeSpeaker()) {
-                continue;
-            } else if (connection.isVersion123()) {
-                continue;
-            }
-            // Timer not used, default one will be used.
-            else if (connection.getKeepaliveTime() <= 0) {
-                continue;
-            }
-            ManagedTimer ctKeepAlive = connection.getTimer(TimerType.KeepAliveTimer);
-            if (ctKeepAlive == null) {
-                try {
-                    ctKeepAlive = connection.setTimer(TimerType.KeepAliveTimer, connection.getKeepaliveTime());
-                } catch (UnknownTimerTypeException e) {
-                    LOG.warn(connection + " {} {} | {}", getClass().getSimpleName(), e.getClass().getSimpleName(),
-                            e.getMessage());
-                    cancel();
-                    continue;
-                } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-                    LOG.warn(connection + " Connection keepalive timer | {} | Waiting", e.getClass().getSimpleName());
-                    continue;
-                }
-            }
-
-            if (!ctKeepAlive.isRunning()) {
-                if (ctKeepAlive.isDone()) {
-                    try {
-                        ctKeepAlive = connection.setTimer(TimerType.KeepAliveTimer,
-                                org.opendaylight.sxp.util.time.connection.TimerFactory.copyTimer(ctKeepAlive));
-                    } catch (Exception e) {
-                        LOG.error(connection + " {}", e.getClass().getSimpleName());
-                        continue;
-                    }
-                }
-                try {
-                    ctKeepAlive.start();
-                } catch (Exception e) {
-                    LOG.warn(connection + " Connection keepalive timer start | {} | [done='{}']", e.getClass()
-                            .getSimpleName(), ctKeepAlive.isDone());
-                }
-            }
-        }
-    }
-
-    private ManagedTimer processNodeKeepaliveTimer(ManagedTimer ntKeepAlive) {
-        // Timer not used, keep-alive mechanism disabled.
-        if (owner.getKeepAliveTime() == 0) {
-            return ntKeepAlive;
-        }
-        // Timer not defined.
-        else if (ntKeepAlive == null) {
-            try {
-                ntKeepAlive = owner.setTimer(TimerType.KeepAliveTimer, owner.getKeepAliveTime());
-            } catch (UnknownTimerTypeException e) {
-                LOG.warn(owner + " {} {} | {}", getClass().getSimpleName(), e.getClass().getSimpleName(),
-                        e.getMessage());
-                cancel();
-                return ntKeepAlive;
-            }
-        }
-        if (!ntKeepAlive.isRunning()) {
-            if (ntKeepAlive.isDone()) {
-                try {
-                    ntKeepAlive = org.opendaylight.sxp.util.time.node.TimerFactory.copyTimer(ntKeepAlive);
-                } catch (UnknownTimerTypeException e) {
-                    LOG.error(owner + " {}", e.getClass().getSimpleName());
-                    return ntKeepAlive;
-                }
-            }
-            try {
-                ntKeepAlive.start();
-            } catch (Exception e) {
-                LOG.warn(owner + " Node keepalive timer start | {} | [done='{}']", e.getClass().getSimpleName(),
-                        ntKeepAlive.isDone());
-            }
-        }
-        return ntKeepAlive;
     }
 
     private void processUpdateSequence(MasterDatabaseProvider masterDatabase, List<SxpConnection> connections)
@@ -215,7 +131,6 @@ public final class BindingDispatcher extends Service {
         List<SxpConnection> connections;
         MasterDatabaseProvider masterDatabase = null;
 
-        ManagedTimer ntKeepAlive = owner.getTimer(TimerType.KeepAliveTimer);
         while (!finished) {
             try {
                 Thread.sleep(THREAD_DELAY);
@@ -310,14 +225,6 @@ public final class BindingDispatcher extends Service {
                     continue;
                 }
             }
-
-            // Process per-connection keep-alive timer.
-            if (!connections.isEmpty()) {
-                processConnectionKeepaliveTimer(connections);
-            }
-
-            // Process default keep-alive timer.
-            ntKeepAlive = processNodeKeepaliveTimer(ntKeepAlive);
         }
         LOG.info(owner + " Shutdown {}", getClass().getSimpleName());
     }

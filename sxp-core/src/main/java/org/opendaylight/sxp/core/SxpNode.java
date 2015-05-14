@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.core;
 
+import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -15,8 +16,7 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
@@ -24,7 +24,6 @@ import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.BindingManager;
 import org.opendaylight.sxp.core.service.ConnectFacade;
-import org.opendaylight.sxp.core.service.Connector;
 import org.opendaylight.sxp.core.service.Service;
 import org.opendaylight.sxp.util.Security;
 import org.opendaylight.sxp.util.database.Database;
@@ -39,8 +38,8 @@ import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.inet.Search;
-import org.opendaylight.sxp.util.time.ManagedTimer;
-import org.opendaylight.sxp.util.time.node.TimerFactory;
+import org.opendaylight.sxp.util.time.SxpTimerTask;
+import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
@@ -71,9 +70,6 @@ import org.slf4j.LoggerFactory;
  */
 public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
 
-    // private static final ExecutorService executor =
-    // Executors.newCachedThreadPool();
-
     private static final Logger LOG = LoggerFactory.getLogger(SxpNode.class.getName());
 
     /** */
@@ -81,13 +77,50 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
 
     protected static final long THREAD_DELAY = 10;
 
+    /**
+     * Create new instance of SxpNode with empty databases
+     * and default ThreadWorkers
+     *
+     * @param nodeId ID of newly created Node
+     * @param node   Node setup data
+     * @return New instance of SxpNode
+     * @throws Exception
+     */
     public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node) throws Exception {
-        return new SxpNode(nodeId, node, new MasterDatabaseImpl(), new SxpDatabaseImpl());
+        return createInstance(nodeId, node, new MasterDatabaseImpl(), new SxpDatabaseImpl());
     }
 
+    /**
+     * Create new instance of SxpNode containing provided database data
+     * and default ThreadWorkers
+     *
+     * @param nodeId         ID of newly created Node
+     * @param node           Node setup data
+     * @param masterDatabase Data which will be added to Master-DB
+     * @param sxpDatabase    Data which will be added to SXP-DB
+     * @return New instance of SxpNode
+     * @throws Exception
+     */
     public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
             SxpDatabaseProvider sxpDatabase) throws Exception {
-        return new SxpNode(nodeId, node, masterDatabase, sxpDatabase);
+        return createInstance(nodeId, node, masterDatabase, sxpDatabase, new ThreadsWorker());
+    }
+
+    /**
+     * Create new instance of SxpNode containing provided database data
+     * and custom ThreadWorkers
+     *
+     * @param nodeId         ID of newly created Node
+     * @param node           Node setup data
+     * @param masterDatabase Data which will be added to Master-DB
+     * @param sxpDatabase    Data which will be added to SXP-DB
+     * @param worker         Thread workers which will be executing task inside SxpNode
+     * @return New instance of SxpNode
+     * @throws Exception
+     */
+    public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
+            SxpDatabaseProvider sxpDatabase, ThreadsWorker worker) throws Exception {
+        return new SxpNode(nodeId, node, masterDatabase, sxpDatabase, worker);
     }
 
     protected volatile MasterDatabaseProvider _masterDatabase = null;
@@ -108,17 +141,18 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
 
     private Service svcBindingHandler, svcBindingDispatcher;
 
-    private boolean svcBindingHandlerStarted, svcBindingManagerStarted, svcBindingDispatcherStarted,
-            svcConnectorStarted;
+    private boolean svcBindingHandlerStarted, svcBindingManagerStarted, svcBindingDispatcherStarted;
 
-    private final Service svcBindingManager, svcConnector;
+    private final Service svcBindingManager;
+    private final ThreadsWorker worker;
 
     /** Common timers setup. */
-    private HashMap<TimerType, ManagedTimer> timers = new HashMap<TimerType, ManagedTimer>(6);
+    private HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(6);
 
-    public SxpNode(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
-            SxpDatabaseProvider sxpDatabase) throws Exception {
+    private SxpNode(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
+            SxpDatabaseProvider sxpDatabase,ThreadsWorker worker) throws Exception {
         super(Configuration.getConstants().getNodeConnectionsInitialSize());
+        this.worker = worker;
         this.nodeId = nodeId;
         this.nodeBuilder = new SxpNodeIdentityBuilder(node);
 
@@ -136,25 +170,10 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
         addConnections(nodeBuilder.getConnections());
 
         svcBindingManager = new BindingManager(this);
-        svcConnector = new Connector(this);
 
-        if (nodeBuilder.getTimers() != null && nodeBuilder.getTimers().getRetryOpenTime() != null
-                && nodeBuilder.getTimers().getRetryOpenTime() > 0) {
-            setTimer(TimerType.RetryOpenTimer, nodeBuilder.getTimers().getRetryOpenTime());
+        if (getRetryOpenTime() > 0) {
+            setTimer(TimerType.RetryOpenTimer, getRetryOpenTime());
         }
-        // Listener global.
-        if (nodeBuilder.getTimers() != null && nodeBuilder.getTimers().getListenerProfile() != null
-                && nodeBuilder.getTimers().getListenerProfile().getHoldTime() != null
-                && nodeBuilder.getTimers().getListenerProfile().getHoldTime() > 0) {
-            setTimer(TimerType.HoldTimer, nodeBuilder.getTimers().getListenerProfile().getHoldTime());
-        }
-        // Speaker global.
-        if (nodeBuilder.getTimers() != null && nodeBuilder.getTimers().getSpeakerProfile() != null
-                && nodeBuilder.getTimers().getSpeakerProfile().getKeepAliveTime() != null
-                && nodeBuilder.getTimers().getSpeakerProfile().getKeepAliveTime() > 0) {
-            setTimer(TimerType.KeepAliveTimer, nodeBuilder.getTimers().getSpeakerProfile().getKeepAliveTime());
-        }
-
         // Start services.
         if (isEnabled()) {
             start();
@@ -176,11 +195,9 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
             svcBindingHandler = new BindingHandler(this);
 
             if (svcBindingHandler != null && !svcBindingHandlerStarted) {
-                ExecutorService executor = Executors.newFixedThreadPool(2);
                 svcBindingHandler.reset();
-                executor.execute(svcBindingHandler);
+                worker.executeTask(svcBindingHandler);
                 svcBindingHandlerStarted = true;
-                executor.shutdown();
             }
         }
         // At least 1 Speaker is specified
@@ -190,11 +207,9 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
             svcBindingDispatcher = new BindingDispatcher(this);
 
             if (svcBindingDispatcher != null && !svcBindingDispatcherStarted) {
-                ExecutorService executor = Executors.newFixedThreadPool(2);
                 svcBindingDispatcher.reset();
-                executor.execute(svcBindingDispatcher);
+                worker.executeTask(svcBindingDispatcher);
                 svcBindingDispatcherStarted = true;
-                executor.shutdown();
             }
         }
     }
@@ -429,7 +444,7 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
         return nodeBuilder.getTcpPort().getValue();
     }
 
-    public ManagedTimer getTimer(TimerType timerType) {
+    public ListenableScheduledFuture<?> getTimer(TimerType timerType) {
         return timers.get(timerType);
     }
 
@@ -470,7 +485,6 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
             return;
         }
 
-        ExecutorService executor = Executors.newCachedThreadPool();
         final SxpNode node = this;
 
         int connectionsAllSize = size();
@@ -482,9 +496,9 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
             LOG.info(connection + " Open connection thread [Id/X/O/All=\"" + (connections.indexOf(connection) + 1)
                     + "/" + connectionsOffSize + "/" + connectionsOnSize + "/" + connectionsAllSize + "\"]");
 
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
+            worker.executeTask(new Runnable() {
+
+                @Override public void run() {
                     try {
                         connection.setStatePendingOn();
                         ConnectFacade.createClient(node, connection, handlerFactoryClient);
@@ -499,15 +513,7 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
                     }
                 }
             });
-
-            try {
-                Thread.sleep(THREAD_DELAY);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
         }
-
-        executor.shutdown();
     }
 
     public void processUpdateMessage(UpdateMessage message, SxpConnection connection) throws InterruptedException {
@@ -597,15 +603,33 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
         }
     }
 
-    public ManagedTimer setTimer(TimerType timerType, int period) throws UnknownTimerTypeException {
-        ManagedTimer timer = TimerFactory.createTimer(timerType, period, this);
-        this.timers.put(timerType, timer);
+    public ListenableScheduledFuture<?> setTimer(TimerType timerType, int period) throws UnknownTimerTypeException {
+        SxpTimerTask timer;
+        switch (timerType) {
+            case RetryOpenTimer:
+                timer = new RetryOpenTimerTask(this, period);
+                break;
+            default:
+                throw new UnknownTimerTypeException(timerType);
+        }
+        return setTimer(timerType, worker.scheduleTask(timer, timer.getPeriod(), TimeUnit.SECONDS));
+    }
+
+    public ListenableScheduledFuture<?> setTimer(TimerType timerType, ListenableScheduledFuture<?> timer) {
+        ListenableScheduledFuture<?> t = this.timers.put(timerType, timer);
+        if (t != null && !t.isDone()) {
+            t.cancel(false);
+        }
         return timer;
     }
 
-    public ManagedTimer setTimer(TimerType timerType, ManagedTimer timer) {
-        this.timers.put(timerType, timer);
-        return timer;
+    /**
+     * Gets Execution handler of current Node
+     *
+     * @return ThreadsWorker reference
+     */
+    public ThreadsWorker getWorker(){
+        return worker;
     }
 
     /**
@@ -639,10 +663,6 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
             svcBindingManager.cancel();
             svcBindingManagerStarted = false;
         }
-        if (svcConnector != null) {
-            svcConnector.cancel();
-            svcConnectorStarted = false;
-        }
         nodeBuilder.setEnabled(false);
     }
 
@@ -659,20 +679,12 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
                             e.getMessage());
                 }
             }
-
-            try {
-                Thread.sleep(THREAD_DELAY);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
         }
     }
 
     private AtomicBoolean serverChannelInit = new AtomicBoolean(false);
 
     public void start() throws Exception {
-        ExecutorService executor = Executors.newCachedThreadPool();
-
         // Put local bindings before services startup.
         MasterDatabase masterDatabaseConfiguration = nodeBuilder.getMasterDatabase();
         if (masterDatabaseConfiguration != null) {
@@ -683,26 +695,26 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
         // Speaker: Binding dispatcher service (as 1st).
         if (svcBindingDispatcher != null && !svcBindingDispatcherStarted) {
             svcBindingDispatcher.reset();
-            executor.execute(svcBindingDispatcher);
+            worker.executeTask(svcBindingDispatcher);
             svcBindingDispatcherStarted = true;
         }
         // Listener: Binding handler service.
         if (svcBindingHandler != null && !svcBindingHandlerStarted) {
             svcBindingHandler.reset();
-            executor.execute(svcBindingHandler);
+            worker.executeTask(svcBindingHandler);
             svcBindingHandlerStarted = true;
         }
         // Common: Binding manager service.
         if (svcBindingManager != null && !svcBindingManagerStarted) {
             svcBindingManager.reset();
-            executor.execute(svcBindingManager);
+            worker.executeTask(svcBindingManager);
             svcBindingManagerStarted = true;
         }
 
         final SxpNode node = this;
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
+        worker.executeTask(new Runnable() {
+
+            @Override public void run() {
                 try {
                     serverChannelInit.set(true);
                     ConnectFacade.createServer(node, getServerPort(), handlerFactoryServer);
@@ -713,14 +725,6 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
             }
         });
 
-        // Connector service.
-        if (svcConnector != null && !svcConnectorStarted) {
-            svcConnector.reset();
-            executor.execute(svcConnector);
-            svcConnectorStarted = true;
-        }
-
-        executor.shutdown();
         nodeBuilder.setEnabled(true);
     }
 

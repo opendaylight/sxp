@@ -8,31 +8,28 @@
 
 package org.opendaylight.sxp.util.time.connection;
 
-import io.netty.channel.ChannelHandlerContext;
-
 import org.opendaylight.sxp.core.SxpConnection;
-import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
-import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
+import org.opendaylight.sxp.util.time.SxpTimerTask;
 
-public class DeleteHoldDownTimerTask extends ConnectionTimerTask {
+public class DeleteHoldDownTimerTask extends SxpTimerTask<Void> {
 
-    protected DeleteHoldDownTimerTask(SxpNode owner, int period, SxpConnection connection, ChannelHandlerContext ctx)
-            throws ChannelHandlerContextNotFoundException, ChannelHandlerContextDiscrepancyException {
-        super(TimerType.DeleteHoldDownTimer, owner, period, connection, ctx);
+    private final SxpConnection connection;
+
+    public DeleteHoldDownTimerTask(SxpConnection connection, int period) {
+        super(period);
+        this.connection = connection;
     }
 
-    @Override
-    protected void performAction() {
+    @Override public Void call() throws Exception {
         if (connection.isStateDeleteHoldDown()) {
-            LOG.info(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
+            LOG.info(connection.getOwner() + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
             try {
                 connection.purgeBindings();
             } catch (Exception e) {
-                LOG.warn(owner + " {} {} | {}", getClass().getSimpleName(), e.getClass().getSimpleName(), e.getMessage());
+                LOG.warn(connection.getOwner() + " {} {} | {}", getClass().getSimpleName(),
+                        e.getClass().getSimpleName(), e.getMessage());
             }
         }
-        done();
+        return null;
     }
 }
