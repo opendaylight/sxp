@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
 public class ConnectFacade {
 
     private static HashMap<Integer, InetSocketAddress> clientUsedPorts = new HashMap<Integer, InetSocketAddress>();
-
+    private static EventLoopGroup eventLoopGroup = null;
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectFacade.class.getName());
 
     private static final Function<Map.Entry<InetSocketAddress, SxpConnection>, InetAddress> CONNECTION_ENTRY_TO_INET_ADDR = new Function<Map.Entry<InetSocketAddress, SxpConnection>, InetAddress>() {
@@ -86,9 +86,11 @@ public class ConnectFacade {
         bootstrap.option(ChannelOption.RCVBUF_ALLOCATOR, recvByteBufAllocator);
         bootstrap.option(ChannelOption.TCP_NODELAY, true);
 
-        EventLoopGroup group = new NioEventLoopGroup();
+        if (eventLoopGroup == null) {
+            eventLoopGroup = new NioEventLoopGroup();
+        }
         try {
-            bootstrap.group(group).channel(NioSocketChannel.class);
+            bootstrap.group(eventLoopGroup).channel(NioSocketChannel.class);
         } catch (final IllegalStateException e) {
             LOG.info("Not overriding channelFactory on bootstrap {} | {}", bootstrap, e.getMessage());
         }
@@ -110,14 +112,14 @@ public class ConnectFacade {
             return channel.closeFuture().sync();
         } catch (Exception e) {
             throw e;
-        } finally {
-            group.shutdownGracefully();
         }
     }
 
     public static boolean createServer(SxpNode node, int port, final HandlerFactory hf) {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        if (eventLoopGroup == null) {
+            eventLoopGroup = new NioEventLoopGroup();
+        }
         boolean result = true;
 
         try {
@@ -129,7 +131,7 @@ public class ConnectFacade {
             }
 
             try {
-                bootstrap.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class);
+                bootstrap.group(bossGroup, eventLoopGroup).channel(NioServerSocketChannel.class);
             } catch (final IllegalStateException e) {
                 LOG.info("Not overriding channelFactory on bootstrap {} | {}", bootstrap, e.getMessage());
             }
@@ -158,7 +160,6 @@ public class ConnectFacade {
             result = false;
         } finally {
             bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
         }
         return result;
 
