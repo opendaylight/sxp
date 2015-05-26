@@ -15,6 +15,7 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -69,7 +70,7 @@ import org.slf4j.LoggerFactory;
  * SGT to which an endpoint belongs can be assigned statically or dynamically,
  * and the SGT can be used as a classifier in network policies.
  */
-public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
+public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConnection> {
 
     // private static final ExecutorService executor =
     // Executors.newCachedThreadPool();
@@ -671,6 +672,7 @@ public final class SxpNode extends HashMap<InetSocketAddress, SxpConnection> {
     private AtomicBoolean serverChannelInit = new AtomicBoolean(false);
 
     public void start() throws Exception {
+        //TODO
         ExecutorService executor = Executors.newCachedThreadPool();
 
         // Put local bindings before services startup.
