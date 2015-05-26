@@ -8,37 +8,38 @@
 
 package org.opendaylight.sxp.util.time.connection;
 
-import io.netty.channel.ChannelHandlerContext;
-
 import org.opendaylight.sxp.core.SxpConnection;
-import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
-import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
-import org.opendaylight.sxp.util.time.ManagedTimer;
+import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 
-public class HoldTimerTask extends ConnectionTimerTask {
+import java.util.concurrent.TimeUnit;
 
-    protected HoldTimerTask(SxpNode owner, int period, SxpConnection connection, ChannelHandlerContext ctx)
-            throws ChannelHandlerContextNotFoundException, ChannelHandlerContextDiscrepancyException {
-        super(TimerType.HoldTimer, owner, period, connection, ctx);
+public class HoldTimerTask extends SxpTimerTask<Void> {
+
+    private final SxpConnection connection;
+
+    public HoldTimerTask(SxpConnection connection, int period) {
+        super(period);
+        this.connection = connection;
     }
 
-    @Override
-    protected void performAction() {
+    @Override public Void call() throws Exception {
         LOG.debug(connection + " {} [{}]", getClass().getSimpleName(), getPeriod());
 
         if (connection.isStateOn() && connection.isModeListener() && connection.isVersion4()) {
             try {
-                if (connection.getTimestampUpdateOrKeepAliveMessage() < System.currentTimeMillis() - getPeriod()
-                        * ManagedTimer.TIME_FACTOR) {
-                    connection.setStateOff(ctx);
+                if (connection.getTimestampUpdateOrKeepAliveMessage()
+                        < System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(getPeriod())) {
+                    connection.setStateOff(connection.getChannelHandlerContext(
+                            SxpConnection.ChannelHandlerContextType.ListenerContext));
                     LOG.info("{} State to Off", connection);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                LOG.warn(connection.getOwner() + " {} {} | {}", getClass().getSimpleName(),
+                        e.getClass().getSimpleName(), e.getMessage());
             }
         }
-        done();
+        connection.setTimer(TimerType.HoldTimer,getPeriod());
+        return null;
     }
 }

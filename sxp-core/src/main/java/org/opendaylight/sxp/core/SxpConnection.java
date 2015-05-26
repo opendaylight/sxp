@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.core;
 
+import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.core.messaging.AttributeList;
@@ -35,9 +37,10 @@ import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
-import org.opendaylight.sxp.util.time.ManagedTimer;
+import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.sxp.util.time.connection.TimerFactory;
+import org.opendaylight.sxp.util.time.connection.*;
+import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimersBuilder;
@@ -73,7 +76,7 @@ public class SxpConnection {
 
     protected SxpNode owner;
 
-    protected HashMap<TimerType, ManagedTimer> timers = new HashMap<TimerType, ManagedTimer>(5);
+    protected HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(5);
 
     private SxpConnection(SxpNode owner, Connection connection) throws Exception {
         this.owner = owner;
@@ -333,7 +336,7 @@ public class SxpConnection {
         return connectionBuilder.getNodeId();
     }
 
-    public ManagedTimer getNodeTimer(TimerType timerType) {
+    public ListenableScheduledFuture<?> getNodeTimer(TimerType timerType) {
         return context.getOwner().getTimer(timerType);
     }
 
@@ -365,7 +368,7 @@ public class SxpConnection {
         return connectionBuilder.getState();
     }
 
-    public ManagedTimer getTimer(TimerType timerType) {
+    public ListenableScheduledFuture<?> getTimer(TimerType timerType) {
         return timers.get(timerType);
     }
 
@@ -398,6 +401,9 @@ public class SxpConnection {
         if (connectionMode.equals(ConnectionMode.Listener)) {
             // Set reconciliation timer per connection.
             setReconciliationTimer();
+            if (getHoldTime() > 0) {
+                setTimer(TimerType.HoldTimer, getHoldTime());
+            }
         }
         // Speaker connection specific. According to the initial negotiation in
         // the Sxpv4 behavior, we can't use Speaker configuration that is
@@ -405,19 +411,8 @@ public class SxpConnection {
         // ChannelHandlerContextDiscrepancyException. This timer will be setup
         // during Binding Dispatcher runtime.
         if (connectionMode.equals(ConnectionMode.Speaker)) {
-            ChannelHandlerContext ctx = null;
-            if (isModeBoth()) {
-                ctx = getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
-            } else {
-                ctx = getChannelHandlerContext();
-            }
-
             if (getKeepaliveTime() > 0) {
-                ManagedTimer t = timers.put(TimerType.KeepAliveTimer,
-                        TimerFactory.createTimer(TimerType.KeepAliveTimer, getKeepaliveTime(), owner, this, ctx));
-                if(t != null){
-                    t.stop();
-                }
+                setTimer(TimerType.KeepAliveTimer, getKeepaliveTime());
             }
         }
     }
@@ -716,33 +711,12 @@ public class SxpConnection {
 
     public void setDeleteHoldDownTimer() throws Exception {
         // Non configurable.
-        ManagedTimer ctDeleteHoldDown = getTimer(TimerType.DeleteHoldDownTimer);
-        if (ctDeleteHoldDown == null) {
-            try {
-                ctDeleteHoldDown = setTimer(TimerType.DeleteHoldDownTimer, Configuration.getTimerDefault()
-                        .getDeleteHoldDownTimer());
-            } catch (Exception e) {
-                LOG.warn(this + " {} {} | {}", getClass().getSimpleName(), e.getClass().getSimpleName(), e.getMessage());
-                return;
-            }
-        }
+        setTimer(TimerType.DeleteHoldDownTimer,Configuration.getTimerDefault()
+                .getDeleteHoldDownTimer());
 
-        if (!ctDeleteHoldDown.isRunning()) {
-            if (ctDeleteHoldDown.isDone()) {
-                try {
-                    ctDeleteHoldDown = setTimer(TimerType.DeleteHoldDownTimer,
-                            org.opendaylight.sxp.util.time.connection.TimerFactory.copyTimer(ctDeleteHoldDown));
-                } catch (Exception e) {
-                    LOG.error(this + " {}", e.getClass().getSimpleName());
-                }
-            }
-            ctDeleteHoldDown.start();
-        }
-
-        ManagedTimer ctReconciliation = getTimer(TimerType.ReconciliationTimer);
-        if(ctReconciliation!=null && ctReconciliation.isRunning()){
-            LOG.info("{} Stopping Reconciliation timer cause | Connection DOWN.",this);
-            ctReconciliation.stop();
+        ListenableScheduledFuture<?> ctReconciliation = getTimer(TimerType.ReconciliationTimer);
+        if (ctReconciliation != null && !ctReconciliation.isDone()) {
+            LOG.info("{} Stopping Reconciliation timer cause | Connection DOWN.", this);
             setTimer(TimerType.ReconciliationTimer, null);
         }
 
@@ -814,34 +788,12 @@ public class SxpConnection {
 
     public void setReconciliationTimer() throws Exception {
         if (getReconciliationTime() > 0) {
-            ManagedTimer ctDeleteHoldDown = getTimer(TimerType.DeleteHoldDownTimer);
-            if(ctDeleteHoldDown != null && ctDeleteHoldDown.isRunning()) {
-                ManagedTimer ctReconciliation = getTimer(TimerType.ReconciliationTimer);
-                if (ctReconciliation == null) {
-                    try {
-                        ctReconciliation = setTimer(TimerType.ReconciliationTimer, getReconciliationTime());
-                    } catch (Exception e) {
-                        LOG.warn(this + " {} {} | {}", getClass().getSimpleName(), e.getClass().getSimpleName(),
-                                e.getMessage());
-                        return;
-                    }
-                }
+            ListenableScheduledFuture<?> ctDeleteHoldDown = getTimer(TimerType.DeleteHoldDownTimer);
+            if (ctDeleteHoldDown != null && !ctDeleteHoldDown.isDone()) {
+                LOG.info("{} Starting Reconciliation timer.", this);
+                setTimer(TimerType.ReconciliationTimer, getReconciliationTime());
 
-                if (!ctReconciliation.isRunning()) {
-                    if (ctReconciliation.isDone()) {
-                        try {
-                            ctReconciliation = setTimer(TimerType.ReconciliationTimer,
-                                    org.opendaylight.sxp.util.time.connection.TimerFactory.copyTimer(ctReconciliation));
-                        } catch (Exception e) {
-                            LOG.error(this + " {}", e.getClass().getSimpleName());
-                            return;
-                        }
-                    }
-                    LOG.info("{} Starting Reconciliation timer.", this);
-                    ctReconciliation.start();
-                }
                 LOG.info("{} Stopping Delete Hold Down timer.", this);
-                ctDeleteHoldDown.stop();
                 setTimer(TimerType.DeleteHoldDownTimer, null);
             }
         }
@@ -899,30 +851,31 @@ public class SxpConnection {
         connectionBuilder.setState(ConnectionState.PendingOn);
     }
 
-    public ManagedTimer setTimer(TimerType timerType, int period) throws UnknownTimerTypeException,
-            ChannelHandlerContextNotFoundException, ChannelHandlerContextDiscrepancyException {
-        ChannelHandlerContext ctx = null;
-        if (isModeBoth()) {
-            // Only speaker can send keepalive messages so only the speaker context will be used to send keepalives
-            // Sending keepalives as listener is incorrect
-            if(timerType == TimerType.KeepAliveTimer) {
-                ctx = getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
-            } else {
-                ctx = getChannelHandlerContext(ChannelHandlerContextType.ListenerContext);
-            }
-        } else {
-            ctx = getChannelHandlerContext();
+    public ListenableScheduledFuture<?> setTimer(TimerType timerType, int period) throws UnknownTimerTypeException {
+        SxpTimerTask timer;
+        switch (timerType) {
+            case DeleteHoldDownTimer:
+                timer = new DeleteHoldDownTimerTask(this, period);
+                break;
+            case HoldTimer:
+                timer = new HoldTimerTask(this, period);
+                break;
+            case KeepAliveTimer:
+                timer = new KeepAliveTimerTask(this, period);
+                break;
+            case ReconciliationTimer:
+                timer = new ReconcilationTimerTask(this, period);
+                break;
+            default:
+                throw new UnknownTimerTypeException(timerType);
         }
-
-        ManagedTimer timer = org.opendaylight.sxp.util.time.connection.TimerFactory.createTimer(timerType, period,
-                owner, this, ctx);
-        return this.setTimer(timerType,timer);
+        return this.setTimer(timerType, owner.getWorker().scheduleTask(timer, timer.getPeriod(), TimeUnit.SECONDS));
     }
 
-    public ManagedTimer setTimer(TimerType timerType, ManagedTimer timer) {
-        ManagedTimer t = this.timers.put(timerType, timer);
-        if( t!=null ){
-            t.stop();
+    public ListenableScheduledFuture<?> setTimer(TimerType timerType, ListenableScheduledFuture<?> timer) {
+        ListenableScheduledFuture<?> t = this.timers.put(timerType, timer);
+        if (t != null && !t.isDone()) {
+            t.cancel(false);
         }
         return timer;
     }
