@@ -38,7 +38,7 @@
 							<node-id>127.0.0.1</node-id>
 							<!--source-ip></source-ip-->
 							<tcp-port>64999</tcp-port>
-							<version>Version4</version>
+							<version>version4</version>
 							<!--security>
 								<password>cisco123</password>
 							</security--> 
