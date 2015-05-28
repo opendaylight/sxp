@@ -29,8 +29,8 @@ public class RetryOpenTimerTask extends SxpTimerTask<Void> {
             } catch (Exception e) {
                 LOG.debug(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
             }
+            owner.setTimer(TimerType.RetryOpenTimer, getPeriod());
         }
-        owner.setTimer(TimerType.RetryOpenTimer, getPeriod());
         return null;
     }
 }

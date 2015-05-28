@@ -172,9 +172,6 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
 
         svcBindingManager = new BindingManager(this);
 
-        if (getRetryOpenTime() > 0) {
-            setTimer(TimerType.RetryOpenTimer, getRetryOpenTime());
-        }
         // Start services.
         if (isEnabled()) {
             start();
@@ -604,7 +601,8 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
     }
 
-    public ListenableScheduledFuture<?> setTimer(TimerType timerType, int period) throws UnknownTimerTypeException {
+    public synchronized ListenableScheduledFuture<?> setTimer(TimerType timerType, int period)
+            throws UnknownTimerTypeException {
         SxpTimerTask timer;
         switch (timerType) {
             case RetryOpenTimer:
@@ -613,7 +611,12 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
             default:
                 throw new UnknownTimerTypeException(timerType);
         }
-        return setTimer(timerType, worker.scheduleTask(timer, timer.getPeriod(), TimeUnit.SECONDS));
+        ListenableScheduledFuture<?> timer_ = getTimer(timerType);
+        if (period > 0 && (timer_ == null || !timer_.isCancelled())) {
+            return this.setTimer(timerType, getWorker().scheduleTask(timer, period, TimeUnit.SECONDS));
+        } else {
+            return this.setTimer(timerType, null);
+        }
     }
 
     public ListenableScheduledFuture<?> setTimer(TimerType timerType, ListenableScheduledFuture<?> timer) {
@@ -645,7 +648,11 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
                 e.printStackTrace();
             }
         }
-
+        try {
+            setTimer(TimerType.RetryOpenTimer, 0);
+        } catch (UnknownTimerTypeException e) {
+            LOG.warn("{} Error stopping Timers ", this, e);
+        }
         shutdownConnections();
 
         if (serverChannel != null) {
@@ -725,7 +732,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
                 }
             }
         });
-
+        if (getRetryOpenTime() > 0) {
+            setTimer(TimerType.RetryOpenTimer, getRetryOpenTime());
+        }
         nodeBuilder.setEnabled(true);
     }
 

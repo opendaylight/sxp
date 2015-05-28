@@ -38,8 +38,8 @@ public class HoldTimerTask extends SxpTimerTask<Void> {
                 LOG.warn(connection.getOwner() + " {} {} | {}", getClass().getSimpleName(),
                         e.getClass().getSimpleName(), e.getMessage());
             }
+            connection.setTimer(TimerType.HoldTimer, getPeriod());
         }
-        connection.setTimer(TimerType.HoldTimer,getPeriod());
         return null;
     }
 }

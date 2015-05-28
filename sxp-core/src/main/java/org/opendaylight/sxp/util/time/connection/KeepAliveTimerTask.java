@@ -46,8 +46,8 @@ public class KeepAliveTimerTask extends SxpTimerTask<Void> {
             } catch (Exception e) {
                 LOG.warn("{} ERROR sending KEEPALIVE ", connection, e);
             }
+            connection.setTimer(TimerType.KeepAliveTimer, getPeriod());
         }
-        connection.setTimer(TimerType.KeepAliveTimer,getPeriod());
         return null;
     }
 }

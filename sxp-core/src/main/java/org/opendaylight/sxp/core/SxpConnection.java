@@ -831,6 +831,7 @@ public class SxpConnection {
         connectionBuilder.setUpdateAllExported(false);
         connectionBuilder.setUpdateExported(false);
         connectionBuilder.setPurgeAllMessageReceived(false);
+        stopTimers();
     }
 
     public void setStateOff(ChannelHandlerContext ctx) {
@@ -841,6 +842,18 @@ public class SxpConnection {
         connectionBuilder.setUpdateAllExported(false);
         connectionBuilder.setUpdateExported(false);
         connectionBuilder.setPurgeAllMessageReceived(false);
+        stopTimers();
+    }
+
+    private void stopTimers() {
+        try {
+            setTimer(TimerType.DeleteHoldDownTimer, null);
+            setTimer(TimerType.ReconciliationTimer, null);
+            setTimer(TimerType.HoldTimer, 0);
+            setTimer(TimerType.KeepAliveTimer, 0);
+        } catch (UnknownTimerTypeException e) {
+            LOG.warn("{} Error stopping Timers ", this, e);
+        }
     }
 
     public void setStateOn() {
@@ -851,7 +864,7 @@ public class SxpConnection {
         connectionBuilder.setState(ConnectionState.PendingOn);
     }
 
-    public ListenableScheduledFuture<?> setTimer(TimerType timerType, int period) throws UnknownTimerTypeException {
+    public synchronized ListenableScheduledFuture<?> setTimer(TimerType timerType, int period) throws UnknownTimerTypeException {
         SxpTimerTask timer;
         switch (timerType) {
             case DeleteHoldDownTimer:
@@ -869,7 +882,12 @@ public class SxpConnection {
             default:
                 throw new UnknownTimerTypeException(timerType);
         }
-        return this.setTimer(timerType, owner.getWorker().scheduleTask(timer, timer.getPeriod(), TimeUnit.SECONDS));
+        ListenableScheduledFuture<?> timer_ = getTimer(timerType);
+        if (period > 0 && (timer_ == null || !timer_.isCancelled())) {
+            return this.setTimer(timerType, owner.getWorker().scheduleTask(timer, period, TimeUnit.SECONDS));
+        } else {
+            return this.setTimer(timerType, null);
+        }
     }
 
     public ListenableScheduledFuture<?> setTimer(TimerType timerType, ListenableScheduledFuture<?> timer) {
