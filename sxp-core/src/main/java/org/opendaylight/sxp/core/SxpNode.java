@@ -628,6 +628,18 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
     }
 
     /**
+     * Set max number of attributes exported in each Update Message.
+     *
+     * @param size Size which will be used for partitioning
+     * @throws IllegalArgumentException If size of partitioning is bellow 2 or above 150
+     */
+    public void setMessagePartitionSize(int size) throws IllegalArgumentException {
+        if (svcBindingDispatcher != null && svcBindingDispatcher instanceof BindingDispatcher) {
+            ((BindingDispatcher) svcBindingDispatcher).setPartitionSize(size);
+        }
+    }
+
+    /**
      * Gets Execution handler of current Node
      *
      * @return ThreadsWorker reference

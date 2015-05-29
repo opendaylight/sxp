@@ -14,6 +14,7 @@ import io.netty.channel.ChannelHandlerContext;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
@@ -39,9 +40,24 @@ public final class BindingDispatcher extends Service {
     private AtomicBoolean dispatch = new AtomicBoolean();
 
     private long updateSequenceId = 0;
+    private AtomicInteger partitionSize = new AtomicInteger(0);
 
     public BindingDispatcher(SxpNode owner) {
         super(owner);
+    }
+
+    /**
+     * Set max number of attributes exported in each Update Message.
+     *
+     * @param partitionSize Size which will be used for partitioning
+     * @throws IllegalArgumentException If size of partitioning is bellow 2 or above 150
+     */
+    public void setPartitionSize(int partitionSize) throws IllegalArgumentException {
+        if (partitionSize > 1 && partitionSize < 151) {
+            this.partitionSize.set(partitionSize);
+        } else {
+            throw new IllegalArgumentException("Partition size must be between 2-150. Current value: " + partitionSize);
+        }
     }
 
     public void dispatch() {
@@ -79,12 +95,14 @@ public final class BindingDispatcher extends Service {
                  * 1 message is exported, delete attributes are written before
                  * added attributes.
                  */
-                int quantity = Configuration.getConstants().getMessagesExportQuantity();
-                if (quantity < 2) {
-                    quantity = 2;
+                if (partitionSize.get() == 0) {
+                    _masterDatabases =
+                            masterDatabase.partition(
+                                    Math.max(2, Configuration.getConstants().getMessagesExportQuantity()),
+                                    connection.isUpdateAllExported());
+                } else {
+                    _masterDatabases = masterDatabase.partition(partitionSize.get(), connection.isUpdateAllExported());
                 }
-
-                _masterDatabases = masterDatabase.partition(quantity, connection.isUpdateAllExported());
             }
 
             int updatePartId = 0;
