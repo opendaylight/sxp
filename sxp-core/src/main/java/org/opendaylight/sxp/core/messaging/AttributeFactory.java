@@ -63,9 +63,11 @@ public final class AttributeFactory {
 
     /** ONPCE000 (Optional-NonTransitive-Partial-Compact-ExtendedLength-0-0-0) */
     private static final byte _onpCe = 16;
+    private static final byte _onpCE = 24;
 
     /** ONPCE000 (Optional-NonTransitive-Partial-Compact-ExtendedLength-0-0-0) */
     private static final byte _oNpCe = 80;
+    private static final byte _oNpCE = 88;
 
     private static List<Capabilities> _decodeCapabilities(byte[] array) {
         List<Capabilities> _capabilities = new ArrayList<Capabilities>();
@@ -175,11 +177,16 @@ public final class AttributeFactory {
 
     public static Attribute createIpv4AddPrefix(List<IpPrefix> prefixes) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
-        attributeBuilder.setFlags(getFlags(_onpCe));
-        attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         attributeBuilder.setType(AttributeType.Ipv4AddPrefix);
 
         byte[] value = IpPrefixConv.toBytes(prefixes);
+        if (value.length < 256) {
+            attributeBuilder.setFlags(getFlags(_onpCe));
+            attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
+        } else {
+            attributeBuilder.setFlags(getFlags(_onpCE));
+            attributeBuilder.setAttributeVariant(AttributeVariant.CompactExtendedLength);
+        }
         attributeBuilder.setLength(value.length);
         attributeBuilder.setValue(value);
 
@@ -194,11 +201,17 @@ public final class AttributeFactory {
     // TODO: createIpv4AddTable
     public static Attribute createIpv4AddTable(PrefixTable prefixTable) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
-        attributeBuilder.setFlags(getFlags(_onpCe));
-        attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         attributeBuilder.setType(AttributeType.Ipv4AddTable);
 
         byte[] value = new byte[0];
+        if (value.length < 256) {
+            attributeBuilder.setFlags(getFlags(_onpCe));
+            attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
+        } else {
+            attributeBuilder.setFlags(getFlags(_onpCE));
+            attributeBuilder.setAttributeVariant(AttributeVariant.CompactExtendedLength);
+        }
+
         attributeBuilder.setLength(value.length);
         attributeBuilder.setValue(value);
 
@@ -209,11 +222,16 @@ public final class AttributeFactory {
 
     public static Attribute createIpv4DeletePrefix(List<IpPrefix> prefixes) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
-        attributeBuilder.setFlags(getFlags(_onpCe));
-        attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         attributeBuilder.setType(AttributeType.Ipv4DeletePrefix);
 
         byte[] value = IpPrefixConv.toBytes(prefixes);
+        if (value.length < 256) {
+            attributeBuilder.setFlags(getFlags(_onpCe));
+            attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
+        } else {
+            attributeBuilder.setFlags(getFlags(_onpCE));
+            attributeBuilder.setAttributeVariant(AttributeVariant.CompactExtendedLength);
+        }
         attributeBuilder.setLength(value.length);
         attributeBuilder.setValue(value);
 
@@ -227,11 +245,17 @@ public final class AttributeFactory {
 
     public static Attribute createIpv6AddPrefix(List<IpPrefix> prefixes) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
-        attributeBuilder.setFlags(getFlags(_onpCe));
-        attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         attributeBuilder.setType(AttributeType.Ipv6AddPrefix);
 
         byte[] value = IpPrefixConv.toBytes(prefixes);
+        if (value.length < 256) {
+            attributeBuilder.setFlags(getFlags(_onpCe));
+            attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
+        } else {
+            attributeBuilder.setFlags(getFlags(_onpCE));
+            attributeBuilder.setAttributeVariant(AttributeVariant.CompactExtendedLength);
+        }
+
         attributeBuilder.setLength(value.length);
         attributeBuilder.setValue(value);
 
@@ -246,11 +270,17 @@ public final class AttributeFactory {
     // TODO: createIpv6AddTable
     public static Attribute createIpv6AddTable(PrefixTable prefixTable) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
-        attributeBuilder.setFlags(getFlags(_onpCe));
-        attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         attributeBuilder.setType(AttributeType.Ipv6AddTable);
 
         byte[] value = new byte[0];
+        if (value.length < 256) {
+            attributeBuilder.setFlags(getFlags(_onpCe));
+            attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
+        } else {
+            attributeBuilder.setFlags(getFlags(_onpCE));
+            attributeBuilder.setAttributeVariant(AttributeVariant.CompactExtendedLength);
+        }
+
         attributeBuilder.setLength(value.length);
         attributeBuilder.setValue(value);
 
@@ -261,11 +291,16 @@ public final class AttributeFactory {
 
     public static Attribute createIpv6DeletePrefix(List<IpPrefix> prefixes) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
-        attributeBuilder.setFlags(getFlags(_onpCe));
-        attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         attributeBuilder.setType(AttributeType.Ipv6DeletePrefix);
 
         byte[] value = IpPrefixConv.toBytes(prefixes);
+        if (value.length < 256) {
+            attributeBuilder.setFlags(getFlags(_onpCe));
+            attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
+        } else {
+            attributeBuilder.setFlags(getFlags(_onpCE));
+            attributeBuilder.setAttributeVariant(AttributeVariant.CompactExtendedLength);
+        }
         attributeBuilder.setLength(value.length);
         attributeBuilder.setValue(value);
 
