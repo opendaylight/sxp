@@ -10,10 +10,13 @@ package org.opendaylight.sxp.core.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.ThreadsWorker;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.messaging.legacy.MappingRecord;
@@ -58,7 +61,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlv.
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class BindingHandler extends Service {
+public final class BindingHandler {
 
     protected static final Logger LOG = LoggerFactory.getLogger(BindingHandler.class.getName());
 
@@ -413,27 +416,36 @@ public final class BindingHandler extends Service {
         return updateMessage;
     }
 
-    private final List<UpdateLegacyNotification> updateLegacyNotificationQueue = new ArrayList<UpdateLegacyNotification>(
-            32);
+    /**
+     * Execute new task which perform SXP-DB changes according to received Update Messages
+     * and recursively check,if connection has Update Messages to proceed, if so start again.
+     *
+     * @param task Task containing logic for exporting changes to SXP-DB
+     * @param connection Connection on which Update Messages was received
+     */
+    private static void startBindingHandle(Callable<?> task,final SxpConnection connection){
+        if(task==null){
+            return;
+        }
+        ListenableFuture<?> future = connection.getInboundUpdateMessageExecutor().getAndSet(null);
+        if ((future == null && !connection.hasUpdateMessageInbound()) || (future != null || !future.isDone())) {
+            ListenableFuture<?>
+                    futureNew =
+                    connection.getOwner().getWorker().executeTask(task, ThreadsWorker.WorkerType.Inbound);
+            connection.getOwner().getWorker().addListener(futureNew, new Runnable() {
 
-    private final List<UpdateNotification> updateNotificationQueue = new ArrayList<UpdateNotification>(32);
-
-    public BindingHandler(SxpNode owner) {
-        super(owner);
-    }
-
-    @Override
-    public void cancel() {
-        super.cancel();
-
-        try {
-            processUpdateMessage((UpdateMessage) null, null);
-        } catch (Exception e) {
-            e.printStackTrace();
+                @Override public void run() {
+                    startBindingHandle(connection.pollUpdateMessageInbound(), connection);
+                }
+            });
+            connection.getInboundUpdateMessageExecutor().set(futureNew);
+        } else {
+            connection.pushUpdateMessageInbound(task);
         }
     }
 
-    private void processUpdateLegacyNotification(UpdateLegacyNotification updateLegacyNotification) {
+    private static void processUpdateLegacyNotification(UpdateLegacyNotification updateLegacyNotification) {
+        SxpNode owner = updateLegacyNotification.getConnection().getOwner();
         // Validate message.
         try {
             validateLegacyMessage(updateLegacyNotification.getMessage());
@@ -444,7 +456,6 @@ public final class BindingHandler extends Service {
                 return;
             } catch (Exception e) {
                 LOG.warn(owner + " Legacy message validation | {} | {}", e.getClass().getSimpleName(), e.getMessage());
-                cancel();
                 return;
             }
         }
@@ -466,12 +477,12 @@ public final class BindingHandler extends Service {
 
             if (!database.getPathGroup().isEmpty()) {
                 List<SxpBindingIdentity> deletedIdentities;
-                synchronized (getBindingSxpDatabase()) {
-                    deletedIdentities = getBindingSxpDatabase().deleteBindings(database);
+                synchronized (owner.getBindingSxpDatabase()) {
+                    deletedIdentities = owner.getBindingSxpDatabase().deleteBindings(database);
                 }
                 LOG.info(owner + " Deleted legacy bindings | {}", deletedIdentities);
                 // Notify the manager.
-                notifyChange();
+                owner.setSvcBindingManagerNotify();
             }
         } catch (Exception e) {
             LOG.warn(owner + " Process legacy message deletion | {} | {}", e.getClass().getSimpleName(), e.getMessage());
@@ -485,13 +496,13 @@ public final class BindingHandler extends Service {
 
             if (!database.getPathGroup().isEmpty()) {
                 boolean added = false;
-                synchronized (getBindingSxpDatabase()) {
-                    added = getBindingSxpDatabase().addBindings(database);
+                synchronized (owner.getBindingSxpDatabase()) {
+                    added = owner.getBindingSxpDatabase().addBindings(database);
                 }
                 if (added) {
                     LOG.info(owner + " Added legacy bindings | {}", new SxpDatabaseImpl(database).toString());
                     // Notify the manager.
-                    notifyChange();
+                    owner.setSvcBindingManagerNotify();
                 }
             }
         } catch (Exception e) {
@@ -501,15 +512,28 @@ public final class BindingHandler extends Service {
         }
     }
 
-    public void processUpdateMessage(UpdateMessage message, SxpConnection connection) {
-        updateNotificationQueue.add(UpdateNotification.create(message, connection));
+    public static void processUpdateMessage(final UpdateMessage message, final SxpConnection connection) {
+        startBindingHandle(new Callable<Void>() {
+
+            @Override public Void call() throws Exception {
+                processUpdateNotification(UpdateNotification.create(message, connection));
+                return null;
+            }
+        }, connection);
     }
 
-    public void processUpdateMessage(UpdateMessageLegacy message, SxpConnection connection) {
-        updateLegacyNotificationQueue.add(UpdateLegacyNotification.create(message, connection));
+    public static void processUpdateMessage(final UpdateMessageLegacy message, final SxpConnection connection) {
+        startBindingHandle(new Callable<Void>() {
+
+            @Override public Void call() throws Exception {
+                processUpdateLegacyNotification(UpdateLegacyNotification.create(message, connection));
+                return null;
+            }
+        }, connection);
     }
 
-    private void processUpdateNotification(UpdateNotification updateNotification) {
+    private static void processUpdateNotification(UpdateNotification updateNotification) {
+        SxpNode owner = updateNotification.getConnection().getOwner();
         // Validate message.
         try {
             validateMessage(updateNotification.getMessage());
@@ -519,7 +543,6 @@ public final class BindingHandler extends Service {
                 return;
             } catch (Exception e) {
                 LOG.warn(owner + " Message validation | {} | {}", e.getClass().getSimpleName(), e.getMessage());
-                cancel();
                 return;
             }
         }
@@ -538,12 +561,12 @@ public final class BindingHandler extends Service {
 
             if (!database.getPathGroup().isEmpty()) {
                 List<SxpBindingIdentity> deletedIdentities;
-                synchronized (getBindingSxpDatabase()) {
-                    deletedIdentities = getBindingSxpDatabase().deleteBindings(database);
+                synchronized (owner.getBindingSxpDatabase()) {
+                    deletedIdentities = owner.getBindingSxpDatabase().deleteBindings(database);
                 }
                 LOG.info(owner + " Deleted bindings | {}", deletedIdentities);
                 // Notify the manager.
-                notifyChange();
+                owner.setSvcBindingManagerNotify();
             }
         } catch (Exception e) {
             LOG.warn(owner + " Process message deletion | {} | {}", e.getClass().getSimpleName(), e.getMessage());
@@ -572,13 +595,13 @@ public final class BindingHandler extends Service {
         try {
             if (!database.getPathGroup().isEmpty()) {
                 boolean added = false;
-                synchronized (getBindingSxpDatabase()) {
-                    added = getBindingSxpDatabase().addBindings(database);
+                synchronized (owner.getBindingSxpDatabase()) {
+                    added = owner.getBindingSxpDatabase().addBindings(database);
                 }
                 if (added) {
                     LOG.info(owner + " Added bindings | {}", new SxpDatabaseImpl(database).toString());
                     // Notify the manager.
-                    notifyChange();
+                    owner.setSvcBindingManagerNotify();
                 }
             }
         } catch (Exception e) {
@@ -586,56 +609,5 @@ public final class BindingHandler extends Service {
             e.printStackTrace();
             return;
         }
-    }
-
-    @Override
-    public void run() {
-        LOG.debug(owner + " Starting {}", getClass().getSimpleName());
-
-        List<SxpConnection> connections;
-        UpdateNotification updateNotification = null;
-        UpdateLegacyNotification updateLegacyNotification = null;
-
-        //ManagedTimer ntHoldTimer = owner.getTimer(TimerType.HoldTimer);
-        while (!finished) {
-            try {
-                Thread.sleep(THREAD_DELAY);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                break;
-            }
-
-            if (!owner.isEnabled()) {
-                continue;
-            } else if (!updateNotificationQueue.isEmpty()) {
-                try {
-                    updateNotification = updateNotificationQueue.remove(0);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    continue;
-                }
-                // Service shutdown.
-                if (updateNotification.getMessage() == null || updateNotification.getConnection() == null) {
-                    break;
-                }
-
-                processUpdateNotification(updateNotification);
-            } else if (!updateLegacyNotificationQueue.isEmpty()) {
-                try {
-                    updateLegacyNotification = updateLegacyNotificationQueue.remove(0);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    continue;
-                }
-                // Service shutdown.
-                if (updateLegacyNotification.getMessage() == null || updateLegacyNotification.getConnection() == null) {
-                    break;
-                }
-
-                processUpdateLegacyNotification(updateLegacyNotification);
-            }
-        }
-
-        LOG.info(owner + " Shutdown {}", getClass().getSimpleName());
     }
 }

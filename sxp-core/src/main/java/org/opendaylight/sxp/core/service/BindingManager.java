@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public final class BindingManager extends Service {
+public final class BindingManager extends Service<Void> {
 
     protected static final Logger LOG = LoggerFactory.getLogger(BindingManager.class.getName());
 
@@ -84,12 +84,6 @@ public final class BindingManager extends Service {
 
     public BindingManager(SxpNode owner) {
         super(owner);
-    }
-
-    @Override
-    public void cancel() {
-        super.cancel();
-        notifyChange(Boolean.FALSE); 
     }
 
     public void cleanUpBindings(NodeId nodeID) throws Exception {
@@ -200,51 +194,14 @@ public final class BindingManager extends Service {
         getBindingMasterDatabase().addBindings(owner.getNodeId(), masterBindingIdentityContributed);
     }
 
-    @Override
-    public void notifyChange() {
-        notifyChange(Boolean.TRUE);                
-    }
-    
-    private void notifyChange(boolean notification) {
-        try {
-            queue.add(notification);
-        } catch (IllegalStateException e1) {
-            try {
-                queue.put(notification);
-            } catch (InterruptedException e2) {
-                e2.printStackTrace();
-            }
-        }        
-    }
-
     public void purgeBindings(NodeId nodeID) throws Exception {
         getBindingSxpDatabase().purgeBindings(nodeID);
     }
 
     @Override
-    public void run() {
+    public Void call() throws Exception {
         LOG.debug(owner + " Starting {}", BindingManager.class.getSimpleName());
-        Boolean notification;
-
-        while (!finished) {
-            try {
-                notification = queue.take();
-            } catch (Exception e) {
-                e.printStackTrace();
-                break;
-            }
-
-            // Shutdown.
-            if (!notification) {
-                break;
-            } else if (!owner.isEnabled()) {
-                notifyChange(notification);                
-                continue;
-            }
-
-            // Provide one arbitration process for all received
-            // notifications in one cycle.
-            queue.clear();
+        if (owner.isEnabled()) {
             try {
                 SxpDatabaseInf sxpDatabase = getBindingSxpDatabase();
                 List<SxpBindingIdentity> bindingIdentities;
@@ -266,10 +223,9 @@ public final class BindingManager extends Service {
                 LOG.warn(owner + " " + BindingManager.class.getSimpleName() + " | {} | {}", e.getClass()
                         .getSimpleName(), e.getMessage());
                 e.printStackTrace();
-                continue;
             }
         }
-        LOG.info(owner + " Shutdown {}", getClass().getSimpleName());
+        return null;
     }
 
     public void setAsCleanUp(NodeId nodeID) throws Exception {

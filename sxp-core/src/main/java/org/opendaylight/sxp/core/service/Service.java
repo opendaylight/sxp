@@ -8,24 +8,29 @@
 
 package org.opendaylight.sxp.core.service;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
 
-public abstract class Service implements Runnable {
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
 
-    protected static final long THREAD_DELAY = 500;
-
-    protected volatile boolean finished = false;
+public abstract class Service<T> implements Callable<T> {
 
     protected SxpNode owner;
+    private boolean notified = false;
+    private AtomicReference<ListenableFuture<?>> change = new AtomicReference<>(null);
 
     protected Service(SxpNode owner) {
         this.owner = owner;
     }
 
     public void cancel() {
-        this.finished = true;
+        if(!change.get().isDone()){
+            change.get().cancel(false);
+        }
     }
 
     public synchronized MasterDatabaseProvider getBindingMasterDatabase() throws Exception {
@@ -37,10 +42,33 @@ public abstract class Service implements Runnable {
     }
 
     public void notifyChange() {
-        owner.setSvcBindingManagerNotify();
+        synchronized (change) {
+            if (change.get() == null || change.get().isDone()) {
+                executeChange(this);
+            } else {
+                notified = true;
+            }
+        }
     }
 
-    public void reset() {
-        this.finished = false;
+    /**
+     * Execute new task and recursively check,
+     * if specified task was notified, if so start again.
+     *
+     * @param task Task which contains logic.
+     */
+    private void executeChange(final Callable<?> task) {
+        change.set(owner.getWorker().executeTask(task, ThreadsWorker.WorkerType.Default));
+        owner.getWorker().addListener(change.get(), new Runnable() {
+
+            @Override public void run() {
+                synchronized (change) {
+                    if (notified) {
+                        notified = false;
+                        executeChange(task);
+                    }
+                }
+            }
+        });
     }
 }
