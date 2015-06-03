@@ -65,8 +65,6 @@ public class Sxpv1 implements Strategy {
 
     @Override
     public void onChannelInactivation(ChannelHandlerContext ctx, SxpConnection connection) throws Exception {
-        ConnectFacade.removeClientPort(ctx.channel().localAddress());
-
         if (!connection.isPurgeAllMessageReceived()) {
             if (connection.isStateOn() && connection.isModeSpeaker()) {
                 ctx.writeAndFlush(MessageFactory.createPurgeAll());

@@ -346,13 +346,6 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
 
         SxpConnection connection = get(inetSocketAddress);
-        // Local registered ports.
-        if (connection == null) {
-            InetSocketAddress clientAddress = ConnectFacade.getClientUsedAddress(inetSocketAddress.getPort());
-            if (clientAddress != null) {
-                connection = getByPort(clientAddress.getPort());
-            }
-        }
         // Devices addresses.
         if (connection == null) {
             connection = getByAddress(inetSocketAddress);
@@ -485,18 +478,19 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
 
         final SxpNode node = this;
 
-        int connectionsAllSize = size();
-        int connectionsOnSize = getAllOnConnections().size();
-        List<SxpConnection> connections = getAllOffConnections();
-        int connectionsOffSize = connections.size();
+        final int connectionsAllSize = size();
+        final int connectionsOnSize = getAllOnConnections().size();
+        final List<SxpConnection> connections = getAllOffConnections();
+        final int connectionsOffSize = connections.size();
 
-        for (final SxpConnection connection : connections) {
-            LOG.info(connection + " Open connection thread [Id/X/O/All=\"" + (connections.indexOf(connection) + 1)
-                    + "/" + connectionsOffSize + "/" + connectionsOnSize + "/" + connectionsAllSize + "\"]");
+        worker.executeTask(new Runnable() {
 
-            worker.executeTask(new Runnable() {
+            @Override public void run() {
+                for (final SxpConnection connection : connections) {
+                    LOG.info(connection + " Open connection [Id/X/O/All=\"" + (connections.indexOf(connection)
+                            + 1) + "/" + connectionsOffSize + "/" + connectionsOnSize + "/" + connectionsAllSize
+                            + "\"]");
 
-                @Override public void run() {
                     try {
                         connection.setStatePendingOn();
                         ConnectFacade.createClient(node, connection, handlerFactoryClient);
@@ -510,8 +504,8 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
                         }
                     }
                 }
-            });
-        }
+            }
+        });
     }
 
     public void processUpdateMessage(UpdateMessage message, SxpConnection connection) throws InterruptedException {
