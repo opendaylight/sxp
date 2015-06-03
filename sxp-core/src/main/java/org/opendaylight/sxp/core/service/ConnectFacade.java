@@ -16,6 +16,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -71,7 +72,7 @@ public class ConnectFacade {
         }
     };
 
-    public static ChannelFuture createClient(SxpNode node, SxpConnection connection, final HandlerFactory hf)
+    public static ChannelFuture createClient(final SxpNode node, SxpConnection connection, final HandlerFactory hf)
             throws Exception {
         Bootstrap bootstrap = new Bootstrap();
 
@@ -106,10 +107,14 @@ public class ConnectFacade {
             }
         });
         try {
-            ChannelFuture chf = bootstrap.connect(connection.getDestination()).sync();
-            Channel channel = chf.channel();
-            setClientPort(channel.localAddress(), node.getServerPort());
-            return channel.closeFuture().sync();
+            final ChannelFuture chf = bootstrap.connect(connection.getDestination());
+            chf.addListener(new ChannelFutureListener() {
+
+                @Override public void operationComplete(ChannelFuture future) throws Exception {
+                    setClientPort(chf.channel().localAddress(), node.getServerPort());
+                }
+            });
+            return chf;
         } catch (Exception e) {
             throw e;
         }
