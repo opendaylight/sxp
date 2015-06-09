@@ -8,24 +8,29 @@
 
 package org.opendaylight.sxp.core.service;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
 
-public abstract class Service implements Runnable {
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 
-    protected static final long THREAD_DELAY = 500;
-
-    protected volatile boolean finished = false;
+public abstract class Service<T> implements Callable<T> {
 
     protected SxpNode owner;
+    private AtomicInteger notified = new AtomicInteger(0);
+    private ListenableFuture<?> change = null;
 
     protected Service(SxpNode owner) {
         this.owner = owner;
     }
 
     public void cancel() {
-        this.finished = true;
+        if (change != null) {
+            change.cancel(false);
+        }
     }
 
     public synchronized MasterDatabaseProvider getBindingMasterDatabase() throws Exception {
@@ -37,10 +42,27 @@ public abstract class Service implements Runnable {
     }
 
     public void notifyChange() {
-        owner.setSvcBindingManagerNotify();
+        if (notified.getAndIncrement() == 0) {
+            executeChange(this);
+        }
     }
 
-    public void reset() {
-        this.finished = false;
+    /**
+     * Execute new task and recursively check,
+     * if specified task was notified, if so start again.
+     *
+     * @param task Task which contains logic.
+     */
+    private void executeChange(final Callable<?> task) {
+        change = owner.getWorker().executeTask(task, ThreadsWorker.WorkerType.DEFAULT);
+        owner.getWorker().addListener(change, new Runnable() {
+
+            @Override public void run() {
+                if (notified.decrementAndGet() > 0) {
+                    notified.set(1);
+                    executeChange(task);
+                }
+            }
+        });
     }
 }

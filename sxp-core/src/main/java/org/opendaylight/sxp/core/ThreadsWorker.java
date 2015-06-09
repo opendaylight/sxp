@@ -17,29 +17,63 @@ import java.util.concurrent.*;
  */
 public class ThreadsWorker {
 
+        /**
+         * WorkerType enum is used for running task on specific executor
+         */
+        public enum WorkerType {
+                INBOUND, OUTBOUND, DEFAULT
+        }
+
+
         private final ListeningScheduledExecutorService scheduledExecutorService;
-        private final ListeningExecutorService executorService;
+        private final ListeningExecutorService executorService, executorServiceOutbound, executorServiceInbound;
 
         /**
          * Custom ThreadsWorker constructor
          *
-         * @param scheduledExecutorService ScheduledExecutorService which will be used for scheduling tasks
+         * @param scheduledExecutorService ScheduledExecutorService which will be used for scheduling tasks like SXP timers
          * @param executorService          ExecutorService which will be used for executing tasks
-         * @throws NullPointerException If scheduledExecutorService or executorService is null
+         * @param executorServiceInbound   ExecutorService which will be used for executing inbound messaging behaviour
+         * @param executorServiceOutbound  ExecutorService which will be used for executing outbound messaging behaviour
          */
-        public ThreadsWorker(ScheduledExecutorService scheduledExecutorService, ExecutorService executorService) {
+        public ThreadsWorker(ScheduledExecutorService scheduledExecutorService, ExecutorService executorService,
+                ExecutorService executorServiceInbound, ExecutorService executorServiceOutbound) {
                 this.scheduledExecutorService =
                         MoreExecutors.listeningDecorator(Preconditions.checkNotNull(scheduledExecutorService));
                 this.executorService = MoreExecutors.listeningDecorator(Preconditions.checkNotNull(executorService));
+                this.executorServiceInbound =
+                        MoreExecutors.listeningDecorator(Preconditions.checkNotNull(executorServiceInbound));
+                this.executorServiceOutbound =
+                        MoreExecutors.listeningDecorator(Preconditions.checkNotNull(executorServiceOutbound));
         }
 
         /**
          * Default ThreadsWorker constructor with these threads pools
          * ScheduledExecutorService contains 10 threads
-         * ExecutorService contains 25 threads
+         * Default executorService contains 5 threads and
+         * executorService for inbound and outbound communication
+         * have 10 threads both
          */
         public ThreadsWorker() {
-                this(Executors.newScheduledThreadPool(10), Executors.newFixedThreadPool(25));
+                this(Executors.newScheduledThreadPool(10), Executors.newFixedThreadPool(10),
+                        Executors.newFixedThreadPool(5), Executors.newFixedThreadPool(10));
+        }
+
+        /**
+         * Gets specified executor
+         *
+         * @param type Type specifying executor service
+         * @return execution service specified by type
+         */
+        private ListeningExecutorService getExecutor(WorkerType type) {
+                switch (type) {
+                        case INBOUND:
+                                return executorServiceInbound;
+                        case OUTBOUND:
+                                return executorServiceOutbound;
+                        default:
+                                return executorService;
+                }
         }
 
         /**
@@ -59,21 +93,34 @@ public class ThreadsWorker {
          * Adds and execute task in ListeningExecutorService
          *
          * @param task Callable task which will be added to execution queue
+         * @param type Specifies execution queue used
          * @return ListenableFuture that can be used to extract result or cancel
          * @throws NullPointerException If task is null
          */
-        public ListenableFuture<?> executeTask(Callable task) {
-                return executorService.submit(Preconditions.checkNotNull(task));
+        public ListenableFuture<?> executeTask(Callable task, WorkerType type) {
+                return getExecutor(type).submit(Preconditions.checkNotNull(task));
         }
 
         /**
          * Adds and execute task in ListeningExecutorService
          *
          * @param task Runnable task which will be added to execution queue
+         * @param type Specifies execution queue used
          * @return ListenableFuture that can be used to extract result or cancel
          * @throws NullPointerException If task is null
          */
-        public ListenableFuture<?> executeTask(Runnable task) {
-                return executorService.submit(Preconditions.checkNotNull(task));
+        public ListenableFuture<?> executeTask(Runnable task, WorkerType type) {
+                return getExecutor(type).submit(Preconditions.checkNotNull(task));
+        }
+
+        /**
+         * Adds execution listener to specified task
+         *
+         * @param task     Task on which listener will be added.
+         * @param listener Task which will be executed after Listenable future is done.
+         * @throws NullPointerException If task or listener is null
+         */
+        public void addListener(ListenableFuture<?> task, Runnable listener) {
+                Preconditions.checkNotNull(task).addListener(Preconditions.checkNotNull(listener), executorService);
         }
 }

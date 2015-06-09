@@ -140,11 +140,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
 
     protected InetAddress sourceIp;
 
-    private Service svcBindingHandler, svcBindingDispatcher;
-
-    private boolean svcBindingHandlerStarted, svcBindingManagerStarted, svcBindingDispatcherStarted;
-
-    private final Service svcBindingManager;
+    private final Service svcBindingManager, svcBindingDispatcher;
     private final ThreadsWorker worker;
 
     /** Common timers setup. */
@@ -171,6 +167,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         addConnections(nodeBuilder.getConnections());
 
         svcBindingManager = new BindingManager(this);
+        svcBindingDispatcher = new BindingDispatcher(this);
 
         // Start services.
         if (isEnabled()) {
@@ -185,31 +182,6 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
 
         SxpConnection _connection = SxpConnection.create(this, connection);
         put(_connection.getDestination(), _connection);
-
-        // At least 1 Listener is specified.
-        if (svcBindingHandler == null
-                && (connection.getMode().equals(ConnectionMode.Listener) || connection.getMode().equals(
-                        ConnectionMode.Both))) {
-            svcBindingHandler = new BindingHandler(this);
-
-            if (svcBindingHandler != null && !svcBindingHandlerStarted) {
-                svcBindingHandler.reset();
-                worker.executeTask(svcBindingHandler);
-                svcBindingHandlerStarted = true;
-            }
-        }
-        // At least 1 Speaker is specified
-        if (svcBindingDispatcher == null
-                && (connection.getMode().equals(ConnectionMode.Speaker) || connection.getMode().equals(
-                        ConnectionMode.Both))) {
-            svcBindingDispatcher = new BindingDispatcher(this);
-
-            if (svcBindingDispatcher != null && !svcBindingDispatcherStarted) {
-                svcBindingDispatcher.reset();
-                worker.executeTask(svcBindingDispatcher);
-                svcBindingDispatcherStarted = true;
-            }
-        }
     }
 
     public void addConnections(Connections connections) throws Exception {
@@ -451,22 +423,16 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
     }
 
     public boolean isSvcBindingDispatcherStarted() {
-        return svcBindingDispatcherStarted;
-    }
-
-    public boolean isSvcBindingHandlerStartedStarted() {
-        return svcBindingHandlerStarted;
+        return svcBindingDispatcher != null;
     }
 
     public boolean isSvcBindingManagerStarted() {
-        return svcBindingManagerStarted;
+        return svcBindingManager != null;
     }
 
     public void notifyService() {
         if (isSvcBindingManagerStarted()) {
             setSvcBindingManagerNotify();
-        } else if (isSvcBindingDispatcherStarted()) {
-            setSvcBindingDispatcherDispatch();
         }
     }
 
@@ -494,7 +460,6 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
                     try {
                         connection.setStatePendingOn();
                         ConnectFacade.createClient(node, connection, handlerFactoryClient);
-
                     } catch (Exception e) {
                         // Connection is not established by adverse party
                         // before.
@@ -505,19 +470,15 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
                     }
                 }
             }
-        });
+        }, ThreadsWorker.WorkerType.DEFAULT);
     }
 
     public void processUpdateMessage(UpdateMessage message, SxpConnection connection) throws InterruptedException {
-        if (svcBindingHandler instanceof BindingHandler) {
-            ((BindingHandler) svcBindingHandler).processUpdateMessage(message, connection);
-        }
+        BindingHandler.processUpdateMessage(message, connection);
     }
 
     public void processUpdateMessage(UpdateMessageLegacy message, SxpConnection connection) throws InterruptedException {
-        if (svcBindingHandler instanceof BindingHandler) {
-            ((BindingHandler) svcBindingHandler).processUpdateMessage(message, connection);
-        }
+        BindingHandler.processUpdateMessage(message, connection);
     }
 
     public void purgeBindings(NodeId nodeID) throws Exception {
@@ -576,16 +537,21 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
 
     public void setServerChannel(Channel serverChannel) throws Exception {
         this.serverChannel = serverChannel;
-
-        // Open connections (preliminarily)
-        openConnections();
-
         this.serverChannelInit.set(false);
     }
 
     public void setSvcBindingDispatcherDispatch() {
-        if (svcBindingDispatcher instanceof BindingDispatcher && isSvcBindingDispatcherStarted()) {
+        if (svcBindingDispatcher instanceof BindingDispatcher) {
             ((BindingDispatcher) svcBindingDispatcher).dispatch();
+        }
+    }
+
+    /**
+     * Notify BindingDispatcher to execute dispatch of bindings on reconnected connections
+     */
+    public void setSvcBindingDispatcherNotify() {
+        if (isSvcBindingDispatcherStarted()) {
+            svcBindingDispatcher.notifyChange();
         }
     }
 
@@ -667,15 +633,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
         if (svcBindingDispatcher != null) {
             svcBindingDispatcher.cancel();
-            svcBindingDispatcherStarted = false;
-        }
-        if (svcBindingHandler != null) {
-            svcBindingHandler.cancel();
-            svcBindingHandlerStarted = false;
         }
         if (svcBindingManager != null) {
             svcBindingManager.cancel();
-            svcBindingManagerStarted = false;
         }
         nodeBuilder.setEnabled(false);
     }
@@ -706,25 +666,6 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
             // LOG.info(this + " " + getBindingMasterDatabase().toString());
         }
 
-        // Speaker: Binding dispatcher service (as 1st).
-        if (svcBindingDispatcher != null && !svcBindingDispatcherStarted) {
-            svcBindingDispatcher.reset();
-            worker.executeTask(svcBindingDispatcher);
-            svcBindingDispatcherStarted = true;
-        }
-        // Listener: Binding handler service.
-        if (svcBindingHandler != null && !svcBindingHandlerStarted) {
-            svcBindingHandler.reset();
-            worker.executeTask(svcBindingHandler);
-            svcBindingHandlerStarted = true;
-        }
-        // Common: Binding manager service.
-        if (svcBindingManager != null && !svcBindingManagerStarted) {
-            svcBindingManager.reset();
-            worker.executeTask(svcBindingManager);
-            svcBindingManagerStarted = true;
-        }
-
         final SxpNode node = this;
         worker.executeTask(new Runnable() {
 
@@ -737,7 +678,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
                     LOG.warn(node + " {}", e.getMessage());
                 }
             }
-        });
+        }, ThreadsWorker.WorkerType.DEFAULT);
         if (getRetryOpenTime() > 0) {
             setTimer(TimerType.RetryOpenTimer, getRetryOpenTime());
         }

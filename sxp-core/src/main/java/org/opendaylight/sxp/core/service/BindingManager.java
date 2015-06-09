@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public final class BindingManager extends Service {
+public final class BindingManager extends Service<Void> {
 
     protected static final Logger LOG = LoggerFactory.getLogger(BindingManager.class.getName());
 
@@ -86,12 +86,6 @@ public final class BindingManager extends Service {
         super(owner);
     }
 
-    @Override
-    public void cancel() {
-        super.cancel();
-        notifyChange(Boolean.FALSE); 
-    }
-
     public void cleanUpBindings(NodeId nodeID) throws Exception {
         getBindingSxpDatabase().cleanUpBindings(nodeID);
 
@@ -99,7 +93,7 @@ public final class BindingManager extends Service {
 
     }
 
-    private void databaseArbitration(List<SxpBindingIdentity> bindingIdentities) throws Exception {
+    private List<MasterBindingIdentity> databaseArbitration(List<SxpBindingIdentity> bindingIdentities) throws Exception {
         Map<String, SxpBindingIdentity> biMap = new HashMap<>();
 
         for (SxpBindingIdentity bindingIdentity : bindingIdentities) {
@@ -196,25 +190,7 @@ public final class BindingManager extends Service {
                 }
             }
         }
-
-        getBindingMasterDatabase().addBindings(owner.getNodeId(), masterBindingIdentityContributed);
-    }
-
-    @Override
-    public void notifyChange() {
-        notifyChange(Boolean.TRUE);                
-    }
-    
-    private void notifyChange(boolean notification) {
-        try {
-            queue.add(notification);
-        } catch (IllegalStateException e1) {
-            try {
-                queue.put(notification);
-            } catch (InterruptedException e2) {
-                e2.printStackTrace();
-            }
-        }        
+        return masterBindingIdentityContributed;
     }
 
     public void purgeBindings(NodeId nodeID) throws Exception {
@@ -222,54 +198,28 @@ public final class BindingManager extends Service {
     }
 
     @Override
-    public void run() {
+    public Void call() throws Exception {
         LOG.debug(owner + " Starting {}", BindingManager.class.getSimpleName());
-        Boolean notification;
-
-        while (!finished) {
-            try {
-                notification = queue.take();
-            } catch (Exception e) {
-                e.printStackTrace();
-                break;
-            }
-
-            // Shutdown.
-            if (!notification) {
-                break;
-            } else if (!owner.isEnabled()) {
-                notifyChange(notification);                
-                continue;
-            }
-
-            // Provide one arbitration process for all received
-            // notifications in one cycle.
-            queue.clear();
+        if (owner.isEnabled()) {
             try {
                 SxpDatabaseInf sxpDatabase = getBindingSxpDatabase();
                 List<SxpBindingIdentity> bindingIdentities;
                 synchronized (sxpDatabase) {
                     bindingIdentities = sxpDatabase.readBindings();
                 }
-                databaseArbitration(bindingIdentities);
-
-                // Listener databases clearing: Remove deleted bindings.
-                if (!owner.isSvcBindingDispatcherStarted()) {
-                    MasterDatabaseProvider masterDatabase = getBindingMasterDatabase();
-                    synchronized (masterDatabase) {
-                        masterDatabase.purgeAllDeletedBindings();
-                    }
+                MasterDatabaseProvider masterDatabase = getBindingMasterDatabase();
+                List<MasterBindingIdentity> masterBindingIdentityContributed = databaseArbitration(bindingIdentities);
+                synchronized (masterDatabase) {
+                    masterDatabase.addBindings(owner.getNodeId(), masterBindingIdentityContributed);
+                    owner.setSvcBindingDispatcherDispatch();
                 }
-                owner.setSvcBindingDispatcherDispatch();
-
             } catch (Exception e) {
                 LOG.warn(owner + " " + BindingManager.class.getSimpleName() + " | {} | {}", e.getClass()
                         .getSimpleName(), e.getMessage());
                 e.printStackTrace();
-                continue;
             }
         }
-        LOG.info(owner + " Shutdown {}", getClass().getSimpleName());
+        return null;
     }
 
     public void setAsCleanUp(NodeId nodeID) throws Exception {
