@@ -8,17 +8,18 @@
 
 package org.opendaylight.sxp.core;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.core.messaging.AttributeList;
@@ -40,7 +41,6 @@ import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.sxp.util.time.connection.*;
-import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimersBuilder;
@@ -77,6 +77,85 @@ public class SxpConnection {
     protected SxpNode owner;
 
     protected HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(5);
+
+    private final Deque<Callable<?>> inboundUpdateMessageQueue = new ArrayDeque<>(10),
+            outboundUpdateMessageQueue =
+                    new ArrayDeque<>(10);
+    private final AtomicLong inboundMonitor = new AtomicLong(0), outboundMonitor = new AtomicLong(0);
+
+    /**
+     * Gets AtomicLong used for notification of incoming messages that will be needed to proceed
+     *
+     * @return AtomicLong used for counting of incoming messages
+     */
+    public AtomicLong getInboundMonitor() {
+        return inboundMonitor;
+    }
+
+    /**
+     * Gets AtomicLong used for notification of outgoing messages that will be needed to proceed
+     *
+     * @return AtomicLong used for counting of outgoing messages
+     */
+    public AtomicLong getOutboundMonitor() {
+        return outboundMonitor;
+    }
+
+    /**
+     * Poll Task representing export of Update Message on this connection.
+     *
+     * @return Task exporting specific Update Message
+     */
+    public Callable<?> pollUpdateMessageOutbound() {
+        synchronized (outboundUpdateMessageQueue) {
+            return outboundUpdateMessageQueue.poll();
+        }
+    }
+
+    /**
+     * Push new Update Message task into export queue.
+     *
+     * @param task Task containing process information of Update Message
+     */
+    public void pushUpdateMessageOutbound(Callable<?> task) {
+        synchronized (outboundUpdateMessageQueue) {
+            outboundUpdateMessageQueue.push(task);
+        }
+    }
+
+    /**
+     * Poll Task representing import of Update Message on this connection.
+     *
+     * @return Task importing specific Update Message
+     */
+    public Callable<?> pollUpdateMessageInbound() {
+        synchronized (inboundUpdateMessageQueue) {
+            return inboundUpdateMessageQueue.poll();
+        }
+    }
+
+    /**
+     * Push new Update Message task into import queue.
+     *
+     * @param task Task containing process information of Update Message
+     */
+    public void pushUpdateMessageInbound(Callable<?> task) {
+        synchronized (inboundUpdateMessageQueue) {
+            inboundUpdateMessageQueue.push(task);
+        }
+    }
+
+    /**
+     * Clears queue of inbound and outbound Update Messages.
+     */
+    private void clearMessages() {
+        synchronized (inboundUpdateMessageQueue) {
+            inboundUpdateMessageQueue.clear();
+        }
+        synchronized (inboundUpdateMessageQueue) {
+            inboundUpdateMessageQueue.clear();
+        }
+    }
 
     private SxpConnection(SxpNode owner, Connection connection) throws Exception {
         this.owner = owner;
@@ -832,6 +911,7 @@ public class SxpConnection {
         connectionBuilder.setUpdateExported(false);
         connectionBuilder.setPurgeAllMessageReceived(false);
         stopTimers();
+        clearMessages();
     }
 
     public void setStateOff(ChannelHandlerContext ctx) {
@@ -843,6 +923,7 @@ public class SxpConnection {
         connectionBuilder.setUpdateExported(false);
         connectionBuilder.setPurgeAllMessageReceived(false);
         stopTimers();
+        clearMessages();
     }
 
     private void stopTimers() {
@@ -857,6 +938,9 @@ public class SxpConnection {
     }
 
     public void setStateOn() {
+        if (isModeSpeaker() || isModeBoth()) {
+            owner.setSvcBindingDispatcherNotify();
+        }
         connectionBuilder.setState(ConnectionState.On);
     }
 
@@ -921,6 +1005,7 @@ public class SxpConnection {
     public void shutdown() {
         if (isModeListener()){
             try {
+                clearMessages();
                 LOG.info("{} PURGE bindings ", this);
                 purgeBindings();
             } catch (Exception e) {

@@ -285,10 +285,6 @@ public class MessageFactory {
             }
         }
 
-        if (attributes.isEmpty()) {
-            return null;
-        }
-
         return getMessage(MessageType.Update, attributes.toBytes());
     }
 

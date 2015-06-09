@@ -369,27 +369,6 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
         return database;
     }
 
-    private PrefixGroup getChangedPrefixGroup() {
-        synchronized (database) {
-            if (database.getSource() != null) {
-                for (Source source : database.getSource()) {
-                    if (source.getPrefixGroup() != null) {
-                        for (PrefixGroup prefixGroup : source.getPrefixGroup()) {
-                            if (prefixGroup.getBinding() != null) {
-                                for (Binding binding : prefixGroup.getBinding()) {
-                                    if (binding.isChanged() != null && binding.isChanged()) {
-                                        return prefixGroup;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-    }
-
     @Override
     public List<MasterDatabase> partition(int quantity, boolean onlyChanged) throws Exception {
         synchronized (database) {
@@ -436,10 +415,11 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
                     databaseBuilder = new MasterDatabaseBuilder(database);
                     databaseBuilder.setSource(new ArrayList<Source>());
                     n = 0;
-                    continue;
                 }
             }
-            split.add(databaseBuilder.build());
+            if (!databaseBuilder.getSource().isEmpty()) {
+                split.add(databaseBuilder.build());
+            }
             return split;
         }
     }
@@ -558,31 +538,35 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
 
     @Override
     public void resetModified() throws Exception {
-        PrefixGroup prefixGroup;
-        do {
-            prefixGroup = getChangedPrefixGroup();
-            if (prefixGroup != null) {
-                List<Binding> removed = new ArrayList<>();
-                List<Binding> added = new ArrayList<>();
-
-                for (Binding binding : prefixGroup.getBinding()) {
-                    if (binding.isChanged() != null && binding.isChanged()) {
-                        BindingBuilder bindingBuilder = new BindingBuilder(binding);
-                        bindingBuilder.setChanged(false);
-                        added.add(bindingBuilder.build());
-                        removed.add(binding);
+        synchronized (database) {
+            if (database.getSource() != null) {
+                for (Source source : database.getSource()) {
+                    if (source.getPrefixGroup() != null) {
+                        for (PrefixGroup prefixGroup : source.getPrefixGroup()) {
+                            List<Binding> removed = new ArrayList<>();
+                            List<Binding> added = new ArrayList<>();
+                            if (prefixGroup.getBinding() != null) {
+                                for (Binding binding : prefixGroup.getBinding()) {
+                                    if (binding.isChanged() != null && binding.isChanged()) {
+                                        BindingBuilder bindingBuilder = new BindingBuilder(binding);
+                                        bindingBuilder.setChanged(false);
+                                        added.add(bindingBuilder.build());
+                                        removed.add(binding);
+                                    }
+                                }
+                            }
+                            if (!removed.isEmpty()) {
+                                prefixGroup.getBinding().removeAll(removed);
+                            }
+                            if (!added.isEmpty()) {
+                                prefixGroup.getBinding().addAll(added);
+                            }
+                        }
                     }
                 }
-
-                if (!removed.isEmpty()) {
-                    prefixGroup.getBinding().removeAll(removed);
-                }
-                if (!added.isEmpty()) {
-                    prefixGroup.getBinding().addAll(added);
-                }
             }
-        } while (prefixGroup != null);
-    };
+        }
+    }
 
     @Override
     public boolean setAsDeleted(List<PrefixGroup> prefixGroups) throws Exception {

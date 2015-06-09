@@ -30,7 +30,9 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -38,6 +40,7 @@ import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
+import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
 import org.opendaylight.tcpmd5.api.KeyAccessFactory;
 import org.opendaylight.tcpmd5.api.KeyMapping;
 import org.opendaylight.tcpmd5.jni.NativeKeyAccessFactory;
@@ -51,6 +54,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConnectFacade {
 
+    private static HashMap<Integer, InetSocketAddress> clientUsedPorts = new HashMap<Integer, InetSocketAddress>();
     private static EventLoopGroup eventLoopGroup = null;
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectFacade.class.getName());
 
@@ -67,7 +71,7 @@ public class ConnectFacade {
         }
     };
 
-    public static ChannelFuture createClient(final SxpNode node, SxpConnection connection, final HandlerFactory hf)
+    public static ChannelFuture createClient(SxpNode node, SxpConnection connection, final HandlerFactory hf)
             throws Exception {
         Bootstrap bootstrap = new Bootstrap();
 
