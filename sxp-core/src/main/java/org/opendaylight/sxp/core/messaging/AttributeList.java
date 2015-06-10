@@ -33,11 +33,11 @@ public class AttributeList extends ArrayList<Attribute> {
 
     public static AttributeList decode(byte[] array) throws Exception {
         AttributeList attributes = new AttributeList();
-        do {
+        while (array.length != 0) {
             Attribute attribute = AttributeFactory.decode(array);
             attributes.add(attribute);
             array = ArraysUtil.readBytes(array, attribute.getLength());
-        } while (array.length != 0);
+        }
         return attributes;
     }
 
