@@ -34,9 +34,9 @@ public class Sxpv3 extends Sxpv2 {
     }
 
     @Override
-    public ByteBuf onUpdateMessage(ChannelHandlerContext ctx, SxpConnection connection, MasterDatabase masterDatabase)
+    public ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
             throws Exception {
         // + Subnet Bindings Expansion
-        return super.onUpdateMessage(ctx, connection, masterDatabase);
+        return super.onUpdateMessage(connection, masterDatabase);
     }
 }

@@ -100,9 +100,9 @@ public final class Context {
         return this.strategy.onParseInput(request);
     }
 
-    public ByteBuf executeUpdateMessageStrategy(ChannelHandlerContext ctx, SxpConnection connection,
-            MasterDatabase masterDatabase) throws Exception {
-        return this.strategy.onUpdateMessage(ctx, connection, masterDatabase);
+    public ByteBuf executeUpdateMessageStrategy(SxpConnection connection, MasterDatabase masterDatabase)
+            throws Exception {
+        return this.strategy.onUpdateMessage(connection, masterDatabase);
     }
 
     public SxpNode getOwner() {

@@ -182,7 +182,7 @@ public class Sxpv1 implements Strategy {
     }
 
     @Override
-    public ByteBuf onUpdateMessage(ChannelHandlerContext ctx, SxpConnection connection, MasterDatabase masterDatabase)
+    public ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
             throws Exception {
         // Supports: IPv4 Bindings
         // Compose new messages according to all|changed bindings and version.

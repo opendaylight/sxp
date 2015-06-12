@@ -52,6 +52,6 @@ public interface Strategy {
 
     public Notification onParseInput(ByteBuf request) throws Exception;
 
-    public ByteBuf onUpdateMessage(ChannelHandlerContext ctx, SxpConnection connection, MasterDatabase masterDatabase)
+    public ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
             throws Exception;
 }
