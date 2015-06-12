@@ -181,8 +181,8 @@ public final class BindingDispatcher extends Service<Void> {
             connection.setUpdateExported();
             Callable
                     task =
-                    createNewExportTask(connection, messagesPool.get(connectionVersion), dataPool.get(connectionVersion),
-                            releaseCounter);
+                    new UpdateExportTask(connection, messagesPool.get(connectionVersion),
+                            dataPool.get(connectionVersion), releaseCounter);
             taskPool.put(connection, task);
         }
         //Start exporting messages
@@ -193,65 +193,6 @@ public final class BindingDispatcher extends Service<Void> {
                 entry.getKey().pushUpdateMessageOutbound(entry.getValue());
             }
         }
-    }
-
-    private Callable createNewExportTask(final SxpConnection connection, final ByteBuf[] generatedMessages,
-            final MasterDatabase[] partitions, final AtomicInteger messagesReleaseCounter) {
-        return new Callable() {
-
-            @Override public Void call() throws Exception {
-                // Get connection context.
-                ChannelHandlerContext
-                        ctx =
-                        connection.getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
-                //Generate messages
-                for (int i = 0; i < partitions.length; i++) {
-                    MasterDatabase data;
-                    synchronized (partitions) {
-                        data = partitions[i];
-                        partitions[i] = null;
-                    }
-                    if (data != null) {
-                        ByteBuf message = connection.getContext().executeUpdateMessageStrategy(ctx, connection, data);
-                        synchronized (generatedMessages) {
-                            generatedMessages[i] = message;
-                            generatedMessages.notifyAll();
-                        }
-                    }
-                }
-                //Wait for all messages to be generated and then write them to pipeline
-                for (int i = 0; i < generatedMessages.length; i++) {
-                    ByteBuf message;
-                    do {
-                        synchronized (generatedMessages) {
-                            if ((message = generatedMessages[i]) == null) {
-                                generatedMessages.wait();
-                            }
-                        }
-                    } while (message == null);
-                    ctx.write(message.duplicate().retain());
-                    if (LOG.isTraceEnabled()) {
-                        LOG.trace("{} {} UPDATEv{}(" + (connection.isUpdateAllExported() ? "C" : "A") + ") {}",
-                                connection, i, connection.getVersion().getIntValue(), MessageFactory.toString(message));
-                    }
-                }
-                //Send all messages
-                try {
-                    ctx.flush();
-                    connection.setUpdateMessageExportTimestamp();
-                    connection.setUpdateAllExported();
-                } catch (Exception e) {
-                    connection.resetUpdateExported();
-                }
-                //Free weak references
-                if (messagesReleaseCounter.decrementAndGet() == 0) {
-                    for (int i = 0; i < generatedMessages.length; i++) {
-                        generatedMessages[i].release();
-                    }
-                }
-                return null;
-            }
-        };
     }
 
     /**

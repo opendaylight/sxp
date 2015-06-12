@@ -100,11 +100,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
                     messageValidationException.getErrorSubCode(), messageValidationException.getData());
         }
         if (ctx == null) {
-            if (connection.isModeBoth()) {
-                ctx = connection.getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
-            } else {
-                ctx = connection.getChannelHandlerContext();
-            }
+            ctx = connection.getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
         }
 
         LOG.info("{} Sent ERROR {}", connection, MessageFactory.toString(message));

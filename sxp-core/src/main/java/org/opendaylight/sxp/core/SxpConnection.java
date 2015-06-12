@@ -8,7 +8,6 @@
 
 package org.opendaylight.sxp.core;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -19,11 +18,11 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.core.messaging.AttributeList;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
+import org.opendaylight.sxp.core.service.UpdateExportTask;
 import org.opendaylight.sxp.util.exception.ErrorCodeDataLengthException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
@@ -152,8 +151,13 @@ public class SxpConnection {
         synchronized (inboundUpdateMessageQueue) {
             inboundUpdateMessageQueue.clear();
         }
-        synchronized (inboundUpdateMessageQueue) {
-            inboundUpdateMessageQueue.clear();
+        synchronized (outboundUpdateMessageQueue) {
+            for (Callable t : outboundUpdateMessageQueue) {
+                if (t instanceof UpdateExportTask) {
+                    ((UpdateExportTask) t).freeReferences();
+                }
+            }
+            outboundUpdateMessageQueue.clear();
         }
     }
 
@@ -278,17 +282,15 @@ public class SxpConnection {
             throws Exception {
         disableKeepAliveMechanism("Unacceptable hold time [min=" + holdTimeMin + " acc=" + holdTimeMinAcc + " max="
                 + holdTimeMax + "] | Connection termination");
-
-        ChannelHandlerContext ctx = null;
-        if (isModeBoth()) {
-            ctx = getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
-        } else {
-            ctx = getChannelHandlerContext();
-        }
         ByteBuf error = MessageFactory.createError(ErrorCode.OpenMessageError, ErrorSubCode.UnacceptableHoldTime, null);
-        LOG.info("{} Sent ERROR {}", toString(), error.toString());
-        ctx.writeAndFlush(error);
-        closeChannelHandlerContext(ctx);
+        try {
+            ChannelHandlerContext ctx = getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
+            LOG.info("{} Sent ERROR {}", toString(), error.toString());
+            ctx.writeAndFlush(error);
+            closeChannelHandlerContext(ctx);
+        } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+            error.release();
+        }
     }
 
     public List<CapabilityType> getCapabilities() {
@@ -298,42 +300,27 @@ public class SxpConnection {
         return connectionBuilder.getCapabilities().getCapability();
     }
 
-    public ChannelHandlerContext getChannelHandlerContext() throws ChannelHandlerContextNotFoundException,
-            ChannelHandlerContextDiscrepancyException {
-
-        if (ctxs.isEmpty()) {
-            throw new ChannelHandlerContextNotFoundException();
-        } else if (ctxs.size() > 1) {
-            LOG.warn(this + " Registered contexts: " + ctxs);
-            throw new ChannelHandlerContextDiscrepancyException();
-        }
-        return ctxs.keySet().iterator().next();
-    }
-
     public ChannelHandlerContext getChannelHandlerContext(ChannelHandlerContextType channelHandlerContextType)
             throws ChannelHandlerContextNotFoundException, ChannelHandlerContextDiscrepancyException {
-
-        if (!isModeBoth()) {
-            return getChannelHandlerContext();
-        }
-
-        if (ctxs.isEmpty()) {
-            throw new ChannelHandlerContextNotFoundException();
-        } else if (ctxs.size() > 2) {
-            LOG.warn(this + " Registered contexts: " + ctxs);
-            throw new ChannelHandlerContextDiscrepancyException();
-        }
-
-        for (ChannelHandlerContext ctx : ctxs.keySet()) {
-            if (ctxs.get(ctx).equals(channelHandlerContextType)) {
-                return ctx;
+        synchronized (ctxs) {
+            if (!isModeBoth()) {
+                channelHandlerContextType = ChannelHandlerContextType.None;
             }
-        }
-        throw new ChannelHandlerContextNotFoundException();
-    }
 
-    public Set<ChannelHandlerContext> getChannelHandlerContexts() {
-        return ctxs.keySet();
+            if (ctxs.isEmpty()) {
+                throw new ChannelHandlerContextNotFoundException();
+            } else if ((isModeBoth() && ctxs.size() > 2) || (!isModeBoth() && ctxs.size() > 1)) {
+                LOG.warn(this + " Registered contexts: " + ctxs);
+                throw new ChannelHandlerContextDiscrepancyException();
+            }
+
+            for (Map.Entry<ChannelHandlerContext, ChannelHandlerContextType> e : ctxs.entrySet()) {
+                if (e.getValue().equals(channelHandlerContextType) && !e.getKey().isRemoved()) {
+                    return e.getKey();
+                }
+            }
+            throw new ChannelHandlerContextNotFoundException();
+        }
     }
 
     public Connection getConnection() {
@@ -499,20 +486,21 @@ public class SxpConnection {
     public boolean isBidirectionalBoth() {
         boolean speaker = false;
         boolean listener = false;
-
-        for (ChannelHandlerContext ctx : ctxs.keySet()) {
-            switch (ctxs.get(ctx)) {
-            case SpeakerContext:
-                speaker = true;
-                continue;
-            case ListenerContext:
-                listener = true;
-                continue;
-            default:
-                break;
+        synchronized (ctxs) {
+            for (ChannelHandlerContext ctx : ctxs.keySet()) {
+                switch (ctxs.get(ctx)) {
+                    case SpeakerContext:
+                        speaker = true;
+                        continue;
+                    case ListenerContext:
+                        listener = true;
+                        continue;
+                    default:
+                        break;
+                }
             }
+            return speaker && listener;
         }
-        return speaker && listener;
     }
 
     public boolean isModeBoth() {
@@ -567,8 +555,10 @@ public class SxpConnection {
 
     public void markChannelHandlerContext(ChannelHandlerContext ctx, ChannelHandlerContextType channelHandlerContextType)
             throws Exception {
-        ctxs.remove(ctx);
-        ctxs.put(ctx, channelHandlerContextType);
+        synchronized (ctxs) {
+            ctxs.remove(ctx);
+            ctxs.put(ctx, channelHandlerContextType);
+        }
     }
 
     public void purgeBindings() throws Exception {
@@ -1005,7 +995,6 @@ public class SxpConnection {
     public void shutdown() {
         if (isModeListener()){
             try {
-                clearMessages();
                 LOG.info("{} PURGE bindings ", this);
                 purgeBindings();
             } catch (Exception e) {
@@ -1015,15 +1004,11 @@ public class SxpConnection {
         if (isModeSpeaker()) {
             ByteBuf message = MessageFactory.createPurgeAll();
             LOG.info("{} Sending PURGEALL {}", this, MessageFactory.toString(message));
-
             try {
-                if (isModeBoth()) {
-                    getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext).writeAndFlush(message);
-                } else {
-                    getChannelHandlerContext().writeAndFlush(message);
-                }
-            } catch (Exception e) {
-                LOG.error(this + " Shutdown connection | {} | ", e.getClass().getSimpleName(), e);
+                getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext).writeAndFlush(message);
+            } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+                LOG.error(this + " Shutdown connection | {} | ", e.getClass().getSimpleName());
+                message.release();
             }
         }
         setStateOff();
