@@ -94,24 +94,22 @@
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>
-    
-    <!--
-      Necessary TODO: Put dependencies for bundles directly referenced
-      in your features.xml file.  For every <bundle> reference in your
-      features.xml file, you need a corresponding dependency here.
 
-      Examples:
-      <dependency>
-        <groupId>org.opendaylight.sxp</groupId>
-        <artifactId>sxp-provider</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.sxp</groupId>
-        <artifactId>sxp-model</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-    -->
+    <dependency>
+      <groupId>org.opendaylight.sxp</groupId>
+      <artifactId>sxp-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.sxp</groupId>
+      <artifactId>sxp-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.sxp</groupId>
+      <artifactId>sxp-controller</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     
     <dependency>
       <groupId>io.netty</groupId>
@@ -131,21 +129,14 @@
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
     </dependency>
-    
-    <!--
-      Necessary TODO: Put dependencies for configfiles directly referenced
-      in your features.xml file.  For every <configfile> reference in your
-      features.xml file, you need a corresponding dependency here.
 
-      Example (presuming here version is coming from the parent pom):
-      <dependency>
-        <groupId>org.opendaylight.sxp</groupId>
-        <artifactId>sxp-config</artifactId>
-        <version>${project.version}</version>
-        <type>xml</type>
-        <classifier>config</classifier>
-      </dependency>
-    -->
+    <dependency>
+      <groupId>org.opendaylight.sxp</groupId>
+      <artifactId>sxp-config</artifactId>
+      <version>${project.version}</version>
+      <type>xml</type>
+      <classifier>${configfilebase}</classifier>
+    </dependency>
 
     <!--
       Optional TODO: Remove TODO comments.
