@@ -9,9 +9,10 @@
 package org.opendaylight.sxp.util.time.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
+import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
+import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 
@@ -30,21 +31,17 @@ public class KeepAliveTimerTask extends SxpTimerTask<Void> {
         LOG.debug(connection + " {} [{}]", getClass().getSimpleName(), getPeriod());
 
         if (connection.isStateOn() && connection.isModeSpeaker() && connection.isVersion4()) {
-            try {
-                if (connection.getTimestampUpdateMessageExport() + TimeUnit.SECONDS.toMillis(getPeriod())
-                        <= System.currentTimeMillis()) {
-                    ChannelHandlerContext
-                            ctx =
-                            connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext);
-                    ByteBuf keepalive = MessageFactory.createKeepalive();
-                    if (!ctx.isRemoved()) {
-                        LOG.info("{} Sent KEEPALIVE {}", connection, MessageFactory.toString(keepalive));
-                        ctx.writeAndFlush(keepalive);
-                    } else
-                        LOG.warn("{} Can not send KEEPALIVE {}", connection, MessageFactory.toString(keepalive));
+            if (connection.getTimestampUpdateMessageExport() + TimeUnit.SECONDS.toMillis(getPeriod())
+                    <= System.currentTimeMillis()) {
+                ByteBuf keepAlive = MessageFactory.createKeepalive();
+                try {
+                    LOG.info("{} Sent KEEPALIVE {}", connection, MessageFactory.toString(keepAlive));
+                    connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext)
+                            .writeAndFlush(keepAlive);
+                } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+                    LOG.warn("{} ERROR sending KEEPALIVE ", connection, e);
+                    keepAlive.release();
                 }
-            } catch (Exception e) {
-                LOG.warn("{} ERROR sending KEEPALIVE ", connection, e);
             }
             connection.setTimer(TimerType.KeepAliveTimer, getPeriod());
         }

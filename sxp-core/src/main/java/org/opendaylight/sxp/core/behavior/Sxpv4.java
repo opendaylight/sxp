@@ -207,7 +207,7 @@ public final class Sxpv4 extends Sxpv3 {
                     if (connection.isBidirectionalBoth()) {
                         // Setup connection parameters.
                         connection.setConnection(_message);
-                        LOG.info("{} Connected {}", connection, connection.getChannelHandlerContexts());
+                        LOG.info("{} Connected", connection);
                     }
                     return;
                 }
@@ -262,7 +262,7 @@ public final class Sxpv4 extends Sxpv3 {
                     if (connection.isBidirectionalBoth()) {
                         // Setup connection parameters.
                         connection.setConnection(_message);
-                        LOG.info("{} Connected {}", connection, connection.getChannelHandlerContexts());
+                        LOG.info("{} Connected", connection);
                     }
                     return;
                 }
@@ -333,7 +333,7 @@ public final class Sxpv4 extends Sxpv3 {
     }
 
     @Override
-    public ByteBuf onUpdateMessage(ChannelHandlerContext ctx, SxpConnection connection, MasterDatabase masterDatabase)
+    public ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
             throws Exception {
         // Supports: New implementations of IPv4 Binding, IPv6 Bindings, Subnet
         // Bindings Expansion.

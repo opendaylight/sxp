@@ -34,9 +34,9 @@ public class Sxpv2 extends Sxpv1 {
     }
 
     @Override
-    public ByteBuf onUpdateMessage(ChannelHandlerContext ctx, SxpConnection connection, MasterDatabase masterDatabase)
+    public ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
             throws Exception {
         // + IPv6 Bindings
-        return super.onUpdateMessage(ctx, connection, masterDatabase);
+        return super.onUpdateMessage(connection, masterDatabase);
     }
 }
