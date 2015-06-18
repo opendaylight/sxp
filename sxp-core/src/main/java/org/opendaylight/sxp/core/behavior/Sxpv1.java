@@ -90,11 +90,6 @@ public class Sxpv1 implements Strategy {
         if (message instanceof OpenMessageLegacy) {
             OpenMessageLegacy _message = (OpenMessageLegacy) message;
             if (_message.getType().equals(MessageType.Open)) {
-                // Version negotiation to start connection on correct version.
-                Version version = Version.forValue(
-                        Math.min(connection.getVersion().getIntValue(),
-                                _message.getVersion().getIntValue()));
-
                 // The SXP-mode, if not configured explicitly within the device,
                 // is set to the opposite value of the one received in the OPEN
                 // message.
@@ -117,7 +112,7 @@ public class Sxpv1 implements Strategy {
                 // Starts sending IP-SGT mappings using the SXP connection.
                 LOG.info("{} Connected", connection);
                 // Send the OPEN_RESP message with the chosen SXP version.
-                ByteBuf response = LegacyMessageFactory.createOpenResp(version, connection.getMode());
+                ByteBuf response = LegacyMessageFactory.createOpenResp(connection.getVersion(), connection.getMode());
                 LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
                 ctx.writeAndFlush(response);
                 return;
@@ -140,7 +135,7 @@ public class Sxpv1 implements Strategy {
 
         } else if (message instanceof UpdateMessageLegacy) {
             // Accepted only if connection is in ON state.
-            if (!connection.isStateOn()) {
+            if (!connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)) {
                 throw new UpdateMessageConnectionStateException(connection.getState());
             }
             connection.setUpdateOrKeepaliveMessageTimestamp();

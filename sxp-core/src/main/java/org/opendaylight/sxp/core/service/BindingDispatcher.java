@@ -124,8 +124,6 @@ public final class BindingDispatcher extends Service<Void> {
         for (final SxpConnection connection : connections) {
             if (connection.isUpdateExported()) {
                 continue;
-            } else if (connection.isModeBoth() && !connection.isBidirectionalBoth()) {
-                continue;
             }
             final Version connectionVersion = connection.getVersion();
             /*

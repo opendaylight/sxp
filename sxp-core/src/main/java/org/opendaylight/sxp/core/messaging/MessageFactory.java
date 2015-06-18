@@ -373,7 +373,7 @@ public class MessageFactory {
         MessageType messageType = MessageType.forValue(ArraysUtil.bytes2int(headerType));
 
         // Remote can send OpenResp with different version
-        if(messageType == MessageType.OpenResp) {
+        if (messageType == MessageType.OpenResp || messageType == MessageType.Open) {
             final Version remoteVersion = extractVersion(payload);
             // Override version setting for parsing
             if(remoteVersion != version) {

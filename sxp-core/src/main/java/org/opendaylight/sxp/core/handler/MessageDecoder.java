@@ -129,7 +129,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
             return;
         }
         // Connection is already functional, do not add new channel context.
-        if (connection.isStateOn()) {
+        if (connection.isStateOn() && (!connection.isModeBoth() || connection.isBidirectionalBoth())) {
             ctx.close();
             return;
         }
@@ -143,7 +143,10 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
         // System.out.println("R" + ctx.channel().remoteAddress());
         connection.setInetSocketAddresses(ctx.channel().localAddress(), ctx.channel().remoteAddress());
         connection.addChannelHandlerContext(ctx);
-        connection.getContext().executeChannelActivationStrategy(ctx, connection);
+        if (!connection.isModeBoth() || !connection.isStateOn(ChannelHandlerContextType.ListenerContext))
+        {
+            connection.getContext().executeChannelActivationStrategy(ctx, connection);
+        }
     }
 
     @Override
@@ -194,11 +197,9 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
             } catch (IndexOutOfBoundsException e) {
                 LOG.info(getLogMessage(owner, ctx, "Unsupported message input: " + MessageFactory.toString(message),
                         null));
-                e.printStackTrace();
                 break;
             } catch (Exception e) {
                 LOG.warn(getLogMessage(owner, ctx, "Channel read", e) + ": {}", MessageFactory.toString(message));
-                e.printStackTrace();
                 break;
             }
         } while (message.readableBytes() != 0);
