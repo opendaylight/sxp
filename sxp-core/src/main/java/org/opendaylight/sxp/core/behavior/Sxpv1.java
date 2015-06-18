@@ -65,16 +65,22 @@ public class Sxpv1 implements Strategy {
 
     @Override
     public void onChannelInactivation(ChannelHandlerContext ctx, SxpConnection connection) throws Exception {
-        if (!connection.isPurgeAllMessageReceived()) {
-            if (connection.isStateOn() && connection.isModeSpeaker()) {
-                ctx.writeAndFlush(MessageFactory.createPurgeAll());
-            } else if (connection.isStateOn() && connection.isModeListener()) {
-                LOG.info(connection + " onChannelInactivation/setDeleteHoldDownTimer");
-                connection.setDeleteHoldDownTimer();
-                return;
+        if (connection.isStateOn(connection.getContextType(ctx))) {
+            switch (connection.getContextType(ctx)) {
+                case ListenerContext:
+                    if (!connection.isPurgeAllMessageReceived()) {
+                        LOG.info(connection + " onChannelInactivation/setDeleteHoldDownTimer");
+                        connection.setDeleteHoldDownTimer();
+                    } else {
+                        connection.setStateOff(ctx);
+                    }
+                    break;
+                case SpeakerContext:
+                    ctx.writeAndFlush(MessageFactory.createPurgeAll());
+                    connection.setStateOff(ctx);
+                    break;
             }
         }
-        connection.setStateOff(ctx);
     }
 
     @Override
