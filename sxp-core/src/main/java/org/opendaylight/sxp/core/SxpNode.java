@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.core;
 
+import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
 import java.net.InetAddress;
@@ -19,6 +20,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -41,6 +45,7 @@ import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
+import org.opendaylight.tcpmd5.jni.NativeSupportUnavailableException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
@@ -182,6 +187,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
 
         SxpConnection _connection = SxpConnection.create(this, connection);
         put(_connection.getDestination(), _connection);
+        openConnection(_connection);
     }
 
     public void addConnections(Connections connections) throws Exception {
@@ -256,7 +262,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
                 continue;
             }
             SxpConnection connection = get(inetAddress);
-            if (connection.isStateOn()
+            if (connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)
                     && (connection.getMode().equals(ConnectionMode.Listener) || connection.isModeBoth())) {
                 connections.add(connection);
             }
@@ -271,7 +277,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
                 continue;
             }
             SxpConnection connection = get(inetAddress);
-            if (connection.isStateOn()
+            if (connection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext)
                     && (connection.getMode().equals(ConnectionMode.Speaker) || connection.isModeBoth())) {
                 connections.add(connection);
             }
@@ -444,33 +450,34 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
 
         final SxpNode node = this;
 
-        final int connectionsAllSize = size();
         final int connectionsOnSize = getAllOnConnections().size();
         final List<SxpConnection> connections = getAllOffConnections();
-        final int connectionsOffSize = connections.size();
 
         worker.executeTask(new Runnable() {
 
             @Override public void run() {
+                LOG.info(node + " Open connections [X/O/All=\"" + connections.size() + "/" + connectionsOnSize + "/"
+                                + node.size() + "\"]");
                 for (final SxpConnection connection : connections) {
-                    LOG.info(connection + " Open connection [Id/X/O/All=\"" + (connections.indexOf(connection)
-                            + 1) + "/" + connectionsOffSize + "/" + connectionsOnSize + "/" + connectionsAllSize
-                            + "\"]");
-
-                    try {
-                        connection.setStatePendingOn();
-                        ConnectFacade.createClient(node, connection, handlerFactoryClient);
-                    } catch (Exception e) {
-                        // Connection is not established by adverse party
-                        // before.
-                        if (connection.isStatePendingOn()) {
-                            connection.setStateOff();
-                            LOG.warn(connection + " {}", e.getMessage());
-                        }
-                    }
+                    openConnection(connection);
                 }
             }
         }, ThreadsWorker.WorkerType.DEFAULT);
+    }
+
+    /**
+     * Connect specified connection to remote peer
+     *
+     * @param connection Connection containing necessary information for connecting to peer
+     */
+    public synchronized void openConnection(final SxpConnection connection){
+        if (connection.isStateOff()) {
+            try {
+                ConnectFacade.createClient(this, Preconditions.checkNotNull(connection), handlerFactoryClient);
+            } catch (NativeSupportUnavailableException e) {
+                LOG.warn(connection + " {}", e.getMessage());
+            }
+        }
     }
 
     public void processUpdateMessage(UpdateMessage message, SxpConnection connection) throws InterruptedException {

@@ -290,7 +290,7 @@ public final class Sxpv4 extends Sxpv3 {
 
         } else if (message instanceof UpdateMessage) {
             // Accepted only if connection is in ON state.
-            if (!connection.isStateOn() && !connection.isModeBoth()) {
+            if (!connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)) {
                 throw new UpdateMessageConnectionStateException(connection.getState());
             }
             connection.setUpdateOrKeepaliveMessageTimestamp();

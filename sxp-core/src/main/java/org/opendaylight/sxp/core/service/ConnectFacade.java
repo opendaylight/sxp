@@ -72,7 +72,7 @@ public class ConnectFacade {
     };
 
     public static ChannelFuture createClient(SxpNode node, SxpConnection connection, final HandlerFactory hf)
-            throws Exception {
+            throws NativeSupportUnavailableException {
         Bootstrap bootstrap = new Bootstrap();
 
         if (connection.getPasswordType().equals(PasswordType.Default) && node.getPassword() != null

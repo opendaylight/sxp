@@ -67,7 +67,8 @@ public class SxpConnection {
 
     private Context context;
 
-    protected HashMap<ChannelHandlerContext, ChannelHandlerContextType> ctxs = new HashMap<>(4);
+    private List<ChannelHandlerContext> initCtxs = new ArrayList<>(2);
+    protected HashMap<ChannelHandlerContextType, ChannelHandlerContext> ctxs = new HashMap<>(2);
 
     protected InetSocketAddress destination;
 
@@ -185,9 +186,9 @@ public class SxpConnection {
     }
 
     public void addChannelHandlerContext(ChannelHandlerContext ctx) throws Exception {
-        synchronized (ctxs) {
-            this.ctxs.put(ctx, ChannelHandlerContextType.None);
-            LOG.debug(this + " Add channel context {}/{}", ctx, ctxs);
+        synchronized (initCtxs) {
+            initCtxs.add(ctx);
+            LOG.debug(this + " Add init channel context {}/{}", ctx, initCtxs);
         }
     }
 
@@ -220,50 +221,64 @@ public class SxpConnection {
     }
 
     public void closeChannelHandlerContext(ChannelHandlerContext ctx) {
-        synchronized (ctxs) {
-            for (ChannelHandlerContext _ctx : ctxs.keySet()) {
-                if (_ctx.equals(ctx)) {
-                    _ctx.close();
-                    ctxs.remove(_ctx);
-                    return;
+        try {
+            synchronized (initCtxs) {
+                initCtxs.remove(ctx);
+            }
+            synchronized (ctxs) {
+                ChannelHandlerContextType type = null;
+                for (Map.Entry<ChannelHandlerContextType, ChannelHandlerContext> e : ctxs.entrySet()) {
+                    if (e.getValue().equals(ctx)) {
+                        type = e.getKey();
+                    }
+                }
+                if (type != null) {
+                    ctxs.remove(type);
                 }
             }
+            ctx.close().sync();
+        } catch (InterruptedException e) {
+            LOG.warn("{} Error closing ChannelHandlerContext", this, e);
         }
     }
 
     public void closeChannelHandlerContextComplements(ChannelHandlerContext ctx) {
-        synchronized (ctxs) {
-            List<ChannelHandlerContext> complements = new ArrayList<ChannelHandlerContext>();
-            for (ChannelHandlerContext _ctx : ctxs.keySet()) {
-                if (!_ctx.equals(ctx)) {
-                    complements.add(_ctx);
+        try {
+            synchronized (initCtxs) {
+                initCtxs.remove(ctx);
+                for (ChannelHandlerContext _ctx : initCtxs) {
+                    _ctx.close().sync();
                 }
+                initCtxs.clear();
             }
-            for (ChannelHandlerContext _ctx : complements) {
-                LOG.info(this + " Dual channel closed {}", _ctx);
-                _ctx.close();
+            //Aware that this method is only used for Non Both mode so there is no setup for it ...
+            if (isModeListener()) {
+                markChannelHandlerContext(ctx, ChannelHandlerContextType.ListenerContext);
+            } else if (isModeSpeaker()) {
+                markChannelHandlerContext(ctx, ChannelHandlerContextType.SpeakerContext);
             }
-
-            // Complements should be removed here. In a very slow environment,
-            // the delay between ctx.close() performing and the following
-            // removing channel context after the successful closing from the
-            // ctxs register causes ChannelHandlerContextDiscrepancyException
-            // in parallel Binding Dispatcher processes.
-            for (ChannelHandlerContext complement : complements) {
-                ctxs.remove(complement);
-            }
+        } catch (InterruptedException e) {
+            LOG.warn("{} Error closing ChannelHandlerContext", this, e);
         }
     }
 
     //on inactive clear content
     public void closeChannelHandlerContexts() {
-        synchronized (ctxs) {
-            if (ctxs != null) {
-                for (ChannelHandlerContext _ctx : ctxs.keySet()) {
-                    _ctx.close();
+        try {
+            synchronized (initCtxs) {
+                for (ChannelHandlerContext _ctx : initCtxs) {
+                    _ctx.close().sync();
+                }
+                initCtxs.clear();
+            }
+            synchronized (ctxs) {
+                for (ChannelHandlerContext _ctx : ctxs.values()) {
+                    _ctx.close().sync();
                 }
                 ctxs.clear();
             }
+        } catch (InterruptedException e) {
+            LOG.warn("{} Error closing ChannelHandlerContext", this, e);
         }
     }
 
@@ -303,23 +318,15 @@ public class SxpConnection {
     public ChannelHandlerContext getChannelHandlerContext(ChannelHandlerContextType channelHandlerContextType)
             throws ChannelHandlerContextNotFoundException, ChannelHandlerContextDiscrepancyException {
         synchronized (ctxs) {
-            if (!isModeBoth()) {
-                channelHandlerContextType = ChannelHandlerContextType.None;
-            }
-
-            if (ctxs.isEmpty()) {
-                throw new ChannelHandlerContextNotFoundException();
-            } else if ((isModeBoth() && ctxs.size() > 2) || (!isModeBoth() && ctxs.size() > 1)) {
+            if ((isModeBoth() && ctxs.size() > 2) || (!isModeBoth() && ctxs.size() > 1)) {
                 LOG.warn(this + " Registered contexts: " + ctxs);
                 throw new ChannelHandlerContextDiscrepancyException();
             }
-
-            for (Map.Entry<ChannelHandlerContext, ChannelHandlerContextType> e : ctxs.entrySet()) {
-                if (e.getValue().equals(channelHandlerContextType) && !e.getKey().isRemoved()) {
-                    return e.getKey();
-                }
+            ChannelHandlerContext ctx = ctxs.get(channelHandlerContextType);
+            if (ctx == null || ctx.isRemoved()) {
+                throw new ChannelHandlerContextNotFoundException();
             }
-            throw new ChannelHandlerContextNotFoundException();
+            return ctx;
         }
     }
 
@@ -484,22 +491,11 @@ public class SxpConnection {
     }
 
     public boolean isBidirectionalBoth() {
-        boolean speaker = false;
-        boolean listener = false;
         synchronized (ctxs) {
-            for (ChannelHandlerContext ctx : ctxs.keySet()) {
-                switch (ctxs.get(ctx)) {
-                    case SpeakerContext:
-                        speaker = true;
-                        continue;
-                    case ListenerContext:
-                        listener = true;
-                        continue;
-                    default:
-                        break;
-                }
-            }
-            return speaker && listener;
+            return ctxs.containsKey(ChannelHandlerContextType.ListenerContext) && !ctxs.get(
+                    ChannelHandlerContextType.ListenerContext).isRemoved() && ctxs.containsKey(
+                    ChannelHandlerContextType.SpeakerContext) && !ctxs.get(ChannelHandlerContextType.SpeakerContext)
+                    .isRemoved();
         }
     }
 
@@ -525,11 +521,26 @@ public class SxpConnection {
     }
 
     public boolean isStateOff() {
-        return getState().equals(ConnectionState.Off);
+        return getState().equals(ConnectionState.Off) || (isModeBoth() && !isBidirectionalBoth());
     }
 
     public boolean isStateOn() {
         return getState().equals(ConnectionState.On);
+    }
+
+    /**
+     * Test if specified function of Connection is On
+     *
+     * @param type Specifies function (Speaker/Listener)
+     * @return if functionality is active on Connection
+     */
+    public boolean isStateOn(ChannelHandlerContextType type) {
+        if (isModeBoth() && !type.equals(ChannelHandlerContextType.None)) {
+            synchronized (ctxs) {
+                return ctxs.containsKey(type);
+            }
+        }
+        return isStateOn();
     }
 
     public boolean isStatePendingOn() {
@@ -553,11 +564,13 @@ public class SxpConnection {
         return getVersion().equals(Version.Version4);
     }
 
-    public void markChannelHandlerContext(ChannelHandlerContext ctx, ChannelHandlerContextType channelHandlerContextType)
-            throws Exception {
+    public void markChannelHandlerContext(ChannelHandlerContext ctx,
+            ChannelHandlerContextType channelHandlerContextType) {
+        synchronized (initCtxs) {
+            initCtxs.remove(ctx);
+        }
         synchronized (ctxs) {
-            ctxs.remove(ctx);
-            ctxs.put(ctx, channelHandlerContextType);
+            ctxs.put(channelHandlerContextType, ctx);
         }
     }
 

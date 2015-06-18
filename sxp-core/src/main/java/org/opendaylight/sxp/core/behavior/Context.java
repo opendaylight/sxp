@@ -14,12 +14,11 @@ import io.netty.channel.ChannelHandlerContext;
 
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.messaging.MessageFactory;
+import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.OpenMessage;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.OpenMessageLegacy;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.*;
 import org.opendaylight.yangtools.yang.binding.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,12 +57,31 @@ public final class Context {
         // Version negotiation detection
         if (isOpenRespMessage(message)) {
             Version negotiatedVersion = extractVersion(message);
-            if(isVersionMismatch(negotiatedVersion)) {
+            if (isVersionMismatch(negotiatedVersion)) {
                 // Update strategy according to version specified is Open Resp from remote
                 LOG.info("{} SXP version negotiated to {} from {}", connection, negotiatedVersion, version);
                 connection.setBehaviorContexts(negotiatedVersion);
                 // Delegate the processing of current message to new context
                 connection.getContext().executeInputMessageStrategy(ctx, connection, message);
+                return;
+            }
+        } else if (isOpenMessage(message)) {
+            Version negotiatedVersion = extractVersion(message);
+            if (isVersionMismatch(negotiatedVersion)) {
+                if (connection.getVersion().equals(Version.Version1)) {
+                    ByteBuf error = LegacyMessageFactory.createError(ErrorCodeNonExtended.VersionMismatch);
+                    LOG.info("{} Sent ERROR {}", toString(), error.toString());
+                    ctx.writeAndFlush(error);
+                    connection.closeChannelHandlerContext(ctx);
+                    connection.getOwner().openConnection(connection);
+                } else {
+                    // Update strategy according to version specified in Open from remote
+                    LOG.info("{} SXP version dropping version down from {} to {}", connection, version,
+                            negotiatedVersion);
+                    connection.setBehaviorContexts(negotiatedVersion);
+                    // Delegate the processing of current message to new context
+                    connection.getContext().executeInputMessageStrategy(ctx, connection, message);
+                }
                 return;
             }
         }
@@ -94,6 +112,15 @@ public final class Context {
         boolean isOpenResp = message instanceof OpenMessage && ((OpenMessage) message).getType() == MessageType.OpenResp;
         isOpenResp |= message instanceof OpenMessageLegacy && ((OpenMessageLegacy) message).getType() == MessageType.OpenResp;
         return isOpenResp;
+    }
+
+    /**
+     * Check if the message is Open in any version
+     */
+    private boolean isOpenMessage(final Notification message) {
+        boolean isOpen = message instanceof OpenMessage && ((OpenMessage) message).getType() == MessageType.Open;
+        isOpen |= message instanceof OpenMessageLegacy && ((OpenMessageLegacy) message).getType() == MessageType.Open;
+        return isOpen;
     }
 
     public Notification executeParseInput(ByteBuf request) throws Exception {
