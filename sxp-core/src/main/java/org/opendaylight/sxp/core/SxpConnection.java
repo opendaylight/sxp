@@ -537,7 +537,7 @@ public class SxpConnection {
     public boolean isStateOn(ChannelHandlerContextType type) {
         if (isModeBoth() && !type.equals(ChannelHandlerContextType.None)) {
             synchronized (ctxs) {
-                return ctxs.containsKey(type);
+                return ctxs.containsKey(type) && !ctxs.get(type).isRemoved();
             }
         }
         return isStateOn();
@@ -917,16 +917,64 @@ public class SxpConnection {
         clearMessages();
     }
 
+    /**
+     * Gets type of ChannelHandlerContext in current connection,
+     * if ChannelHandlerContext is not used in this connection return None
+     *
+     * @param ctx ChannelHandlerContext  to be tested
+     * @return Type of ChannelHandlerContext in this connection
+     */
+    public ChannelHandlerContextType getContextType(ChannelHandlerContext ctx){
+        ChannelHandlerContextType type = ChannelHandlerContextType.None;
+        synchronized (ctxs) {
+            for (Map.Entry<ChannelHandlerContextType, ChannelHandlerContext> e : ctxs.entrySet()) {
+                if (e.getValue().equals(ctx)) {
+                    type = e.getKey();
+                    break;
+                }
+            }
+        }
+        return type;
+    }
+
     public void setStateOff(ChannelHandlerContext ctx) {
         closeChannelHandlerContext(ctx);
         if (ctxs.isEmpty()) {
-            connectionBuilder.setState(ConnectionState.Off);
+            setStateOff();
+        } else {
+            switch (getContextType(ctx)) {
+                case ListenerContext:
+                    connectionBuilder.setPurgeAllMessageReceived(false);
+                    setTimer(TimerType.DeleteHoldDownTimer, null);
+                    setTimer(TimerType.ReconciliationTimer,null);
+                    try {
+                        setTimer(TimerType.HoldTimer,0);
+                    } catch (UnknownTimerTypeException e) {
+                        e.printStackTrace();
+                    }
+                    synchronized (inboundUpdateMessageQueue) {
+                        inboundUpdateMessageQueue.clear();
+                    }
+                    break;
+                case SpeakerContext:
+                    connectionBuilder.setUpdateAllExported(false);
+                    connectionBuilder.setUpdateExported(false);
+                    try {
+                        setTimer(TimerType.KeepAliveTimer,0);
+                    } catch (UnknownTimerTypeException e) {
+                        e.printStackTrace();
+                    }
+                    synchronized (outboundUpdateMessageQueue) {
+                        for (Callable t : outboundUpdateMessageQueue) {
+                            if (t instanceof UpdateExportTask) {
+                                ((UpdateExportTask) t).freeReferences();
+                            }
+                        }
+                        outboundUpdateMessageQueue.clear();
+                    }
+                    break;
+            }
         }
-        connectionBuilder.setUpdateAllExported(false);
-        connectionBuilder.setUpdateExported(false);
-        connectionBuilder.setPurgeAllMessageReceived(false);
-        stopTimers();
-        clearMessages();
     }
 
     private void stopTimers() {
