@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7a7fa997_7873cbb1",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/SxpConnection.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 953,
+      "author": {
+        "id": 612
+      },
+      "writtenOn": "2015-06-18T15:30:19Z",
+      "side": 1,
+      "message": "log",
+      "range": {
+        "startLine": 953,
+        "startChar": 24,
+        "endLine": 953,
+        "endChar": 44
+      },
+      "revId": "14645d8eaae4810913bf96f89f597806a00e9ab3",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a7fa997_186897b9",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/SxpConnection.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 965,
+      "author": {
+        "id": 612
+      },
+      "writtenOn": "2015-06-18T15:30:19Z",
+      "side": 1,
+      "message": "log",
+      "range": {
+        "startLine": 965,
+        "startChar": 24,
+        "endLine": 965,
+        "endChar": 44
+      },
+      "revId": "14645d8eaae4810913bf96f89f597806a00e9ab3",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
