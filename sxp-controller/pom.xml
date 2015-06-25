@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.opendaylight.sxp</groupId>
         <artifactId>sxp-parent</artifactId>
-        <version>1.1-Lithium</version>
+        <version>1.1.1-SNAPSHOT</version>
     </parent>
     <artifactId>sxp-controller</artifactId>
     <packaging>bundle</packaging>
