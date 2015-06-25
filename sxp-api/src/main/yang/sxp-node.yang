@@ -238,7 +238,7 @@ module sxp-node {
          	config false; 
         	type sxppt:connection-state;
         	description "Current state of the connection";
-        	default "Off";
+        	default "off";
         }                                    
         leaf mode {
         	mandatory true;
