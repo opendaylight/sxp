@@ -214,9 +214,7 @@ public final class BindingManager extends Service<Void> {
                     owner.setSvcBindingDispatcherDispatch();
                 }
             } catch (Exception e) {
-                LOG.warn(owner + " " + BindingManager.class.getSimpleName() + " | {} | {}", e.getClass()
-                        .getSimpleName(), e.getMessage());
-                e.printStackTrace();
+                LOG.warn("{} {} ", owner, BindingManager.class.getSimpleName(), e);
             }
         }
         return null;
