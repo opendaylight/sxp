@@ -19,10 +19,6 @@ public final class TimeConv {
 
     private static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
-    public static void main(String[] args) throws Exception {
-        System.out.print("Time='" + toLong(new DateAndTime("2014-11-22T15:54:00Z")) + "'");
-    }
-
     public static synchronized DateAndTime toDt(long currentTime) {
         return new DateAndTime(df.format(new Date(currentTime)));
     }
