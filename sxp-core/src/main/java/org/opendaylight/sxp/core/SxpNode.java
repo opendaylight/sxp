@@ -601,7 +601,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      * @throws IllegalArgumentException If size of partitioning is bellow 2 or above 150
      */
     public void setMessagePartitionSize(int size) throws IllegalArgumentException {
-        if (svcBindingDispatcher != null && svcBindingDispatcher instanceof BindingDispatcher) {
+        if (svcBindingDispatcher instanceof BindingDispatcher) {
             ((BindingDispatcher) svcBindingDispatcher).setPartitionSize(size);
         }
     }
@@ -624,7 +624,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
             try {
                 wait(THREAD_DELAY);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                LOG.warn("{} Error while shut down ", this, e);
             }
         }
         try {
@@ -649,16 +649,8 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
 
     public synchronized void shutdownConnections() {
         for (SxpConnection connection : values()) {
-            connection.shutdown();
-
-            if (connection.isModeListener()) {
-                try {
-                    getBindingMasterDatabase().purgeBindings(connection.getNodeIdRemote());
-                    getBindingSxpDatabase().purgeBindings(connection.getNodeIdRemote());
-                } catch (Exception e) {
-                    LOG.error(connection + " Shutdown connections | {} | {}", e.getClass().getSimpleName(),
-                            e.getMessage());
-                }
+            if (!connection.isStateOff()) {
+                connection.shutdown();
             }
         }
     }
