@@ -481,8 +481,7 @@ public final class BindingHandler {
                 owner.setSvcBindingManagerNotify();
             }
         } catch (Exception e) {
-            LOG.warn(owner + " Process legacy message deletion | {} | {}", e.getClass().getSimpleName(), e.getMessage());
-            e.printStackTrace();
+            LOG.warn("{} Process legacy message deletion ", owner, e);
             return;
         }
 
@@ -502,8 +501,7 @@ public final class BindingHandler {
                 }
             }
         } catch (Exception e) {
-            LOG.warn(owner + " Process legacy message addition | {} | {}", e.getClass().getSimpleName(), e.getMessage());
-            e.printStackTrace();
+            LOG.warn(" Process legacy message addition ", owner, e);
             return;
         }
     }
@@ -575,8 +573,7 @@ public final class BindingHandler {
                 owner.setSvcBindingManagerNotify();
             }
         } catch (Exception e) {
-            LOG.warn(owner + " Process message deletion | {} | {}", e.getClass().getSimpleName(), e.getMessage());
-            e.printStackTrace();
+            LOG.warn(" Process message deletion ", owner, e);
             return;
         }
 
@@ -584,8 +581,7 @@ public final class BindingHandler {
         try {
             database = processMessageAddition(updateNotification.getMessage());
         } catch (Exception e) {
-            LOG.warn(owner + " Process message addition | {} | {}", e.getClass().getSimpleName(), e.getMessage());
-            e.printStackTrace();
+            LOG.warn(" Process message addition ", owner, e);
             return;
         }
         // Loop detection.
@@ -611,8 +607,7 @@ public final class BindingHandler {
                 }
             }
         } catch (Exception e) {
-            LOG.warn(owner + " Process message addition | {} | {}", e.getClass().getSimpleName(), e.getMessage());
-            e.printStackTrace();
+            LOG.warn(" Process message addition | {} | {}", owner, e);
             return;
         }
     }

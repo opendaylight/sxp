@@ -89,8 +89,6 @@ public final class BindingDispatcher extends Service<Void> {
                             LOG.warn(owner + " Dispatcher clearing failed {}", e.getClass().getSimpleName(), e);
                         }
                     }
-                } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-                    LOG.warn(owner + " Processing export {} | Waiting..", e.getClass().getSimpleName());
                 } catch (Exception e) {
                     LOG.warn(owner + " Processing export {}", e.getClass().getSimpleName(), e);
                 }
@@ -244,11 +242,8 @@ public final class BindingDispatcher extends Service<Void> {
                             processUpdateSequence(masterDatabase, resumedConnections);
                         }
                     }
-                } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-                    LOG.warn(owner + " Processing export {} | Waiting..", e.getClass().getSimpleName());
                 } catch (Exception e) {
-                    LOG.warn(owner + " Processing export {} | {}", e.getClass().getSimpleName(), e.getMessage());
-                    e.printStackTrace();
+                    LOG.warn("{} Processing export ", owner, e);
                 }
             }
         }
