@@ -23,11 +23,11 @@ public class MappingRecordList extends ArrayList<MappingRecord> {
 
     public static MappingRecordList decode(byte[] array) throws Exception {
         MappingRecordList mappingRecordList = new MappingRecordList();
-        do {
+        while (array != null && array.length != 0) {
             MappingRecord mappingRecord = org.opendaylight.sxp.core.messaging.legacy.MappingRecord.decode(array);
             mappingRecordList.add(mappingRecord);
             array = ArraysUtil.readBytes(array, mappingRecord.getLength());
-        } while (array.length != 0);
+        }
         return mappingRecordList;
     }
 
