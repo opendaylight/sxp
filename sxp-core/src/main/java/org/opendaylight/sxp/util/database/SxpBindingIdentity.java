@@ -65,6 +65,29 @@ public class SxpBindingIdentity {
         return prefixGroup;
     }
 
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        SxpBindingIdentity identity = (SxpBindingIdentity) o;
+
+        if (!binding.equals(identity.binding))
+            return false;
+        if (!pathGroup.equals(identity.pathGroup))
+            return false;
+        return prefixGroup.equals(identity.prefixGroup);
+
+    }
+
+    @Override public int hashCode() {
+        int result = binding.hashCode();
+        result = 31 * result + pathGroup.hashCode();
+        result = 31 * result + prefixGroup.hashCode();
+        return result;
+    }
+
     @Override
     public String toString() {
         String result = NodeIdConv.toString(pathGroup.getPeerSequence());
