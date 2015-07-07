@@ -12,6 +12,9 @@ import java.util.Arrays;
 
 public final class ArraysUtil {
     public static int bytes2int(byte[] bytes) {
+        if (bytes == null) {
+            return 0;
+        }
         switch (bytes.length) {
         case 1:
             return bytes[0] & 0xFF;
@@ -36,14 +39,18 @@ public final class ArraysUtil {
 
         int combinedLength = 0;
         for (byte[] _bytes : bytes) {
-            combinedLength += _bytes.length;
+            if (_bytes != null) {
+                combinedLength += _bytes.length;
+            }
         }
 
         byte[] combined = new byte[combinedLength];
         int shift = 0;
         for (int i = 0; i < bytes.length; i++) {
-            System.arraycopy(bytes[i], 0, combined, shift, bytes[i].length);
-            shift += bytes[i].length;
+            if (bytes[i] != null) {
+                System.arraycopy(bytes[i], 0, combined, shift, bytes[i].length);
+                shift += bytes[i].length;
+            }
         }
         return combined;
     }
@@ -62,6 +69,9 @@ public final class ArraysUtil {
     }
 
     public static byte[] copy(byte[] source) {
+        if (source == null) {
+            return new byte[0];
+        }
         byte[] result = new byte[source.length];
         System.arraycopy(source, 0, result, 0, source.length);
         return result;
@@ -82,12 +92,18 @@ public final class ArraysUtil {
     }
 
     public static byte[] readBytes(byte[] source, int start) {
+        if (source == null || source.length == 0) {
+            return new byte[0];
+        }
         byte[] result = new byte[source.length - start];
         System.arraycopy(source, start, result, 0, source.length - start);
         return result;
     }
 
     public static byte[] readBytes(byte[] source, int start, int length) {
+        if (source == null || source.length == 0) {
+            return new byte[0];
+        }
         byte[] result = new byte[length];
         System.arraycopy(source, start, result, 0, length);
         return result;
@@ -110,6 +126,9 @@ public final class ArraysUtil {
     }
 
     public static byte[] trimZerosPrime(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return new byte[0];
+        }
         int i = 0;
         while (i < bytes.length && bytes[i] == 0) {
             i++;
@@ -118,6 +137,9 @@ public final class ArraysUtil {
     }
 
     public static byte[] trimZerosTail(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return new byte[0];
+        }
         int i = bytes.length - 1;
         while (i >= 0 && bytes[i] == 0) {
             i--;
