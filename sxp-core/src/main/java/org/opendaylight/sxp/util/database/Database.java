@@ -28,6 +28,9 @@ public class Database {
         DateAndTime timestamp = TimeConv.toDt(System.currentTimeMillis());
 
         List<PrefixGroup> _prefixGroups = new ArrayList<>();
+        if (nodeId == null || prefixGroups == null) {
+            return _prefixGroups;
+        }
         for (PrefixGroup prefixGroup : prefixGroups) {
             if (prefixGroup.getSgt() == null || prefixGroup.getBinding() == null) {
                 continue;

@@ -115,6 +115,12 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
 
     @Override
     public void addBindings(NodeId owner, List<MasterBindingIdentity> contributedBindingIdentities) throws Exception {
+        if (owner == null) {
+            throw new NodeIdNotDefinedException();
+        }
+        if (contributedBindingIdentities == null || contributedBindingIdentities.isEmpty()) {
+            return;
+        }
         // Local bindings have the priority.
         // Clear binding sources except the local contribution.
         List<MasterBindingIdentity> masterBindingIdentities = new ArrayList<MasterBindingIdentity>();
@@ -224,22 +230,10 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
 
     @Override
     public void addBindingsLocal(List<PrefixGroup> prefixGroups) throws Exception {
+        if (prefixGroups == null || prefixGroups.isEmpty()) {
+            return;
+        }
         synchronized (database) {
-            if (database.getSource() == null || database.getSource().isEmpty()) {
-
-                MasterDatabaseBuilder masterDatabaseBuilder = new MasterDatabaseBuilder(database);
-
-                SourceBuilder sourceBuilder = new SourceBuilder();
-                sourceBuilder.setBindingSource(DatabaseBindingSource.Local);
-                sourceBuilder.setPrefixGroup(prefixGroups);
-                Source source = sourceBuilder.build();
-
-                ArrayList<Source> sources = new ArrayList<Source>();
-                sources.add(source);
-                masterDatabaseBuilder.setSource(sources);
-                database = masterDatabaseBuilder.build();
-                return;
-            }
             Source source = null;
             for (Source _source : database.getSource()) {
                 if (_source.getBindingSource().equals(DatabaseBindingSource.Local)) {
@@ -570,6 +564,9 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
 
     @Override
     public boolean setAsDeleted(List<PrefixGroup> prefixGroups) throws Exception {
+        if (prefixGroups == null || prefixGroups.isEmpty()) {
+            return false;
+        }
         boolean result = false;
         synchronized (database) {
             for (PrefixGroup _prefixGroup : prefixGroups) {

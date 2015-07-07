@@ -127,7 +127,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
         List<SxpBindingIdentity> removed = new ArrayList<>();
         List<SxpBindingIdentity> added = new ArrayList<>();
 
-        if (database.getPathGroup() != null) {
+        if (database != null && database.getPathGroup() != null) {
             for (PathGroup pathGroup : database.getPathGroup()) {
                 if (pathGroup.getPrefixGroup() != null) {
                     for (PrefixGroup prefixGroup : pathGroup.getPrefixGroup()) {
@@ -249,7 +249,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
     public List<SxpBindingIdentity> deleteBindings(SxpDatabase database) throws Exception {
         List<SxpBindingIdentity> removed = new ArrayList<>();
 
-        if (database.getPathGroup() != null) {
+        if (database != null && database.getPathGroup() != null) {
             for (PathGroup pathGroup : database.getPathGroup()) {
                 if (pathGroup.getPrefixGroup() != null) {
                     for (PrefixGroup prefixGroup : pathGroup.getPrefixGroup()) {
