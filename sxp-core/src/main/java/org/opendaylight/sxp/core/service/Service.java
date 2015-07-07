@@ -31,6 +31,7 @@ public abstract class Service<T> implements Callable<T> {
         if (change != null) {
             change.cancel(false);
         }
+        notified.set(0);
     }
 
     public synchronized MasterDatabaseProvider getBindingMasterDatabase() throws Exception {
