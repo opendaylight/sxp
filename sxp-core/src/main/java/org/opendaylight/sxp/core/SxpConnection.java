@@ -169,8 +169,9 @@ public class SxpConnection {
         if (connectionBuilder.getVersion() == null) {
             connectionBuilder.setVersion(Version.Version4);
         }
-        setStateOff();
-
+        if (connectionBuilder.getState() == null || connectionBuilder.getState().equals(ConnectionState.Off)) {
+            setStateOff();
+        }
         int port = Configuration.getConstants().getPort();
         if (connection.getTcpPort() != null && connection.getTcpPort().getValue() > 0) {
             port = connection.getTcpPort().getValue();
