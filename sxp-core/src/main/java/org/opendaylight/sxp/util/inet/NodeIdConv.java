@@ -76,11 +76,11 @@ public final class NodeIdConv {
 
     public static List<NodeId> decode(byte[] array) throws UnknownHostException, UnknownNodeIdException {
         List<NodeId> nodesIds = new ArrayList<NodeId>();
-        do {
+        while (array != null && array.length != 0) {
             NodeId nodeId = _decode(array);
             nodesIds.add(nodeId);
             array = ArraysUtil.readBytes(array, IpPrefixConv.getBytesLength(getPrefixLength(nodeId)));
-        } while (array.length != 0);
+        }
         return nodesIds;
     }
 

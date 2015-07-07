@@ -67,12 +67,12 @@ public final class IpPrefixConv {
     private static List<IpPrefix> decode(IpPrefixConv.IpPrefixType ipPrefixType, byte[] array, boolean compact)
             throws UnknownHostException, UnknownPrefixException {
         List<IpPrefix> prefixes = new ArrayList<IpPrefix>();
-        do {
+        while (array != null && array.length != 0) {
             // Reserved octets (not)presented.
             IpPrefix ipPrefix = _decode(ipPrefixType, array, compact);
             prefixes.add(ipPrefix);
             array = ArraysUtil.readBytes(array, (compact ? 1 : 4) + getBytesLength(getPrefixLength(ipPrefix)));
-        } while (array.length != 0);
+        }
         return prefixes;
     }
 
