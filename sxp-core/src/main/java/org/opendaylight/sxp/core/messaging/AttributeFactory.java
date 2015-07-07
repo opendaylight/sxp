@@ -71,11 +71,11 @@ public final class AttributeFactory {
 
     private static List<Capabilities> _decodeCapabilities(byte[] array) {
         List<Capabilities> _capabilities = new ArrayList<Capabilities>();
-        do {
+        while (array != null && array.length != 0) {
             Capabilities capability = _decodeCapability(array);
             _capabilities.add(capability);
             array = ArraysUtil.readBytes(array, capability.getBytesLength());
-        } while (array.length != 0);
+        }
         return _capabilities;
     }
 
@@ -336,7 +336,7 @@ public final class AttributeFactory {
         attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         attributeBuilder.setType(AttributeType.SourceGroupTag);
 
-        if (sgt < 2 && 65519 < sgt) {
+        if (sgt < 2 || 65519 < sgt) {
             throw new SecurityGroupTagValueException();
         }
         byte[] value = ArraysUtil.int2bytesCropp(sgt, 2);
