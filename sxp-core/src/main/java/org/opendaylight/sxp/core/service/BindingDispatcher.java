@@ -10,28 +10,23 @@ package org.opendaylight.sxp.core.service;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
+import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.SxpConnection;
+import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.ThreadsWorker;
+import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.opendaylight.sxp.core.Configuration;
-import org.opendaylight.sxp.core.SxpConnection;
-import org.opendaylight.sxp.core.SxpConnection.ChannelHandlerContextType;
-import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.core.ThreadsWorker;
-import org.opendaylight.sxp.core.messaging.MessageFactory;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
-import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
-import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * SXP Speaker represents the server/provider side of the distributed
@@ -114,16 +109,15 @@ public final class BindingDispatcher extends Service<Void> {
         // Compose and send new messages bundles.
 
         List<MasterDatabase> partitionsAllBindings = null, partitionsOnlyChangedBindings = null;
-        Map<Version, MasterDatabase[]> dataPool = new HashMap<>(4);
-        Map<Version, ByteBuf[]> messagesPool = new HashMap<>(4);
-        Map<Version, AtomicInteger> releaseCounterPool = new HashMap<>(4);
+        Map<AbstractMap.SimpleEntry<Version, Boolean>, MasterDatabase[]> dataPool = new HashMap<>(4);
+        Map<AbstractMap.SimpleEntry<Version, Boolean>, ByteBuf[]> messagesPool = new HashMap<>(4);
+        Map<AbstractMap.SimpleEntry<Version, Boolean>, AtomicInteger> releaseCounterPool = new HashMap<>(4);
         Map<SxpConnection, Callable> taskPool = new HashMap<>(connections.size());
 
         for (final SxpConnection connection : connections) {
             if (connection.isUpdateExported()) {
                 continue;
             }
-            final Version connectionVersion = connection.getVersion();
             /*
              * Database partition: Message export quantity should be at
              * least 2! If a binding is moved to a different group on a
@@ -137,6 +131,9 @@ public final class BindingDispatcher extends Service<Void> {
              * 1 message is exported, delete attributes are written before
              * added attributes.
              */
+            AbstractMap.SimpleEntry<Version, Boolean>
+                    key =
+                    new AbstractMap.SimpleEntry<>(connection.getVersion(), connection.isUpdateAllExported());
             if (connection.isUpdateAllExported()) {
                 if (partitionsAllBindings == null) {
                     synchronized (masterDatabase) {
@@ -147,11 +144,10 @@ public final class BindingDispatcher extends Service<Void> {
                 if (partitionsAllBindings.isEmpty()) {
                     continue;
                 }
-                if (dataPool.get(connectionVersion) == null) {
-                    dataPool.put(connectionVersion,
-                            partitionsAllBindings.toArray(new MasterDatabase[partitionsAllBindings.size()]));
-                    messagesPool.put(connectionVersion, new ByteBuf[partitionsAllBindings.size()]);
-                    releaseCounterPool.put(connectionVersion, new AtomicInteger(0));
+                if (dataPool.get(key) == null) {
+                    dataPool.put(key, partitionsAllBindings.toArray(new MasterDatabase[partitionsAllBindings.size()]));
+                    messagesPool.put(key, new ByteBuf[partitionsAllBindings.size()]);
+                    releaseCounterPool.put(key, new AtomicInteger(0));
                 }
             } else {
                 if (partitionsOnlyChangedBindings == null) {
@@ -163,22 +159,19 @@ public final class BindingDispatcher extends Service<Void> {
                 if (partitionsOnlyChangedBindings.isEmpty()) {
                     continue;
                 }
-                if (dataPool.get(connectionVersion) == null) {
-                    dataPool.put(connectionVersion, partitionsOnlyChangedBindings.toArray(
+                if (dataPool.get(key) == null) {
+                    dataPool.put(key, partitionsOnlyChangedBindings.toArray(
                             new MasterDatabase[partitionsOnlyChangedBindings.size()]));
-                    messagesPool.put(connectionVersion, new ByteBuf[partitionsOnlyChangedBindings.size()]);
-                    releaseCounterPool.put(connectionVersion, new AtomicInteger(0));
+                    messagesPool.put(key, new ByteBuf[partitionsOnlyChangedBindings.size()]);
+                    releaseCounterPool.put(key, new AtomicInteger(0));
                 }
             }
 
-            final AtomicInteger releaseCounter = releaseCounterPool.get(connectionVersion);
+            final AtomicInteger releaseCounter = releaseCounterPool.get(key);
 
             releaseCounter.incrementAndGet();
             connection.setUpdateExported();
-            Callable
-                    task =
-                    new UpdateExportTask(connection, messagesPool.get(connectionVersion),
-                            dataPool.get(connectionVersion), releaseCounter);
+            Callable task = new UpdateExportTask(connection, messagesPool.get(key), dataPool.get(key), releaseCounter);
             taskPool.put(connection, task);
         }
         //Start exporting messages
