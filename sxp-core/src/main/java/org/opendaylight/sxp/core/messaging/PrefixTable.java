@@ -26,14 +26,21 @@ public class PrefixTable extends HashMap<IpPrefix, List<Attribute>> {
     private byte columns;
 
     public PrefixTable(int columns) throws PrefixTableColumnsSizeException {
-        if (columns < 1 && 255 < columns) {
+        if (columns < 1 || 255 < columns) {
             throw new PrefixTableColumnsSizeException();
         }
-        this.columns = ArraysUtil.int2bytes(columns)[0];
+        this.columns = (byte) columns;
     }
 
-    public void addItem(IpPrefix prefix, Attribute... attributes) throws PrefixTableAttributeIsNotCompactException {
+    public void addItem(IpPrefix prefix, Attribute... attributes)
+            throws PrefixTableAttributeIsNotCompactException, PrefixTableColumnsSizeException {
+        if (prefix == null) {
+            throw new IllegalArgumentException("IpPrefix cannot be null.");
+        }
         List<Attribute> _attributes = new ArrayList<Attribute>(columns);
+        if (attributes == null || attributes.length != columns) {
+            throw new PrefixTableColumnsSizeException();
+        }
         for (int i = 0; i < columns; i++) {
             // Fields flags, type and width should be 1 byte long.
             if (!attributes[i].getFlags().isCompact()) {

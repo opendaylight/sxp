@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UnknownFormatConversionException;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.SxpConnection;
+import org.opendaylight.sxp.core.behavior.Sxpv4;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.ErrorCodeDataLengthException;
@@ -30,22 +32,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorMessageBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorSubCode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.KeepaliveMessageBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.OpenMessageBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.PurgeAllMessageBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.SxpHeader;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.SxpPayload;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.UpdateMessageBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.*;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.HoldTimeAttribute;
 import org.opendaylight.yangtools.yang.binding.Notification;
 
 public class MessageFactory {
@@ -74,32 +63,32 @@ public class MessageFactory {
         return getMessage(MessageType.Keepalive, new byte[0]);
     }
 
-    public static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID) throws Exception {
+    private static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID, Attribute attribute)
+            throws Exception {
         AttributeList attributes = createOpenAttribute(version, nodeMode, nodeID);
+        if (attribute != null) {
+            attributes.add(attribute);
+        }
         // Add optional attributes..
-        byte[] payload = ArraysUtil.combine(new byte[] { 0x00, 0x00, 0x00, (byte) version.getIntValue(), 0x00, 0x00,
-                0x00, (byte) nodeMode.getIntValue() }, attributes.toBytes());
+        byte[]
+                payload =
+                ArraysUtil.combine(new byte[] {0x00, 0x00, 0x00, (byte) version.getIntValue(), 0x00, 0x00, 0x00,
+                        (byte) nodeMode.getIntValue()}, attributes.toBytes());
         return getMessage(MessageType.Open, payload);
+    }
+
+    public static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID) throws Exception {
+        return createOpen(version, nodeMode, nodeID, null);
     }
 
     public static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID, int holdTimeMinAcceptable)
             throws Exception {
-        AttributeList attributes = createOpenAttribute(version, nodeMode, nodeID);
-        attributes.add(AttributeFactory.createHoldTime(holdTimeMinAcceptable));
-        // Add optional attributes..
-        byte[] payload = ArraysUtil.combine(new byte[] { 0x00, 0x00, 0x00, (byte) version.getIntValue(), 0x00, 0x00,
-                0x00, (byte) nodeMode.getIntValue() }, attributes.toBytes());
-        return getMessage(MessageType.Open, payload);
+        return createOpen(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMinAcceptable));
     }
 
     public static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID, int holdTimeMin,
             int holdTimeMax) throws Exception {
-        AttributeList attributes = createOpenAttribute(version, nodeMode, nodeID);
-        attributes.add(AttributeFactory.createHoldTime(holdTimeMin, holdTimeMax));
-        // Add optional attributes..
-        byte[] payload = ArraysUtil.combine(new byte[] { 0x00, 0x00, 0x00, (byte) version.getIntValue(), 0x00, 0x00,
-                0x00, (byte) nodeMode.getIntValue() }, attributes.toBytes());
-        return getMessage(MessageType.Open, payload);
+        return createOpen(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMin, holdTimeMax));
     }
 
     private static AttributeList createOpenAttribute(Version version, ConnectionMode nodeMode, NodeId nodeID)
@@ -113,32 +102,32 @@ public class MessageFactory {
         return attributes;
     }
 
-    public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID) throws Exception {
+    private static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID, Attribute attribute)
+            throws Exception {
         AttributeList attributes = createOpenAttribute(version, nodeMode, nodeID);
+        if (attribute != null) {
+            attributes.add(attribute);
+        }
         // Add optional attributes..
-        byte[] payload = ArraysUtil.combine(new byte[] { 0x00, 0x00, 0x00, (byte) version.getIntValue(), 0x00, 0x00,
-                0x00, (byte) nodeMode.getIntValue() }, attributes.toBytes());
+        byte[]
+                payload =
+                ArraysUtil.combine(new byte[] {0x00, 0x00, 0x00, (byte) version.getIntValue(), 0x00, 0x00, 0x00,
+                        (byte) nodeMode.getIntValue()}, attributes.toBytes());
         return getMessage(MessageType.OpenResp, payload);
+    }
+
+    public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID) throws Exception {
+        return createOpenResp(version, nodeMode, nodeID, null);
     }
 
     public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID,
             int holdTimeMinAcceptable) throws Exception {
-        AttributeList attributes = createOpenAttribute(version, nodeMode, nodeID);
-        attributes.add(AttributeFactory.createHoldTime(holdTimeMinAcceptable));
-        // Add optional attributes..
-        byte[] payload = ArraysUtil.combine(new byte[] { 0x00, 0x00, 0x00, (byte) version.getIntValue(), 0x00, 0x00,
-                0x00, (byte) nodeMode.getIntValue() }, attributes.toBytes());
-        return getMessage(MessageType.OpenResp, payload);
+        return createOpenResp(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMinAcceptable));
     }
 
     public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID, int holdTimeMin,
             int holdTimeMax) throws Exception {
-        AttributeList attributes = createOpenAttribute(version, nodeMode, nodeID);
-        attributes.add(AttributeFactory.createHoldTime(holdTimeMin, holdTimeMax));
-        // Add optional attributes..
-        byte[] payload = ArraysUtil.combine(new byte[] { 0x00, 0x00, 0x00, (byte) version.getIntValue(), 0x00, 0x00,
-                0x00, (byte) nodeMode.getIntValue() }, attributes.toBytes());
-        return getMessage(MessageType.OpenResp, payload);
+        return createOpenResp(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMin, holdTimeMax));
     }
 
     public static ByteBuf createPurgeAll() {
