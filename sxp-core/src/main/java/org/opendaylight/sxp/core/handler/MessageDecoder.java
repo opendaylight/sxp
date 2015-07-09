@@ -22,6 +22,8 @@ import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
+import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
+import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.exception.connection.IncompatiblePeerModeException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
@@ -100,7 +102,13 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
                     messageValidationException.getErrorSubCode(), messageValidationException.getData());
         }
         if (ctx == null) {
-            ctx = connection.getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
+                try {
+                        ctx = connection.getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
+                } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+                        LOG.info("{} ERROR sending Error {}", connection, MessageFactory.toString(message));
+                        message.release();
+                        return;
+                }
         }
 
         LOG.info("{} Sent ERROR {}", connection, MessageFactory.toString(message));
@@ -173,7 +181,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
             LOG.warn(getLogMessage(owner, ctx, "Channel read0", e));
             return;
         }
-        do {
+        while (message.readableBytes() != 0) {
             // Execute selected strategy.
             try {
                 Notification notification = connection.getContext().executeParseInput(message);
@@ -202,7 +210,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
                 LOG.warn(getLogMessage(owner, ctx, "Channel read", e) + ": {}", MessageFactory.toString(message));
                 break;
             }
-        } while (message.readableBytes() != 0);
+        }
     }
 
     @Override
@@ -217,11 +225,9 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
             connection = owner.getConnection(ctx.channel().remoteAddress());
         } catch (UnknownSxpConnectionException e) {
             LOG.warn(getLogMessage(owner, ctx, "Channel exception", e));
-            cause.printStackTrace();
             return;
         }
         connection.getContext().executeExceptionCaughtStrategy(ctx, connection);
-        LOG.warn(getLogMessage(owner, ctx, "Channel exception"));
-        cause.printStackTrace();
+        LOG.warn(getLogMessage(owner, ctx, "Channel exception"), cause);
     }
 }
