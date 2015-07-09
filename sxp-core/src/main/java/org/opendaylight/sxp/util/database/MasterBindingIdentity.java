@@ -8,18 +8,7 @@
 
 package org.opendaylight.sxp.util.database;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
-import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.SourceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
@@ -27,6 +16,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MasterBindingIdentity {
 
@@ -38,10 +30,8 @@ public class MasterBindingIdentity {
 
     public static List<MasterBindingIdentity> create(MasterDatabase database, boolean onlyChanged) {
         List<MasterBindingIdentity> identities = new ArrayList<>();
-        Map<String, Binding> deleted = Maps.newHashMap();
-        Multimap<String, MasterBindingIdentity> deletedReplacementCandidates = HashMultimap.create();
 
-        if (database.getSource() != null) {
+        if (database != null && database.getSource() != null) {
             for (Source source : database.getSource()) {
                 if (source.getPrefixGroup() != null) {
                     for (PrefixGroup prefixGroup : source.getPrefixGroup()) {
@@ -51,12 +41,6 @@ public class MasterBindingIdentity {
                                 if (changed == null) {
                                     changed = true;
                                 }
-
-                                if(binding.getAction() == DatabaseAction.Delete) {
-                                    // Fixme string as key
-                                    deleted.put(new String(binding.getKey().getIpPrefix().getValue()), binding);
-                                }
-
                                 if (!onlyChanged || changed) {
                                     identities.add(new MasterBindingIdentity(binding, prefixGroup, source));
                                 }
@@ -64,57 +48,6 @@ public class MasterBindingIdentity {
                         }
                     }
                 }
-            }
-        }
-
-        if (database.getSource() != null) {
-            for (Source source : database.getSource()) {
-                if (source.getPrefixGroup() != null) {
-                    for (PrefixGroup prefixGroup : source.getPrefixGroup()) {
-                        if (prefixGroup.getBinding() != null) {
-                            for (Binding binding : prefixGroup.getBinding()) {
-                                if(binding.getAction() == DatabaseAction.Delete) {
-                                    continue;
-                                }
-                                // Add delete replacements
-                                if(!deleted.isEmpty()) {
-                                    deletedReplacementCandidates.put(
-                                            new String(binding.getKey().getIpPrefix().getValue()),
-                                            new MasterBindingIdentity(binding, prefixGroup, source, true));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        ArrayList<MasterBindingIdentity> candidates;
-        for (String key : deletedReplacementCandidates.keySet()) {
-            candidates = Lists.newArrayList(deletedReplacementCandidates.get(key));
-            Collections.sort(candidates, new Comparator<MasterBindingIdentity>() {
-                @Override
-                public int compare(final MasterBindingIdentity b1, final MasterBindingIdentity b2) {
-                    final Binding o1 = b1.getBinding();
-                    final Binding o2 = b2.getBinding();
-                    final int peerSequenceComparison = -1 * (o1.getPeerSequence().getPeer().size() - o2.getPeerSequence().getPeer().size());
-                    if(peerSequenceComparison == 0) {
-                        try {
-                            return Long.valueOf(TimeConv.toLong(o2.getTimestamp())).compareTo(TimeConv.toLong(o1.getTimestamp()));
-                        // FIXME base exception type thrown
-                        } catch (Exception e) {
-                            throw new IllegalArgumentException("Unable to parse datetime to long", e);
-                        }
-                    }
-                    return peerSequenceComparison;
-                }
-            });
-
-            // Adding the most fittest binding replacement for deleted IP
-            if(!candidates.isEmpty()) {
-                // TODO: retest if it is necessary because right now  it looks like it is not
-                // Temporally disabled => making duplicity in entries to be added.
-                //identities.add(candidates.get(0));
             }
         }
         return identities;
@@ -159,6 +92,13 @@ public class MasterBindingIdentity {
      */
     public boolean isDeleteReplace() {
         return deleteReplace;
+    }
+
+    @Override public int hashCode() {
+        int result = binding.hashCode();
+        result = 31 * result + prefixGroup.hashCode();
+        result = 31 * result + source.hashCode();
+        return result;
     }
 
     @Override
