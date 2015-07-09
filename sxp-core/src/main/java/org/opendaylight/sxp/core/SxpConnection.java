@@ -990,10 +990,10 @@ public class SxpConnection {
     }
 
     public void setStateOn() {
+        connectionBuilder.setState(ConnectionState.On);
         if (isModeSpeaker() || isModeBoth()) {
             owner.setSvcBindingDispatcherNotify();
         }
-        connectionBuilder.setState(ConnectionState.On);
     }
 
     public void setStatePendingOn() {
