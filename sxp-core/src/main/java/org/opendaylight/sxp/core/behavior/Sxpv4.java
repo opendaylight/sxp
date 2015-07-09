@@ -266,21 +266,13 @@ public final class Sxpv4 extends Sxpv3 {
                     }
                     return;
                 }
-
-                if (InetAddressComparator.greaterThan(connection.getDestination().getAddress(),
-                        connection.getLocalAddress().getAddress())) {
-
-                    if (connection.isStateDeleteHoldDown()) {
-                        // Replace the existing one.
-                        connection.closeChannelHandlerContextComplements(ctx);
-                    } else if (connection.isStateOn()) {
-                        // Close the current channel.
-                        connection.closeChannelHandlerContext(ctx);
-                        return;
-                    }
-                } else {
-                    // Close the dual channel.
+                if (connection.isStateDeleteHoldDown()) {
+                    // Replace the existing one.
                     connection.closeChannelHandlerContextComplements(ctx);
+                } else if (connection.isStateOn()) {
+                    // Close the current channel.
+                    connection.closeChannelHandlerContext(ctx);
+                    return;
                 }
                 // Setup connection parameters.
                 connection.setConnection(_message);

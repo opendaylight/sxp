@@ -110,9 +110,6 @@ public class Sxpv1 implements Strategy {
                 }
                 // Close the dual channels.
                 connection.closeChannelHandlerContextComplements(ctx);
-                if(connection.isStateDeleteHoldDown()) {
-                    connection.setReconciliationTimer();
-                }
                 // Set connection state.
                 connection.setStateOn();
                 // Starts sending IP-SGT mappings using the SXP connection.
