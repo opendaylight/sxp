@@ -9,8 +9,11 @@
 package org.opendaylight.sxp.util.time.connection;
 
 import org.opendaylight.sxp.core.SxpConnection;
+import org.opendaylight.sxp.core.handler.MessageDecoder;
+import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorSubCode;
 
 import java.util.concurrent.TimeUnit;
 
@@ -30,9 +33,12 @@ public class HoldTimerTask extends SxpTimerTask<Void> {
             try {
                 if (connection.getTimestampUpdateOrKeepAliveMessage()
                         < System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(getPeriod())) {
-                    connection.setStateOff(connection.getChannelHandlerContext(
-                            SxpConnection.ChannelHandlerContextType.ListenerContext));
-                    LOG.info("{} State to Off", connection);
+                        MessageDecoder.sendErrorMessage(connection.getChannelHandlerContext(
+                                        SxpConnection.ChannelHandlerContextType.ListenerContext),
+                                new ErrorMessageException(null, ErrorSubCode.UnacceptableHoldTime, null), connection);
+                        connection.setDeleteHoldDownTimer();
+                        LOG.info("{} State to DeleteHoldDown", connection);
+                        return null;
                 }
             } catch (Exception e) {
                 LOG.warn(connection.getOwner() + " {} {} | {}", getClass().getSimpleName(),

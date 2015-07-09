@@ -52,7 +52,7 @@ public class MessageFactory {
             throw new ErrorCodeDataLengthException("Variable message length - 10 bytes.");
         }
 
-        byte _errorCode = (byte) errorCode.getIntValue();
+        byte _errorCode = errorCode != null ? (byte) errorCode.getIntValue() : 0x00;
         byte _errorSubCode = errorSubCode != null ? (byte) errorSubCode.getIntValue() : 0x00;
         byte[] payload = ArraysUtil.combine(new byte[] { ArraysUtil.setBit(_errorCode, 8, true), _errorSubCode, 0x00,
                 0x00 }, data);
