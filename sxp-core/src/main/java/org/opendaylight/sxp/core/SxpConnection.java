@@ -221,19 +221,19 @@ public class SxpConnection {
         context.getOwner().notifyService();
     }
 
-    public void closeChannelHandlerContext(ChannelHandlerContext ctx) {
+    public ChannelHandlerContextType closeChannelHandlerContext(ChannelHandlerContext ctx) {
+        ChannelHandlerContextType type = ChannelHandlerContextType.None;
         try {
             synchronized (initCtxs) {
                 initCtxs.remove(ctx);
             }
             synchronized (ctxs) {
-                ChannelHandlerContextType type = null;
                 for (Map.Entry<ChannelHandlerContextType, ChannelHandlerContext> e : ctxs.entrySet()) {
                     if (e.getValue().equals(ctx)) {
                         type = e.getKey();
                     }
                 }
-                if (type != null) {
+                if (type != ChannelHandlerContextType.None) {
                     ctxs.remove(type);
                 }
             }
@@ -241,6 +241,7 @@ public class SxpConnection {
         } catch (InterruptedException e) {
             LOG.warn("{} Error closing ChannelHandlerContext", this, e);
         }
+        return type;
     }
 
     public void closeChannelHandlerContextComplements(ChannelHandlerContext ctx) {
@@ -596,7 +597,11 @@ public class SxpConnection {
 
         context.getOwner().purgeBindings(peerId);
         context.getOwner().notifyService();
-        setStateOff();
+        try {
+            setStateOff(getChannelHandlerContext(ChannelHandlerContextType.ListenerContext));
+        } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+            LOG.error("{} Error setting Off connection", this, e);
+        }
     }
 
     public void resetUpdateExported() {
@@ -887,6 +892,9 @@ public class SxpConnection {
     }
 
     public void setStateDeleteHoldDown() throws Exception {
+        connectionBuilder.setUpdateAllExported(false);
+        connectionBuilder.setUpdateExported(false);
+        connectionBuilder.setPurgeAllMessageReceived(false);
         connectionBuilder.setState(ConnectionState.DeleteHoldDown);
 
         NodeId peerId;
@@ -939,11 +947,11 @@ public class SxpConnection {
     }
 
     public void setStateOff(ChannelHandlerContext ctx) {
-        closeChannelHandlerContext(ctx);
+        ChannelHandlerContextType type = closeChannelHandlerContext(ctx);
         if (ctxs.isEmpty()) {
             setStateOff();
         } else {
-            switch (getContextType(ctx)) {
+            switch (type) {
                 case ListenerContext:
                     connectionBuilder.setPurgeAllMessageReceived(false);
                     setTimer(TimerType.DeleteHoldDownTimer, null);
