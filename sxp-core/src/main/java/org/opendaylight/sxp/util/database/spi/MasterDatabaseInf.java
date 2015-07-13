@@ -10,6 +10,7 @@ package org.opendaylight.sxp.util.database.spi;
 
 import java.util.List;
 
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
@@ -39,6 +40,21 @@ public interface MasterDatabaseInf {
     public void resetModified() throws Exception;
 
     public boolean setAsDeleted(List<PrefixGroup> prefixGroups) throws Exception;
+
+    /**
+     * Add SxpNode as owner of this database, owners will be notified of local binding changes
+     *
+     * @param node SxpNode that will be added as owner
+     */
+    void addOwner(SxpNode node);
+
+    /**
+     * Removes specified SxpNode from owners, this owner will be no more notified
+     * about local binding changes
+     *
+     * @param node SxpNode that will be removed as owner
+     */
+    void removeOwner(SxpNode node);
 
     @Override
     public String toString();

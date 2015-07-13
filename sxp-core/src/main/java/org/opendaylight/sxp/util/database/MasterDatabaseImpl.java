@@ -9,9 +9,12 @@
 package org.opendaylight.sxp.util.database;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseAccess;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
@@ -36,6 +39,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 public class MasterDatabaseImpl extends MasterDatabaseProvider {
 
     protected MasterDatabase database;
+    private Set<SxpNode> owners = new HashSet<>();
 
     public MasterDatabaseImpl() {
         super(null);
@@ -146,9 +150,11 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
                     if (!bindingIdentity.source.getBindingSource().equals(DatabaseBindingSource.Local)) {
                         continue;
                     }
-                    if (bindingIdentity.getBinding() != null
-                            && IpPrefixConv.equalTo(bindingIdentity.getBinding().getIpPrefix(),
-                                    contributedBindingIdentity.getBinding().getIpPrefix())) {
+                    if (bindingIdentity.getBinding() != null && IpPrefixConv.equalTo(
+                            bindingIdentity.getBinding().getIpPrefix(),
+                            contributedBindingIdentity.getBinding().getIpPrefix()) && bindingIdentity.getBinding()
+                            .getAction()
+                            .equals(contributedBindingIdentity.binding.getAction())) {
                         // Remove the contributed one (already in local
                         // master database).
                         removedContributedBindingIdentities.add(contributedBindingIdentity);
@@ -247,10 +253,21 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
                 sourceBuilder.setPrefixGroup(prefixGroups);
                 source = sourceBuilder.build();
                 database.getSource().add(source);
-                return;
+            } else {
+                addPrefixGroups(prefixGroups, source);
             }
+            notifyOwners();
+        }
+    }
 
-            addPrefixGroups(prefixGroups, source);
+    /**
+     * Notify all owners to perform Database arbitration
+     */
+    private void notifyOwners() {
+        synchronized (owners) {
+            for (SxpNode node : owners) {
+                node.notifyService();
+            }
         }
     }
 
@@ -633,7 +650,20 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
                     }
                 }
             }
+            notifyOwners();
             return result;
+        }
+    }
+
+    @Override public void addOwner(SxpNode node) {
+        synchronized (owners) {
+            owners.add(node);
+        }
+    }
+
+    @Override public void removeOwner(SxpNode node) {
+        synchronized (owners) {
+            owners.remove(node);
         }
     }
 
