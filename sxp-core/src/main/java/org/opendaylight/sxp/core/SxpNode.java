@@ -457,7 +457,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
 
             @Override public void run() {
                 LOG.info(node + " Open connections [X/O/All=\"" + connections.size() + "/" + connectionsOnSize + "/"
-                                + node.size() + "\"]");
+                        + node.size() + "\"]");
                 for (final SxpConnection connection : connections) {
                     openConnection(connection);
                 }
@@ -633,7 +633,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
             LOG.warn("{} Error stopping Timers ", this, e);
         }
         shutdownConnections();
-
+        _masterDatabase.removeOwner(this);
         if (serverChannel != null) {
             serverChannel.close();
             serverChannel = null;
@@ -664,8 +664,8 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
             putLocalBindingsMasterDatabase(masterDatabaseConfiguration);
             // LOG.info(this + " " + getBindingMasterDatabase().toString());
         }
-
         final SxpNode node = this;
+        _masterDatabase.addOwner(node);
         worker.executeTask(new Runnable() {
 
             @Override public void run() {
