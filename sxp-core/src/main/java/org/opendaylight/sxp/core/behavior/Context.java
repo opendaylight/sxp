@@ -14,10 +14,16 @@ import io.netty.channel.ChannelHandlerContext;
 
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
+import org.opendaylight.sxp.core.handler.MessageDecoder;
+import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.*;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.OpenMessage;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.OpenMessageLegacy;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.OpenMessageLegacyBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yangtools.yang.binding.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,23 +71,24 @@ public final class Context {
                 return;
             }
         } else if (isOpenMessage(message)) {
-            Version negotiatedVersion = extractVersion(message);
-            if (isVersionMismatch(negotiatedVersion)) {
+            Version messageVersion = extractVersion(message);
+            if (!messageVersion.equals(version)) {
                 if (connection.getVersion().equals(Version.Version1)) {
-                    ByteBuf error = LegacyMessageFactory.createError(ErrorCodeNonExtended.VersionMismatch);
-                    LOG.info("{} Sent ERROR {}", toString(), error.toString());
-                    ctx.writeAndFlush(error);
-                    connection.closeChannelHandlerContext(ctx);
+                    MessageDecoder.sendErrorMessage(ctx,
+                            new ErrorMessageException(ErrorCodeNonExtended.VersionMismatch, null), connection);
                     connection.getOwner().openConnection(connection);
-                } else {
+                    return;
+                } else if (messageVersion.compareTo(version) < 0) {
                     // Update strategy according to version specified in Open from remote
                     LOG.info("{} SXP version dropping version down from {} to {}", connection, version,
-                            negotiatedVersion);
-                    connection.setBehaviorContexts(negotiatedVersion);
+                            messageVersion);
+                    connection.setBehaviorContexts(messageVersion);
                     // Delegate the processing of current message to new context
                     connection.getContext().executeInputMessageStrategy(ctx, connection, message);
+                    return;
+                } else if (message instanceof OpenMessage) {
+                    message = new OpenMessageLegacyBuilder(((OpenMessage) message)).build();
                 }
-                return;
             }
         }
         this.strategy.onInputMessage(ctx, connection, message);
