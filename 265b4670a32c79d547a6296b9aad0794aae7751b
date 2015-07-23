@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7a7fa997_6282df95",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/behavior/Sxpv1.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 92,
+      "author": {
+        "id": 612
+      },
+      "writtenOn": "2015-07-23T16:07:51Z",
+      "side": 1,
+      "message": "mismatch is one word",
+      "range": {
+        "startLine": 92,
+        "startChar": 29,
+        "endLine": 92,
+        "endChar": 37
+      },
+      "revId": "265b4670a32c79d547a6296b9aad0794aae7751b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
