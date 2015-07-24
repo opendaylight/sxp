@@ -65,8 +65,9 @@ public class Sxpv1 implements Strategy {
 
     @Override
     public void onChannelInactivation(ChannelHandlerContext ctx, SxpConnection connection) throws Exception {
-        if (connection.isStateOn(connection.getContextType(ctx))) {
-            switch (connection.getContextType(ctx)) {
+        SxpConnection.ChannelHandlerContextType type = connection.getContextType(ctx);
+        if (connection.isStateOn(type)) {
+            switch (type) {
                 case ListenerContext:
                     if (!connection.isPurgeAllMessageReceived()) {
                         LOG.info(connection + " onChannelInactivation/setDeleteHoldDownTimer");
