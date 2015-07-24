@@ -11,6 +11,7 @@ package org.opendaylight.sxp.util.database;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseAccess;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
@@ -29,6 +30,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 public class SxpDatabaseImpl extends SxpDatabaseProvider {
 
     protected SxpDatabase database = new SxpDatabaseBuilder().build();
+    private SxpNode owner = null;
 
     public SxpDatabaseImpl() {
         super(null);
@@ -406,6 +408,15 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
                 }
             }
         }
+    }
+
+    @Override public void addOwner(SxpNode node) throws IllegalStateException {
+        if (node == null) {
+            throw new IllegalArgumentException("Owner can't be null.");
+        } else if (owner != null) {
+            throw new IllegalStateException("Owner was already set current owner=" + owner + " provided owner=" + node);
+        }
+        owner = node;
     }
 
     @Override
