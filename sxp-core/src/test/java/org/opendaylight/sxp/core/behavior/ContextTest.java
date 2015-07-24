@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.core.behavior;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Before;
@@ -41,6 +42,7 @@ import static org.mockito.Mockito.when;
         private static SxpNode sxpNode;
         private static ChannelHandlerContext channelHandlerContext;
         private static Context context;
+        private static Strategy strategy;
 
         @Before public void init() throws Exception {
                 connection = mock(SxpConnection.class);
@@ -52,10 +54,10 @@ import static org.mockito.Mockito.when;
                 when(channel.localAddress()).thenReturn(mock(SocketAddress.class));
                 when(channel.remoteAddress()).thenReturn(mock(SocketAddress.class));
                 when(channelHandlerContext.channel()).thenReturn(channel);
-
+                strategy = mock(Strategy.class);
                 PowerMockito.mockStatic(StrategyFactory.class);
                 PowerMockito.when(StrategyFactory.getStrategy(any(Context.class), any(Version.class)))
-                        .thenReturn(mock(Strategy.class));
+                        .thenReturn(strategy);
         }
 
         @Test public void testExecuteInputMessageStrategy() throws Exception {
@@ -87,12 +89,19 @@ import static org.mockito.Mockito.when;
                 when(connection.getVersion()).thenReturn(Version.Version1);
 
                 context.executeInputMessageStrategy(channelHandlerContext, connection, message);
-                verify(connection).closeChannelHandlerContext(any(ChannelHandlerContext.class));
+                verify(channelHandlerContext).writeAndFlush(any(ByteBuf.class));
                 verify(sxpNode).openConnection(any(SxpConnection.class));
 
                 when(connection.getVersion()).thenReturn(Version.Version4, Version.Version1);
                 context.executeInputMessageStrategy(channelHandlerContext, connection, message);
                 verify(connection).setBehaviorContexts(Version.Version1);
+
+                OpenMessage message1 = mock(OpenMessage.class);
+                when(message1.getVersion()).thenReturn(Version.Version4);
+                when(message1.getType()).thenReturn(MessageType.Open);
+                when(connection.getVersion()).thenReturn(Version.Version2);
+                context.executeInputMessageStrategy(channelHandlerContext, connection, message1);
+                verify(strategy).onInputMessage(channelHandlerContext, connection, message1);
 
                 when(message.getType()).thenReturn(MessageType.OpenResp);
                 context.executeInputMessageStrategy(channelHandlerContext, connection, message);
