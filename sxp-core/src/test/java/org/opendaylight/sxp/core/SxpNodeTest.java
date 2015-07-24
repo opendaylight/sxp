@@ -280,22 +280,6 @@ import static org.mockito.Mockito.verify;
                 PowerMockito.verifyStatic();
         }
 
-        @Test public void testGetBindingMasterDatabase() throws Exception {
-                assertNotNull(node.getBindingMasterDatabase());
-
-                node = SxpNode.createInstance(NodeId.getDefaultInstance("0.0.0.0"), nodeIdentity, null, null);
-                exception.expect(DatabaseNotFoundException.class);
-                node.getBindingMasterDatabase();
-        }
-
-        @Test public void testGetBindingSxpDatabase() throws Exception {
-                assertNotNull(node.getBindingSxpDatabase());
-
-                node = SxpNode.createInstance(NodeId.getDefaultInstance("0.0.0.0"), nodeIdentity, null, null);
-                exception.expect(DatabaseNotFoundException.class);
-                node.getBindingSxpDatabase();
-        }
-
         @Test public void testPutLocalBindingsMasterDatabase() throws Exception {
                 MasterDatabase masterDatabase = mock(MasterDatabase.class);
                 List<Source> sourceList = new ArrayList<>();

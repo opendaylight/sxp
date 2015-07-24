@@ -8,10 +8,7 @@
 
 package org.opendaylight.sxp.util.database;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseAccess;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
@@ -33,9 +30,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class MasterDatabaseImpl extends MasterDatabaseProvider {
 
     protected MasterDatabase database;
+    private SxpNode owner = null;
 
     public MasterDatabaseImpl() {
         super(null);
@@ -146,9 +148,11 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
                     if (!bindingIdentity.source.getBindingSource().equals(DatabaseBindingSource.Local)) {
                         continue;
                     }
-                    if (bindingIdentity.getBinding() != null
-                            && IpPrefixConv.equalTo(bindingIdentity.getBinding().getIpPrefix(),
-                                    contributedBindingIdentity.getBinding().getIpPrefix())) {
+                    if (bindingIdentity.getBinding() != null && IpPrefixConv.equalTo(
+                            bindingIdentity.getBinding().getIpPrefix(),
+                            contributedBindingIdentity.getBinding().getIpPrefix()) && bindingIdentity.getBinding()
+                            .getAction()
+                            .equals(contributedBindingIdentity.binding.getAction())) {
                         // Remove the contributed one (already in local
                         // master database).
                         removedContributedBindingIdentities.add(contributedBindingIdentity);
@@ -247,10 +251,12 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
                 sourceBuilder.setPrefixGroup(prefixGroups);
                 source = sourceBuilder.build();
                 database.getSource().add(source);
-                return;
+            } else {
+                addPrefixGroups(prefixGroups, source);
             }
-
-            addPrefixGroups(prefixGroups, source);
+            if (owner != null) {
+                owner.setSvcBindingManagerNotify();
+            }
         }
     }
 
@@ -633,8 +639,20 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
                     }
                 }
             }
+            if (owner != null) {
+                owner.setSvcBindingManagerNotify();
+            }
             return result;
         }
+    }
+
+    @Override public void addOwner(SxpNode node) throws IllegalStateException {
+        if (node == null) {
+            throw new IllegalArgumentException("Owner can't be null.");
+        } else if (owner != null) {
+            throw new IllegalStateException("Owner was already set current owner=" + owner + " provided owner=" + node);
+        }
+        owner = node;
     }
 
     @Override
