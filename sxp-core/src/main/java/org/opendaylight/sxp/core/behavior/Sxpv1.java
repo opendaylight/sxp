@@ -13,9 +13,9 @@ import io.netty.channel.ChannelHandlerContext;
 
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
-import org.opendaylight.sxp.core.service.ConnectFacade;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
 import org.opendaylight.sxp.util.exception.connection.IncompatiblePeerVersionException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
@@ -24,6 +24,7 @@ import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateE
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
@@ -88,6 +89,19 @@ public class Sxpv1 implements Strategy {
         LOG.warn(connection + " onException");
     }
 
+    private boolean checkModeMismatch(SxpConnection connection, OpenMessageLegacy _message, ChannelHandlerContext ctx)
+            throws Exception {
+        if (!(connection.isModeListener() && _message.getSxpMode().equals(ConnectionMode.Speaker)) && !(
+                connection.isModeSpeaker() && _message.getSxpMode().equals(ConnectionMode.Listener)) && !(
+                connection.isModeBoth() && _message.getSxpMode().equals(ConnectionMode.Both))) {
+            MessageDecoder.sendErrorMessage(ctx, new ErrorMessageException(ErrorCode.OpenMessageError, null),
+                    connection);
+            connection.setStateOff(ctx);
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public void onInputMessage(ChannelHandlerContext ctx, SxpConnection connection, Notification message)
             throws Exception {
@@ -108,18 +122,21 @@ public class Sxpv1 implements Strategy {
                         connection.setMode(ConnectionMode.Speaker);
                     }
                 }
-                // Close the dual channels.
-                connection.closeChannelHandlerContextComplements(ctx);
-                // Set connection state.
-                connection.setStateOn();
-                // Starts sending IP-SGT mappings using the SXP connection.
-                LOG.info("{} Connected", connection);
-                // Send the OPEN_RESP message with the chosen SXP version.
-                ByteBuf response = LegacyMessageFactory.createOpenResp(connection.getVersion(), connection.getMode());
-                LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
-                ctx.writeAndFlush(response);
-                return;
-
+                if (!checkModeMismatch(connection, _message, ctx)) {
+                    // Close the dual channels.
+                    connection.closeChannelHandlerContextComplements(ctx);
+                    // Set connection state.
+                    connection.setStateOn();
+                    // Starts sending IP-SGT mappings using the SXP connection.
+                    LOG.info("{} Connected", connection);
+                    // Send the OPEN_RESP message with the chosen SXP version.
+                    ByteBuf
+                            response =
+                            LegacyMessageFactory.createOpenResp(connection.getVersion(), connection.getMode());
+                    LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
+                    ctx.writeAndFlush(response);
+                    return;
+                }
             } else if (_message.getType().equals(MessageType.OpenResp)) {
                 // Verifies that the SXP version is compatible with its SXP. If
                 // not then send error and close connection.
@@ -127,13 +144,15 @@ public class Sxpv1 implements Strategy {
                     throw new ErrorMessageException(ErrorCodeNonExtended.VersionMismatch,
                             new IncompatiblePeerVersionException(connection.getVersion(), _message.getVersion()));
                 }
-                // Close the dual channels.
-                connection.closeChannelHandlerContextComplements(ctx);
-                // Set connection state.
-                connection.setStateOn();
-                // Starts sending IP-SGT mappings using the SXP connection.
-                LOG.info("{} Connected", connection);
-                return;
+                if (!checkModeMismatch(connection, _message, ctx)) {
+                    // Close the dual channels.
+                    connection.closeChannelHandlerContextComplements(ctx);
+                    // Set connection state.
+                    connection.setStateOn();
+                    // Starts sending IP-SGT mappings using the SXP connection.
+                    LOG.info("{} Connected", connection);
+                    return;
+                }
             }
 
         } else if (message instanceof UpdateMessageLegacy) {
@@ -168,6 +187,7 @@ public class Sxpv1 implements Strategy {
             connection.getContext().getOwner().notifyService();
             return;
         }
+        LOG.warn("{} Cannot handle message, ignoring: {}", connection, MessageFactory.toString(message));
     }
 
     @Override

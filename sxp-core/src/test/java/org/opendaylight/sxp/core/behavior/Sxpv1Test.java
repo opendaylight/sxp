@@ -103,23 +103,40 @@ import static org.mockito.Mockito.when;
                 when(message.getPayload()).thenReturn(new byte[] {});
 
                 when(message.getSxpMode()).thenReturn(ConnectionMode.Listener);
+                when(connection.isModeListener()).thenReturn(true);
                 sxpv1.onInputMessage(channelHandlerContext, connection, message);
-                verify(connection).setMode(ConnectionMode.Speaker);
-                verify(connection).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
-                verify(connection).setStateOn();
+                verify(connection).setStateOff(any(ChannelHandlerContext.class));
+                verify(connection, times(0)).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
+                verify(connection, times(0)).setStateOn();
                 verify(channelHandlerContext).writeAndFlush(any(getClass()));
 
-                when(message.getSxpMode()).thenReturn(ConnectionMode.Speaker);
+                when(connection.isModeListener()).thenReturn(false);
+                when(connection.isModeSpeaker()).thenReturn(true);
                 sxpv1.onInputMessage(channelHandlerContext, connection, message);
-                verify(connection).setMode(ConnectionMode.Listener);
+                verify(connection, times(2)).setMode(ConnectionMode.Speaker);
+                verify(connection).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
+                verify(connection).setStateOn();
+                verify(channelHandlerContext, times(2)).writeAndFlush(any(getClass()));
+
+                when(message.getSxpMode()).thenReturn(ConnectionMode.Speaker);
+                when(connection.isModeListener()).thenReturn(true);
+                when(connection.isModeSpeaker()).thenReturn(false);
+                sxpv1.onInputMessage(channelHandlerContext, connection, message);
+                verify(connection, times(1)).setMode(ConnectionMode.Listener);
                 verify(connection, times(2)).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
                 verify(connection, times(2)).setStateOn();
-                verify(channelHandlerContext, times(2)).writeAndFlush(any(getClass()));
+                verify(channelHandlerContext, times(3)).writeAndFlush(any(getClass()));
 
                 when(message.getType()).thenReturn(MessageType.OpenResp);
                 sxpv1.onInputMessage(channelHandlerContext, connection, message);
+
+                when(message.getSxpMode()).thenReturn(ConnectionMode.Listener);
+                when(connection.isModeListener()).thenReturn(true);
+                sxpv1.onInputMessage(channelHandlerContext, connection, message);
+                verify(connection, times(2)).setStateOff(any(ChannelHandlerContext.class));
                 verify(connection, times(3)).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
                 verify(connection, times(3)).setStateOn();
+                verify(channelHandlerContext, times(4)).writeAndFlush(any(getClass()));
 
                 when(connection.getVersion()).thenReturn(Version.Version4);
                 exception.expect(ErrorMessageException.class);
