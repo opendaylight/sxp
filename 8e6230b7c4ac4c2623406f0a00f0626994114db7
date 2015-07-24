@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7a7fa997_e9ffba65",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/RpcServiceImpl.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 666,
+      "author": {
+        "id": 612
+      },
+      "writtenOn": "2015-07-24T07:18:59Z",
+      "side": 1,
+      "message": "red line on 666. what the hell? :)",
+      "range": {
+        "startLine": 666,
+        "startChar": 0,
+        "endLine": 666,
+        "endChar": 16
+      },
+      "revId": "8e6230b7c4ac4c2623406f0a00f0626994114db7",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a7fa997_7dab641d",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/spi/MasterDatabaseInf.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 57,
+      "author": {
+        "id": 612
+      },
+      "writtenOn": "2015-07-24T07:18:59Z",
+      "side": 1,
+      "message": "why a DB should have multiple owners? Nodes does not have any information about each other so it seems to be dangerous to share DB. Do you have any use case for that?",
+      "range": {
+        "startLine": 49,
+        "startChar": 4,
+        "endLine": 57,
+        "endChar": 35
+      },
+      "revId": "8e6230b7c4ac4c2623406f0a00f0626994114db7",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
