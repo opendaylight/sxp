@@ -166,8 +166,10 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
 
         this.nodeBuilder.setSecurity(setPassword(nodeBuilder.getSecurity()));
-        this._masterDatabase = masterDatabase;
-        this._sxpDatabase = sxpDatabase;
+        this._masterDatabase = Preconditions.checkNotNull(masterDatabase);
+        this._sxpDatabase = Preconditions.checkNotNull(sxpDatabase);
+        _masterDatabase.addOwner(this);
+        _sxpDatabase.addOwner(this);
 
         addConnections(nodeBuilder.getConnections());
 
