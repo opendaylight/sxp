@@ -231,16 +231,14 @@ import static org.mockito.Mockito.verify;
         }
 
         @Test public void testSetTimer() throws Exception {
-                exception.expect(UnknownTimerTypeException.class);
-                node.setTimer(TimerType.DeleteHoldDownTimer, 50);
-                exception.expect(UnknownTimerTypeException.class);
-                node.setTimer(TimerType.ReconciliationTimer, 50);
-
                 node.setTimer(TimerType.RetryOpenTimer, 0);
                 assertNull(node.getTimer(TimerType.RetryOpenTimer));
 
                 node.setTimer(TimerType.RetryOpenTimer, 50);
                 assertNotNull(node.getTimer(TimerType.RetryOpenTimer));
+
+                exception.expect(UnknownTimerTypeException.class);
+                node.setTimer(TimerType.ReconciliationTimer, 50);
         }
 
         @Test public void testShutdown() throws Exception {

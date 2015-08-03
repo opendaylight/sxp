@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(PowerMockRunner.class) @PrepareForTest({DatabaseBindingSource.class}) public class MasterBindingIdentityTest {
+public class MasterBindingIdentityTest {
 
         private static boolean isChanged;
 
@@ -70,7 +70,7 @@ import static org.mockito.Mockito.when;
                         prefixGroups.add(group);
                 }
                 builder.setPrefixGroup(prefixGroups);
-                builder.setBindingSource(PowerMockito.mock(DatabaseBindingSource.class));
+                builder.setBindingSource(DatabaseBindingSource.Local);
                 return builder.build();
         }
 
@@ -129,5 +129,19 @@ import static org.mockito.Mockito.when;
                 assertFalse(identity2.equals(identity));
                 assertFalse(identity.equals(null));
 
+        }
+
+        @Test public void testToString() throws Exception {
+                List<MasterBindingIdentity> identities = new ArrayList<>();
+                identities.add(
+                        MasterBindingIdentity.create(getBinding("127.0.0.1/32"), getPrefixGroup(10, "127.0.0.1/32"),
+                                getSource(getPrefixGroup(10, "127.0.0.1/32"))));
+
+                assertEquals("Local 10 127.0.0.1/32", identities.get(0).toString());
+                identities.add(
+                        MasterBindingIdentity.create(getBinding("127.0.0.2/32"), getPrefixGroup(20, "127.0.0.2/32"),
+                                getSource(getPrefixGroup(20, "127.0.0.2/32"))));
+                assertEquals("Local 10 127.0.0.1/32\n" + "Local 20 127.0.0.2/32\n",
+                        MasterBindingIdentity.toString(identities));
         }
 }
