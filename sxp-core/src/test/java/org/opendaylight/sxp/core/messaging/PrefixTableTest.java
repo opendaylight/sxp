@@ -39,16 +39,22 @@ public class PrefixTableTest {
                 prefixTable.addItem(prefix, AttributeFactory.createCapabilities(Version.Version4));
                 assertNotNull(prefixTable.get(prefix));
                 assertNull(prefixTable.get(new IpPrefix(Ipv4Prefix.getDefaultInstance("1.1.1.1/32"))));
+        }
 
+        @Test public void testAddItemException0() throws Exception {
                 exception.expect(PrefixTableColumnsSizeException.class);
-                prefixTable.addItem(prefix);
+                prefixTable.addItem(new IpPrefix(Ipv4Prefix.getDefaultInstance("0.0.0.0/32")));
+        }
 
+        @Test public void testAddItemException1() throws Exception {
                 Attribute attribute = mock(Attribute.class);
-                FlagsFields.Flags flags = mock(FlagsFields.Flags.class);
-                when(flags.isCompact()).thenReturn(false);
+                FlagsFields.Flags flags = new FlagsFields.Flags(false, false, false, false, false);
                 when(attribute.getFlags()).thenReturn(flags);
                 exception.expect(PrefixTableAttributeIsNotCompactException.class);
-                prefixTable.addItem(prefix);
+                prefixTable.addItem(new IpPrefix(Ipv4Prefix.getDefaultInstance("0.0.0.0/32")), attribute);
+        }
+
+        @Test public void testAddItemException2() throws Exception {
                 exception.expect(IllegalArgumentException.class);
                 prefixTable.addItem(null);
         }

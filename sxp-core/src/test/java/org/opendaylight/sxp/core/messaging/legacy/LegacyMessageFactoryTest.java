@@ -9,7 +9,11 @@
 package org.opendaylight.sxp.core.messaging.legacy;
 
 import io.netty.buffer.ByteBuf;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
@@ -34,6 +38,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class LegacyMessageFactoryTest {
+
+        @Rule public ExpectedException exception = ExpectedException.none();
 
         private byte[] toBytes(ByteBuf message) {
                 byte[] _message = new byte[message.readableBytes()];
@@ -138,6 +144,8 @@ public class LegacyMessageFactoryTest {
                 List<PrefixGroup> prefixGroups = new ArrayList<>();
                 List<Source> sourceList = new ArrayList<>();
 
+                prefixGroups.add(createPrefixGroup(DatabaseAction.Delete, 10, "192.168.10.1/32"));
+                prefixGroups.add(createPrefixGroup(DatabaseAction.Delete, 30, "2000::1/128"));
                 prefixGroups.add(createPrefixGroup(DatabaseAction.Add, 10000, "192.168.0.1/32"));
                 prefixGroups.add(createPrefixGroup(DatabaseAction.Add, 20000, "2001::1/64", "10.10.10.10/30"));
                 prefixGroups.add(createPrefixGroup(DatabaseAction.Add, 30000, "2002::1/128"));
@@ -149,32 +157,34 @@ public class LegacyMessageFactoryTest {
                 when(database.getSource()).thenReturn(sourceList);
 
                 ByteBuf message = LegacyMessageFactory.createUpdate(database, false, Version.Version1);
-                //192.168.0.1/32
+                //192.168.10.1/32, 192.168.0.1/32
                 byte[]
                         result =
-                        new byte[] {0, 0, 0, 30, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 14, -64, -88, 0, 1, 0, 0, 0, 1, 0, 0,
-                                0, 2, 39, 16};
+                        new byte[] {0, 0, 0, 42, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 4, -64, -88, 10, 1, 0, 0, 0, 1, 0, 0,
+                                0, 14, -64, -88, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 39, 16};
                 assertArrayEquals(result, toBytes(message));
 
                 message = LegacyMessageFactory.createUpdate(database, false, Version.Version2);
-                //192.168.0.1/32, 2002::1/128
+                //2000::1/128, 192.168.10.1/32, 192.168.0.1/32, 2002::1/128
                 result =
-                        new byte[] {0, 0, 0, 64, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 14, -64, -88, 0, 1, 0, 0, 0, 1, 0, 0,
-                                0, 2, 39, 16, 0, 0, 0, 2, 0, 0, 0, 26, 32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-                                0, 0, 0, 1, 0, 0, 0, 2, 117, 48};
+                        new byte[] {0, 0, 0, 100, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 4, -64, -88, 10, 1, 0, 0, 0, 4, 0, 0,
+                                0, 16, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 14, -64,
+                                -88, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 39, 16, 0, 0, 0, 2, 0, 0, 0, 26, 32, 2, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 117, 48};
                 assertArrayEquals(result, toBytes(message));
 
                 message = LegacyMessageFactory.createUpdate(database, false, Version.Version3);
                 //ALL
                 result =
-                        new byte[] {0, 0, 0, -56, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 14, -64, -88, 0, 1, 0, 0, 0, 1, 0, 0,
-                                0, 2, 39, 16, 0, 0, 0, 2, 0, 0, 0, 35, 32, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-                                0, 0, 0, 2, 0, 0, 0, 1, 64, 0, 0, 0, 1, 0, 0, 0, 2, 78, 32, 0, 0, 0, 1, 0, 0, 0, 23, 10,
-                                10, 10, 10, 0, 0, 0, 2, 0, 0, 0, 1, 30, 0, 0, 0, 1, 0, 0, 0, 2, 78, 32, 0, 0, 0, 2, 0,
-                                0, 0, 26, 32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 117,
-                                48, 0, 0, 0, 1, 0, 0, 0, 23, 11, 11, 11, 0, 0, 0, 0, 2, 0, 0, 0, 1, 29, 0, 0, 0, 1, 0,
-                                0, 0, 2, -100, 64, 0, 0, 0, 1, 0, 0, 0, 23, -84, -88, 1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 28,
-                                0, 0, 0, 1, 0, 0, 0, 2, -3, -24};
+                        new byte[] {0, 0, 0, -20, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 4, -64, -88, 10, 1, 0, 0, 0, 4, 0, 0,
+                                0, 16, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 14, -64,
+                                -88, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 39, 16, 0, 0, 0, 2, 0, 0, 0, 35, 32, 1, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 64, 0, 0, 0, 1, 0, 0, 0, 2, 78,
+                                32, 0, 0, 0, 1, 0, 0, 0, 23, 10, 10, 10, 10, 0, 0, 0, 2, 0, 0, 0, 1, 30, 0, 0, 0, 1, 0,
+                                0, 0, 2, 78, 32, 0, 0, 0, 2, 0, 0, 0, 26, 32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                1, 0, 0, 0, 1, 0, 0, 0, 2, 117, 48, 0, 0, 0, 1, 0, 0, 0, 23, 11, 11, 11, 0, 0, 0, 0, 2,
+                                0, 0, 0, 1, 29, 0, 0, 0, 1, 0, 0, 0, 2, -100, 64, 0, 0, 0, 1, 0, 0, 0, 23, -84, -88, 1,
+                                0, 0, 0, 0, 2, 0, 0, 0, 1, 28, 0, 0, 0, 1, 0, 0, 0, 2, -3, -24};
                 assertArrayEquals(result, toBytes(message));
         }
 
@@ -237,6 +247,9 @@ public class LegacyMessageFactoryTest {
                 message = (OpenMessageLegacy) LegacyMessageFactory.decodeOpenResp(new byte[] {0, 0, 0, 3, 0, 0, 0, 1});
                 assertEquals(ConnectionMode.Speaker, message.getSxpMode());
                 assertEquals(Version.Version3, message.getVersion());
+
+                exception.expect(ErrorMessageException.class);
+                LegacyMessageFactory.decodeOpenResp(new byte[] {0, 0, 0, 4, 0, 0, 0, 1});
         }
 
         @Test public void testDecodeUpdate() throws Exception {

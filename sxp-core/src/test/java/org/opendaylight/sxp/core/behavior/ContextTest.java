@@ -70,8 +70,9 @@ import static org.mockito.Mockito.when;
                 when(message.getType()).thenReturn(MessageType.Open);
                 when(connection.getVersion()).thenReturn(Version.Version3);
 
-                exception.expect(IllegalStateException.class);
                 context.executeInputMessageStrategy(channelHandlerContext, connection, message);
+                verify(strategy).onInputMessage(any(ChannelHandlerContext.class), any(SxpConnection.class),
+                        any(OpenMessageLegacy.class));
 
                 when(message.getType()).thenReturn(MessageType.OpenResp);
                 exception.expect(IllegalStateException.class);

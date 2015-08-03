@@ -115,8 +115,6 @@ import static org.mockito.Mockito.when;
         @Test public void testSetPartitionSize() throws Exception {
                 dispatcher.setPartitionSize(25);
                 exception.expect(IllegalArgumentException.class);
-                dispatcher.setPartitionSize(0);
-                exception.expect(IllegalArgumentException.class);
-                dispatcher.setPartitionSize(151);
+                dispatcher.setPartitionSize(-10);
         }
 }

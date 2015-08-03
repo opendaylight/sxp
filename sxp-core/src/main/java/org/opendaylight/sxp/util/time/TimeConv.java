@@ -12,6 +12,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.TimeZone;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.DateAndTime;
 
@@ -21,6 +22,20 @@ public final class TimeConv {
 
     public static synchronized DateAndTime toDt(long currentTime) {
         return new DateAndTime(df.format(new Date(currentTime)));
+    }
+
+    /**
+     * Set Time zone used for date format,
+     * if format is unknown GMT+0 is set
+     *
+     * @param timeZone Time zone to be set
+     */
+    public static void setTimeZone(String timeZone) {
+        if (timeZone != null) {
+            df.setTimeZone(TimeZone.getTimeZone(timeZone));
+        } else {
+            throw new IllegalArgumentException("TimeZone cannot be null");
+        }
     }
 
     public static synchronized long toLong(DateAndTime dateAndTime) throws Exception {

@@ -446,19 +446,21 @@ public class MessageFactoryTest {
                 message.release();
                 assertTrue(notification instanceof KeepaliveMessage);
                 assertEquals(MessageType.Keepalive, ((KeepaliveMessage) notification).getType());
+        }
 
-                //ERRORS
-                msg = new byte[] {0, 0};
-                message = PooledByteBufAllocator.DEFAULT.buffer(msg.length);
+        @Test public void testParseException0() throws Exception {
+                byte[] msg = new byte[] {0, 0};
+                ByteBuf message = PooledByteBufAllocator.DEFAULT.buffer(msg.length);
                 message.writeBytes(msg);
                 exception.expect(ErrorMessageException.class);
                 MessageFactory.parse(Version.Version4, message);
+        }
 
-                msg = new byte[] {0, 0, 0, 5, 0, 0, 0, 0};
-                message = PooledByteBufAllocator.DEFAULT.buffer(msg.length);
+        @Test public void testParseException1() throws Exception {
+                byte[] msg = new byte[] {0, 0, 0, 5, 0, 0, 0, 0};
+                ByteBuf message = PooledByteBufAllocator.DEFAULT.buffer(msg.length);
                 message.writeBytes(msg);
                 exception.expect(ErrorMessageException.class);
                 MessageFactory.parse(Version.Version4, message);
-
         }
 }
