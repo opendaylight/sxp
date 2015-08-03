@@ -22,6 +22,7 @@ import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFo
 import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
@@ -49,6 +50,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyObject;
@@ -94,6 +96,7 @@ public class SxpConnectionTest {
                 ConnectionTimers timers = mock(ConnectionTimers.class);
                 when(timers.getDeleteHoldDownTime()).thenReturn(120);
                 when(timers.getReconciliationTime()).thenReturn(60);
+                when(connection.getTcpPort()).thenReturn(new PortNumber(65001));
                 when(connection.getConnectionTimers()).thenReturn(timers);
                 return connection;
         }
@@ -236,9 +239,6 @@ public class SxpConnectionTest {
                 when(future.isDone()).thenReturn(false);
                 when(worker.scheduleTask(any(Callable.class), anyInt(), any(TimeUnit.class))).thenReturn(future);
 
-                exception.expect(UnknownTimerTypeException.class);
-                sxpConnection.setTimer(TimerType.RetryOpenTimer, 50);
-
                 sxpConnection.setTimer(TimerType.DeleteHoldDownTimer, 0);
                 assertNull(sxpConnection.getTimer(TimerType.DeleteHoldDownTimer));
 
@@ -247,6 +247,9 @@ public class SxpConnectionTest {
 
                 sxpConnection.setTimer(TimerType.ReconciliationTimer, 50);
                 assertNotNull(sxpConnection.getTimer(TimerType.ReconciliationTimer));
+
+                exception.expect(UnknownTimerTypeException.class);
+                sxpConnection.setTimer(TimerType.RetryOpenTimer, 50);
         }
 
         @Test public void testShutdown() throws Exception {
@@ -261,8 +264,7 @@ public class SxpConnectionTest {
                 sxpConnection = SxpConnection.create(sxpNode, connection1);
                 ChannelHandlerContext context = mock(ChannelHandlerContext.class);
                 when(context.close()).thenReturn(mock(ChannelFuture.class));
-                sxpConnection.markChannelHandlerContext(context,
-                        SxpConnection.ChannelHandlerContextType.SpeakerContext);
+                sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.SpeakerContext);
                 sxpConnection.setTimer(TimerType.KeepAliveTimer, 50);
                 sxpConnection.pushUpdateMessageInbound(mock(Callable.class));
                 UpdateExportTask exportTask = PowerMockito.mock(UpdateExportTask.class);
@@ -274,10 +276,12 @@ public class SxpConnectionTest {
                 assertNull(sxpConnection.getTimer(TimerType.KeepAliveTimer));
                 assertNull(sxpConnection.pollUpdateMessageInbound());
                 assertNull(sxpConnection.pollUpdateMessageOutbound());
-                exception.expect(ChannelHandlerContextNotFoundException.class);
-                sxpConnection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext);
-                assertEquals(ConnectionState.Off, sxpConnection.getState());
-
+                try {
+                        sxpConnection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext);
+                        fail();
+                } catch (ChannelHandlerContextNotFoundException e) {
+                        assertEquals(ConnectionState.Off, sxpConnection.getState());
+                }
         }
 
         @Test public void testSetConnection() throws Exception {
@@ -496,12 +500,16 @@ public class SxpConnectionTest {
                 sxpConnection.setInetSocketAddresses(socketAddress, socketAddress);
                 assertNotNull(sxpConnection.getDestination());
                 assertNotNull(sxpConnection.getLocalAddress());
+        }
 
+        @Test public void testSetInetSocketAddressesException0() throws Exception {
                 exception.expect(SocketAddressNotRecognizedException.class);
-                sxpConnection.setInetSocketAddresses(mock(SocketAddress.class), socketAddress);
+                sxpConnection.setInetSocketAddresses(mock(SocketAddress.class), new InetSocketAddress("0.0.0.0", 50));
+        }
 
+        @Test public void testSetInetSocketAddressesException1() throws Exception {
                 exception.expect(SocketAddressNotRecognizedException.class);
-                sxpConnection.setInetSocketAddresses(socketAddress, mock(SocketAddress.class));
+                sxpConnection.setInetSocketAddresses(new InetSocketAddress("0.0.0.0", 50), mock(SocketAddress.class));
         }
 
         @Test public void testGetContextType() throws Exception {

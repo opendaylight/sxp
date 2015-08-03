@@ -97,4 +97,15 @@ public class SxpBindingIdentityTest {
                 assertFalse(identity2.equals(identity));
                 assertFalse(identity.equals(null));
         }
+
+        @Test public void testToString() throws Exception {
+                List<SxpBindingIdentity> identities = new ArrayList<>();
+                identities.add(SxpBindingIdentity.create(getBinding("127.0.0.1/32"), getPrefixGroup(10, "127.0.0.1/32"),
+                        getPathGroup(getNodeIds("0.0.0.0"), getPrefixGroup(10, "127.0.0.1/32"))));
+                assertEquals("0.0.0.0 10 127.0.0.1/32", identities.get(0).toString());
+                identities.add(SxpBindingIdentity.create(getBinding("127.0.0.2/32"), getPrefixGroup(20, "127.0.0.2/32"),
+                        getPathGroup(getNodeIds("0.0.0.0"), getPrefixGroup(20, "127.0.0.2/32"))));
+                assertEquals("0.0.0.0 10 127.0.0.1/32\n0.0.0.0 20 127.0.0.2/32\n",
+                        SxpBindingIdentity.toString(identities));
+        }
 }

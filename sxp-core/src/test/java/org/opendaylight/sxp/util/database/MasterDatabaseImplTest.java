@@ -340,4 +340,19 @@ public class MasterDatabaseImplTest {
                 assertFalse(sources.contains(getSource(getPrefixGroup(10, "127.5.0.0/32", "0.0.0.50/32"))));
 
         }
+
+        @Test public void testToString() throws Exception {
+                sources.add(getSource(getPrefixGroup(10, "127.0.0.0/32", "0.0.0.0/32")));
+                sources.add(getSource(getPrefixGroup(10, "127.5.0.0/32", "0.0.0.50/32")));
+                databaseBindingSource = DatabaseBindingSource.Local;
+                sources.add(getSource(getPrefixGroup(100, "127.0.0.1/32")));
+                sources.add(getSource(getPrefixGroup(200, "2001:0:0:0:0:0:0:1/128")));
+                assertEquals("MasterDatabaseImpl\n" + " Sxp\n"
+                        + "  10 127.0.0.0/32 [2015-06-30T12:00:00Z|*Add|Path:127.0.0.0|Src:] 0.0.0.0/32 [2015-06-30T12:00:00Z|*Add|Path:0.0.0.0|Src:]\n"
+                        + " Sxp\n"
+                        + "  10 127.5.0.0/32 [2015-06-30T12:00:00Z|*Add|Path:127.5.0.0|Src:] 0.0.0.50/32 [2015-06-30T12:00:00Z|*Add|Path:0.0.0.50|Src:]\n"
+                        + " Local\n" + "  100 127.0.0.1/32 [2015-06-30T12:00:00Z|*Add|Path:127.0.0.1|Src:]\n"
+                        + " Local\n" + "  200 2001:0:0:0:0:0:0:1/128 [2015-06-30T12:00:00Z|*Add|Path:|Src:]",
+                        database.toString());
+        }
 }
