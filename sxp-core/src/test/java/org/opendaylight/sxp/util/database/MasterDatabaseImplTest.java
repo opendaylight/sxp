@@ -12,6 +12,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
@@ -33,6 +35,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.master.database.Vpn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +48,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class MasterDatabaseImplTest {
+@RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class}) public class MasterDatabaseImplTest {
 
         @Rule public ExpectedException exception = ExpectedException.none();
 
@@ -168,18 +173,19 @@ public class MasterDatabaseImplTest {
         @Test public void testAddBindingsLocal() throws Exception {
                 databaseBindingSource = DatabaseBindingSource.Local;
                 List<PrefixGroup> list = new ArrayList<>();
-                database.addBindingsLocal(null);
+                SxpNode sxpNode = PowerMockito.mock(SxpNode.class);
+                database.addBindingsLocal(sxpNode, null);
                 assertTrue(sources.isEmpty());
-                database.addBindingsLocal(new ArrayList<PrefixGroup>());
+                database.addBindingsLocal(sxpNode, new ArrayList<PrefixGroup>());
                 assertTrue(sources.isEmpty());
 
                 list.add(getPrefixGroup(10, "0.0.0.0/32"));
-                database.addBindingsLocal(list);
+                database.addBindingsLocal(sxpNode, list);
                 assertTrue(hasMasterBindingIdentity(getMasterBindingIdentity(10, "0.0.0.0/32"), sources));
                 assertFalse(hasMasterBindingIdentity(getMasterBindingIdentity(10, "0.0.0.1/32"), sources));
 
                 list.add(getPrefixGroup(100, "0.0.0.1/32"));
-                database.addBindingsLocal(list);
+                database.addBindingsLocal(sxpNode, list);
                 assertTrue(hasMasterBindingIdentity(getMasterBindingIdentity(10, "0.0.0.0/32"), sources));
                 assertTrue(hasMasterBindingIdentity(getMasterBindingIdentity(100, "0.0.0.1/32"), sources));
         }
@@ -331,7 +337,7 @@ public class MasterDatabaseImplTest {
                 group.getBinding().clear();
                 prefixGroups.add(group);
 
-                database.setAsDeleted(prefixGroups);
+                database.setAsDeleted(mock(SxpNode.class), prefixGroups);
 
                 assertTrue(sources.contains(getSource(getPrefixGroup(10, "127.0.0.0/32", "0.0.0.0/32"))));
                 assertTrue(sources.contains(getSource(getPrefixGroup(10, "127.5.0.0/32", "0.0.0.50/32"))));
@@ -348,11 +354,11 @@ public class MasterDatabaseImplTest {
                 sources.add(getSource(getPrefixGroup(100, "127.0.0.1/32")));
                 sources.add(getSource(getPrefixGroup(200, "2001:0:0:0:0:0:0:1/128")));
                 assertEquals("MasterDatabaseImpl\n" + " Sxp\n"
-                        + "  10 127.0.0.0/32 [2015-06-30T12:00:00Z|*Add|Path:127.0.0.0|Src:] 0.0.0.0/32 [2015-06-30T12:00:00Z|*Add|Path:0.0.0.0|Src:]\n"
-                        + " Sxp\n"
-                        + "  10 127.5.0.0/32 [2015-06-30T12:00:00Z|*Add|Path:127.5.0.0|Src:] 0.0.0.50/32 [2015-06-30T12:00:00Z|*Add|Path:0.0.0.50|Src:]\n"
-                        + " Local\n" + "  100 127.0.0.1/32 [2015-06-30T12:00:00Z|*Add|Path:127.0.0.1|Src:]\n"
-                        + " Local\n" + "  200 2001:0:0:0:0:0:0:1/128 [2015-06-30T12:00:00Z|*Add|Path:|Src:]",
+                                + "  10 127.0.0.0/32 [2015-06-30T12:00:00Z|*Add|Path:127.0.0.0|Src:] 0.0.0.0/32 [2015-06-30T12:00:00Z|*Add|Path:0.0.0.0|Src:]\n"
+                                + " Sxp\n"
+                                + "  10 127.5.0.0/32 [2015-06-30T12:00:00Z|*Add|Path:127.5.0.0|Src:] 0.0.0.50/32 [2015-06-30T12:00:00Z|*Add|Path:0.0.0.50|Src:]\n"
+                                + " Local\n" + "  100 127.0.0.1/32 [2015-06-30T12:00:00Z|*Add|Path:127.0.0.1|Src:]\n"
+                                + " Local\n" + "  200 2001:0:0:0:0:0:0:1/128 [2015-06-30T12:00:00Z|*Add|Path:|Src:]",
                         database.toString());
         }
 }

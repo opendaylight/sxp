@@ -10,6 +10,7 @@ package org.opendaylight.sxp.controller.util.database;
 
 import java.util.List;
 
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseAccess;
@@ -38,10 +39,10 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     }
 
     @Override
-    public void addBindingsLocal(List<PrefixGroup> prefixGroups) throws Exception {
+    public void addBindingsLocal(SxpNode sxpNode, List<PrefixGroup> prefixGroups) throws Exception {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
-            super.addBindingsLocal(prefixGroups);
+            super.addBindingsLocal(sxpNode, prefixGroups);
             databaseAccess.put(database);
         }
     }
@@ -128,11 +129,11 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     }
 
     @Override
-    public boolean setAsDeleted(List<PrefixGroup> prefixGroups) throws Exception {
+    public boolean setAsDeleted(SxpNode sxpNode, List<PrefixGroup> prefixGroups) throws Exception {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
             synchronized (database) {
-                boolean result = super.setAsDeleted(prefixGroups);
+                boolean result = super.setAsDeleted(sxpNode, prefixGroups);
                 databaseAccess.put(database);
                 return result;
             }

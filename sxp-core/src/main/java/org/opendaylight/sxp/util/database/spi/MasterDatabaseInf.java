@@ -10,6 +10,7 @@ package org.opendaylight.sxp.util.database.spi;
 
 import java.util.List;
 
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
@@ -20,7 +21,7 @@ public interface MasterDatabaseInf {
 
     public void addBindings(NodeId owner, List<MasterBindingIdentity> contributedBindingIdentities) throws Exception;
 
-    public void addBindingsLocal(List<PrefixGroup> prefixGroups) throws Exception;
+    public void addBindingsLocal(SxpNode owner, List<PrefixGroup> prefixGroups) throws Exception;
 
     public void expandBindings(int quantity) throws Exception;
 
@@ -38,7 +39,7 @@ public interface MasterDatabaseInf {
 
     public void resetModified() throws Exception;
 
-    public boolean setAsDeleted(List<PrefixGroup> prefixGroups) throws Exception;
+    public boolean setAsDeleted(SxpNode owner, List<PrefixGroup> prefixGroups) throws Exception;
 
     @Override
     public String toString();

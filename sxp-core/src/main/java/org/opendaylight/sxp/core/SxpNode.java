@@ -100,6 +100,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      * Create new instance of SxpNode containing provided database data
      * and default ThreadWorkers
      *
+     * Be aware that sharing of the same DB among multiple SxpNode isn't
+     * supported and may cause unexpected behaviour
+     *
      * @param nodeId         ID of newly created Node
      * @param node           Node setup data
      * @param masterDatabase Data which will be added to Master-DB
@@ -115,6 +118,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
     /**
      * Create new instance of SxpNode containing provided database data
      * and custom ThreadWorkers
+     *
+     * Be aware that sharing of the same DB among multiple SxpNode isn't
+     * supported and may cause unexpected behaviour
      *
      * @param nodeId         ID of newly created Node
      * @param node           Node setup data
@@ -166,8 +172,8 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
 
         this.nodeBuilder.setSecurity(setPassword(nodeBuilder.getSecurity()));
-        this._masterDatabase = masterDatabase;
-        this._sxpDatabase = sxpDatabase;
+        this._masterDatabase = Preconditions.checkNotNull(masterDatabase);
+        this._sxpDatabase = Preconditions.checkNotNull(sxpDatabase);
 
         addConnections(nodeBuilder.getConnections());
 
@@ -506,7 +512,8 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
 
         if (source != null && source.getPrefixGroup() != null && !source.getPrefixGroup().isEmpty()) {
-            getBindingMasterDatabase().addBindingsLocal(Database.assignPrefixGroups(nodeId, source.getPrefixGroup()));
+            getBindingMasterDatabase().addBindingsLocal(this,
+                    Database.assignPrefixGroups(nodeId, source.getPrefixGroup()));
             notifyService();
         }
     }

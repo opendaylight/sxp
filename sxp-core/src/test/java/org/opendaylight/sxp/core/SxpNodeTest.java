@@ -280,22 +280,6 @@ import static org.mockito.Mockito.verify;
                 PowerMockito.verifyStatic();
         }
 
-        @Test public void testGetBindingMasterDatabase() throws Exception {
-                assertNotNull(node.getBindingMasterDatabase());
-
-                node = SxpNode.createInstance(NodeId.getDefaultInstance("0.0.0.0"), nodeIdentity, null, null);
-                exception.expect(DatabaseNotFoundException.class);
-                node.getBindingMasterDatabase();
-        }
-
-        @Test public void testGetBindingSxpDatabase() throws Exception {
-                assertNotNull(node.getBindingSxpDatabase());
-
-                node = SxpNode.createInstance(NodeId.getDefaultInstance("0.0.0.0"), nodeIdentity, null, null);
-                exception.expect(DatabaseNotFoundException.class);
-                node.getBindingSxpDatabase();
-        }
-
         @Test public void testPutLocalBindingsMasterDatabase() throws Exception {
                 MasterDatabase masterDatabase = mock(MasterDatabase.class);
                 List<Source> sourceList = new ArrayList<>();
@@ -308,11 +292,11 @@ import static org.mockito.Mockito.verify;
                 when(masterDatabase.getSource()).thenReturn(sourceList);
 
                 node.putLocalBindingsMasterDatabase(masterDatabase);
-                verify(databaseProvider).addBindingsLocal(anyList());
+                verify(databaseProvider).addBindingsLocal(any(SxpNode.class), anyList());
 
                 when(source.getBindingSource()).thenReturn(DatabaseBindingSource.Sxp);
                 node.putLocalBindingsMasterDatabase(masterDatabase);
-                verify(databaseProvider).addBindingsLocal(anyList());
+                verify(databaseProvider).addBindingsLocal(any(SxpNode.class), anyList());
         }
 
         @Test public void testRemoveConnection() throws Exception {
