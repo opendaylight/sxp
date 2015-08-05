@@ -367,8 +367,8 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 prefixGroupBuilder.setBinding(bindings);
                 prefixGroups.add(prefixGroupBuilder.build());
 
-                getDatastoreProviderMaster(nodeId).addBindingsLocal(prefixGroups);
-                notifyService(nodeId);
+                getDatastoreProviderMaster(nodeId).addBindingsLocal(Configuration.getRegisteredNode(nodeId),
+                        prefixGroups);
 
                 AddEntryOutputBuilder output = new AddEntryOutputBuilder();
                 output.setResult(true);
@@ -469,8 +469,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 }
                 prefixGroups.add(prefixGroupBuilder.build());
 
-                getDatastoreProviderMaster(nodeId).setAsDeleted(prefixGroups);
-                notifyService(nodeId);
+                getDatastoreProviderMaster(nodeId).setAsDeleted(Configuration.getRegisteredNode(nodeId), prefixGroups);
 
                 DeleteEntryOutputBuilder output = new DeleteEntryOutputBuilder();
                 output.setResult(true);
@@ -569,10 +568,6 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    private void notifyService(String nodeName) {
-        Configuration.getRegisteredNode(nodeName).notifyService();
-    }
-
     @Override
     public Future<RpcResult<UpdateEntryOutput>> updateEntry(final UpdateEntryInput input) {
         return executor.submit(new Callable<RpcResult<UpdateEntryOutput>>() {
@@ -638,8 +633,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 prefixGroupBuilder.setBinding(bindings);
                 prefixGroups.add(prefixGroupBuilder.build());
 
-                getDatastoreProviderMaster(nodeId).setAsDeleted(prefixGroups);
-                notifyService(nodeId);
+                getDatastoreProviderMaster(nodeId).setAsDeleted(Configuration.getRegisteredNode(nodeId), prefixGroups);
 
                 // Add new.
                 bindingBuilder = new BindingBuilder();
@@ -665,8 +659,8 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 prefixGroupBuilder.setBinding(bindings);
                 prefixGroups.add(prefixGroupBuilder.build());
 
-                getDatastoreProviderMaster(nodeId).addBindingsLocal(prefixGroups);
-                notifyService(nodeId);
+                getDatastoreProviderMaster(nodeId).addBindingsLocal(Configuration.getRegisteredNode(nodeId),
+                        prefixGroups);
 
                 UpdateEntryOutputBuilder output = new UpdateEntryOutputBuilder();
                 output.setResult(true);
