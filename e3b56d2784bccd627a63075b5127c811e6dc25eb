@@ -1,0 +1,130 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5a7ca5a3_3420099b",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/spi/MasterDatabaseInf.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 612
+      },
+      "writtenOn": "2015-08-05T01:25:16Z",
+      "side": 1,
+      "message": "You could add SxpNode as parameter to methods where is needed instead of forcing implementator of SPI to store owner. Comments for this solution inline.\nPlease add java doc for SPI",
+      "revId": "e3b56d2784bccd627a63075b5127c811e6dc25eb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5a7ca5a3_d419957a",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/spi/MasterDatabaseInf.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 612
+      },
+      "writtenOn": "2015-08-05T01:25:16Z",
+      "side": 1,
+      "message": "you could change it as SxpNode if you need SxpNode in implementation of SPI.",
+      "range": {
+        "startLine": 22,
+        "startChar": 28,
+        "endLine": 22,
+        "endChar": 40
+      },
+      "revId": "e3b56d2784bccd627a63075b5127c811e6dc25eb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5a7ca5a3_742681bc",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/spi/MasterDatabaseInf.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 612
+      },
+      "writtenOn": "2015-08-05T01:25:16Z",
+      "side": 1,
+      "message": "you could add new parameter SxpNode owner if it is needed in implementation.",
+      "range": {
+        "startLine": 42,
+        "startChar": 32,
+        "endLine": 42,
+        "endChar": 33
+      },
+      "revId": "e3b56d2784bccd627a63075b5127c811e6dc25eb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5a7ca5a3_14106d4d",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/spi/MasterDatabaseInf.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 612
+      },
+      "writtenOn": "2015-08-05T01:25:16Z",
+      "side": 1,
+      "message": "please remove. It is not needed in solution proposed in comments above.",
+      "range": {
+        "startLine": 50,
+        "startChar": 4,
+        "endLine": 50,
+        "endChar": 61
+      },
+      "revId": "e3b56d2784bccd627a63075b5127c811e6dc25eb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5a7ca5a3_542585a9",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/spi/SxpDatabaseInf.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 612
+      },
+      "writtenOn": "2015-08-05T01:25:16Z",
+      "side": 1,
+      "message": "please, add java doc to SPI",
+      "revId": "e3b56d2784bccd627a63075b5127c811e6dc25eb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5a7ca5a3_f4129157",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/spi/SxpDatabaseInf.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 612
+      },
+      "writtenOn": "2015-08-05T01:25:16Z",
+      "side": 1,
+      "message": "you could remove this and use SxpNode as parameter in methods where it is meaningful.",
+      "range": {
+        "startLine": 41,
+        "startChar": 4,
+        "endLine": 41,
+        "endChar": 61
+      },
+      "revId": "e3b56d2784bccd627a63075b5127c811e6dc25eb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
