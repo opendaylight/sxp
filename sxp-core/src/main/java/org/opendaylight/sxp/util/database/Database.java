@@ -11,6 +11,7 @@ package org.opendaylight.sxp.util.database;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.TimeConv;
@@ -62,7 +63,7 @@ public class Database {
         return _prefixGroups;
     }
 
-    public static PrefixGroup createPrefixGroup(int sgt, String... bindings) throws Exception {
+    public static PrefixGroup createPrefixGroup(int sgt, String... bindings) throws UnknownPrefixException {
         PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder();
         prefixGroupBuilder.setSgt(new Sgt(sgt));
         List<Binding> _bindings = new ArrayList<Binding>();

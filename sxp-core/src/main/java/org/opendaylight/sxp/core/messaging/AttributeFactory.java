@@ -91,7 +91,8 @@ public final class AttributeFactory {
         return capabilitiesBuilder.build();
     }
 
-    public static Attribute createCapabilities(Version version) throws Exception {
+    public static Attribute createCapabilities(Version version)
+            throws UnknownVersionException, CapabilityLengthException {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setFlags(getFlags(_oNpCe));
         attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
@@ -110,7 +111,7 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
-    public static Attribute createHoldTime(int holdTimeMin) throws Exception {
+    public static Attribute createHoldTime(int holdTimeMin) throws HoldTimeMinException {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setFlags(getFlags(_oNpCe));
         attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
@@ -141,7 +142,8 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
-    public static Attribute createHoldTime(int holdTimeMin, int holdTimeMax) throws Exception {
+    public static Attribute createHoldTime(int holdTimeMin, int holdTimeMax)
+            throws HoldTimeMinException, HoldTimeMaxException {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setFlags(getFlags(_oNpCe));
         attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
@@ -372,7 +374,9 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
-    protected static Attribute decode(byte[] array) throws AttributeLengthException, UnknownHostException, UnknownPrefixException, AddressLengthException, TlvNotFoundException, UnknownNodeIdException {
+    protected static Attribute decode(byte[] array)
+            throws AttributeLengthException, AddressLengthException, UnknownNodeIdException, UnknownPrefixException,
+            TlvNotFoundException, UnknownHostException {
         // 1 or 0 byte: O N P C E 0 0 0
         Flags flags = getFlags(array[0]);
 
@@ -428,7 +432,9 @@ public final class AttributeFactory {
         return decode(flags, variant, type, length, value);
     }
 
-    private static Attribute decode(Flags flags, AttributeVariant variant, AttributeType type, int length, byte[] value) throws UnknownHostException, UnknownPrefixException, AddressLengthException, TlvNotFoundException, UnknownNodeIdException {
+    private static Attribute decode(Flags flags, AttributeVariant variant, AttributeType type, int length, byte[] value)
+            throws AddressLengthException, TlvNotFoundException, UnknownPrefixException, UnknownHostException,
+            UnknownNodeIdException {
 
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setFlags(flags);

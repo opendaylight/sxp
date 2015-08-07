@@ -21,14 +21,10 @@ public class RetryOpenTimerTask extends SxpTimerTask<Void> {
         this.owner = owner;
     }
 
-    @Override public Void call() throws Exception {
+    @Override public Void call() {
         if (owner.getServerPort() >= 1) {
             LOG.debug(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
-            try {
-                owner.openConnections();
-            } catch (Exception e) {
-                LOG.debug(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
-            }
+            owner.openConnections();
             owner.setTimer(TimerType.RetryOpenTimer, getPeriod());
         }
         return null;

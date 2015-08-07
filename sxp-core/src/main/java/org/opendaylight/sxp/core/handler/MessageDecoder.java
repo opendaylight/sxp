@@ -13,24 +13,24 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.SimpleChannelInboundHandler;
-
-import java.net.SocketAddress;
-
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpConnection.ChannelHandlerContextType;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
+import org.opendaylight.sxp.util.exception.ErrorCodeDataLengthException;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
-import org.opendaylight.sxp.util.exception.connection.IncompatiblePeerModeException;
+import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownSxpConnectionException;
 import org.opendaylight.yangtools.yang.binding.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.SocketAddress;
 
 /** Handles server and client sides of a channel. */
 @Sharable
@@ -93,24 +93,26 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     public static void sendErrorMessage(ChannelHandlerContext ctx, ErrorMessageException messageValidationException,
-            SxpConnection connection) throws Exception {
+                                        SxpConnection connection) {
         ByteBuf message = null;
-        if (messageValidationException.isLegacy()) {
-            message = LegacyMessageFactory.createError(messageValidationException.getErrorCodeNonExtended(), null);
-        } else {
-            message = MessageFactory.createError(messageValidationException.getErrorCode(),
-                    messageValidationException.getErrorSubCode(), messageValidationException.getData());
+        try {
+            if (messageValidationException.isLegacy()) {
+                message = LegacyMessageFactory.createError(messageValidationException.getErrorCodeNonExtended(), null);
+            } else {
+                message = MessageFactory.createError(messageValidationException.getErrorCode(),
+                        messageValidationException.getErrorSubCode(), messageValidationException.getData());
+            }
+            if (ctx == null) {
+                ctx = connection.getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
+            }
+        } catch (ErrorCodeDataLengthException e) {
+            LOG.info("{} ERROR sending Error {}", connection, messageValidationException, e);
+            return;
+        } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+            LOG.info("{} ERROR sending Error {}", connection, messageValidationException, e);
+            message.release();
+            return;
         }
-        if (ctx == null) {
-                try {
-                        ctx = connection.getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
-                } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-                        LOG.info("{} ERROR sending Error {}", connection, MessageFactory.toString(message));
-                        message.release();
-                        return;
-                }
-        }
-
         LOG.info("{} Sent ERROR {}", connection, MessageFactory.toString(message));
         ctx.writeAndFlush(message);
         ctx.close();
@@ -127,11 +129,11 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(ChannelHandlerContext ctx) throws SocketAddressNotRecognizedException {
         SxpConnection connection;
         try {
             connection = owner.getConnection(ctx.channel().remoteAddress());
-        } catch (Exception e) {
+        } catch (SocketAddressNotRecognizedException | UnknownSxpConnectionException e) {
             LOG.warn(getLogMessage(owner, ctx, "Channel activation", e));
             ctx.close();
             return;
@@ -158,11 +160,11 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+    public void channelInactive(ChannelHandlerContext ctx) {
         SxpConnection connection;
         try {
             connection = owner.getConnection(ctx.channel().remoteAddress());
-        } catch (UnknownSxpConnectionException e) {
+        } catch (SocketAddressNotRecognizedException | UnknownSxpConnectionException e) {
             LOG.warn(getLogMessage(owner, ctx, "Channel inactivation", e));
             return;
         }
@@ -171,13 +173,13 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, ByteBuf message) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, ByteBuf message) {
        // LOG.debug(getLogMessage(owner, ctx, "Input received", null) + ": {}", MessageFactory.toString(message));
 
         SxpConnection connection;
         try {
             connection = owner.getConnection(ctx.channel().remoteAddress());
-        } catch (UnknownSxpConnectionException e) {
+        } catch (SocketAddressNotRecognizedException | UnknownSxpConnectionException e) {
             LOG.warn(getLogMessage(owner, ctx, "Channel read0", e));
             return;
         }
@@ -196,8 +198,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
                 sendErrorMessage(ctx, messageValidationException, connection);
                 connection.setStateOff(ctx);
                 break;
-            } catch (IncompatiblePeerModeException | ErrorMessageReceivedException
-                    | UpdateMessageConnectionStateException e) {
+            } catch (ErrorMessageReceivedException | UpdateMessageConnectionStateException e) {
                 // Filter of error messages.
                 LOG.warn(getLogMessage(owner, ctx, "", e));
                 connection.setStateOff(ctx);
@@ -214,16 +215,16 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+    public void channelReadComplete(ChannelHandlerContext ctx) {
         ctx.flush();
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         SxpConnection connection;
         try {
             connection = owner.getConnection(ctx.channel().remoteAddress());
-        } catch (UnknownSxpConnectionException e) {
+        } catch (SocketAddressNotRecognizedException | UnknownSxpConnectionException e) {
             LOG.warn(getLogMessage(owner, ctx, "Channel exception", e));
             return;
         }

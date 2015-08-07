@@ -9,9 +9,13 @@
 package org.opendaylight.sxp.core.messaging.legacy;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 import org.opendaylight.sxp.util.ArraysUtil;
+import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
+import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlvs.fields.Tlv;
 
@@ -21,7 +25,8 @@ public class MappingRecordList extends ArrayList<MappingRecord> {
     /** */
     private static final long serialVersionUID = -427123702376957236L;
 
-    public static MappingRecordList decode(byte[] array) throws Exception {
+    public static MappingRecordList decode(byte[] array)
+            throws UnknownPrefixException, AddressLengthException, AttributeLengthException, UnknownHostException {
         MappingRecordList mappingRecordList = new MappingRecordList();
         while (array != null && array.length != 0) {
             MappingRecord mappingRecord = org.opendaylight.sxp.core.messaging.legacy.MappingRecord.decode(array);
@@ -31,7 +36,7 @@ public class MappingRecordList extends ArrayList<MappingRecord> {
         return mappingRecordList;
     }
 
-    private static byte[] toBytes(MappingRecord mappingRecord) throws Exception {
+    private static byte[] toBytes(MappingRecord mappingRecord) throws UnknownHostException {
         String _prefix = new String(mappingRecord.getAddress().getValue());
         if (_prefix.startsWith("/")) {
             _prefix = _prefix.substring(1);
@@ -57,7 +62,7 @@ public class MappingRecordList extends ArrayList<MappingRecord> {
         super(INITIAL_CAPACITY);
     }
 
-    public byte[] toBytes() throws Exception {
+    public byte[] toBytes() throws UnknownHostException {
         byte[] mappingRecords = new byte[0];
         for (MappingRecord mappingRecord : this) {
             mappingRecords = ArraysUtil.combine(mappingRecords, toBytes(mappingRecord));

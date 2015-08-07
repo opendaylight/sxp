@@ -11,19 +11,16 @@ package org.opendaylight.sxp.core.behavior;
 import com.google.common.base.Preconditions;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
+import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
+import org.opendaylight.sxp.util.exception.message.UpdateMessageCompositionException;
+import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.OpenMessage;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.OpenMessageLegacy;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.OpenMessageLegacyBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.*;
 import org.opendaylight.yangtools.yang.binding.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,12 +41,11 @@ public final class Context {
         this.strategy = StrategyFactory.getStrategy(this, version);
     }
 
-    public void executeChannelActivationStrategy(ChannelHandlerContext ctx, SxpConnection connection) throws Exception {
+    public void executeChannelActivationStrategy(ChannelHandlerContext ctx, SxpConnection connection) {
         this.strategy.onChannelActivation(ctx, connection);
     }
 
-    public void executeChannelInactivationStrategy(ChannelHandlerContext ctx, SxpConnection connection)
-            throws Exception {
+    public void executeChannelInactivationStrategy(ChannelHandlerContext ctx, SxpConnection connection) {
         this.strategy.onChannelInactivation(ctx, connection);
     }
 
@@ -58,7 +54,7 @@ public final class Context {
     }
 
     public void executeInputMessageStrategy(ChannelHandlerContext ctx, SxpConnection connection, Notification message)
-            throws Exception {
+            throws ErrorMessageReceivedException, ErrorMessageException, UpdateMessageConnectionStateException {
         // Version negotiation detection
         if (isOpenRespMessage(message)) {
             Version negotiatedVersion = extractVersion(message);
@@ -129,12 +125,12 @@ public final class Context {
         return isOpen;
     }
 
-    public Notification executeParseInput(ByteBuf request) throws Exception {
+    public Notification executeParseInput(ByteBuf request) throws ErrorMessageException {
         return this.strategy.onParseInput(request);
     }
 
     public ByteBuf executeUpdateMessageStrategy(SxpConnection connection, MasterDatabase masterDatabase)
-            throws Exception {
+            throws UpdateMessageCompositionException {
         return this.strategy.onUpdateMessage(connection, masterDatabase);
     }
 

@@ -13,6 +13,8 @@ import java.util.List;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseAccess;
+import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
+import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 
@@ -26,7 +28,7 @@ public final class SxpDatastoreImpl extends SxpDatabaseImpl {
     }
 
     @Override
-    public boolean addBindings(SxpDatabase database) throws Exception {
+    public boolean addBindings(SxpDatabase database) throws DatabaseAccessException {
         synchronized (databaseAccess) {
             this.database = databaseAccess.read();
             synchronized (this.database) {
@@ -38,7 +40,7 @@ public final class SxpDatastoreImpl extends SxpDatabaseImpl {
     }
 
     @Override
-    public List<SxpBindingIdentity> deleteBindings(SxpDatabase database) throws Exception {
+    public List<SxpBindingIdentity> deleteBindings(SxpDatabase database) throws DatabaseAccessException {
         synchronized (databaseAccess) {
             this.database = databaseAccess.read();
             synchronized (this.database) {
@@ -50,14 +52,14 @@ public final class SxpDatastoreImpl extends SxpDatabaseImpl {
     }
 
     @Override
-    public SxpDatabase get() throws Exception {
+    public SxpDatabase get() throws DatabaseAccessException {
         synchronized (databaseAccess) {
             return databaseAccess.read();
         }
     }
 
     @Override
-    public void purgeBindings(NodeId nodeId) throws Exception {
+    public void purgeBindings(NodeId nodeId) throws DatabaseAccessException, NodeIdNotDefinedException {
         synchronized (databaseAccess) {
             this.database = databaseAccess.read();
             synchronized (this.database) {
@@ -68,7 +70,7 @@ public final class SxpDatastoreImpl extends SxpDatabaseImpl {
     }
 
     @Override
-    public List<SxpBindingIdentity> readBindings() throws Exception {
+    public List<SxpBindingIdentity> readBindings() throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
             synchronized (this.database) {

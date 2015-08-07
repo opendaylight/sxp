@@ -11,45 +11,60 @@ package org.opendaylight.sxp.core;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.opendaylight.sxp.core.behavior.Context;
+import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.messaging.AttributeList;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.service.UpdateExportTask;
-import org.opendaylight.sxp.util.exception.ErrorCodeDataLengthException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.exception.connection.IncompatiblePeerModeException;
 import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
+import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeNotFoundException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownConnectionModeException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownErrorCodeException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownErrorSubCodeException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownSxpNodeException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.sxp.util.time.connection.*;
+import org.opendaylight.sxp.util.time.connection.DeleteHoldDownTimerTask;
+import org.opendaylight.sxp.util.time.connection.HoldTimerTask;
+import org.opendaylight.sxp.util.time.connection.KeepAliveTimerTask;
+import org.opendaylight.sxp.util.time.connection.ReconcilationTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.ConnectionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.*;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorSubCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.OpenMessage;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.HoldTimeAttribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.SxpNodeIdAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class SxpConnection {
 
@@ -59,7 +74,7 @@ public class SxpConnection {
 
     protected static final Logger LOG = LoggerFactory.getLogger(SxpConnection.class.getName());
 
-    public static SxpConnection create(SxpNode owner, Connection connection) throws Exception {
+    public static SxpConnection create(SxpNode owner, Connection connection) throws UnknownVersionException {
         return new SxpConnection(owner, connection);
     }
 
@@ -162,7 +177,7 @@ public class SxpConnection {
         }
     }
 
-    private SxpConnection(SxpNode owner, Connection connection) throws Exception {
+    private SxpConnection(SxpNode owner, Connection connection) throws UnknownVersionException {
         this.owner = owner;
         this.connectionBuilder = new ConnectionBuilder(connection);
 
@@ -186,14 +201,14 @@ public class SxpConnection {
         }
     }
 
-    public void addChannelHandlerContext(ChannelHandlerContext ctx) throws Exception {
+    public void addChannelHandlerContext(ChannelHandlerContext ctx) {
         synchronized (initCtxs) {
             initCtxs.add(ctx);
             LOG.debug(this + " Add init channel context {}/{}", ctx, initCtxs);
         }
     }
 
-    public void cleanUpBindings() throws Exception {
+    public void cleanUpBindings() {
         // Clean-up bindings within reconciliation: If the connection recovers
         // before the delete hold down timer expiration, a reconcile timer is
         // started to clean up old mappings that didn’t get informed to be
@@ -211,7 +226,7 @@ public class SxpConnection {
                         + connectionBuilder.getVersion() + "\"]");
                 return;
             }
-        } catch (Exception e) {
+        } catch (UnknownNodeIdException e) {
             LOG.warn(this + " Unknown message relevant peer node ID | {} | {}", e.getClass().getSimpleName(),
                     e.getMessage());
             return;
@@ -284,9 +299,7 @@ public class SxpConnection {
         }
     }
 
-    private void disableKeepAliveMechanism(String log) throws UnknownErrorCodeException, UnknownErrorSubCodeException,
-            ErrorCodeDataLengthException, ChannelHandlerContextNotFoundException,
-            ChannelHandlerContextDiscrepancyException {
+    private void disableKeepAliveMechanism(String log) {
         if (isModeListener()) {
             setHoldTime(0);
         } else if (isModeSpeaker()) {
@@ -295,19 +308,11 @@ public class SxpConnection {
         LOG.info("{} Connection keep-alive mechanism is disabled | {}", toString(), log);
     }
 
-    private void disableKeepAliveMechanismConnectionTermination(int holdTimeMin, int holdTimeMinAcc, int holdTimeMax)
-            throws Exception {
+    private void disableKeepAliveMechanismConnectionTermination(int holdTimeMin, int holdTimeMinAcc, int holdTimeMax) {
         disableKeepAliveMechanism("Unacceptable hold time [min=" + holdTimeMin + " acc=" + holdTimeMinAcc + " max="
                 + holdTimeMax + "] | Connection termination");
-        ByteBuf error = MessageFactory.createError(ErrorCode.OpenMessageError, ErrorSubCode.UnacceptableHoldTime, null);
-        try {
-            ChannelHandlerContext ctx = getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
-            LOG.info("{} Sent ERROR {}", toString(), error.toString());
-            ctx.writeAndFlush(error);
-            closeChannelHandlerContext(ctx);
-        } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-            error.release();
-        }
+        MessageDecoder.sendErrorMessage(null,
+                new ErrorMessageException(ErrorCode.OpenMessageError, ErrorSubCode.UnacceptableHoldTime, null), this);
     }
 
     public List<CapabilityType> getCapabilities() {
@@ -447,11 +452,11 @@ public class SxpConnection {
         return timers.get(timerType);
     }
 
-    public long getTimestampUpdateMessageExport() throws Exception {
+    public long getTimestampUpdateMessageExport() {
         return TimeConv.toLong(connectionBuilder.getTimestampUpdateMessageExport());
     }
 
-    public long getTimestampUpdateOrKeepAliveMessage() throws Exception {
+    public long getTimestampUpdateOrKeepAliveMessage() {
         return TimeConv.toLong(connectionBuilder.getTimestampUpdateOrKeepAliveMessage());
     }
 
@@ -470,7 +475,7 @@ public class SxpConnection {
         return connectionBuilder.getCapabilities().getCapability().contains(capability);
     }
 
-    private void initializeTimers(ConnectionMode connectionMode) throws Exception {
+    private void initializeTimers(ConnectionMode connectionMode) {
 
         // Listener connection specific.
         if (connectionMode.equals(ConnectionMode.Listener)) {
@@ -576,7 +581,7 @@ public class SxpConnection {
         }
     }
 
-    public void purgeBindings() throws Exception {
+    public void purgeBindings() {
         // Get message relevant peer node ID.
         NodeId peerId;
         try {
@@ -589,7 +594,7 @@ public class SxpConnection {
                         + "\"]");
                 return;
             }
-        } catch (Exception e) {
+        } catch (UnknownNodeIdException e) {
             LOG.warn(this + " Unknown message relevant peer node ID | {} | {}", e.getClass().getSimpleName(),
                     e.getMessage());
             return;
@@ -608,7 +613,7 @@ public class SxpConnection {
         connectionBuilder.setUpdateExported(false);
     }
 
-    public void setBehaviorContexts(Version version) throws UnknownSxpNodeException, UnknownVersionException {
+    public void setBehaviorContexts(Version version) throws UnknownVersionException {
         connectionBuilder.setCapabilities(Configuration.getCapabilities(version));
         connectionBuilder.setVersion(version);
         context = new Context(owner, version);
@@ -616,7 +621,7 @@ public class SxpConnection {
 
     // Bidirectional uses separated Speaker part and Listener part connection
     // setup.
-    public void setConnection(OpenMessage message) throws Exception {
+    public void setConnection(OpenMessage message) throws ErrorMessageException, UnknownConnectionModeException {
         if (isModeListener() && message.getSxpMode().equals(ConnectionMode.Speaker)) {
             setConnectionListenerPart(message);
         } else if (isModeSpeaker() && message.getSxpMode().equals(ConnectionMode.Listener)) {
@@ -628,12 +633,13 @@ public class SxpConnection {
         setStateOn();
     }
 
-    public void setConnectionListenerPart(OpenMessage message) throws Exception {
+    public void setConnectionListenerPart(OpenMessage message) throws ErrorMessageException {
 
         // Node modes compatibility.
         if (getMode().equals(ConnectionMode.Listener) && !message.getSxpMode().equals(ConnectionMode.Speaker)
                 || getMode().equals(ConnectionMode.Speaker) && !message.getSxpMode().equals(ConnectionMode.Listener)) {
-            throw new IncompatiblePeerModeException(getMode(), message.getSxpMode());
+            throw new ErrorMessageException(ErrorCode.OpenMessageError,
+                    new IncompatiblePeerModeException(getMode(), message.getSxpMode()));
         }
         setModeRemote(message.getSxpMode());
 
@@ -658,7 +664,7 @@ public class SxpConnection {
         HoldTimeAttribute attHoldTime;
         try {
             attHoldTime = (HoldTimeAttribute) AttributeList.get(message.getAttribute(), AttributeType.HoldTime);
-        } catch (Exception e) {
+        } catch (AttributeNotFoundException e) {
             disableKeepAliveMechanism("Hold time attribute not present in received message");
             return;
         }
@@ -715,11 +721,12 @@ public class SxpConnection {
         initializeTimers(ConnectionMode.Listener);
     }
 
-    public void setConnectionSpeakerPart(OpenMessage message) throws Exception {
+    public void setConnectionSpeakerPart(OpenMessage message) throws ErrorMessageException {
         // Node modes compatibility.
         if (getMode().equals(ConnectionMode.Listener) && !message.getSxpMode().equals(ConnectionMode.Speaker)
                 || getMode().equals(ConnectionMode.Speaker) && !message.getSxpMode().equals(ConnectionMode.Listener)) {
-            throw new IncompatiblePeerModeException(getMode(), message.getSxpMode());
+            throw new ErrorMessageException(ErrorCode.OpenMessageError,
+                    new IncompatiblePeerModeException(getMode(), message.getSxpMode()));
         }
         setModeRemote(message.getSxpMode());
 
@@ -744,7 +751,7 @@ public class SxpConnection {
         HoldTimeAttribute attHoldTime;
         try {
             attHoldTime = (HoldTimeAttribute) AttributeList.get(message.getAttribute(), AttributeType.HoldTime);
-        } catch (Exception e) {
+        } catch (AttributeNotFoundException e) {
             disableKeepAliveMechanism("Hold time attribute not present in received message");
             return;
         }
@@ -797,7 +804,7 @@ public class SxpConnection {
         initializeTimers(ConnectionMode.Speaker);
     }
 
-    public void setDeleteHoldDownTimer() throws Exception {
+    public void setDeleteHoldDownTimer() {
         // Non configurable.
         setTimer(TimerType.DeleteHoldDownTimer,Configuration.getTimerDefault()
                 .getDeleteHoldDownTimer());
@@ -836,7 +843,8 @@ public class SxpConnection {
         connectionBuilder.setConnectionTimers(connectionTimersBuilder.build());
     }
 
-    public void setInetSocketAddresses(SocketAddress localAddress, SocketAddress remoteAddress) throws Exception {
+    public void setInetSocketAddresses(SocketAddress localAddress, SocketAddress remoteAddress)
+            throws SocketAddressNotRecognizedException {
         if (!(localAddress instanceof InetSocketAddress)) {
             throw new SocketAddressNotRecognizedException(localAddress);
         } else if (!(remoteAddress instanceof InetSocketAddress)) {
@@ -874,7 +882,7 @@ public class SxpConnection {
         connectionBuilder.setPurgeAllMessageReceived(true);
     }
 
-    public void setReconciliationTimer() throws Exception {
+    public void setReconciliationTimer() {
         if (getReconciliationTime() > 0) {
             ListenableScheduledFuture<?> ctDeleteHoldDown = getTimer(TimerType.DeleteHoldDownTimer);
             if (ctDeleteHoldDown != null && !ctDeleteHoldDown.isDone()) {
@@ -891,7 +899,7 @@ public class SxpConnection {
         connectionBuilder.setState(ConnectionState.AdministrativelyDown);
     }
 
-    public void setStateDeleteHoldDown() throws Exception {
+    public void setStateDeleteHoldDown() {
         connectionBuilder.setUpdateAllExported(false);
         connectionBuilder.setUpdateExported(false);
         connectionBuilder.setPurgeAllMessageReceived(false);
@@ -908,7 +916,7 @@ public class SxpConnection {
                         + "\"]");
                 return;
             }
-        } catch (Exception e) {
+        } catch (UnknownNodeIdException e) {
             LOG.warn(this + " Unknown message relevant peer node ID | {} | {}", e.getClass().getSimpleName(),
                     e.getMessage());
             return;
@@ -954,13 +962,9 @@ public class SxpConnection {
             switch (type) {
                 case ListenerContext:
                     connectionBuilder.setPurgeAllMessageReceived(false);
-                    setTimer(TimerType.DeleteHoldDownTimer, null);
-                    setTimer(TimerType.ReconciliationTimer,null);
-                    try {
-                        setTimer(TimerType.HoldTimer,0);
-                    } catch (UnknownTimerTypeException e) {
-                        LOG.warn("{} Error setting Timer", this, e);
-                    }
+                    setTimer(TimerType.DeleteHoldDownTimer, 0);
+                    setTimer(TimerType.ReconciliationTimer, 0);
+                    setTimer(TimerType.HoldTimer, 0);
                     synchronized (inboundUpdateMessageQueue) {
                         inboundUpdateMessageQueue.clear();
                     }
@@ -968,11 +972,7 @@ public class SxpConnection {
                 case SpeakerContext:
                     connectionBuilder.setUpdateAllExported(false);
                     connectionBuilder.setUpdateExported(false);
-                    try {
-                        setTimer(TimerType.KeepAliveTimer,0);
-                    } catch (UnknownTimerTypeException e) {
-                        LOG.warn("{} Error setting Timer", this, e);
-                    }
+                    setTimer(TimerType.KeepAliveTimer, 0);
                     synchronized (outboundUpdateMessageQueue) {
                         for (Callable t : outboundUpdateMessageQueue) {
                             if (t instanceof UpdateExportTask) {
@@ -987,14 +987,10 @@ public class SxpConnection {
     }
 
     private void stopTimers() {
-        try {
-            setTimer(TimerType.DeleteHoldDownTimer, null);
-            setTimer(TimerType.ReconciliationTimer, null);
-            setTimer(TimerType.HoldTimer, 0);
-            setTimer(TimerType.KeepAliveTimer, 0);
-        } catch (UnknownTimerTypeException e) {
-            LOG.warn("{} Error stopping Timers ", this, e);
-        }
+        setTimer(TimerType.DeleteHoldDownTimer, 0);
+        setTimer(TimerType.ReconciliationTimer, 0);
+        setTimer(TimerType.HoldTimer, 0);
+        setTimer(TimerType.KeepAliveTimer, 0);
     }
 
     public void setStateOn() {
@@ -1034,7 +1030,7 @@ public class SxpConnection {
         }
     }
 
-    public ListenableScheduledFuture<?> setTimer(TimerType timerType, ListenableScheduledFuture<?> timer) {
+    private ListenableScheduledFuture<?> setTimer(TimerType timerType, ListenableScheduledFuture<?> timer) {
         ListenableScheduledFuture<?> t = this.timers.put(timerType, timer);
         if (t != null && !t.isDone()) {
             t.cancel(false);
@@ -1064,12 +1060,8 @@ public class SxpConnection {
 
     public void shutdown() {
         if (isModeListener()){
-            try {
-                LOG.info("{} PURGE bindings ", this);
-                purgeBindings();
-            } catch (Exception e) {
-                LOG.error(this + " Shutdown connection | {} | ", e.getClass().getSimpleName(), e);
-            }
+            LOG.info("{} PURGE bindings ", this);
+            purgeBindings();
         }
         if (isModeSpeaker()) {
             ByteBuf message = MessageFactory.createPurgeAll();

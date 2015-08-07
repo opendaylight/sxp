@@ -9,6 +9,7 @@
 package org.opendaylight.sxp.util.time;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -38,15 +39,15 @@ public final class TimeConv {
         }
     }
 
-    public static synchronized long toLong(DateAndTime dateAndTime) throws Exception {
+    public static synchronized long toLong(DateAndTime dateAndTime) {
         if (dateAndTime == null || dateAndTime.getValue() == null || dateAndTime.getValue().isEmpty()) {
             return -1;
         }
         Calendar calendar = Calendar.getInstance();
         try {
             calendar.setTime(df.parse(dateAndTime.getValue()));
-        } catch (Exception e) {
-            throw new Exception("Unrecognized date and time format: \"" + dateAndTime.getValue() + "\"");
+        } catch (ParseException e) {
+            throw new IllegalArgumentException("Unrecognized date and time format: \"" + dateAndTime.getValue() + "\"");
         }
         return calendar.getTimeInMillis();
     }

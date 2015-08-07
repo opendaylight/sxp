@@ -93,10 +93,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
                 when(sxpConnection.isStateOn()).thenReturn(true);
                 when(sxpConnection.getTimestampUpdateOrKeepAliveMessage()).thenReturn(0l);
+                when(sxpConnection.getChannelHandlerContext(any(SxpConnection.ChannelHandlerContextType.class))).thenReturn(mock(ChannelHandlerContext.class));
                 timerTask.call();
-                verify(sxpConnection).setStateOff(sxpConnection.getChannelHandlerContext(
-                        SxpConnection.ChannelHandlerContextType.ListenerContext));
-                verify(sxpConnection, times(2)).setTimer(TimerType.HoldTimer, timerTask.getPeriod());
+                verify(sxpConnection).setDeleteHoldDownTimer();
 
         }
 

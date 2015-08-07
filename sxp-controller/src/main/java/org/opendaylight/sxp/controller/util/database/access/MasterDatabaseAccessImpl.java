@@ -58,7 +58,7 @@ public final class MasterDatabaseAccessImpl implements MasterDatabaseAccess {
     }
 
     @Override
-    public void delete(MasterDatabase database) throws Exception {
+    public void delete(MasterDatabase database) throws DatabaseAccessException {
         for (Source source : database.getSource()) {
             InstanceIdentifierBuilder<Source> pathGroupIdentifier = InstanceIdentifier
                     .builder(NetworkTopology.class)
@@ -80,7 +80,7 @@ public final class MasterDatabaseAccessImpl implements MasterDatabaseAccess {
     }
 
     @Override
-    public void merge(MasterDatabase database) throws Exception {
+    public void merge(MasterDatabase database) throws DatabaseAccessException {
         try {
             datastoreAccess.merge(databaseIdentifier, database, logicalDatastoreType).get();
         } catch (Exception e) {
@@ -91,7 +91,7 @@ public final class MasterDatabaseAccessImpl implements MasterDatabaseAccess {
     }
 
     @Override
-    public void put(MasterDatabase database) throws Exception {
+    public void put(MasterDatabase database) throws DatabaseAccessException {
         try {
             datastoreAccess.put(databaseIdentifier, database, logicalDatastoreType).get();
         } catch (Exception e) {
@@ -102,7 +102,7 @@ public final class MasterDatabaseAccessImpl implements MasterDatabaseAccess {
     }
 
     @Override
-    public MasterDatabase read() throws Exception {
+    public MasterDatabase read() throws DatabaseAccessException {
         Optional<MasterDatabase> database;
         try {
             database = datastoreAccess.read(databaseIdentifier, logicalDatastoreType).get();

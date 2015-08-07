@@ -12,6 +12,7 @@ import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.connection.NoNetworkInterfacesException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.DateAndTime;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding;
@@ -41,7 +43,7 @@ public final class Search {
 
         private byte[] subnetNumber, broadcastAddress;
 
-        private IpAddress(InetAddress inetAddress, int prefix) throws Exception {
+        private IpAddress(InetAddress inetAddress, int prefix) throws UnknownHostException {
             address = inetAddress.getAddress();
 
             mask = new BigInteger("-1").shiftLeft(address.length * 8 - prefix).toByteArray();
@@ -109,7 +111,7 @@ public final class Search {
         }
 
         private void _expand(List<Binding> expanded, byte[] ipAddress, int depth, AtomicInteger quantity)
-                throws Exception {
+                throws UnknownHostException, UnknownPrefixException {
             byte[] _ipAddress = ArraysUtil.copy(ipAddress);
             if (depth >= _ipAddress.length - 1) {
                 for (int i = firstAddress[depth] & 0xFF; i <= (lastAddress[depth] & 0xFF); i++) {
@@ -147,7 +149,7 @@ public final class Search {
             }
         }
 
-        private List<Binding> expand(AtomicInteger quantity) throws Exception {
+        private List<Binding> expand(AtomicInteger quantity) throws UnknownPrefixException, UnknownHostException {
             List<Binding> expanded = new ArrayList<>();
             _expand(expanded, firstAddress, 0, quantity);
             return expanded;
@@ -161,7 +163,7 @@ public final class Search {
         return new ArrayList<InetAddress>();
     }
 
-    public static InetAddress getBestLocalDeviceAddress() throws Exception {
+    public static InetAddress getBestLocalDeviceAddress() throws NoNetworkInterfacesException, SocketException {
 
         List<InetAddress> inetAddresses = new ArrayList<InetAddress>();
         List<NetworkInterface> networkInterfaces;
@@ -182,7 +184,8 @@ public final class Search {
         return inetAddresses.get(inetAddresses.size() - 1);
     }
 
-    public static List<Binding> getExpandedBindings(Binding binding, AtomicInteger quantity) throws Exception {
+    public static List<Binding> getExpandedBindings(Binding binding, AtomicInteger quantity)
+            throws UnknownHostException, UnknownPrefixException {
         String[] ipPrefix = new String(binding.getIpPrefix().getValue()).split("/");
 
         List<NodeId> _peerSequence = NodeIdConv.getPeerSequence(binding.getPeerSequence());
@@ -202,7 +205,7 @@ public final class Search {
     }
 
     public static List<Binding> getExpandedBindings(String inetAddress, int prefix, AtomicInteger quantity)
-            throws Exception {
+            throws UnknownHostException, UnknownPrefixException {
         return new IpAddress(InetAddress.getByName(inetAddress), prefix).expand(quantity);
     }
 }

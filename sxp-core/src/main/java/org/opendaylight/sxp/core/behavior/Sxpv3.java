@@ -9,15 +9,22 @@
 package org.opendaylight.sxp.core.behavior;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
+import org.opendaylight.sxp.util.exception.message.UpdateMessageCompositionException;
+import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
+import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
+import org.opendaylight.sxp.util.exception.message.attribute.TlvNotFoundException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownSxpMessageTypeException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yangtools.yang.binding.Notification;
+
+import java.net.UnknownHostException;
 
 public class Sxpv3 extends Sxpv2 {
     public Sxpv3(Context context) {
@@ -25,17 +32,17 @@ public class Sxpv3 extends Sxpv2 {
     }
 
     @Override
-    public Notification onParseInput(ByteBuf request) throws Exception {
+    public Notification onParseInput(ByteBuf request) throws ErrorMessageException {
         try {
             return MessageFactory.parse(Version.Version3, request);
-        } catch (Exception e) {
+        } catch (UnknownNodeIdException | UnknownSxpMessageTypeException | UnknownHostException | AttributeLengthException | AddressLengthException | UnknownPrefixException | TlvNotFoundException e) {
             throw new ErrorMessageException(ErrorCodeNonExtended.MessageParseError, e);
         }
     }
 
     @Override
     public ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
-            throws Exception {
+            throws UpdateMessageCompositionException {
         // + Subnet Bindings Expansion
         return super.onUpdateMessage(connection, masterDatabase);
     }

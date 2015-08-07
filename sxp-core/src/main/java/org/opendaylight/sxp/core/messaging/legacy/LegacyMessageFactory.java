@@ -16,6 +16,9 @@ import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.ErrorCodeDataLengthException;
 import org.opendaylight.sxp.util.exception.connection.IncompatiblePeerVersionException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
+import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
+import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseAction;
@@ -31,16 +34,18 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Upda
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yangtools.yang.binding.Notification;
 
+import java.net.UnknownHostException;
+
 public class LegacyMessageFactory extends MessageFactory {
     private static final int MESSAGE_HEADER_LENGTH_LENGTH = Configuration.getConstants().getMessageHeaderLengthLength();
 
     private static final int MESSAGE_HEADER_TYPE_LENGTH = Configuration.getConstants().getMessageHeaderTypeLength();
 
-    public static ByteBuf createError(ErrorCodeNonExtended errorCode) throws Exception {
+    public static ByteBuf createError(ErrorCodeNonExtended errorCode) throws ErrorCodeDataLengthException {
         return createError(errorCode, null);
     }
 
-    public static ByteBuf createError(ErrorCodeNonExtended errorCode, byte[] data) throws Exception {
+    public static ByteBuf createError(ErrorCodeNonExtended errorCode, byte[] data) throws ErrorCodeDataLengthException {
         if (data == null) {
             data = new byte[0];
         } else if (data.length > 10) {
@@ -51,14 +56,14 @@ public class LegacyMessageFactory extends MessageFactory {
         return getMessage(MessageType.Error, payload);
     }
 
-    public static ByteBuf createOpen(Version version, ConnectionMode nodeMode) throws Exception {
+    public static ByteBuf createOpen(Version version, ConnectionMode nodeMode) {
         return getMessage(
                 MessageType.Open,
                 ArraysUtil.combine(ArraysUtil.int2bytes(version.getIntValue()),
                         ArraysUtil.int2bytes(nodeMode.getIntValue())));
     }
 
-    public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode) throws Exception {
+    public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode) {
         return getMessage(
                 MessageType.OpenResp,
                 ArraysUtil.combine(ArraysUtil.int2bytes(version.getIntValue()),
@@ -88,7 +93,7 @@ public class LegacyMessageFactory extends MessageFactory {
      * as host address.
      */
     public static ByteBuf createUpdate(MasterDatabase masterDatabase, boolean changed, Version version)
-            throws Exception {
+            throws UnknownVersionException, UnknownHostException {
         MappingRecordList mappingRecords = new MappingRecordList();
 
         // Processing of added and deleted bindings.
@@ -191,7 +196,7 @@ public class LegacyMessageFactory extends MessageFactory {
         return getMessage(MessageType.Update, mappingRecords.toBytes());
     }
 
-    public static Notification decodeOpen(byte[] payload) throws Exception {
+    public static Notification decodeOpen(byte[] payload) {
         OpenMessageLegacyBuilder messageBuilder = new OpenMessageLegacyBuilder();
         messageBuilder.setType(MessageType.Open);
         messageBuilder.setLength(MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH + payload.length);
@@ -205,7 +210,7 @@ public class LegacyMessageFactory extends MessageFactory {
         return messageBuilder.build();
     }
 
-    public static Notification decodeOpenResp(byte[] payload) throws Exception {
+    public static Notification decodeOpenResp(byte[] payload) throws ErrorMessageException {
         OpenMessageLegacyBuilder messageBuilder = new OpenMessageLegacyBuilder();
         messageBuilder.setType(MessageType.OpenResp);
         messageBuilder.setLength(MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH + payload.length);
@@ -223,7 +228,8 @@ public class LegacyMessageFactory extends MessageFactory {
         return messageBuilder.build();
     }
 
-    public static Notification decodeUpdate(byte[] payload) throws Exception {
+    public static Notification decodeUpdate(byte[] payload)
+            throws UnknownPrefixException, AddressLengthException, AttributeLengthException, UnknownHostException {
         UpdateMessageLegacyBuilder messageBuilder = new UpdateMessageLegacyBuilder();
         messageBuilder.setType(MessageType.Update);
         messageBuilder.setLength(MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH + payload.length);

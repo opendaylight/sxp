@@ -15,11 +15,14 @@ import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
+import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.UnknownHostException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,14 +80,10 @@ public final class BindingDispatcher extends Service<Void> {
                             connection.resetUpdateExported();
                         }
                         processUpdateSequence(masterDatabase, connections);
-                        try {
-                            masterDatabase.purgeAllDeletedBindings();
-                            masterDatabase.resetModified();
-                        } catch (Exception e) {
-                            LOG.warn(owner + " Dispatcher clearing failed {}", e.getClass().getSimpleName(), e);
-                        }
+                        masterDatabase.purgeAllDeletedBindings();
+                        masterDatabase.resetModified();
                     }
-                } catch (Exception e) {
+                } catch (UnknownPrefixException | UnknownHostException | DatabaseAccessException e) {
                     LOG.warn(owner + " Processing export {}", e.getClass().getSimpleName(), e);
                 }
             }
@@ -104,7 +103,7 @@ public final class BindingDispatcher extends Service<Void> {
     }
 
     private void processUpdateSequence(MasterDatabaseProvider masterDatabase, List<SxpConnection> connections)
-            throws Exception {
+            throws DatabaseAccessException {
 
         // Compose and send new messages bundles.
 
@@ -235,7 +234,7 @@ public final class BindingDispatcher extends Service<Void> {
                             processUpdateSequence(masterDatabase, resumedConnections);
                         }
                     }
-                } catch (Exception e) {
+                } catch (DatabaseAccessException e) {
                     LOG.warn("{} Processing export ", owner, e);
                 }
             }

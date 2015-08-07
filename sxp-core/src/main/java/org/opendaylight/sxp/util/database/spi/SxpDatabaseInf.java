@@ -11,26 +11,26 @@ package org.opendaylight.sxp.util.database.spi;
 import java.util.List;
 
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
+import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
+import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 
 public interface SxpDatabaseInf {
-    public final String PRINT_DELIMITER = " ";
 
-    public boolean addBindings(SxpDatabase database) throws Exception;
+        String PRINT_DELIMITER = " ";
 
-    public void cleanUpBindings(NodeId nodeId) throws Exception;
+        boolean addBindings(SxpDatabase database) throws DatabaseAccessException;
 
-    public List<SxpBindingIdentity> deleteBindings(SxpDatabase database) throws Exception;
+        void cleanUpBindings(NodeId nodeId) throws NodeIdNotDefinedException;
 
-    public SxpDatabase get() throws Exception;
+        List<SxpBindingIdentity> deleteBindings(SxpDatabase database) throws DatabaseAccessException;
 
-    public void purgeBindings(NodeId nodeId) throws Exception;
+        SxpDatabase get() throws DatabaseAccessException;
 
-    public List<SxpBindingIdentity> readBindings() throws Exception;
+        void purgeBindings(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException;
 
-    public void setAsCleanUp(NodeId nodeId) throws Exception;
+        List<SxpBindingIdentity> readBindings() throws DatabaseAccessException;
 
-    @Override
-    public String toString();
+        void setAsCleanUp(NodeId nodeId) throws NodeIdNotDefinedException;
 }

@@ -44,6 +44,7 @@ import static org.mockito.Mockito.when;
                 when(connection.getContext()).thenReturn(context);
                 ByteBuf byteBuf = mock(ByteBuf.class);
                 when(byteBuf.duplicate()).thenReturn(byteBuf);
+                when(byteBuf.capacity()).thenReturn(10);
                 PowerMockito.when(
                         context.executeUpdateMessageStrategy(any(SxpConnection.class), any(MasterDatabase.class)))
                         .thenReturn(byteBuf);

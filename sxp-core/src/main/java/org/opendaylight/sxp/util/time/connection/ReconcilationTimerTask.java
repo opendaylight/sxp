@@ -20,15 +20,10 @@ public class ReconcilationTimerTask extends SxpTimerTask<Void> {
         this.connection = connection;
     }
 
-    @Override public Void call() throws Exception {
+    @Override public Void call() {
         if (connection.isStateOn()) {
             LOG.info(connection.getOwner() + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
-            try {
-                connection.cleanUpBindings();
-            } catch (Exception e) {
-                LOG.warn(connection.getOwner() + " {} {} | {}", getClass().getSimpleName(),
-                        e.getClass().getSimpleName(), e.getMessage());
-            }
+            connection.cleanUpBindings();
         }
         return null;
     }

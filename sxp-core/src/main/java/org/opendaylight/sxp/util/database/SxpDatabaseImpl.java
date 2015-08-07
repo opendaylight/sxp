@@ -13,6 +13,7 @@ import java.util.List;
 
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseAccess;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
+import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
@@ -122,7 +123,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
     }
 
     @Override
-    public boolean addBindings(SxpDatabase database) throws Exception {
+    public boolean addBindings(SxpDatabase database) throws DatabaseAccessException {
         boolean result = false;
         List<SxpBindingIdentity> removed = new ArrayList<>();
         List<SxpBindingIdentity> added = new ArrayList<>();
@@ -159,7 +160,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
     }
 
     @Override
-    public void cleanUpBindings(NodeId nodeId) throws Exception {
+    public void cleanUpBindings(NodeId nodeId) throws NodeIdNotDefinedException {
         if (nodeId == null) {
             throw new NodeIdNotDefinedException();
         }
@@ -246,7 +247,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
     }
 
     @Override
-    public List<SxpBindingIdentity> deleteBindings(SxpDatabase database) throws Exception {
+    public List<SxpBindingIdentity> deleteBindings(SxpDatabase database) throws DatabaseAccessException {
         List<SxpBindingIdentity> removed = new ArrayList<>();
 
         if (database != null && database.getPathGroup() != null) {
@@ -275,7 +276,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
     }
 
     @Override
-    public SxpDatabase get() throws Exception {
+    public SxpDatabase get() throws DatabaseAccessException {
         return database;
     }
 
@@ -316,7 +317,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
     }
 
     @Override
-    public void purgeBindings(NodeId nodeId) throws Exception {
+    public void purgeBindings(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException {
         if (nodeId == null) {
             throw new NodeIdNotDefinedException();
         }
@@ -340,7 +341,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
     }
 
     @Override
-    public List<SxpBindingIdentity> readBindings() throws Exception {
+    public List<SxpBindingIdentity> readBindings() throws DatabaseAccessException {
         List<SxpBindingIdentity> read = new ArrayList<>();
         synchronized (database) {
             if (database.getPathGroup() != null) {
@@ -361,7 +362,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
     }
 
     @Override
-    public void setAsCleanUp(NodeId nodeId) throws Exception {
+    public void setAsCleanUp(NodeId nodeId) throws NodeIdNotDefinedException {
         if (nodeId == null) {
             throw new NodeIdNotDefinedException();
         }

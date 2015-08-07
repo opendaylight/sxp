@@ -10,9 +10,12 @@ package org.opendaylight.sxp.core.behavior;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
+import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
+import org.opendaylight.sxp.util.exception.message.UpdateMessageCompositionException;
+import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yangtools.yang.binding.Notification;
 import org.slf4j.Logger;
@@ -21,7 +24,7 @@ import org.slf4j.LoggerFactory;
 /**
  * SXP supports various versions. The details of what is supported in each of
  * the version follows:
- * 
+ *
  * <pre>
  * +-----+----------+----------+------------+-----------+--------------+
  * | Ver | IPv4     | IPv6     | Subnet     | Loop      | SXP          |
@@ -37,21 +40,21 @@ import org.slf4j.LoggerFactory;
  */
 public interface Strategy {
 
-    static final Logger LOG = LoggerFactory.getLogger(Strategy.class.getName());
+        Logger LOG = LoggerFactory.getLogger(Strategy.class.getName());
 
-    public SxpNode getOwner();
+        SxpNode getOwner();
 
-    public void onChannelActivation(ChannelHandlerContext ctx, SxpConnection connection) throws Exception;
+        void onChannelActivation(ChannelHandlerContext ctx, SxpConnection connection);
 
-    public void onChannelInactivation(ChannelHandlerContext ctx, SxpConnection connection) throws Exception;
+        void onChannelInactivation(ChannelHandlerContext ctx, SxpConnection connection);
 
-    public void onException(ChannelHandlerContext ctx, SxpConnection connection);
+        void onException(ChannelHandlerContext ctx, SxpConnection connection);
 
-    public void onInputMessage(ChannelHandlerContext ctx, SxpConnection connection, Notification message)
-            throws Exception;
+        void onInputMessage(ChannelHandlerContext ctx, SxpConnection connection, Notification message)
+                throws ErrorMessageException, ErrorMessageReceivedException, UpdateMessageConnectionStateException;
 
-    public Notification onParseInput(ByteBuf request) throws Exception;
+        Notification onParseInput(ByteBuf request) throws ErrorMessageException;
 
-    public ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
-            throws Exception;
+        ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
+                throws UpdateMessageCompositionException;
 }

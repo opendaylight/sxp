@@ -28,19 +28,10 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
-import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
 import org.opendaylight.tcpmd5.api.KeyAccessFactory;
 import org.opendaylight.tcpmd5.api.KeyMapping;
 import org.opendaylight.tcpmd5.jni.NativeKeyAccessFactory;
@@ -52,9 +43,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.Password
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 public class ConnectFacade {
 
-    private static HashMap<Integer, InetSocketAddress> clientUsedPorts = new HashMap<Integer, InetSocketAddress>();
     private static EventLoopGroup eventLoopGroup = null;
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectFacade.class.getName());
 
@@ -148,7 +144,7 @@ public class ConnectFacade {
             LOG.info(node + " Server created [port=" + port + "]");
             channel.closeFuture().sync();
 
-        } catch (Exception e) {
+        } catch (InterruptedException | NativeSupportUnavailableException e) {
             LOG.error(node + "Server created exception [port=\"{}\"] " + e.getMessage(), port);
             result = false;
         } finally {
@@ -172,7 +168,7 @@ public class ConnectFacade {
     }
 
     private static ServerBootstrap customizeServerBootstrap(ServerBootstrap bootstrap, Collection<InetAddress> md5Peers,
-            String password) throws Exception {
+            String password) throws NativeSupportUnavailableException {
         KeyMapping keyMapping = new KeyMapping();
 
         // Every peer has to be configured with password separately

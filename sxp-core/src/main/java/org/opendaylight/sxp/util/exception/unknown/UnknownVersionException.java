@@ -8,7 +8,7 @@
 
 package org.opendaylight.sxp.util.exception.unknown;
 
-public class UnknownVersionException extends Exception {
+public class UnknownVersionException extends RuntimeException {
 
     /** */
     private static final long serialVersionUID = 801190427695923174L;

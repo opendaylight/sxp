@@ -8,15 +8,16 @@
 
 package org.opendaylight.sxp.util.database.spi;
 
+import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 
 public interface MasterDatabaseAccess {
 
-    public void delete(MasterDatabase database) throws Exception;
+    void delete(MasterDatabase database) throws DatabaseAccessException;
 
-    public void merge(MasterDatabase database) throws Exception;
+    void merge(MasterDatabase database) throws DatabaseAccessException;
 
-    public void put(MasterDatabase database) throws Exception;
+    void put(MasterDatabase database) throws DatabaseAccessException;
 
-    public MasterDatabase read() throws Exception;
+    MasterDatabase read() throws DatabaseAccessException;
 }
