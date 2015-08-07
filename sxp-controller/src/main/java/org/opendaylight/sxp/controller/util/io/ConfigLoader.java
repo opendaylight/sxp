@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
+import com.google.common.base.Preconditions;
 import org.opendaylight.controller.config.yang.sxp.controller.conf.Connection;
 import org.opendaylight.controller.config.yang.sxp.controller.conf.SxpController;
 import org.opendaylight.controller.config.yang.sxp.controller.conf.Timers;
@@ -91,7 +92,7 @@ public class ConfigLoader {
     private HashMap<String, SxpDatastoreImpl> sxpDatabaseProviders = new HashMap<>();
 
     private ConfigLoader(DatastoreValidator datastoreValidator) {
-        this.datastoreValidator = datastoreValidator;
+        this.datastoreValidator = Preconditions.checkNotNull(datastoreValidator);
     }
 
     public void load(SxpController configuration) {
@@ -128,8 +129,7 @@ public class ConfigLoader {
             } catch (Exception e) {
                 String name = nodeConfiguration.getNodeId() != null ? NodeIdConv
                         .toString(nodeConfiguration.getNodeId()) : Configuration.CONTROLLER_NAME;
-                LOG.error("[{}] Node configuration error | {} | {}", name, e.getClass().getSimpleName(), e.getMessage());
-                e.printStackTrace();
+                LOG.error("[{}] Node configuration error ", name, e);
             }
         }
     }
@@ -161,9 +161,9 @@ public class ConfigLoader {
             connectionBuilder.setKey(new ConnectionKey(peerAddress, connection.getTcpPort()));
 
             connectionBuilder.setSourceIp(connection.getSourceIp());
-            PasswordType _passwordType = PasswordType.None;
-            if (connection.getPassword() != null) {
-                _passwordType = PasswordType.Default;
+            PasswordType _passwordType = connection.getPassword();
+            if (_passwordType == null) {
+                _passwordType = PasswordType.None;
             }
             connectionBuilder.setPassword(_passwordType);
 
@@ -187,7 +187,8 @@ public class ConfigLoader {
                 connectionTimersBuilder.setHoldTimeMinAcceptable(connection.getConnectionTimers()
                         .getHoldTimeMinAcceptable());
                 connectionTimersBuilder.setKeepAliveTime(connection.getConnectionTimers().getKeepAliveTime());
-            } else if (_connectionMode.equals(ConnectionMode.Listener) || _connectionMode.equals(ConnectionMode.Both)) {
+            }
+            if (_connectionMode.equals(ConnectionMode.Listener) || _connectionMode.equals(ConnectionMode.Both)) {
                 connectionTimersBuilder.setReconciliationTime(connection.getConnectionTimers().getReconciliationTime());
                 connectionTimersBuilder.setHoldTime(connection.getConnectionTimers().getHoldTime());
                 connectionTimersBuilder.setHoldTimeMin(connection.getConnectionTimers().getHoldTimeMin());
