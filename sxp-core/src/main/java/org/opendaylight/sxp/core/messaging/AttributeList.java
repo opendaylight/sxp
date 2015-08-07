@@ -27,16 +27,37 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.AttributeOptionalFields;
 
+/**
+ * AttributeList class represent entity that contains Attributes,
+ * and has logic to work with Attributes
+ */
 public class AttributeList extends ArrayList<Attribute> {
+
     private static final int INITIAL_CAPACITY = 5;
 
-    /** */
     private static final long serialVersionUID = -5995575431003181322L;
 
+    /**
+     * Constructor initialized by Attributes
+     *
+     * @param list Attributes to be included in new AttributeList
+     */
     public static AttributeList create(List<Attribute> list) {
         return new AttributeList(list);
     }
 
+    /**
+     * Decode AttributeList from provided Byte Array
+     *
+     * @param array Byte Array containing Attributes
+     * @return AttributeList decoded from provided data
+     * @throws AttributeLengthException If length of some attribute is incorrect
+     * @throws AddressLengthException   If address length of some attribute is incorrect
+     * @throws UnknownNodeIdException   If NodeId is missing in some attribute
+     * @throws TlvNotFoundException     If Tlv is missing in some attribute
+     * @throws UnknownPrefixException   If some attribute has incorrect or none Prefix
+     * @throws UnknownHostException     If some attribute have incorrect or none address
+     */
     public static AttributeList decode(byte[] array)
             throws AttributeLengthException, AddressLengthException, UnknownNodeIdException, TlvNotFoundException,
             UnknownPrefixException, UnknownHostException {
@@ -49,11 +70,26 @@ public class AttributeList extends ArrayList<Attribute> {
         return attributes;
     }
 
+    /**
+     * Gets Attribute of specific type
+     *
+     * @param attributes Attributes where to look for
+     * @param type       Attribute type to look for
+     * @return Attribute of provided type
+     * @throws AttributeNotFoundException If AttributeType wasn't found
+     */
     public static AttributeOptionalFields get(List<Attribute> attributes, AttributeType type)
             throws AttributeNotFoundException {
         return new AttributeList(attributes).get(type);
     }
 
+    /**
+     * Generate byte representation of Attribute
+     *
+     * @param attribute Attribute to be encoded
+     * @return Byte Array representation of Attribute
+     * @throws AttributeVariantException If attribute variant isn't supported
+     */
     private static byte[] toBytes(Attribute attribute) throws AttributeVariantException {
         byte flags = ArraysUtil.convertBits(attribute.getFlags().isOptional(), attribute.getFlags().isNonTransitive(),
                 attribute.getFlags().isPartial(), attribute.getFlags().isCompact(), attribute.getFlags()
@@ -83,14 +119,29 @@ public class AttributeList extends ArrayList<Attribute> {
         }
     }
 
+    /**
+     * Constructor that have no Attributes
+     */
     public AttributeList() {
         super(INITIAL_CAPACITY);
     }
 
+    /**
+     * Constructor initialized by Attributes
+     *
+     * @param attributes Attributes to be included in new AttributeList
+     */
     private AttributeList(List<Attribute> attributes) {
         addAll(attributes);
     }
 
+    /**
+     * Gets Attribute of specific type
+     *
+     * @param type AttributeType to look for
+     * @return Attribute of provided type
+     * @throws AttributeNotFoundException If AttributeType wasn't found
+     */
     public AttributeOptionalFields get(AttributeType type) throws AttributeNotFoundException {
         for (AttributeFields attribute : this) {
             if (attribute.getType().equals(type) && attribute instanceof Attribute) {
@@ -100,6 +151,12 @@ public class AttributeList extends ArrayList<Attribute> {
         throw new AttributeNotFoundException(type);
     }
 
+    /**
+     * Generate byte representation of AttributeList
+     *
+     * @return Encoded AttributeList
+     * @throws AttributeVariantException If attribute variant isn't supported
+     */
     public byte[] toBytes() throws AttributeVariantException {
         byte[] attributes = new byte[0];
         for (Attribute attribute : this) {

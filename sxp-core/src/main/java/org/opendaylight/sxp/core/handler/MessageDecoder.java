@@ -42,14 +42,34 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 
     private static final Logger LOG = LoggerFactory.getLogger(MessageDecoder.class.getName());
 
+    /**
+     * Creates MessageDecoder for Connection
+     *
+     * @param owner SxpNode that will be parent of connection
+     * @return MessageDecoder
+     */
     public static ChannelInboundHandler createClientProfile(SxpNode owner) {
         return new MessageDecoder(owner, Profile.Client);
     }
 
+    /**
+     * Creates MessageDecoder for Node
+     *
+     * @param owner SxpNode that will own this decoder
+     * @return MessageDecoder
+     */
     public static ChannelInboundHandler createServerProfile(SxpNode owner) {
         return new MessageDecoder(owner, Profile.Server);
     }
 
+    /**
+     * Generate String representation of Node
+     *
+     * @param owner         SxpNode
+     * @param localAddress  SocketAddress representing local address of Node
+     * @param remoteAddress SocketAddress representing remote address of Node
+     * @return String representing specified values
+     */
     private static String getChannelHandlerContextId(SxpNode owner, SocketAddress localAddress,
             SocketAddress remoteAddress) {
         String _localAddress = localAddress.toString();
@@ -63,10 +83,27 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
         return owner.toString() + "[" + _localAddress + "/" + _remoteAddress + "]";
     }
 
+    /**
+     * Generate log message with provided values
+     *
+     * @param owner   SxpNode used
+     * @param ctx     ChannelHandlerContext used
+     * @param message String message with additional info
+     * @return String representation of these values used for Log
+     */
     private static String getLogMessage(SxpNode owner, ChannelHandlerContext ctx, String message) {
         return getLogMessage(owner, ctx, message, null);
     }
 
+    /**
+     * Generate log message with provided values
+     *
+     * @param owner   SxpNode used
+     * @param ctx     ChannelHandlerContext used
+     * @param message String message with additional info
+     * @param e       Exception used
+     * @return String representation of these values used for Log
+     */
     private static String getLogMessage(SxpNode owner, ChannelHandlerContext ctx, String message, Exception e) {
         SocketAddress localAddress = ctx.channel().localAddress();
         SocketAddress remoteAddress = ctx.channel().remoteAddress();
@@ -92,6 +129,15 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
         return result;
     }
 
+    /**
+     * Send predefined Error message to peer and afterwards close
+     * appropriate ChannelHandlerContext
+     *
+     * @param ctx                        ChannelHandlerContext used for communication, if is null
+     *                                   use SpeakerContext ChannelHandler from connection fot communication
+     * @param messageValidationException ErrorMessageException that will be send
+     * @param connection                 SxpConnection associated with peer
+     */
     public static void sendErrorMessage(ChannelHandlerContext ctx, ErrorMessageException messageValidationException,
                                         SxpConnection connection) {
         ByteBuf message = null;
@@ -122,6 +168,12 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 
     private Profile profile;
 
+    /**
+     * Constructor that sets predefined values
+     *
+     * @param owner SxpNode associated with decoder
+     * @param profile Profile that defines Server or Client
+     */
     private MessageDecoder(SxpNode owner, Profile profile) {
         super();
         this.owner = owner;

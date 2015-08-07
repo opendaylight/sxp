@@ -27,10 +27,17 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 
+/**
+ * SxpDatabaseImpl class contains logic to operate with Database,
+ * used for handling Bindings learned from other Nodes
+ */
 public class SxpDatabaseImpl extends SxpDatabaseProvider {
 
     protected SxpDatabase database = new SxpDatabaseBuilder().build();
 
+    /**
+     * Default constructor that sets empty Database
+     */
     public SxpDatabaseImpl() {
         super(null);
         SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
@@ -40,15 +47,31 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
         database = databaseBuilder.build();
     }
 
+    /**
+     * Constructor that sets predefined Database
+     *
+     * @param database SxpDatabase to be used
+     */
     public SxpDatabaseImpl(SxpDatabase database) {
         super(null);
         this.database = database;
     }
 
+    /**
+     * Constructor that sets predefined access checked Database
+     *
+     * @param databaseAccess SxpDatabaseAccess to be used
+     */
     public SxpDatabaseImpl(SxpDatabaseAccess databaseAccess) {
         super(databaseAccess);
     }
 
+    /**
+     * Adds SxpBindingsIdentity into SxpDatabase
+     *
+     * @param bindingIdentity SxpBindingIdentity to be added
+     * @return If operation was successful
+     */
     private boolean addBindingIdentity(SxpBindingIdentity bindingIdentity) {
         synchronized (database) {
             if (database.getPathGroup() != null && !database.getPathGroup().isEmpty()) {
@@ -211,6 +234,12 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
         }
     }
 
+    /**
+     * Delete SxpBindingIdentity from SxpDatabase
+     *
+     * @param bindingIdentity SxpBindingIdentity to be removed
+     * @return If operation was successful
+     */
     private boolean deleteBindingIdentity(SxpBindingIdentity bindingIdentity) {
         synchronized (database) {
             if (database.getPathGroup() != null) {
@@ -281,12 +310,12 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
     }
 
     /**
-     * @param bindingIdentity
-     *            a tree item identification
-     * @param ipsgtCoupled
-     *            if a binding is coupled, i.e. one IP address can exist only in
-     *            one group (Cisco devices impl.)
-     * @return
+     * Gets copy of BindingIdentity if it's contained in SxpDatabase
+     *
+     * @param bindingIdentity a tree item identification
+     * @param ipsgtCoupled    if a binding is coupled, i.e. one IP address can exist only in
+     *                        one group (Cisco devices impl.)
+     * @return Copy of BindingIdentity from SxpDatabase
      */
     private SxpBindingIdentity getBindingIdentity(SxpBindingIdentity bindingIdentity, boolean ipsgtCoupled) {
         synchronized (database) {

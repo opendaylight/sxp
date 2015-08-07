@@ -14,28 +14,68 @@ import java.util.Comparator;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 
+/**
+ * InetAddressComparator class used for comparing InetAddresses
+ */
 public class InetAddressComparator implements Comparator<InetAddress> {
 
     private static final InetAddressComparator inetAddressComparator = new InetAddressComparator();
 
+    /**
+     * Equality check of two InetAddresses
+     *
+     * @param address1 InetAddress to compare
+     * @param address2 InetAddress to compare
+     * @return If InetAddresses are equal
+     */
     public static boolean equalTo(InetAddress address1, InetAddress address2) {
         return inetAddressComparator.compare(address1, address2) == 0;
     }
 
+    /**
+     * Equality check of two NodeIds based on theirs InetAddresses
+     *
+     * @param nodeId1 NodeId to compare
+     * @param nodeId2 NodeId to compare
+     * @return If NodeIds are equal
+     * @throws UnknownHostException If one of addresses has illegal format
+     */
     public static boolean equalTo(NodeId nodeId1, NodeId nodeId2) throws UnknownHostException {
         return equalTo(InetAddress.getByAddress(NodeIdConv.toBytes(nodeId1)),
                 InetAddress.getByAddress(NodeIdConv.toBytes(nodeId2)));
     }
 
+    /**
+     * Check if InetAddress is greater than other one
+     *
+     * @param address1 InetAddress to compare
+     * @param address2 InetAddress to compare
+     * @return If first address is greater than second
+     */
     public static boolean greaterThan(InetAddress address1, InetAddress address2) {
         return inetAddressComparator.compare(address1, address2) == 1;
     }
 
+    /**
+     * Check if NodeId is greater than other one based on their InnerAddresses
+     *
+     * @param nodeId1 NodeId to compare
+     * @param nodeId2 NodeId to compare
+     * @return If first NodeId is greater than second
+     * @throws UnknownHostException If one of addresses has illegal format
+     */
     public static boolean greaterThan(NodeId nodeId1, NodeId nodeId2) throws UnknownHostException {
         return greaterThan(InetAddress.getByAddress(NodeIdConv.toBytes(nodeId1)),
                 InetAddress.getByAddress(NodeIdConv.toBytes(nodeId2)));
     }
 
+    /**
+     * Check if InetAddress is less than other one
+     *
+     * @param address1 InetAddress to compare
+     * @param address2 InetAddress to compare
+     * @return if first InetAddress is lesser than second
+     */
     public static boolean lessThan(InetAddress address1, InetAddress address2) {
         return inetAddressComparator.compare(address1, address2) == -1;
     }
@@ -75,6 +115,12 @@ public class InetAddressComparator implements Comparator<InetAddress> {
         return 0;
     }
 
+    /**
+     * Converts Unsigned Byte to Integer
+     *
+     * @param b Byte to convert
+     * @return Integer value representing specified Byte
+     */
     private int ubyte2int(byte b) {
         return b & 0xFF;
     }

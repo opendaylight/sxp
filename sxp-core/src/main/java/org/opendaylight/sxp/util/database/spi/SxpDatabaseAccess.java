@@ -13,11 +13,35 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.data
 
 public interface SxpDatabaseAccess {
 
+        /**
+         * Delete Bindings from SxpDatabase
+         *
+         * @param database SxpDatabase containing Bindings to be deleted
+         * @throws DatabaseAccessException If database isn't accessible
+         */
         void delete(SxpDatabase database) throws DatabaseAccessException;
 
+        /**
+         * Merge SxpDatabase with current one
+         *
+         * @param database SxpDatabase that will be merged
+         * @throws DatabaseAccessException If database isn't accessible
+         */
         void merge(SxpDatabase database) throws DatabaseAccessException;
 
+        /**
+         * Adds Bindings to SxpDatabase
+         *
+         * @param database SxpDatabase containing Bindings to be added
+         * @throws DatabaseAccessException If database isn't accessible
+         */
         void put(SxpDatabase database) throws DatabaseAccessException;
 
+        /**
+         * Gets access to SxpDatabase
+         *
+         * @return SxpDatabase
+         * @throws DatabaseAccessException If database isn't accessible
+         */
         SxpDatabase read() throws DatabaseAccessException;
 }

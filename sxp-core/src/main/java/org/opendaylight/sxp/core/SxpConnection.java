@@ -66,14 +66,28 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * SxpConnection class represent SxpPeer and contains logic for maintaining communication
+ */
 public class SxpConnection {
 
+    /**
+     * ChannelHandlerContextType enum specifies role of ChannelHandlerContext
+     */
     public enum ChannelHandlerContextType {
         ListenerContext, None, SpeakerContext
     }
 
     protected static final Logger LOG = LoggerFactory.getLogger(SxpConnection.class.getName());
 
+    /**
+     * Creates SxpConnection using provided values
+     *
+     * @param owner      SxpNode to be set as owner
+     * @param connection Connection that contains settings
+     * @return SxpConnection created by specified values
+     * @throws UnknownVersionException If version in provided values isn't supported
+     */
     public static SxpConnection create(SxpNode owner, Connection connection) throws UnknownVersionException {
         return new SxpConnection(owner, connection);
     }
@@ -177,6 +191,13 @@ public class SxpConnection {
         }
     }
 
+    /**
+     * Default constructor that creates SxpConnection using provided values
+     *
+     * @param owner      SxpNode to be set as owner
+     * @param connection Connection that contains settings
+     * @throws UnknownVersionException If version in provided values isn't supported
+     */
     private SxpConnection(SxpNode owner, Connection connection) throws UnknownVersionException {
         this.owner = owner;
         this.connectionBuilder = new ConnectionBuilder(connection);
@@ -201,6 +222,11 @@ public class SxpConnection {
         }
     }
 
+    /**
+     * Adds ChannelHandlerContext into init queue
+     *
+     * @param ctx ChannelHandlerContext to be added
+     */
     public void addChannelHandlerContext(ChannelHandlerContext ctx) {
         synchronized (initCtxs) {
             initCtxs.add(ctx);
@@ -208,6 +234,10 @@ public class SxpConnection {
         }
     }
 
+    /**
+     * Notifies to Delete Bindings with Flag CleanUp learned from this connection
+     * and propagate this change to other connections
+     */
     public void cleanUpBindings() {
         // Clean-up bindings within reconciliation: If the connection recovers
         // before the delete hold down timer expiration, a reconcile timer is
@@ -236,6 +266,11 @@ public class SxpConnection {
         context.getOwner().notifyService();
     }
 
+    /**
+     * Close specified ChannelHandlerContext and remove it from connection
+     *
+     * @param ctx ChannelHandlerContext to be closed
+     */
     public ChannelHandlerContextType closeChannelHandlerContext(ChannelHandlerContext ctx) {
         ChannelHandlerContextType type = ChannelHandlerContextType.None;
         try {
@@ -259,6 +294,12 @@ public class SxpConnection {
         return type;
     }
 
+    /**
+     * Close all init ChannelHandlerContext and mark specified ChannelHandlerContext
+     * according to connection mode
+     *
+     * @param ctx ChannelHandlerContext ChannelHandlerContext to be marked
+     */
     public void closeChannelHandlerContextComplements(ChannelHandlerContext ctx) {
         try {
             synchronized (initCtxs) {
@@ -279,7 +320,9 @@ public class SxpConnection {
         }
     }
 
-    //on inactive clear content
+    /**
+     * Close and remove all ChannelHandlerContext associated with this connection
+     */
     public void closeChannelHandlerContexts() {
         try {
             synchronized (initCtxs) {
@@ -299,6 +342,11 @@ public class SxpConnection {
         }
     }
 
+    /**
+     * Disable KeepAlive mechanism
+     *
+     * @param log Log message
+     */
     private void disableKeepAliveMechanism(String log) {
         if (isModeListener()) {
             setHoldTime(0);
@@ -308,6 +356,13 @@ public class SxpConnection {
         LOG.info("{} Connection keep-alive mechanism is disabled | {}", toString(), log);
     }
 
+    /**
+     * Disable KeepAlive mechanism and send Peer error message
+     *
+     * @param holdTimeMin    Negotiated value
+     * @param holdTimeMinAcc Negotiated value
+     * @param holdTimeMax    Negotiated value
+     */
     private void disableKeepAliveMechanismConnectionTermination(int holdTimeMin, int holdTimeMinAcc, int holdTimeMax) {
         disableKeepAliveMechanism("Unacceptable hold time [min=" + holdTimeMin + " acc=" + holdTimeMinAcc + " max="
                 + holdTimeMax + "] | Connection termination");
@@ -315,6 +370,9 @@ public class SxpConnection {
                 new ErrorMessageException(ErrorCode.OpenMessageError, ErrorSubCode.UnacceptableHoldTime, null), this);
     }
 
+    /**
+     * @return Gets all supported getCapabilities
+     */
     public List<CapabilityType> getCapabilities() {
         if (connectionBuilder.getCapabilities() == null || connectionBuilder.getCapabilities().getCapability() == null) {
             return new ArrayList<CapabilityType>();
@@ -322,6 +380,15 @@ public class SxpConnection {
         return connectionBuilder.getCapabilities().getCapability();
     }
 
+    /**
+     * Gets ChannelHandlerContext according to specified type
+     *
+     * @param channelHandlerContextType Type of ChannelHandlerContext
+     * @return ChannelHandlerContext marked with specified type
+     * @throws ChannelHandlerContextNotFoundException    If ChannelHandlerContext isn't present
+     * @throws ChannelHandlerContextDiscrepancyException If there are more ChannelHandlerContext,
+     *                                                   that it used to be
+     */
     public ChannelHandlerContext getChannelHandlerContext(ChannelHandlerContextType channelHandlerContextType)
             throws ChannelHandlerContextNotFoundException, ChannelHandlerContextDiscrepancyException {
         synchronized (ctxs) {
@@ -337,22 +404,37 @@ public class SxpConnection {
         }
     }
 
+    /**
+     * @return Gets Connection containing all setting o SxpConnection
+     */
     public Connection getConnection() {
         return connectionBuilder.build();
     }
 
+    /**
+     * @return Gets Context selecting logic
+     */
     public Context getContext() {
         return context;
     }
 
+    /**
+     * @return Gets destination address
+     */
     public InetSocketAddress getDestination() {
         return destination;
     }
 
+    /**
+     * @return Gets local address
+     */
     public InetSocketAddress getLocalAddress() {
         return localAddress;
     }
 
+    /**
+     * @return Gets HoldTime value or zero if disabled
+     */
     public int getHoldTime() {
         if (connectionBuilder.getConnectionTimers() == null
                 || connectionBuilder.getConnectionTimers().getHoldTime() == null
@@ -362,6 +444,9 @@ public class SxpConnection {
         return connectionBuilder.getConnectionTimers().getHoldTime();
     }
 
+    /**
+     * @return Gets HoldTimeMax value or zero if disabled
+     */
     public int getHoldTimeMax() {
         if (connectionBuilder.getConnectionTimers() == null
                 || connectionBuilder.getConnectionTimers().getHoldTimeMax() == null
@@ -371,6 +456,9 @@ public class SxpConnection {
         return connectionBuilder.getConnectionTimers().getHoldTimeMax();
     }
 
+    /**
+     * @return Gets HoldTimeMin value or zero if disabled
+     */
     public int getHoldTimeMin() {
         if (connectionBuilder.getConnectionTimers() == null
                 || connectionBuilder.getConnectionTimers().getHoldTimeMin() == null
@@ -380,6 +468,9 @@ public class SxpConnection {
         return connectionBuilder.getConnectionTimers().getHoldTimeMin();
     }
 
+    /**
+     * @return Gets HoldTimeMinAcceptable value or zero if disabled
+     */
     public int getHoldTimeMinAcceptable() {
         if (connectionBuilder.getConnectionTimers() == null
                 || connectionBuilder.getConnectionTimers().getHoldTimeMinAcceptable() == null
@@ -389,6 +480,9 @@ public class SxpConnection {
         return connectionBuilder.getConnectionTimers().getHoldTimeMinAcceptable();
     }
 
+    /**
+     * @return Gets KeepAlive value or zero if disabled
+     */
     public int getKeepaliveTime() {
         if (connectionBuilder.getConnectionTimers() == null
                 || connectionBuilder.getConnectionTimers().getKeepAliveTime() == null
@@ -398,6 +492,9 @@ public class SxpConnection {
         return connectionBuilder.getConnectionTimers().getKeepAliveTime();
     }
 
+    /**
+     * @return Gets Mode of connection
+     */
     public ConnectionMode getMode() {
         if (connectionBuilder.getMode() == null) {
             return ConnectionMode.None;
@@ -405,6 +502,9 @@ public class SxpConnection {
         return connectionBuilder.getMode();
     }
 
+    /**
+     * @return Gets Mode of Peer
+     */
     public ConnectionMode getModeRemote() {
         if (connectionBuilder.getModeRemote() == null) {
             return ConnectionMode.None;
@@ -412,22 +512,40 @@ public class SxpConnection {
         return connectionBuilder.getModeRemote();
     }
 
+    /**
+     * @return Gets NodeId of Peer Node
+     */
     public NodeId getNodeIdRemote() {
         return connectionBuilder.getNodeId();
     }
 
+    /**
+     * Gets SxpNode specific Timer of owner
+     *
+     * @param timerType Type of Timer
+     * @return TimerType or null if not present
+     */
     public ListenableScheduledFuture<?> getNodeTimer(TimerType timerType) {
         return context.getOwner().getTimer(timerType);
     }
 
+    /**
+     * @return Gets Node that connections belongs to
+     */
     public SxpNode getOwner() {
         return owner;
     }
 
+    /**
+     * @return Gets NodeId of Node that connection belongs to
+     */
     public NodeId getOwnerId() {
         return owner.getNodeId();
     }
 
+    /**
+     * @return Gets Type of password used by connection
+     */
     public PasswordType getPasswordType() {
         if (connectionBuilder.getPassword() == null) {
             return PasswordType.None;
@@ -435,6 +553,9 @@ public class SxpConnection {
         return connectionBuilder.getPassword();
     }
 
+    /**
+     * @return Gets Reconciliation timer period or zero if disabled
+     */
     public int getReconciliationTime() {
         if (connectionBuilder.getConnectionTimers() == null
                 || connectionBuilder.getConnectionTimers().getReconciliationTime() == null
@@ -444,30 +565,57 @@ public class SxpConnection {
         return connectionBuilder.getConnectionTimers().getReconciliationTime();
     }
 
+    /**
+     * @return Gets current state of connection
+     */
     public ConnectionState getState() {
         return connectionBuilder.getState();
     }
 
+    /**
+     * Gets SxpConnection specific Timer
+     *
+     * @param timerType Type of Timer
+     * @return TimerType or null if not present
+     */
     public ListenableScheduledFuture<?> getTimer(TimerType timerType) {
         return timers.get(timerType);
     }
 
+    /**
+     * @return Gets Update message timestamp
+     */
     public long getTimestampUpdateMessageExport() {
         return TimeConv.toLong(connectionBuilder.getTimestampUpdateMessageExport());
     }
 
+    /**
+     * @return Gets KeepAlive timestamp
+     */
     public long getTimestampUpdateOrKeepAliveMessage() {
         return TimeConv.toLong(connectionBuilder.getTimestampUpdateOrKeepAliveMessage());
     }
 
+    /**
+     * @return Gets connection version
+     */
     public Version getVersion() {
         return connectionBuilder.getVersion();
     }
 
+    /**
+     * @return Gets Peer version
+     */
     public Version getVersionRemote() {
         return connectionBuilder.getVersionRemote();
     }
 
+    /**
+     * Check if connection support capability
+     *
+     * @param capability Type of capability
+     * @return If connection supports it
+     */
     public boolean hasCapability(CapabilityType capability) {
         if (connectionBuilder.getCapabilities() == null || connectionBuilder.getCapabilities().getCapability() == null) {
             return false;
@@ -475,6 +623,11 @@ public class SxpConnection {
         return connectionBuilder.getCapabilities().getCapability().contains(capability);
     }
 
+    /**
+     * Initialize timers according to specified mode and timer values
+     *
+     * @param connectionMode ConnectionMode used for setup
+     */
     private void initializeTimers(ConnectionMode connectionMode) {
 
         // Listener connection specific.
@@ -497,6 +650,9 @@ public class SxpConnection {
         }
     }
 
+    /**
+     * @return If both ChannelHandlerContext are properly on
+     */
     public boolean isBidirectionalBoth() {
         synchronized (ctxs) {
             return ctxs.containsKey(ChannelHandlerContextType.ListenerContext) && !ctxs.get(
@@ -506,31 +662,52 @@ public class SxpConnection {
         }
     }
 
+    /**
+     * @return If connection is in mode Both
+     */
     public boolean isModeBoth() {
         return getMode().equals(ConnectionMode.Both);
     }
 
+    /**
+     * @return If connection is in mode Listener
+     */
     public boolean isModeListener() {
         return getMode().equals(ConnectionMode.Listener) || isModeBoth();
     }
 
+    /**
+     * @return If connection is in mode Speaker
+     */
     public boolean isModeSpeaker() {
         return getMode().equals(ConnectionMode.Speaker) || isModeBoth();
     }
 
+    /**
+     * @return If PurgeAll message was received
+     */
     public boolean isPurgeAllMessageReceived() {
         return connectionBuilder.isPurgeAllMessageReceived() == null ? false : connectionBuilder
                 .isPurgeAllMessageReceived();
     }
 
+    /**
+     * @return If State is DeleteHoldDown
+     */
     public boolean isStateDeleteHoldDown() {
         return getState().equals(ConnectionState.DeleteHoldDown);
     }
 
+    /**
+     * @return If State is Off or in Both mode connections isn't in bidirectional mode
+     */
     public boolean isStateOff() {
         return getState().equals(ConnectionState.Off) || (isModeBoth() && !isBidirectionalBoth());
     }
 
+    /**
+     * @return If State is On
+     */
     public boolean isStateOn() {
         return getState().equals(ConnectionState.On);
     }
@@ -554,23 +731,42 @@ public class SxpConnection {
         return getState().equals(ConnectionState.PendingOn);
     }
 
+    /**
+     * @return If Update message was exported at least once
+     */
     public boolean isUpdateAllExported() {
         return connectionBuilder.isUpdateAllExported() == null ? false : connectionBuilder.isUpdateAllExported();
     }
 
+    /**
+     * @return If Update message was exported
+     */
     public boolean isUpdateExported() {
         return connectionBuilder.isUpdateExported() == null ? false : connectionBuilder.isUpdateExported();
     }
 
+    /**
+     * @return If connection is legacy version
+     */
     public boolean isVersion123() {
         return getVersion().equals(Version.Version1) || getVersion().equals(Version.Version2)
                 || getVersion().equals(Version.Version3);
     }
 
+    /**
+     * @return If connection is version 4
+     */
     public boolean isVersion4() {
         return getVersion().equals(Version.Version4);
     }
 
+    /**
+     * Mark ChannelHandlerContext with specified Role Speaker or Listener,
+     * removes ChannelHandlerContext from init queue
+     *
+     * @param ctx                       ChannelHandlerContext to be marked
+     * @param channelHandlerContextType Type of mark
+     */
     public void markChannelHandlerContext(ChannelHandlerContext ctx,
             ChannelHandlerContextType channelHandlerContextType) {
         synchronized (initCtxs) {
@@ -609,18 +805,32 @@ public class SxpConnection {
         }
     }
 
+    /**
+     * Reset Flag UpdateExported
+     */
     public void resetUpdateExported() {
         connectionBuilder.setUpdateExported(false);
     }
 
+    /**
+     * Set behaviour context according to specified version
+     *
+     * @param version Version to be set
+     * @throws UnknownVersionException If Version isn't supported
+     */
     public void setBehaviorContexts(Version version) throws UnknownVersionException {
         connectionBuilder.setCapabilities(Configuration.getCapabilities(version));
         connectionBuilder.setVersion(version);
         context = new Context(owner, version);
     }
 
-    // Bidirectional uses separated Speaker part and Listener part connection
-    // setup.
+    /**
+     * Setup Connection by parsing received OpenMessage
+     *
+     * @param message OpenMessage containing necessary data
+     * @throws UnknownConnectionModeException If connection mode isn't compatible
+     * @throws ErrorMessageException          If da in OpenMessage are incorrect
+     */
     public void setConnection(OpenMessage message) throws ErrorMessageException, UnknownConnectionModeException {
         if (isModeListener() && message.getSxpMode().equals(ConnectionMode.Speaker)) {
             setConnectionListenerPart(message);
@@ -633,6 +843,12 @@ public class SxpConnection {
         setStateOn();
     }
 
+    /**
+     * Setup Listener mode Connection by parsing received OpenMessage
+     *
+     * @param message OpenMessage containing necessary data
+     * @throws ErrorMessageException If data in OpenMessage are incorrect
+     */
     public void setConnectionListenerPart(OpenMessage message) throws ErrorMessageException {
 
         // Node modes compatibility.
@@ -721,6 +937,12 @@ public class SxpConnection {
         initializeTimers(ConnectionMode.Listener);
     }
 
+    /**
+     * Setup Speaker mode Connection by parsing received OpenMessage
+     *
+     * @param message OpenMessage containing necessary data
+     * @throws ErrorMessageException If data in OpenMessage are incorrect
+     */
     public void setConnectionSpeakerPart(OpenMessage message) throws ErrorMessageException {
         // Node modes compatibility.
         if (getMode().equals(ConnectionMode.Listener) && !message.getSxpMode().equals(ConnectionMode.Speaker)
@@ -804,6 +1026,9 @@ public class SxpConnection {
         initializeTimers(ConnectionMode.Speaker);
     }
 
+    /**
+     * Start DeleteHoldDown timer and if Reconciliation timer is started stop it
+     */
     public void setDeleteHoldDownTimer() {
         // Non configurable.
         setTimer(TimerType.DeleteHoldDownTimer,Configuration.getTimerDefault()
@@ -818,10 +1043,20 @@ public class SxpConnection {
         setStateDeleteHoldDown();
     }
 
+    /**
+     * Sets port of Peer
+     *
+     * @param port Port to be set
+     */
     public void setDestinationPort(int port) {
         this.destination = new InetSocketAddress(destination.getAddress(), port);
     }
 
+    /**
+     * Sets HoldTimer timer period
+     *
+     * @param value Time to be set
+     */
     public void setHoldTime(int value) {
         ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder(
                 connectionBuilder.getConnectionTimers());
@@ -829,6 +1064,11 @@ public class SxpConnection {
         connectionBuilder.setConnectionTimers(connectionTimersBuilder.build());
     }
 
+    /**
+     * Sets HoldTimeMin used for HoldTime Negotiation
+     *
+     * @param value Time to be set
+     */
     public void setHoldTimeMin(int value) {
         ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder(
                 connectionBuilder.getConnectionTimers());
@@ -836,6 +1076,11 @@ public class SxpConnection {
         connectionBuilder.setConnectionTimers(connectionTimersBuilder.build());
     }
 
+    /**
+     * Sets HoldTimeMinAcceptable used for HoldTime Negotiation
+     *
+     * @param value Time to be set
+     */
     public void setHoldTimeMinAcceptable(int value) {
         ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder(
                 connectionBuilder.getConnectionTimers());
@@ -843,6 +1088,13 @@ public class SxpConnection {
         connectionBuilder.setConnectionTimers(connectionTimersBuilder.build());
     }
 
+    /**
+     * Sets addresses used to communicate
+     *
+     * @param localAddress  SocketAddress of local connection
+     * @param remoteAddress SocketAddress of Peer
+     * @throws SocketAddressNotRecognizedException If parameters aren't instance of InetSocketAddress
+     */
     public void setInetSocketAddresses(SocketAddress localAddress, SocketAddress remoteAddress)
             throws SocketAddressNotRecognizedException {
         if (!(localAddress instanceof InetSocketAddress)) {
@@ -855,6 +1107,11 @@ public class SxpConnection {
         this.remoteAddress = (InetSocketAddress) remoteAddress;
     }
 
+    /**
+     * Sets KeepAlive timer period
+     *
+     * @param value Time to be set
+     */
     public void setKeepaliveTime(int value) {
         ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder(
                 connectionBuilder.getConnectionTimers());
@@ -862,22 +1119,45 @@ public class SxpConnection {
         connectionBuilder.setConnectionTimers(connectionTimersBuilder.build());
     }
 
+    /**
+     * Sets Mode of Connection
+     *
+     * @param mode ConnectionMode to be set
+     */
     public void setMode(ConnectionMode mode) {
         connectionBuilder.setMode(mode);
     }
 
+    /**
+     * Sets Mode of Peer
+     *
+     * @param mode ConnectionMode to be set
+     */
     public void setModeRemote(ConnectionMode mode) {
         connectionBuilder.setModeRemote(mode);
     }
 
+    /**
+     * Sets Id of Peer
+     *
+     * @param nodeId NodeId to be set
+     */
     public void setNodeIdRemote(NodeId nodeId) {
         connectionBuilder.setNodeId(nodeId);
     }
 
+    /**
+     * Sets Node that Connection belong to
+     *
+     * @param owner SxpNode to be set as owner
+     */
     public void setOwner(SxpNode owner) {
         this.owner = owner;
     }
 
+    /**
+     * Set Flag PurgeAllReceived
+     */
     public void setPurgeAllMessageReceived() {
         connectionBuilder.setPurgeAllMessageReceived(true);
     }
@@ -895,10 +1175,16 @@ public class SxpConnection {
         }
     }
 
+    /**
+     * Set State to AdministrativelyDown
+     */
     public void setStateAdminDown() {
         connectionBuilder.setState(ConnectionState.AdministrativelyDown);
     }
 
+    /**
+     * Set State to DeleteHoldDown and triggers cleanUp of Database
+     */
     public void setStateDeleteHoldDown() {
         connectionBuilder.setUpdateAllExported(false);
         connectionBuilder.setUpdateExported(false);
@@ -924,6 +1210,10 @@ public class SxpConnection {
         context.getOwner().setAsCleanUp(peerId);
     }
 
+    /**
+     * Set State to Off resets all flags, stop timers,
+     * clear Handling of messages and close ChannelHandlerContexts
+     */
     public void setStateOff() {
         closeChannelHandlerContexts();
         connectionBuilder.setState(ConnectionState.Off);
@@ -954,6 +1244,13 @@ public class SxpConnection {
         return type;
     }
 
+    /**
+     * Set State to Off and close ChannelHandlerContext,
+     * if Connection is in Both mode disable appropriate
+     * functionality based on ChannelHandlerContext type
+     *
+     * @param ctx ChannelHandlerContext to be closed
+     */
     public void setStateOff(ChannelHandlerContext ctx) {
         ChannelHandlerContextType type = closeChannelHandlerContext(ctx);
         if (ctxs.isEmpty()) {
@@ -986,6 +1283,9 @@ public class SxpConnection {
         }
     }
 
+    /**
+     * Stops all supported timers till version 4
+     */
     private void stopTimers() {
         setTimer(TimerType.DeleteHoldDownTimer, 0);
         setTimer(TimerType.ReconciliationTimer, 0);
@@ -993,6 +1293,10 @@ public class SxpConnection {
         setTimer(TimerType.KeepAliveTimer, 0);
     }
 
+    /**
+     * Set State to On and if Connection is mode speaker
+     * notifies export of Bindings
+     */
     public void setStateOn() {
         connectionBuilder.setState(ConnectionState.On);
         if (isModeSpeaker() || isModeBoth()) {
@@ -1000,10 +1304,21 @@ public class SxpConnection {
         }
     }
 
+    /**
+     * Set State to PendingOn
+     */
     public void setStatePendingOn() {
         connectionBuilder.setState(ConnectionState.PendingOn);
     }
 
+    /**
+     * Sets SxpConnection specific Timer
+     *
+     * @param timerType Type of Timer that will be set
+     * @param period    Time period to wait till execution in Seconds
+     * @return ListenableScheduledFuture callback
+     * @throws UnknownTimerTypeException If current TimerType isn't supported
+     */
     public synchronized ListenableScheduledFuture<?> setTimer(TimerType timerType, int period) throws UnknownTimerTypeException {
         SxpTimerTask timer;
         switch (timerType) {
@@ -1030,6 +1345,13 @@ public class SxpConnection {
         }
     }
 
+    /**
+     * Sets SxpConnection specific Timer
+     *
+     * @param timerType Type of Timer that will be set
+     * @param timer     Timer logic
+     * @return ListenableScheduledFuture callback
+     */
     private ListenableScheduledFuture<?> setTimer(TimerType timerType, ListenableScheduledFuture<?> timer) {
         ListenableScheduledFuture<?> t = this.timers.put(timerType, timer);
         if (t != null && !t.isDone()) {
@@ -1038,26 +1360,47 @@ public class SxpConnection {
         return timer;
     }
 
+    /**
+     * Sets that Update was exported at least once
+     */
     public void setUpdateAllExported() {
         connectionBuilder.setUpdateAllExported(true);
     }
 
+    /**
+     * Sets that Update was exported and connections should have all Bindings up to date
+     */
     public void setUpdateExported() {
         connectionBuilder.setUpdateExported(true);
     }
 
+    /**
+     * Update Export TimeStamp
+     */
     public void setUpdateMessageExportTimestamp() {
         connectionBuilder.setTimestampUpdateMessageExport(TimeConv.toDt(System.currentTimeMillis()));
     }
 
+    /**
+     * Update KeepAlive TimeStamp
+     */
     public void setUpdateOrKeepaliveMessageTimestamp() {
         connectionBuilder.setTimestampUpdateOrKeepAliveMessage(TimeConv.toDt(System.currentTimeMillis()));
     }
 
+    /**
+     * Sets Connections version of Peer
+     *
+     * @param versionRemote Version to be set
+     */
     public void setVersionRemote(Version versionRemote) {
         connectionBuilder.setVersionRemote(versionRemote);
     }
 
+    /**
+     * Shutdown Connection and send PurgeAll if Speaker mode,
+     * or purge learned Bindings if Listener mode
+     */
     public void shutdown() {
         if (isModeListener()){
             LOG.info("{} PURGE bindings ", this);

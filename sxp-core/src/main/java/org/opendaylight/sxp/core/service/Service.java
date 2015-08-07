@@ -17,16 +17,30 @@ import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Service class provide logic to execute more complex Services
+ * grating that each instance of Service is running only once
+ * regardless on how many time was service triggered
+ *
+ * @param <T> Type of service result if any
+ */
 public abstract class Service<T> implements Callable<T> {
 
     protected SxpNode owner;
     private AtomicInteger notified = new AtomicInteger(0);
     private ListenableFuture<?> change = null;
 
+    /**
+     * Default constructor
+     * @param owner SxpNode that this service belongs to
+     */
     protected Service(SxpNode owner) {
         this.owner = owner;
     }
 
+    /**
+     * Cancel current running service
+     */
     public void cancel() {
         if (change != null) {
             change.cancel(false);
@@ -34,14 +48,24 @@ public abstract class Service<T> implements Callable<T> {
         notified.set(0);
     }
 
+    /**
+     * @return Gets MasterDatabaseProvider used by owner Node
+     */
     public synchronized MasterDatabaseProvider getBindingMasterDatabase() {
         return owner.getBindingMasterDatabase();
     }
 
+    /**
+     * @return Gets SxpDatabaseProvider used by owner Node
+     */
     public synchronized SxpDatabaseProvider getBindingSxpDatabase() {
         return owner.getBindingSxpDatabase();
     }
 
+    /**
+     * Execute current Service or if Service is running,
+     * schedule another run after current run finishes
+     */
     public void notifyChange() {
         if (notified.getAndIncrement() == 0) {
             executeChange(this);

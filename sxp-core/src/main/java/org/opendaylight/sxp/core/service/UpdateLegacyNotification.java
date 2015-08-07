@@ -13,6 +13,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Upda
 
 public final class UpdateLegacyNotification {
 
+    /**
+     * Creates new UpdateLegacyNotification using provided values
+     *
+     * @param message    UpdateMessageLegacy to be used
+     * @param connection SxpConnection to be used
+     * @return UpdateLegacyNotification created using provided values
+     */
     public static UpdateLegacyNotification create(UpdateMessageLegacy message, SxpConnection connection) {
         return new UpdateLegacyNotification(message, connection);
     }
@@ -21,16 +28,28 @@ public final class UpdateLegacyNotification {
 
     private UpdateMessageLegacy message;
 
+    /**
+     * Default constructor
+     *
+     * @param message    UpdateMessageLegacy to be used
+     * @param connection SxpConnection to be used
+     */
     private UpdateLegacyNotification(UpdateMessageLegacy message, SxpConnection connection) {
         super();
         this.message = message;
         this.connection = connection;
     }
 
+    /**
+     * @return Gets SxpConnection to which message belongs
+     */
     public SxpConnection getConnection() {
         return connection;
     }
 
+    /**
+     * @return Gets Message
+     */
     public UpdateMessageLegacy getMessage() {
         return message;
     }

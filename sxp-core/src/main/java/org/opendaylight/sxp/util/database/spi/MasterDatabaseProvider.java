@@ -11,17 +11,30 @@ package org.opendaylight.sxp.util.database.spi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * MasterDatabaseProvider class provide checked access into MasterDatabase
+ */
 public abstract class MasterDatabaseProvider implements MasterDatabaseInf {
 
     protected static final Logger LOG = LoggerFactory.getLogger(MasterDatabaseProvider.class.getName());
 
     protected MasterDatabaseAccess databaseAccess;
 
+    /**
+     * Default constructor that sets MasterDatabaseAccess
+     *
+     * @param databaseAccess MasterDatabaseAccess to be set
+     */
     protected MasterDatabaseProvider(MasterDatabaseAccess databaseAccess) {
         super();
         this.databaseAccess = databaseAccess;
     }
 
+    /**
+     * Gets MasterDatabaseAccess of this provider
+     *
+     * @return MasterDatabaseAccess
+     */
     public MasterDatabaseAccess getDatabaseAccess() {
         return databaseAccess;
     }

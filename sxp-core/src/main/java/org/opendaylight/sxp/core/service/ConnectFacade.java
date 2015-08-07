@@ -67,6 +67,15 @@ public class ConnectFacade {
         }
     };
 
+    /**
+     * Create new Connection to Peer
+     *
+     * @param node       SxpNode containing Security options
+     * @param connection SxpConnection containing connection details
+     * @param hf         HandlerFactory providing handling of communication
+     * @return ChannelFuture callback
+     * @throws NativeSupportUnavailableException If Security error occurs
+     */
     public static ChannelFuture createClient(SxpNode node, SxpConnection connection, final HandlerFactory hf)
             throws NativeSupportUnavailableException {
         Bootstrap bootstrap = new Bootstrap();
@@ -104,6 +113,14 @@ public class ConnectFacade {
         return bootstrap.connect(connection.getDestination());
     }
 
+    /**
+     * Create new Node that listens to incoming connections
+     *
+     * @param node SxpNode containing options
+     * @param port Port on which Node will be listening
+     * @param hf   HandlerFactory providing handling of communication
+     * @return If Node was successfully created
+     */
     public static boolean createServer(SxpNode node, int port, final HandlerFactory hf) {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         if (eventLoopGroup == null) {
@@ -154,6 +171,15 @@ public class ConnectFacade {
 
     }
 
+    /**
+     * Creates custom bootstrap using TCP MD5 signature used for Peer connections
+     *
+     * @param bootstrap Bootstrap that will be customized
+     * @param inetHost  Address of node
+     * @param password  Password
+     * @return Bootstrap that uses TCP MD5
+     * @throws NativeSupportUnavailableException If error occurs while initialising TCP MD5
+     */
     private static Bootstrap customizeClientBootstrap(Bootstrap bootstrap, InetAddress inetHost, String password)
             throws NativeSupportUnavailableException {
         KeyMapping keys = new KeyMapping();
@@ -167,6 +193,15 @@ public class ConnectFacade {
         return bootstrap;
     }
 
+    /**
+     * Creates custom bootstrap using TCP MD5 signature used in Node
+     *
+     * @param bootstrap Bootstrap that will be customized
+     * @param md5Peers  Addresses of connections using password
+     * @param password  Password
+     * @return Bootstrap that uses TCP MD5
+     * @throws NativeSupportUnavailableException If error occurs while initialising TCP MD5
+     */
     private static ServerBootstrap customizeServerBootstrap(ServerBootstrap bootstrap, Collection<InetAddress> md5Peers,
             String password) throws NativeSupportUnavailableException {
         KeyMapping keyMapping = new KeyMapping();

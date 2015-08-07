@@ -21,6 +21,12 @@ public final class TimeConv {
 
     private static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+    /**
+     * Converts Long to DateAndTime with accuracy to seconds
+     *
+     * @param currentTime Long value that will be converted
+     * @return DateAndTime generated from specified value
+     */
     public static synchronized DateAndTime toDt(long currentTime) {
         return new DateAndTime(df.format(new Date(currentTime)));
     }
@@ -39,6 +45,12 @@ public final class TimeConv {
         }
     }
 
+    /**
+     * Converts DateAndTime to Long value with accuracy to seconds
+     *
+     * @param dateAndTime DateAndValue that will be converted
+     * @return Long value representing specified value
+     */
     public static synchronized long toLong(DateAndTime dateAndTime) {
         if (dateAndTime == null || dateAndTime.getValue() == null || dateAndTime.getValue().isEmpty()) {
             return -1;

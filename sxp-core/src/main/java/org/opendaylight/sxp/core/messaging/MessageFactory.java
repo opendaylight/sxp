@@ -61,6 +61,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UnknownFormatConversionException;
 
+/**
+ * MessageFactory class contains logic for creating and parsing messages
+ */
 public class MessageFactory {
 
     private static final int MESSAGE_HEADER_LENGTH_LENGTH = Configuration.getConstants().getMessageHeaderLengthLength();
@@ -69,6 +72,15 @@ public class MessageFactory {
 
     private static final int MESSAGE_LENGTH_MAX = Configuration.getConstants().getMessageLengthMax();
 
+    /**
+     * Creates Error message based on provided error code
+     *
+     * @param errorCode    ErrorCodeNonExtended defining type of error message
+     * @param errorSubCode ErrorSubCode defining error  sub type
+     * @param data         Byte Array containing additional information
+     * @return ByteBuf representation of Error
+     * @throws ErrorCodeDataLengthException If message Length is to long
+     */
     public static ByteBuf createError(ErrorCode errorCode, ErrorSubCode errorSubCode, byte[] data)
             throws ErrorCodeDataLengthException {
         if (data == null) {
@@ -84,10 +96,25 @@ public class MessageFactory {
         return getMessage(MessageType.Error, payload);
     }
 
+    /**
+     * @return Generated KeepAlive message
+     */
     public static ByteBuf createKeepalive() {
         return getMessage(MessageType.Keepalive, new byte[0]);
     }
 
+    /**
+     * Creates OpenMessage using provided values
+     *
+     * @param version   Version included in message
+     * @param nodeMode  ConnectionMode included in message
+     * @param nodeID    NodeId included in message
+     * @param attribute Attribute included in message
+     * @return ByteBuf representation of created OpenMessage
+     * @throws AttributeVariantException If attribute variant isn't supported
+     * @throws UnknownVersionException   If version isn't supported
+     * @throws CapabilityLengthException If some Attributes has incorrect length
+     */
     private static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID, Attribute attribute)
             throws AttributeVariantException, UnknownVersionException, CapabilityLengthException {
         AttributeList attributes = createOpenAttribute(version, nodeMode, nodeID);
@@ -102,16 +129,55 @@ public class MessageFactory {
         return getMessage(MessageType.Open, payload);
     }
 
+    /**
+     * Creates OpenMessage using provided values
+     *
+     * @param version  Version included in message
+     * @param nodeMode ConnectionMode included in message
+     * @param nodeID   NodeId included in message
+     * @return ByteBuf representation of created OpenMessage
+     * @throws AttributeVariantException If attribute variant isn't supported
+     * @throws UnknownVersionException   If version isn't supported
+     * @throws CapabilityLengthException If some Attributes has incorrect length
+     */
     public static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID)
             throws AttributeVariantException, UnknownVersionException, CapabilityLengthException {
         return createOpen(version, nodeMode, nodeID, null);
     }
 
+    /**
+     * Creates OpenMessage using provided values
+     *
+     * @param version               Version included in message
+     * @param nodeMode              ConnectionMode included in message
+     * @param nodeID                NodeId included in message
+     * @param holdTimeMinAcceptable Minimal acceptable Hold time included in message
+     * @return ByteBuf representation of created OpenMessage
+     * @throws HoldTimeMinException      If Min hold time isn't in range of <0,65535>
+     * @throws AttributeVariantException If attribute variant isn't supported
+     * @throws UnknownVersionException   If version isn't supported
+     * @throws CapabilityLengthException If some Attributes has incorrect length
+     */
     public static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID, int holdTimeMinAcceptable)
             throws HoldTimeMinException, AttributeVariantException, UnknownVersionException, CapabilityLengthException {
         return createOpen(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMinAcceptable));
     }
 
+    /**
+     * Creates OpenMessage using provided values
+     *
+     * @param version     Version included in message
+     * @param nodeMode    ConnectionMode included in message
+     * @param nodeID      NodeId included in message
+     * @param holdTimeMin Minimal Hold time included in message
+     * @param holdTimeMax Maximal Hold time included in message
+     * @return ByteBuf representation of created OpenMessage
+     * @throws HoldTimeMaxException      If Max hold time is greater than minimal
+     * @throws HoldTimeMinException      If Min hold time isn't in range of <0,65535>
+     * @throws AttributeVariantException If attribute variant isn't supported
+     * @throws UnknownVersionException   If version isn't supported
+     * @throws CapabilityLengthException If some Attributes has incorrect length
+     */
     public static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID, int holdTimeMin,
             int holdTimeMax)
             throws HoldTimeMaxException, HoldTimeMinException, AttributeVariantException, UnknownVersionException,
@@ -119,6 +185,16 @@ public class MessageFactory {
         return createOpen(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMin, holdTimeMax));
     }
 
+    /**
+     * Creates Attribute into OpenMessage according to connection mode and version
+     *
+     * @param version  Version of connection
+     * @param nodeMode ConnectionMode of connection
+     * @param nodeID   NodeId included in message
+     * @return List of Attributes
+     * @throws UnknownVersionException   If version isn't supported
+     * @throws CapabilityLengthException If some Attributes has incorrect length
+     */
     private static AttributeList createOpenAttribute(Version version, ConnectionMode nodeMode, NodeId nodeID)
             throws UnknownVersionException, CapabilityLengthException {
         AttributeList attributes = new AttributeList();
@@ -130,6 +206,18 @@ public class MessageFactory {
         return attributes;
     }
 
+    /**
+     * Creates OpenRespMessage using provided values
+     *
+     * @param version   Version included in message
+     * @param nodeMode  ConnectionMode included in message
+     * @param nodeID    NodeId included in message
+     * @param attribute Attribute included in message
+     * @return ByteBuff representation of created message
+     * @throws UnknownVersionException   If version isn't supported
+     * @throws CapabilityLengthException If some Attributes has incorrect length
+     * @throws AttributeVariantException If attribute variant isn't supported
+     */
     private static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID, Attribute attribute)
             throws UnknownVersionException, CapabilityLengthException, AttributeVariantException {
         AttributeList attributes = createOpenAttribute(version, nodeMode, nodeID);
@@ -144,17 +232,56 @@ public class MessageFactory {
         return getMessage(MessageType.OpenResp, payload);
     }
 
+    /**
+     * Creates OpenRespMessage using provided values
+     *
+     * @param version  Version included in message
+     * @param nodeMode ConnectionMode included in message
+     * @param nodeID   NodeId included in message
+     * @return ByteBuff representation of created message
+     * @throws UnknownVersionException   If version isn't supported
+     * @throws CapabilityLengthException If some Attributes has incorrect length
+     * @throws AttributeVariantException If attribute variant isn't supported
+     */
     public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID)
             throws CapabilityLengthException, UnknownVersionException, AttributeVariantException {
         return createOpenResp(version, nodeMode, nodeID, null);
     }
 
+    /**
+     * Creates OpenRespMessage using provided values
+     *
+     * @param version               Version included in message
+     * @param nodeMode              ConnectionMode included in message
+     * @param nodeID                NodeId included in message
+     * @param holdTimeMinAcceptable Minimal acceptable Hold time included in message
+     * @return ByteBuff representation of OpenRespMessage
+     * @throws HoldTimeMinException      If Min hold time isn't in range of <0,65535>
+     * @throws UnknownVersionException   If version isn't supported
+     * @throws CapabilityLengthException If some Attributes has incorrect length
+     * @throws AttributeVariantException If attribute variant isn't supported
+     */
     public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID,
             int holdTimeMinAcceptable)
             throws HoldTimeMinException, CapabilityLengthException, UnknownVersionException, AttributeVariantException {
         return createOpenResp(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMinAcceptable));
     }
 
+    /**
+     * Creates OpenRespMessage using provided values
+     *
+     * @param version     Version included in message
+     * @param nodeMode    ConnectionMode included in message
+     * @param nodeID      NodeId included in message
+     * @param holdTimeMin Minimal Hold time included in message
+     * @param holdTimeMax Maximal Hold time included in message
+     * @return ByteBuff representation of OpenRespMessage
+     * @throws HoldTimeMaxException      If Max hold time is greater than minimal
+     * @throws HoldTimeMinException      If Min hold time isn't in range of <0,65535>
+     * @throws UnknownVersionException   If version isn't supported
+     * @throws CapabilityLengthException If some Attributes has incorrect length
+     * @throws AttributeVariantException If attribute variant isn't supported
+     */
     public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID, int holdTimeMin,
             int holdTimeMax)
             throws HoldTimeMaxException, HoldTimeMinException, CapabilityLengthException, UnknownVersionException,
@@ -162,10 +289,24 @@ public class MessageFactory {
         return createOpenResp(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMin, holdTimeMax));
     }
 
+    /**
+     * @return Generate PurgeAll message
+     */
     public static ByteBuf createPurgeAll() {
         return getMessage(MessageType.PurgeAll, new byte[0]);
     }
 
+    /**
+     * Creates UpdateMessage using provided values
+     *
+     * @param masterDatabase MasterDatabase containing Binding for export
+     * @param nodeId         NodeId included in message
+     * @param changed        If only changed Binding are exported
+     * @return ByteBuf representation of UpdateMessage
+     * @throws UpdateMessageBindingSourceException If some binding source isn't Local or Sxp
+     * @throws SecurityGroupTagValueException      If some Sgt isn't in rage <2,65519>
+     * @throws AttributeVariantException           If some attribute variant isn't supported
+     */
     public static ByteBuf createUpdate(MasterDatabase masterDatabase, NodeId nodeId, boolean changed)
             throws UpdateMessageBindingSourceException, SecurityGroupTagValueException, AttributeVariantException {
         AttributeList attributes = new AttributeList();
@@ -310,6 +451,16 @@ public class MessageFactory {
         return getMessage(MessageType.Update, attributes.toBytes());
     }
 
+    /**
+     * Create AddPrefixes for UpdateMessage using provided values
+     *
+     * @param nodeID       NodeId included in message
+     * @param peerSequence PeerSequences to be used
+     * @param prefixGroups PrefixGroups to be used
+     * @return ByteBuf representation of AddPrefixes
+     * @throws SecurityGroupTagValueException If some Sgt isn't in rage <2,65519>
+     * @throws AttributeVariantException      If some attribute variant isn't supported
+     */
     public static ByteBuf createUpdateAddPrefixes(NodeId nodeID, List<NodeId> peerSequence,
             List<PrefixGroup> prefixGroups) throws SecurityGroupTagValueException, AttributeVariantException {
         AttributeList attributes = new AttributeList();
@@ -341,6 +492,13 @@ public class MessageFactory {
         return getMessage(MessageType.Update, attributes.toBytes());
     }
 
+    /**
+     * Create DeletePrefixes for UpdateMessage using provided values
+     *
+     * @param prefixGroups PrefixGroups to be used
+     * @return ByteBuf representation of DeletePrefixes
+     * @throws AttributeVariantException If some attribute variant isn't supported
+     */
     public static ByteBuf createUpdateDeletePrefixes(List<PrefixGroup> prefixGroups) throws AttributeVariantException {
         AttributeList attributes = new AttributeList();
         List<IpPrefix> removeIpv4 = new ArrayList<>();
@@ -362,6 +520,18 @@ public class MessageFactory {
         return getMessage(MessageType.Update, attributes.toBytes());
     }
 
+    /**
+     * Creates AddTablePrefixes for UpdateMessage using provided values
+     *
+     * @param nodeID       NodeId included in message
+     * @param peerSequence PeerSequences to be used
+     * @param prefixGroups PrefixGroups to be used
+     * @return ByteBuf representation of AddTablePrefixes
+     * @throws PrefixTableColumnsSizeException           If some column size isn't correct
+     * @throws SecurityGroupTagValueException            If some Sgt isn't in rage <2,65519>
+     * @throws PrefixTableAttributeIsNotCompactException If some Attribute isn't compact
+     * @throws AttributeVariantException                 If some attribute variant isn't supported
+     */
     public static ByteBuf createUpdateTableAddPrefixes(NodeId nodeID, List<NodeId> peerSequence,
             List<PrefixGroup> prefixGroups) throws PrefixTableColumnsSizeException, SecurityGroupTagValueException,
             PrefixTableAttributeIsNotCompactException, AttributeVariantException {
@@ -391,6 +561,22 @@ public class MessageFactory {
         return getMessage(MessageType.Update, attributes.toBytes());
     }
 
+    /**
+     * Decodes Byte Array into specific message
+     *
+     * @param version    Version used for decoding
+     * @param headerType Type of header
+     * @param payload    Byte Array containing message
+     * @return Decoded message
+     * @throws ErrorMessageException          If version Mismatch occurs
+     * @throws UnknownPrefixException         If some attribute has incorrect or none Prefix
+     * @throws AddressLengthException         If address length of some attribute is incorrect
+     * @throws AttributeLengthException       If length of some attribute is incorrect
+     * @throws UnknownHostException           If some attribute have incorrect or none address
+     * @throws UnknownNodeIdException         If NodeId isn't found or is incorrect
+     * @throws TlvNotFoundException           If Tvl isn't found
+     * @throws UnknownSxpMessageTypeException If data contains unsupported message
+     */
     private static Notification decode(Version version, byte[] headerType, byte[] payload)
             throws ErrorMessageException, UnknownPrefixException, AddressLengthException, AttributeLengthException,
             UnknownHostException, UnknownNodeIdException, TlvNotFoundException, UnknownSxpMessageTypeException {
@@ -439,6 +625,12 @@ public class MessageFactory {
         throw new UnknownSxpMessageTypeException();
     }
 
+    /**
+     * Decode ErrorMessage from Byte Array
+     *
+     * @param payload Byte Array containing message
+     * @return Decoded Error message
+     */
     public static Notification decodeErrorMessage(byte[] payload) {
         ErrorMessageBuilder messageBuilder = new ErrorMessageBuilder();
         messageBuilder.setType(MessageType.Error);
@@ -464,6 +656,12 @@ public class MessageFactory {
         return messageBuilder.build();
     }
 
+    /**
+     * Decodes KeepAliveMessage from byte Array
+     *
+     * @param payload Byte Array containing message
+     * @return Decoded KeepAlive message
+     */
     public static Notification decodeKeepalive(byte[] payload) {
         KeepaliveMessageBuilder messageBuilder = new KeepaliveMessageBuilder();
         messageBuilder.setType(MessageType.Keepalive);
@@ -471,6 +669,18 @@ public class MessageFactory {
         return messageBuilder.build();
     }
 
+    /**
+     * Decodes OpenMessage from Byte Array
+     *
+     * @param payload Byte Array containing message
+     * @return Decoded Open message
+     * @throws AddressLengthException   If address length of some attribute is incorrect
+     * @throws AttributeLengthException If length of some attribute is incorrect
+     * @throws UnknownNodeIdException   If NodeId isn't found or is incorrect
+     * @throws UnknownPrefixException   If some attribute has incorrect or none Prefix
+     * @throws TlvNotFoundException     If Tvl isn't found
+     * @throws UnknownHostException     If some attribute have incorrect or none address
+     */
     public static Notification decodeOpen(byte[] payload)
             throws AttributeLengthException, AddressLengthException, UnknownNodeIdException, UnknownPrefixException,
             TlvNotFoundException, UnknownHostException {
@@ -489,6 +699,18 @@ public class MessageFactory {
         return messageBuilder.build();
     }
 
+    /**
+     * Decode OpenRespMessage from Byre Array
+     *
+     * @param payload Byte Array containing message
+     * @return Decoded OpenResp message
+     * @throws AddressLengthException   If address length of some attribute is incorrect
+     * @throws AttributeLengthException If length of some attribute is incorrect
+     * @throws UnknownNodeIdException   If NodeId isn't found or is incorrect
+     * @throws UnknownPrefixException   If some attribute has incorrect or none Prefix
+     * @throws TlvNotFoundException     If Tvl isn't found
+     * @throws UnknownHostException     If some attribute have incorrect or none address
+     */
     public static Notification decodeOpenResp(byte[] payload)
             throws AttributeLengthException, AddressLengthException, UnknownNodeIdException, UnknownPrefixException,
             TlvNotFoundException, UnknownHostException, ErrorMessageException {
@@ -507,10 +729,20 @@ public class MessageFactory {
         return messageBuilder.build();
     }
 
+    /**
+     * @param payload Byte Array containing message
+     * @return Gets Version from message header
+     */
     public static Version extractVersion(final byte[] payload) {
         return Version.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(payload, 0, 4)));
     }
 
+    /**
+     * Decodes PurgeAll message fom provided Byte Array
+     *
+     * @param payload Byte Array containing message
+     * @return Decoded PurgeAll message
+     */
     public static Notification decodePurgeAll(byte[] payload) {
         PurgeAllMessageBuilder messageBuilder = new PurgeAllMessageBuilder();
         messageBuilder.setType(MessageType.PurgeAll);
@@ -518,6 +750,18 @@ public class MessageFactory {
         return messageBuilder.build();
     }
 
+    /**
+     * Decode UpdateMessage from provided Byte Array
+     *
+     * @param payload Byte Array containing message
+     * @return Notification with decoded UpdateMessage
+     * @throws AddressLengthException   If address length of some attribute is incorrect
+     * @throws AttributeLengthException If length of some attribute is incorrect
+     * @throws UnknownNodeIdException   If NodeId isn't found or is incorrect
+     * @throws UnknownPrefixException   If some attribute has incorrect or none Prefix
+     * @throws TlvNotFoundException     If Tvl isn't found
+     * @throws UnknownHostException     If some attribute have incorrect or none address
+     */
     public static Notification decodeUpdate(byte[] payload)
             throws AttributeLengthException, AddressLengthException, UnknownNodeIdException, UnknownPrefixException,
             TlvNotFoundException, UnknownHostException {
@@ -530,6 +774,10 @@ public class MessageFactory {
         return messageBuilder.build();
     }
 
+    /**
+     * @param data Data to be analyzed
+     * @return Gets each element in one String
+     */
     private static String getInformation(byte[] data) {
         if (data == null || data.length == 0) {
             return "";
@@ -541,6 +789,14 @@ public class MessageFactory {
         return result.trim();
     }
 
+    /**
+     * Generate Message header according message type and create ByteBuff,
+     * that includes generated header and provided payload
+     *
+     * @param messageType Type of message header to be generated
+     * @param payload     Data to be included into Message
+     * @return ByteBuf representation of message
+     */
     protected static ByteBuf getMessage(MessageType messageType, byte[] payload) {
         byte[] header = getMessageHeader(messageType, payload.length);
         int messageLength = header.length + payload.length;
@@ -550,17 +806,43 @@ public class MessageFactory {
         return message;
     }
 
+    /**
+     * Generate message header using provided values
+     *
+     * @param messageType Type of header
+     * @param payloadLength Length of data
+     * @return Byte array representing message header
+     */
     private static byte[] getMessageHeader(MessageType messageType, int payloadLength) {
         return ArraysUtil.combine(
                 ArraysUtil.int2bytes(MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH + payloadLength),
                 new byte[] { 0x00, 0x00, 0x00, (byte) messageType.getIntValue() });
     }
 
+    /**
+     * @param version Version to be checked
+     * @return If is Version 1/2/3
+     */
     protected static boolean isLegacy(Version version) {
         return version.equals(Version.Version1) || version.equals(Version.Version2) || version.equals(Version.Version3);
 
     }
 
+    /**
+     * Decode received message into specific message type
+     *
+     * @param version Version used for decoding
+     * @param request ByteBuf containing data to be decoded
+     * @return Decoded message
+     * @throws ErrorMessageException          If version Mismatch occurs
+     * @throws UnknownSxpMessageTypeException If data contains unsupported message
+     * @throws AddressLengthException         If address length of some attribute is incorrect
+     * @throws UnknownHostException           If some attribute have incorrect or none address
+     * @throws AttributeLengthException       If length of some attribute is incorrect
+     * @throws TlvNotFoundException           If Tvl isn't found
+     * @throws UnknownPrefixException         If some attribute has incorrect or none Prefix
+     * @throws UnknownNodeIdException         If NodeId isn't found or is incorrect
+     */
     public static Notification parse(Version version, ByteBuf request)
             throws ErrorMessageException, UnknownSxpMessageTypeException, AddressLengthException, UnknownHostException,
             AttributeLengthException, TlvNotFoundException, UnknownPrefixException, UnknownNodeIdException {
@@ -588,6 +870,10 @@ public class MessageFactory {
         return decode(version, headerType, payload);
     }
 
+    /**
+     * @param message Notification to be proceed
+     * @return Gets String representation of Byte Array
+     */
     public static String toString(byte[] message) {
         String result = "";
         for (int i = 0; i < message.length; i++) {
@@ -599,6 +885,10 @@ public class MessageFactory {
         return result;
     }
 
+    /**
+     * @param message Notification to be proceed
+     * @return Gets String representation of ByteBuf
+     */
     public static String toString(ByteBuf message) {
         message.resetReaderIndex();
         byte[] _message = new byte[message.readableBytes()];
@@ -607,6 +897,10 @@ public class MessageFactory {
         return toString(_message);
     }
 
+    /**
+     * @param message Notification to be proceed
+     * @return Gets String representation of Notification
+     */
     public static String toString(Notification message) {
         String result = "Unrecognized";
         byte[] _message = new byte[0];
@@ -628,6 +922,14 @@ public class MessageFactory {
         return result += " " + toString(_message);
     }
 
+    /**
+     * Check if length of message is correct
+     *
+     * @param headerLength  Length of header
+     * @param payloadLength Length od data
+     * @param messageLength Total length
+     * @throws ErrorMessageException If lengths are incorrect
+     */
     private static void validate(int headerLength, int payloadLength, int messageLength) throws ErrorMessageException {
         if (headerLength + payloadLength > MESSAGE_LENGTH_MAX) {
             throw new ErrorMessageException(ErrorCode.MessageHeaderError, new Exception(

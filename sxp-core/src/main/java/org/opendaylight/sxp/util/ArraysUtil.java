@@ -11,6 +11,13 @@ package org.opendaylight.sxp.util;
 import java.util.Arrays;
 
 public final class ArraysUtil {
+
+    /**
+     * Converts Byte Array into Integer value
+     *
+     * @param bytes Array that will be converted
+     * @return Integer value of specified Array
+     */
     public static int bytes2int(byte[] bytes) {
         if (bytes == null) {
             return 0;
@@ -29,6 +36,12 @@ public final class ArraysUtil {
         }
     }
 
+    /**
+     * Merge multiple Byte Arrays into one
+     *
+     * @param bytes Array to be merged together
+     * @return Merged Arrays
+     */
     public static byte[] combine(byte[]... bytes) {
 
         if (bytes == null) {
@@ -55,6 +68,12 @@ public final class ArraysUtil {
         return combined;
     }
 
+    /**
+     * Converts series of Boolean values to byte
+     *
+     * @param bits Boolean values representing bits
+     * @return Byte created with specified bit values
+     */
     public static byte convertBits(Boolean... bits) {
         String number = "";
         int i = 0;
@@ -68,6 +87,12 @@ public final class ArraysUtil {
         return (byte) Integer.parseInt(number, 2);
     }
 
+    /**
+     * Creates a new copy of Array
+     *
+     * @param source Array that will be copied
+     * @return Newly created Array with copied values
+     */
     public static byte[] copy(byte[] source) {
         if (source == null) {
             return new byte[0];
@@ -77,20 +102,47 @@ public final class ArraysUtil {
         return result;
     }
 
+    /**
+     * Gets bit value from Byte at specified position
+     *
+     * @param _byte    Byte where to look for bit value
+     * @param position Position of bit
+     * @return Value of bit at specified position
+     */
     public static int getBit(byte _byte, int position) {
         position--;
         return _byte >> position & 1;
     }
 
+    /**
+     * Converts Integer value to Array of bytes
+     *
+     * @param value Integer to be transformed
+     * @return Array of bytes representing Integer value
+     */
     public static byte[] int2bytes(int value) {
         return new byte[] { (byte) (value >>> 24), (byte) (value >>> 16), (byte) (value >>> 8), (byte) value };
     }
 
+    /**
+     * Converts Integer value to Array of bytes and skips first bytes
+     *
+     * @param value        Integer to be transformed
+     * @param nbytes2cropp Number of Bytes to be skipped
+     * @return Array of bytes representing Integer value
+     */
     public static byte[] int2bytesCropp(int value, int nbytes2cropp) {
         byte[] _value = int2bytes(value);
         return Arrays.copyOfRange(_value, nbytes2cropp, _value.length);
     }
 
+    /**
+     * Reads Bytes from Array and return them in new Array
+     *
+     * @param source Array to be read
+     * @param start  Index from which is copying started
+     * @return Array with data read from specified Array
+     */
     public static byte[] readBytes(byte[] source, int start) {
         if (source == null || source.length == 0) {
             return new byte[0];
@@ -100,6 +152,14 @@ public final class ArraysUtil {
         return result;
     }
 
+    /**
+     * Reads Bytes from Array and return them in new Array
+     *
+     * @param source Array to be read
+     * @param start  Index from which is copying started
+     * @param length Length of Array where will be stored data
+     * @return Array with data read from specified Array
+     */
     public static byte[] readBytes(byte[] source, int start, int length) {
         if (source == null || source.length == 0) {
             return new byte[0];
@@ -110,21 +170,35 @@ public final class ArraysUtil {
     }
 
     /**
-     * @param _byte
-     * @param position
-     *            position of a bit in the byte, i.e. 1 to 8
-     * @param value
-     * @return
+     * Sets a bit in the byte
+     *
+     * @param _byte    Byte where the bit will be changed
+     * @param position Position of bit in Byte, i.e. 1 to 8 to specified value
+     * @param value    Value to be set as (True=1,False=0)
+     * @return Byte with changed bit at specified position
      */
     public static byte setBit(byte _byte, int position, boolean value) {
         position--;
         return (byte) (value ? _byte | 1 << position : _byte & ~(1 << position));
     }
 
+    /**
+     * Sets a bit in the Zero byte
+     *
+     * @param position Position of bit in Byte, i.e. 1 to 8 to specified value
+     * @param value    Value to be set as (True=1,False=0)
+     * @return Byte with changed bit at specified position
+     */
     public static byte setBit(int position, boolean value) {
         return setBit((byte) 0x00, position, value);
     }
 
+    /**
+     * Trims zero bytes from the beginning of Array
+     *
+     * @param bytes Array to be trimmed
+     * @return Trimmed Array
+     */
     public static byte[] trimZerosPrime(byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
             return new byte[0];
@@ -136,6 +210,12 @@ public final class ArraysUtil {
         return Arrays.copyOfRange(bytes, i, bytes.length);
     }
 
+    /**
+     * Trims zero bytes from the end of Array
+     *
+     * @param bytes Array to be trimmed
+     * @return Trimmed Array
+     */
     public static byte[] trimZerosTail(byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
             return new byte[0];

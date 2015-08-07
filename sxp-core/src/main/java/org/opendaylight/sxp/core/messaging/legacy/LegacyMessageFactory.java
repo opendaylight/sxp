@@ -36,15 +36,33 @@ import org.opendaylight.yangtools.yang.binding.Notification;
 
 import java.net.UnknownHostException;
 
+/**
+ * LegacyMessageFactory class contains logic for creating and parsing legacy messages
+ */
 public class LegacyMessageFactory extends MessageFactory {
     private static final int MESSAGE_HEADER_LENGTH_LENGTH = Configuration.getConstants().getMessageHeaderLengthLength();
 
     private static final int MESSAGE_HEADER_TYPE_LENGTH = Configuration.getConstants().getMessageHeaderTypeLength();
 
+    /**
+     * Creates Error message based on provided error code
+     *
+     * @param errorCode ErrorCodeNonExtended defining type of error message
+     * @return ByteBuf representation of Error
+     * @throws ErrorCodeDataLengthException If message Length is to long
+     */
     public static ByteBuf createError(ErrorCodeNonExtended errorCode) throws ErrorCodeDataLengthException {
         return createError(errorCode, null);
     }
 
+    /**
+     * Creates Error message based on provided error code
+     *
+     * @param errorCode ErrorCodeNonExtended defining type of error message
+     * @param data      Byte Array containing additional information
+     * @return ByteBuf representation of Error
+     * @throws ErrorCodeDataLengthException If message Length is to long
+     */
     public static ByteBuf createError(ErrorCodeNonExtended errorCode, byte[] data) throws ErrorCodeDataLengthException {
         if (data == null) {
             data = new byte[0];
@@ -56,6 +74,13 @@ public class LegacyMessageFactory extends MessageFactory {
         return getMessage(MessageType.Error, payload);
     }
 
+    /**
+     * Creates OpenMessage using provided values
+     *
+     * @param version  Version included in message
+     * @param nodeMode ConnectionMode included in message
+     * @return ByteBuf representation of created OpenMessage
+     */
     public static ByteBuf createOpen(Version version, ConnectionMode nodeMode) {
         return getMessage(
                 MessageType.Open,
@@ -63,6 +88,13 @@ public class LegacyMessageFactory extends MessageFactory {
                         ArraysUtil.int2bytes(nodeMode.getIntValue())));
     }
 
+    /**
+     * Creates OpenRespMessage using provided values
+     *
+     * @param version  Version included in message
+     * @param nodeMode ConnectionMode included in message
+     * @return ByteBuf representation if created OpenRespMessage
+     */
     public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode) {
         return getMessage(
                 MessageType.OpenResp,
@@ -72,23 +104,17 @@ public class LegacyMessageFactory extends MessageFactory {
 
     /**
      * UPDATE message contains one or more SXP mapping records.
-     * 
      * <pre>
      * Mapping-Record = [Opcode (4 octets), Length (4 bytes), IPv4/IPv6 address (4/16 bytes), [List of TLV’s]]
-     *     
      * TLV = [Type (4 octets), Length of the value portion below (4 octets), Value (variable number of octets)]
      * </pre>
-     * 
      * Defined TLVs:
-     * 
      * <pre>
-     * Mandatory SGT TLV 
+     * Mandatory SGT TLV
      * [Type = 01, Length = 2, Value = SGT value (16 bits)]
-     * 
-     * Optional Prefix Length TLV 
+     * Optional Prefix Length TLV
      * [Type = 02, Length = 1, Value = The prefix length of the IP address]
      * </pre>
-     * 
      * If the Prefix Length TLV is not presented, the IP address is considered
      * as host address.
      */
@@ -196,6 +222,12 @@ public class LegacyMessageFactory extends MessageFactory {
         return getMessage(MessageType.Update, mappingRecords.toBytes());
     }
 
+    /**
+     * Decode OpenMessageLegacy from provided Byte Array
+     *
+     * @param payload Byte Array containing message
+     * @return Notification with decoded OpenMessageLegacy
+     */
     public static Notification decodeOpen(byte[] payload) {
         OpenMessageLegacyBuilder messageBuilder = new OpenMessageLegacyBuilder();
         messageBuilder.setType(MessageType.Open);
@@ -210,6 +242,13 @@ public class LegacyMessageFactory extends MessageFactory {
         return messageBuilder.build();
     }
 
+    /**
+     * Decode OpenRespMessageLegacy from provided Byte Array
+     *
+     * @param payload Byte Array containing message
+     * @return Notification with decoded OpenRespMessageLegacy
+     * @throws ErrorMessageException If version isn't legacy 1/2/3
+     */
     public static Notification decodeOpenResp(byte[] payload) throws ErrorMessageException {
         OpenMessageLegacyBuilder messageBuilder = new OpenMessageLegacyBuilder();
         messageBuilder.setType(MessageType.OpenResp);
@@ -228,6 +267,16 @@ public class LegacyMessageFactory extends MessageFactory {
         return messageBuilder.build();
     }
 
+    /**
+     * Decode UpdateMessageLegacy from provided Byte Array
+     *
+     * @param payload Byte Array containing message
+     * @return Notification with decoded UpdateMessageLegacy
+     * @throws UnknownPrefixException   If some attribute has incorrect or none Prefix
+     * @throws AddressLengthException   If address length of some attribute is incorrect
+     * @throws AttributeLengthException If length of some attribute is incorrect
+     * @throws UnknownHostException     If some attribute have incorrect or none address
+     */
     public static Notification decodeUpdate(byte[] payload)
             throws UnknownPrefixException, AddressLengthException, AttributeLengthException, UnknownHostException {
         UpdateMessageLegacyBuilder messageBuilder = new UpdateMessageLegacyBuilder();

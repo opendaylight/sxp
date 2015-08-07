@@ -19,11 +19,29 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.BindingBuilder;
 
+/**
+ * SxpBindingIdentity class represent entity stored in SxpDatabase
+ */
 public class SxpBindingIdentity {
+
+    /**
+     * Creates SxpBindingIdentity from specified values
+     *
+     * @param binding     Binding to be used
+     * @param prefixGroup PrefixGroup to be used
+     * @param pathGroup   PathGroup to be used
+     * @return Newly created SxpBindingIdentity
+     */
     public static SxpBindingIdentity create(Binding binding, PrefixGroup prefixGroup, PathGroup pathGroup) {
         return new SxpBindingIdentity(binding, prefixGroup, pathGroup);
     }
 
+    /**
+     * Create String representation of SxpBindingIdentities
+     *
+     * @param identities List of SxpBindingIdentity to be used
+     * @return String representation of specified data
+     */
     public static String toString(List<SxpBindingIdentity> identities) {
         String result = "";
         for (SxpBindingIdentity bindingDesc : identities) {
@@ -38,6 +56,13 @@ public class SxpBindingIdentity {
 
     protected PrefixGroup prefixGroup;
 
+    /**
+     * Default constructor that creates SxpBindingIdentity using provided data
+     *
+     * @param binding     Binding to be used
+     * @param prefixGroup PrefixGroup to be used
+     * @param pathGroup   PathGroup to be used
+     */
     private SxpBindingIdentity(Binding binding, PrefixGroup prefixGroup, PathGroup pathGroup) {
         super();
         this.binding = new BindingBuilder(binding).build();
@@ -53,14 +78,23 @@ public class SxpBindingIdentity {
         this.pathGroup = pathGroupBuilder.build();
     }
 
+    /**
+     * @return Gets Binding
+     */
     public Binding getBinding() {
         return binding;
     }
 
+    /**
+     * @return Gets PathGroup
+     */
     public PathGroup getPathGroup() {
         return pathGroup;
     }
 
+    /**
+     * @return Gets PrefixGroup
+     */
     public PrefixGroup getPrefixGroup() {
         return prefixGroup;
     }

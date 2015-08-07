@@ -42,19 +42,65 @@ public interface Strategy {
 
         Logger LOG = LoggerFactory.getLogger(Strategy.class.getName());
 
+        /**
+         * @return Gets SxpNode on which is this strategy executed
+         */
         SxpNode getOwner();
 
+        /**
+         * Logic for establishment of Connection
+         *
+         * @param ctx        ChannelHandlerContext on which is communication
+         * @param connection SxpConnection that participate in communication
+         */
         void onChannelActivation(ChannelHandlerContext ctx, SxpConnection connection);
 
+        /**
+         * Logic for disconnecting of Connection
+         *
+         * @param ctx        ChannelHandlerContext on which communication will be closed
+         * @param connection SxpConnection that participated in communication
+         */
         void onChannelInactivation(ChannelHandlerContext ctx, SxpConnection connection);
 
+        /**
+         * Logic for handling of errors
+         *
+         * @param ctx        ChannelHandlerContext on which is communication
+         * @param connection SxpConnection that participate in communication
+         */
         void onException(ChannelHandlerContext ctx, SxpConnection connection);
 
+        /**
+         * Logic for handling incoming messages
+         *
+         * @param ctx        ChannelHandlerContext on which is communication
+         * @param connection SxpConnection that participate in communication
+         * @param message    Notification that have been received
+         * @throws ErrorMessageException                 If error occurs during handling of Notification
+         * @throws UpdateMessageConnectionStateException If Update message was received in wrong state
+         * @throws ErrorMessageReceivedException         If Peer send error message
+         */
         void onInputMessage(ChannelHandlerContext ctx, SxpConnection connection, Notification message)
                 throws ErrorMessageException, ErrorMessageReceivedException, UpdateMessageConnectionStateException;
 
+        /**
+         * Logic for decoding incoming data
+         *
+         * @param request ByteBuf containing received data
+         * @return Notification with decoded message
+         * @throws ErrorMessageException If received data was corrupted or incorrect
+         */
         Notification onParseInput(ByteBuf request) throws ErrorMessageException;
 
+        /**
+         * Logic that generate message containing Bindings for export
+         *
+         * @param connection     SxpConnection that participate in communication
+         * @param masterDatabase MasterDatabase containing Bindings
+         * @return ByteBuf containing Update message
+         * @throws UpdateMessageCompositionException If during generating of message error occurs
+         */
         ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
                 throws UpdateMessageCompositionException;
 }
