@@ -10,10 +10,12 @@ package org.opendaylight.sxp.core.service;
 
 import com.google.common.base.Preconditions;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
+import org.opendaylight.sxp.util.exception.message.UpdateMessageCompositionException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +51,7 @@ public final class UpdateExportTask implements Callable<Void> {
                 this.messagesReleaseCounter = Preconditions.checkNotNull(messagesReleaseCounter);
         }
 
-        @Override public Void call() throws Exception {
+        @Override public Void call() {
                 //Generate messages
                 for (int i = 0; i < partitions.length; i++) {
                         MasterDatabase data;
@@ -58,9 +60,14 @@ public final class UpdateExportTask implements Callable<Void> {
                                 partitions[i] = null;
                         }
                         if (data != null) {
-                                ByteBuf
+                                ByteBuf message;
+                                try {
                                         message =
-                                        connection.getContext().executeUpdateMessageStrategy(connection, data);
+                                                connection.getContext().executeUpdateMessageStrategy(connection, data);
+                                } catch (UpdateMessageCompositionException e) {
+                                        LOG.error("{} Error creating update message {} ", connection, data, e);
+                                        message = PooledByteBufAllocator.DEFAULT.buffer(0);
+                                }
                                 synchronized (generatedMessages) {
                                         generatedMessages[i] = message;
                                         generatedMessages.notifyAll();
@@ -78,19 +85,29 @@ public final class UpdateExportTask implements Callable<Void> {
                                                 }
                                         }
                                 } while (message == null);
+                                if (message.capacity() == 0) {
+                                        LOG.warn("{} Cannot export empty message aborting export", connection);
+                                        connection.resetUpdateExported();
+                                        freeReferences();
+                                        return null;
+                                }
+                        }
+                        for (int i = 0; i < generatedMessages.length; i++) {
                                 connection.getChannelHandlerContext(
                                         SxpConnection.ChannelHandlerContextType.SpeakerContext)
-                                        .writeAndFlush(message.duplicate().retain());
+                                        .writeAndFlush(generatedMessages[i].duplicate().retain());
                                 if (LOG.isTraceEnabled()) {
                                         LOG.trace("{} {} UPDATEv{}(" + (connection.isUpdateAllExported() ? "C" : "A")
                                                         + ") {}", connection, i, connection.getVersion().getIntValue(),
-                                                MessageFactory.toString(message));
+                                                MessageFactory.toString(generatedMessages[i]));
                                 }
                         }
                         connection.setUpdateMessageExportTimestamp();
                         connection.setUpdateAllExported();
                 } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
                         LOG.debug("{} Cannot find context aborting bindings export.", connection, e);
+                        connection.resetUpdateExported();
+                } catch (InterruptedException e) {
                         connection.resetUpdateExported();
                 }
                 freeReferences();

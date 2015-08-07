@@ -13,6 +13,8 @@ import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
+import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
+import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.TimeConv;
@@ -86,14 +88,16 @@ public final class BindingManager extends Service<Void> {
         super(owner);
     }
 
-    public void cleanUpBindings(NodeId nodeID) throws Exception {
-        getBindingSxpDatabase().cleanUpBindings(nodeID);
-
-        LOG.info(owner + " cleanUpBindings {}", getBindingSxpDatabase());
-
+    public void cleanUpBindings(NodeId nodeID) {
+        try {
+            getBindingSxpDatabase().cleanUpBindings(nodeID);
+            LOG.info(owner + " cleanUpBindings {}", getBindingSxpDatabase());
+        } catch (NodeIdNotDefinedException e) {
+            LOG.error("{} Error cleaning bindings ", this, e);
+        }
     }
 
-    private List<MasterBindingIdentity> databaseArbitration(List<SxpBindingIdentity> bindingIdentities) throws Exception {
+    private List<MasterBindingIdentity> databaseArbitration(List<SxpBindingIdentity> bindingIdentities) {
         Map<String, SxpBindingIdentity> biMap = new HashMap<>();
 
         for (SxpBindingIdentity bindingIdentity : bindingIdentities) {
@@ -193,12 +197,16 @@ public final class BindingManager extends Service<Void> {
         return masterBindingIdentityContributed;
     }
 
-    public void purgeBindings(NodeId nodeID) throws Exception {
-        getBindingSxpDatabase().purgeBindings(nodeID);
+    public void purgeBindings(NodeId nodeID) {
+        try {
+            getBindingSxpDatabase().purgeBindings(nodeID);
+        } catch (NodeIdNotDefinedException | DatabaseAccessException e) {
+            LOG.error("{} Error purging bindings ", this, e);
+        }
     }
 
     @Override
-    public Void call() throws Exception {
+    public Void call() {
         LOG.debug(owner + " Starting {}", BindingManager.class.getSimpleName());
         if (owner.isEnabled()) {
             try {
@@ -213,15 +221,19 @@ public final class BindingManager extends Service<Void> {
                     masterDatabase.addBindings(owner.getNodeId(), masterBindingIdentityContributed);
                     owner.setSvcBindingDispatcherDispatch();
                 }
-            } catch (Exception e) {
+            } catch (NodeIdNotDefinedException | DatabaseAccessException e) {
                 LOG.warn("{} {} ", owner, BindingManager.class.getSimpleName(), e);
             }
         }
         return null;
     }
 
-    public void setAsCleanUp(NodeId nodeID) throws Exception {
-        getBindingSxpDatabase().setAsCleanUp(nodeID);
-        LOG.info(owner + " setAsCleanUp {}", getBindingSxpDatabase());
+    public void setAsCleanUp(NodeId nodeID) {
+        try {
+            getBindingSxpDatabase().setAsCleanUp(nodeID);
+            LOG.info(owner + " setAsCleanUp {}", getBindingSxpDatabase());
+        } catch (NodeIdNotDefinedException e) {
+            LOG.error("{} Error setting to clean up bindings ", this, e);
+        }
     }
 }

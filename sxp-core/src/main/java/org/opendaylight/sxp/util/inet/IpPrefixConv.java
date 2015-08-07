@@ -27,7 +27,8 @@ public final class IpPrefixConv {
         Ipv4Prefix, Ipv6Prefix
     }
 
-    private static IpPrefix _decode(IpPrefixType ipPrefixType, byte[] array, boolean compact) throws UnknownHostException, UnknownPrefixException {
+    private static IpPrefix _decode(IpPrefixType ipPrefixType, byte[] array, boolean compact)
+            throws UnknownPrefixException, UnknownHostException {
         int blength = getBytesLength(array[0]);
         byte[] bprefix = ArraysUtil.readBytes(array, compact ? 1 : 4, blength);
 
@@ -65,7 +66,7 @@ public final class IpPrefixConv {
     }
 
     private static List<IpPrefix> decode(IpPrefixConv.IpPrefixType ipPrefixType, byte[] array, boolean compact)
-            throws UnknownHostException, UnknownPrefixException {
+            throws UnknownPrefixException, UnknownHostException {
         List<IpPrefix> prefixes = new ArrayList<IpPrefix>();
         while (array != null && array.length != 0) {
             // Reserved octets (not)presented.

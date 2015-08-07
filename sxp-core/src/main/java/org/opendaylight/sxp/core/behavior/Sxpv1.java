@@ -10,7 +10,6 @@ package org.opendaylight.sxp.core.behavior;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
@@ -21,6 +20,12 @@ import org.opendaylight.sxp.util.exception.connection.IncompatiblePeerVersionExc
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageCompositionException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
+import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
+import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
+import org.opendaylight.sxp.util.exception.message.attribute.TlvNotFoundException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownSxpMessageTypeException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
@@ -34,6 +39,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Purg
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.UpdateMessageLegacy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yangtools.yang.binding.Notification;
+
+import java.net.UnknownHostException;
 
 public class Sxpv1 implements Strategy {
 
@@ -49,7 +56,7 @@ public class Sxpv1 implements Strategy {
     }
 
     @Override
-    public void onChannelActivation(ChannelHandlerContext ctx, SxpConnection connection) throws Exception {
+    public void onChannelActivation(ChannelHandlerContext ctx, SxpConnection connection) {
         // Default connection mode.
         ConnectionMode connectionMode = ConnectionMode.Speaker;
         if (connection.getMode() != null && !connection.getMode().equals(ConnectionMode.None)) {
@@ -65,7 +72,7 @@ public class Sxpv1 implements Strategy {
     }
 
     @Override
-    public void onChannelInactivation(ChannelHandlerContext ctx, SxpConnection connection) throws Exception {
+    public void onChannelInactivation(ChannelHandlerContext ctx, SxpConnection connection) {
         SxpConnection.ChannelHandlerContextType type = connection.getContextType(ctx);
         if (connection.isStateOn(type)) {
             switch (type) {
@@ -90,8 +97,7 @@ public class Sxpv1 implements Strategy {
         LOG.warn(connection + " onException");
     }
 
-    private boolean checkModeMismatch(SxpConnection connection, OpenMessageLegacy _message, ChannelHandlerContext ctx)
-            throws Exception {
+    private boolean checkModeMismatch(SxpConnection connection, OpenMessageLegacy _message, ChannelHandlerContext ctx) {
         if (!(connection.isModeListener() && _message.getSxpMode().equals(ConnectionMode.Speaker)) && !(
                 connection.isModeSpeaker() && _message.getSxpMode().equals(ConnectionMode.Listener)) && !(
                 connection.isModeBoth() && _message.getSxpMode().equals(ConnectionMode.Both))) {
@@ -105,7 +111,7 @@ public class Sxpv1 implements Strategy {
 
     @Override
     public void onInputMessage(ChannelHandlerContext ctx, SxpConnection connection, Notification message)
-            throws Exception {
+            throws ErrorMessageException, UpdateMessageConnectionStateException, ErrorMessageReceivedException {
         LOG.info("{} Handle {}", connection, MessageFactory.toString(message));
 
         if (message instanceof OpenMessageLegacy) {
@@ -177,7 +183,7 @@ public class Sxpv1 implements Strategy {
             NodeId peerId;
             try {
                 peerId = NodeIdConv.createNodeId(connection.getDestination().getAddress());
-            } catch (Exception e) {
+            } catch (UnknownNodeIdException e) {
                 LOG.warn(connection + " Unknown message relevant peer node ID | {} | {}", e.getClass().getSimpleName(),
                         e.getMessage());
                 return;
@@ -192,23 +198,23 @@ public class Sxpv1 implements Strategy {
     }
 
     @Override
-    public Notification onParseInput(ByteBuf request) throws Exception {
+    public Notification onParseInput(ByteBuf request) throws ErrorMessageException {
         try {
             return MessageFactory.parse(Version.Version1, request);
-        } catch (Exception e) {
+        } catch (UnknownNodeIdException | UnknownSxpMessageTypeException | AddressLengthException | AttributeLengthException | UnknownHostException | TlvNotFoundException | UnknownPrefixException e) {
             throw new ErrorMessageException(ErrorCodeNonExtended.MessageParseError, e);
         }
     }
 
     @Override
     public ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
-            throws Exception {
+            throws UpdateMessageCompositionException {
         // Supports: IPv4 Bindings
         // Compose new messages according to all|changed bindings and version.
         try {
             return LegacyMessageFactory.createUpdate(masterDatabase, connection.isUpdateAllExported(),
                     connection.getVersion());
-        } catch (Exception e) {
+        } catch (UnknownHostException e) {
             throw new UpdateMessageCompositionException(connection.getVersion(), connection.isUpdateAllExported(), e);
         }
     }

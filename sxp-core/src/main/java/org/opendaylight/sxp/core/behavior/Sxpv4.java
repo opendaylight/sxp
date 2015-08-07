@@ -16,14 +16,29 @@ import org.opendaylight.sxp.core.SxpConnection.ChannelHandlerContextType;
 import org.opendaylight.sxp.core.messaging.AttributeList;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
+import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
+import org.opendaylight.sxp.util.exception.message.UpdateMessageBindingSourceException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageCompositionException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
+import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
+import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeNotFoundException;
+import org.opendaylight.sxp.util.exception.message.attribute.AttributeVariantException;
+import org.opendaylight.sxp.util.exception.message.attribute.CapabilityLengthException;
+import org.opendaylight.sxp.util.exception.message.attribute.HoldTimeMaxException;
+import org.opendaylight.sxp.util.exception.message.attribute.HoldTimeMinException;
+import org.opendaylight.sxp.util.exception.message.attribute.SecurityGroupTagValueException;
+import org.opendaylight.sxp.util.exception.message.attribute.TlvNotFoundException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownConnectionModeException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownSxpMessageTypeException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.sxp.util.inet.InetAddressComparator;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.KeepaliveMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
@@ -33,8 +48,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Purg
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.UpdateMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.HoldTimeAttribute;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.SxpNodeIdAttribute;
 import org.opendaylight.yangtools.yang.binding.Notification;
+
+import java.net.UnknownHostException;
 
 public final class Sxpv4 extends Sxpv3 {
 
@@ -47,12 +63,15 @@ public final class Sxpv4 extends Sxpv3 {
     }
 
     private ByteBuf composeOpenHoldTimeMessage(SxpConnection connection, OpenMessageType openMessageType)
-            throws Exception {
+            throws CapabilityLengthException, HoldTimeMaxException, AttributeVariantException, HoldTimeMinException,
+            UnknownVersionException, UnknownConnectionModeException {
         return composeOpenHoldTimeMessage(connection, openMessageType, connection.getMode());
     }
 
     private ByteBuf composeOpenHoldTimeMessage(SxpConnection connection, OpenMessageType openMessageType,
-            ConnectionMode connectionMode) throws Exception {
+            ConnectionMode connectionMode)
+            throws CapabilityLengthException, UnknownVersionException, HoldTimeMaxException, HoldTimeMinException,
+            AttributeVariantException, UnknownConnectionModeException {
         if (connectionMode.equals(ConnectionMode.Listener)) {
             // Per-connection time settings: User (not)defined.
             Integer holdTimeMin = connection.getHoldTimeMin();
@@ -110,18 +129,22 @@ public final class Sxpv4 extends Sxpv3 {
         throw new UnknownConnectionModeException();
     }
 
-    private ByteBuf composeOpenRespHoldTimeMessage(SxpConnection connection, OpenMessage message) throws Exception {
+    private ByteBuf composeOpenRespHoldTimeMessage(SxpConnection connection, OpenMessage message)
+            throws CapabilityLengthException, AttributeVariantException, UnknownConnectionModeException,
+            HoldTimeMaxException, HoldTimeMinException, UnknownVersionException {
         return composeOpenRespHoldTimeMessage(connection, message, connection.getMode());
     }
 
     private ByteBuf composeOpenRespHoldTimeMessage(SxpConnection connection, OpenMessage message,
-            ConnectionMode connectionMode) throws Exception {
+            ConnectionMode connectionMode)
+            throws CapabilityLengthException, UnknownVersionException, AttributeVariantException,
+            UnknownConnectionModeException, HoldTimeMaxException, HoldTimeMinException {
         // If valid HoldTimeAttribute is received, HoldTimeAttribute must be
         // included.
         HoldTimeAttribute attHoldTime;
         try {
             attHoldTime = (HoldTimeAttribute) AttributeList.get(message.getAttribute(), AttributeType.HoldTime);
-        } catch (Exception e) {
+        } catch (AttributeNotFoundException e) {
             return MessageFactory.createOpenResp(connection.getVersion(), connectionMode, connection.getOwnerId());
         }
         if (connectionMode.equals(ConnectionMode.Listener)) {
@@ -144,22 +167,26 @@ public final class Sxpv4 extends Sxpv3 {
     }
 
     @Override
-    public void onChannelActivation(final ChannelHandlerContext ctx, SxpConnection connection) throws Exception {
-        if (connection.isModeBoth() && !connection.isBidirectionalBoth()) {
-            ByteBuf message = composeOpenHoldTimeMessage(connection, OpenMessageType.Open, ConnectionMode.Listener);
-            LOG.info("{} Sent OPEN {}", connection, MessageFactory.toString(message));
-            ctx.writeAndFlush(message);
-        } else {
-            ByteBuf message = composeOpenHoldTimeMessage(connection, OpenMessageType.Open);
-            LOG.info("{} Sent OPEN {}", connection, MessageFactory.toString(message));
-            ctx.writeAndFlush(message);
+    public void onChannelActivation(final ChannelHandlerContext ctx, SxpConnection connection) {
+        ByteBuf message;
+        try {
+            if (connection.isModeBoth() && !connection.isBidirectionalBoth()) {
+                message = composeOpenHoldTimeMessage(connection, OpenMessageType.Open, ConnectionMode.Listener);
+            } else {
+                message = composeOpenHoldTimeMessage(connection, OpenMessageType.Open);
+            }
+        } catch (CapabilityLengthException | UnknownVersionException | HoldTimeMinException | AttributeVariantException | UnknownConnectionModeException | HoldTimeMaxException e) {
+            LOG.error("{} Error sending OpenMessage due to creation error ", this, e);
+            return;
         }
+        LOG.info("{} Sent OPEN {}", connection, MessageFactory.toString(message));
+        ctx.writeAndFlush(message);
         connection.setStatePendingOn();
     }
 
     @Override
     public void onInputMessage(ChannelHandlerContext ctx, SxpConnection connection, Notification message)
-            throws Exception {
+            throws ErrorMessageReceivedException, ErrorMessageException, UpdateMessageConnectionStateException {
         LOG.info("{} Handle {}", connection, MessageFactory.toString(message));
 
         if (message instanceof OpenMessage) {
@@ -189,12 +216,15 @@ public final class Sxpv4 extends Sxpv3 {
                         if (!connection.isBidirectionalBoth()) {
                             connection.markChannelHandlerContext(ctx, ChannelHandlerContextType.SpeakerContext);
                             connection.setConnectionSpeakerPart(_message);
-
-                            ByteBuf
-                                    response =
-                                    composeOpenRespHoldTimeMessage(connection, _message, ConnectionMode.Speaker);
-                            LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
-                            ctx.writeAndFlush(response);
+                            try {
+                                ByteBuf response = composeOpenRespHoldTimeMessage(connection, _message, ConnectionMode.Speaker);
+                                LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
+                                ctx.writeAndFlush(response);
+                            } catch (CapabilityLengthException | HoldTimeMinException | HoldTimeMaxException | AttributeVariantException e) {
+                                LOG.error("{} Error sending RESP shutting down connection {} ", this, connection, e);
+                                connection.setStateOff(ctx);
+                                return;
+                            }
                         }
 
                     } else if (_message.getSxpMode().equals(ConnectionMode.Speaker)) {
@@ -239,9 +269,14 @@ public final class Sxpv4 extends Sxpv3 {
                 connection.setConnection(_message);
 
                 // Send a response.
-                ByteBuf response = composeOpenRespHoldTimeMessage(connection, _message);
-                LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
-                ctx.writeAndFlush(response);
+                try {
+                    ByteBuf response = composeOpenRespHoldTimeMessage(connection, _message);
+                    LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
+                    ctx.writeAndFlush(response);
+                } catch (CapabilityLengthException | HoldTimeMinException | HoldTimeMaxException | AttributeVariantException e) {
+                    LOG.error("{} Error sending RESP shutting down connection {} ", this, connection, e);
+                    connection.setStateOff();
+                }
                 return;
 
             } else if (_message.getType().equals(MessageType.OpenResp)) {
@@ -299,13 +334,7 @@ public final class Sxpv4 extends Sxpv3 {
 
             // Get message relevant peer node ID.
             NodeId peerId;
-            try {
-                peerId = connection.getNodeIdRemote();
-            } catch (Exception e) {
-                LOG.warn(connection + " Unknown message relevant peer node ID | {} | {}", e.getClass().getSimpleName(),
-                        e.getMessage());
-                return;
-            }
+            peerId = connection.getNodeIdRemote();
             connection.setPurgeAllMessageReceived();
             connection.getContext().getOwner().purgeBindings(peerId);
             connection.getContext().getOwner().notifyService();
@@ -320,20 +349,24 @@ public final class Sxpv4 extends Sxpv3 {
     }
 
     @Override
-    public Notification onParseInput(ByteBuf request) throws Exception {
-        return MessageFactory.parse(Version.Version4, request);
+    public Notification onParseInput(ByteBuf request) throws ErrorMessageException {
+        try {
+            return MessageFactory.parse(Version.Version4, request);
+        } catch (UnknownSxpMessageTypeException | AddressLengthException | UnknownHostException | AttributeLengthException | TlvNotFoundException | UnknownNodeIdException | UnknownPrefixException e) {
+            throw new ErrorMessageException(ErrorCodeNonExtended.MessageParseError, e);
+        }
     }
 
     @Override
     public ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
-            throws Exception {
+            throws UpdateMessageCompositionException {
         // Supports: New implementations of IPv4 Binding, IPv6 Bindings, Subnet
         // Bindings Expansion.
         // Compose new messages according to all|changed bindings and version.
         try {
             return MessageFactory
                     .createUpdate(masterDatabase, getOwner().getNodeId(), connection.isUpdateAllExported());
-        } catch (Exception e) {
+        } catch (UpdateMessageBindingSourceException | SecurityGroupTagValueException | AttributeVariantException e) {
             throw new UpdateMessageCompositionException(connection.getVersion(), connection.isUpdateAllExported(), e);
         }
     }

@@ -8,25 +8,22 @@
 
 package org.opendaylight.sxp.core.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-
 import com.google.common.util.concurrent.ListenableFuture;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.ThreadsWorker;
-import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.messaging.legacy.MappingRecord;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
-import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessagePeerSequenceException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessagePrefixException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessagePrefixGroupsException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageSgtException;
+import org.opendaylight.sxp.util.exception.message.attribute.TlvNotFoundException;
+import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
@@ -61,12 +58,17 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlv.
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+
 public final class BindingHandler {
 
     protected static final Logger LOG = LoggerFactory.getLogger(BindingHandler.class.getName());
 
     private static List<PathGroup> getPathGroups(String updateMessage, List<PathGroup> pathGroups,
-            List<NodeId> peerSequence, List<PrefixGroup> prefixGroups) throws Exception {
+            List<NodeId> peerSequence, List<PrefixGroup> prefixGroups)
+            throws UpdateMessagePeerSequenceException, UpdateMessagePrefixGroupsException {
         if (peerSequence == null || peerSequence.isEmpty()) {
             throw new UpdateMessagePeerSequenceException(updateMessage);
         } else if (prefixGroups == null || prefixGroups.isEmpty()) {
@@ -85,7 +87,8 @@ public final class BindingHandler {
         return pathGroups;
     }
 
-    private static PrefixGroup getPrefixGroups(String updateMessage, int sgt, List<IpPrefix> prefixes) throws Exception {
+    private static PrefixGroup getPrefixGroups(String updateMessage, int sgt, List<IpPrefix> prefixes)
+            throws UpdateMessageSgtException, UpdateMessagePrefixException {
         if (sgt == -1) {
             throw new UpdateMessageSgtException(updateMessage);
         } else if (prefixes.isEmpty()) {
@@ -112,7 +115,7 @@ public final class BindingHandler {
         return prefixGroupBuilder.build();
     }
 
-    public static SxpDatabase loopDetection(NodeId nodeId, SxpDatabase database) throws Exception {
+    public static SxpDatabase loopDetection(NodeId nodeId, SxpDatabase database) {
         List<PathGroup> removed = new ArrayList<>();
         for (PathGroup pathGroup : database.getPathGroup()) {
             for (NodeId _nodeId : NodeIdConv.getPeerSequence(pathGroup.getPeerSequence())) {
@@ -125,7 +128,8 @@ public final class BindingHandler {
         return database;
     }
 
-    public static SxpDatabase processMessageAddition(NodeId nodeId, UpdateMessageLegacy message) throws Exception {
+    public static SxpDatabase processMessageAddition(NodeId nodeId, UpdateMessageLegacy message)
+            throws TlvNotFoundException, UpdateMessagePrefixGroupsException, UpdateMessagePeerSequenceException {
         SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
 
         DateAndTime timestamp = TimeConv.toDt(System.currentTimeMillis());
@@ -180,7 +184,9 @@ public final class BindingHandler {
         return databaseBuilder.build();
     }
 
-    public static SxpDatabase processMessageAddition(UpdateMessage message) throws Exception {
+    public static SxpDatabase processMessageAddition(UpdateMessage message)
+            throws UpdateMessageSgtException, UpdateMessagePrefixException, UpdateMessagePrefixGroupsException,
+            UpdateMessagePeerSequenceException {
         String updateMessage = MessageFactory.toString(message);
 
         SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
@@ -310,7 +316,9 @@ public final class BindingHandler {
         return databaseBuilder.build();
     }
 
-    public static SxpDatabase processMessageDeletion(NodeId nodeId, UpdateMessage message) throws Exception {
+    public static SxpDatabase processMessageDeletion(NodeId nodeId, UpdateMessage message)
+            throws UpdateMessageSgtException, UpdateMessagePrefixException, UpdateMessagePrefixGroupsException,
+            UpdateMessagePeerSequenceException {
 
         SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
 
@@ -370,7 +378,9 @@ public final class BindingHandler {
         return databaseBuilder.build();
     }
 
-    public static SxpDatabase processMessageDeletion(NodeId nodeId, UpdateMessageLegacy message) throws Exception {
+    public static SxpDatabase processMessageDeletion(NodeId nodeId, UpdateMessageLegacy message)
+            throws UpdateMessagePrefixGroupsException, UpdateMessagePeerSequenceException, UpdateMessageSgtException,
+            UpdateMessagePrefixException {
         SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
 
         List<IpPrefix> prefixes = new ArrayList<IpPrefix>();
@@ -401,15 +411,14 @@ public final class BindingHandler {
         return databaseBuilder.build();
     }
 
-    private static UpdateMessageLegacy validateLegacyMessage(UpdateMessageLegacy updateMessage)
-            throws ErrorMessageException {
+    private static UpdateMessageLegacy validateLegacyMessage(UpdateMessageLegacy updateMessage) {
         // TODO: Message validation.
         // Message decomposition.
         // Message attribute validation.
         return updateMessage;
     }
 
-    private static UpdateMessage validateMessage(UpdateMessage updateMessage) throws ErrorMessageException {
+    private static UpdateMessage validateMessage(UpdateMessage updateMessage) {
         // TODO: Message validation.
         // Message decomposition.
         // Message attribute validation.
@@ -443,24 +452,13 @@ public final class BindingHandler {
     private static void processUpdateLegacyNotification(UpdateLegacyNotification updateLegacyNotification) {
         SxpNode owner = updateLegacyNotification.getConnection().getOwner();
         // Validate message.
-        try {
-            validateLegacyMessage(updateLegacyNotification.getMessage());
-        } catch (ErrorMessageException messageValidationException) {
-            try {
-                MessageDecoder.sendErrorMessage(null, messageValidationException,
-                        updateLegacyNotification.getConnection());
-                return;
-            } catch (Exception e) {
-                LOG.warn(owner + " Legacy message validation | {} | {}", e.getClass().getSimpleName(), e.getMessage());
-                return;
-            }
-        }
+        validateLegacyMessage(updateLegacyNotification.getMessage());
 
         // Get message relevant peer node ID.
         NodeId peerId;
         try {
             peerId = NodeIdConv.createNodeId(updateLegacyNotification.getConnection().getDestination().getAddress());
-        } catch (Exception e) {
+        } catch (UnknownNodeIdException e) {
             LOG.warn(owner + " Unknown message relevant peer node ID | {} | {}", e.getClass().getSimpleName(),
                     e.getMessage());
             return;
@@ -480,7 +478,7 @@ public final class BindingHandler {
                 // Notify the manager.
                 owner.setSvcBindingManagerNotify();
             }
-        } catch (Exception e) {
+        } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixGroupsException | UpdateMessagePrefixException | UpdateMessageSgtException e) {
             LOG.warn("{} Process legacy message deletion ", owner, e);
             return;
         }
@@ -500,9 +498,8 @@ public final class BindingHandler {
                     owner.setSvcBindingManagerNotify();
                 }
             }
-        } catch (Exception e) {
+        } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixGroupsException | TlvNotFoundException e) {
             LOG.warn(" Process legacy message addition ", owner, e);
-            return;
         }
     }
 
@@ -536,20 +533,11 @@ public final class BindingHandler {
         }
     }
 
-    private static void processUpdateNotification(UpdateNotification updateNotification) {
+    private static void processUpdateNotification(UpdateNotification updateNotification)
+            throws UpdateMessagePrefixGroupsException {
         SxpNode owner = updateNotification.getConnection().getOwner();
         // Validate message.
-        try {
-            validateMessage(updateNotification.getMessage());
-        } catch (ErrorMessageException messageValidationException) {
-            try {
-                MessageDecoder.sendErrorMessage(null, messageValidationException, updateNotification.getConnection());
-                return;
-            } catch (Exception e) {
-                LOG.warn(owner + " Message validation | {} | {}", e.getClass().getSimpleName(), e.getMessage());
-                return;
-            }
-        }
+        validateMessage(updateNotification.getMessage());
 
         // Get message relevant peer node ID.
         NodeId peerId = updateNotification.getConnection().getNodeIdRemote();
@@ -572,7 +560,7 @@ public final class BindingHandler {
                 // Notify the manager.
                 owner.setSvcBindingManagerNotify();
             }
-        } catch (Exception e) {
+        } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixException | UpdateMessagePrefixGroupsException | UpdateMessageSgtException e) {
             LOG.warn(" Process message deletion ", owner, e);
             return;
         }
@@ -580,18 +568,13 @@ public final class BindingHandler {
         // Prefixes addition.
         try {
             database = processMessageAddition(updateNotification.getMessage());
-        } catch (Exception e) {
+        } catch (UpdateMessagePrefixException | UpdateMessageSgtException | UpdateMessagePeerSequenceException e) {
             LOG.warn(" Process message addition ", owner, e);
             return;
         }
         // Loop detection.
         if (updateNotification.getConnection().getCapabilities().contains(CapabilityType.LoopDetection)) {
-            try {
-                database = loopDetection(owner.getNodeId(), database);
-            } catch (Exception e) {
-                LOG.warn(owner + " Process loop detection | {} | {}", e.getClass().getSimpleName(), e.getMessage());
-                return;
-            }
+            database = loopDetection(owner.getNodeId(), database);
         }
         // Prefixes addition.
         try {
@@ -606,9 +589,8 @@ public final class BindingHandler {
                     owner.setSvcBindingManagerNotify();
                 }
             }
-        } catch (Exception e) {
+        } catch (DatabaseAccessException e) {
             LOG.warn(" Process message addition | {} | {}", owner, e);
-            return;
         }
     }
 }

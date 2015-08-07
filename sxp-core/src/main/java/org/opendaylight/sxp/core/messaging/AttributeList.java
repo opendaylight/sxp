@@ -8,13 +8,19 @@
 
 package org.opendaylight.sxp.core.messaging;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.util.ArraysUtil;
+import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
+import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeNotFoundException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeVariantException;
+import org.opendaylight.sxp.util.exception.message.attribute.TlvNotFoundException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeVariant;
@@ -31,7 +37,9 @@ public class AttributeList extends ArrayList<Attribute> {
         return new AttributeList(list);
     }
 
-    public static AttributeList decode(byte[] array) throws Exception {
+    public static AttributeList decode(byte[] array)
+            throws AttributeLengthException, AddressLengthException, UnknownNodeIdException, TlvNotFoundException,
+            UnknownPrefixException, UnknownHostException {
         AttributeList attributes = new AttributeList();
         while (array.length != 0) {
             Attribute attribute = AttributeFactory.decode(array);
@@ -41,11 +49,12 @@ public class AttributeList extends ArrayList<Attribute> {
         return attributes;
     }
 
-    public static AttributeOptionalFields get(List<Attribute> attributes, AttributeType type) throws Exception {
+    public static AttributeOptionalFields get(List<Attribute> attributes, AttributeType type)
+            throws AttributeNotFoundException {
         return new AttributeList(attributes).get(type);
     }
 
-    private static byte[] toBytes(Attribute attribute) throws Exception {
+    private static byte[] toBytes(Attribute attribute) throws AttributeVariantException {
         byte flags = ArraysUtil.convertBits(attribute.getFlags().isOptional(), attribute.getFlags().isNonTransitive(),
                 attribute.getFlags().isPartial(), attribute.getFlags().isCompact(), attribute.getFlags()
                         .isExtendedLength(), false, false, false);
@@ -82,7 +91,7 @@ public class AttributeList extends ArrayList<Attribute> {
         addAll(attributes);
     }
 
-    public AttributeOptionalFields get(AttributeType type) throws Exception {
+    public AttributeOptionalFields get(AttributeType type) throws AttributeNotFoundException {
         for (AttributeFields attribute : this) {
             if (attribute.getType().equals(type) && attribute instanceof Attribute) {
                 return ((Attribute) attribute).getAttributeOptionalFields();
@@ -91,7 +100,7 @@ public class AttributeList extends ArrayList<Attribute> {
         throw new AttributeNotFoundException(type);
     }
 
-    public byte[] toBytes() throws Exception {
+    public byte[] toBytes() throws AttributeVariantException {
         byte[] attributes = new byte[0];
         for (Attribute attribute : this) {
             attributes = ArraysUtil.combine(attributes, toBytes(attribute));

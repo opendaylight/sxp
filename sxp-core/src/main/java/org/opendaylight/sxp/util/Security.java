@@ -8,30 +8,25 @@
 
 package org.opendaylight.sxp.util;
 
+import com.google.common.hash.Hashing;
+
 import java.math.BigInteger;
 import java.nio.charset.Charset;
-import java.security.MessageDigest;
 
 public final class Security {
 
-    private static final String ALGORITHM = "MD5";
-
     private static final String CHARSET_NAME = "US-ASCII";
 
-    public static byte[] getMD5b(String str) throws Exception {
-        byte[] byteArray = str.getBytes(Charset.forName(CHARSET_NAME));
-        MessageDigest md = MessageDigest.getInstance(ALGORITHM);
-        return md.digest(byteArray);
+    public static byte[] getMD5b(String str) {
+        return Hashing.md5().hashString(str, Charset.forName(CHARSET_NAME)).asBytes();
     }
 
     /**
      * The MD5 message-digest algorithm is a widely used cryptographic hash
      * function producing a 128-bit hash value, typically expressed in text
      * format as a 32 digit hexadecimal number.
-     * 
-     * @throws Exception
      */
-    public static String getMD5s(String str) throws Exception {
+    public static String getMD5s(String str) {
         byte[] digest = getMD5b(str);
 
         String md5hash = new BigInteger(1, digest).toString(16);

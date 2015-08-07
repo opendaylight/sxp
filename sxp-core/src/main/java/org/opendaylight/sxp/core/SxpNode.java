@@ -11,18 +11,6 @@ package org.opendaylight.sxp.core;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -36,8 +24,10 @@ import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
+import org.opendaylight.sxp.util.exception.connection.NoNetworkInterfacesException;
 import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
-import org.opendaylight.sxp.util.exception.node.DatabaseNotFoundException;
+import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
+import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownSxpConnectionException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
@@ -47,7 +37,6 @@ import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
 import org.opendaylight.tcpmd5.jni.NativeSupportUnavailableException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentityBuilder;
@@ -63,6 +52,17 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Upda
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * The source-group tag exchange protocol (SXP) aware node implementation. SXP
@@ -92,7 +92,8 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      * @return New instance of SxpNode
      * @throws Exception
      */
-    public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node) throws Exception {
+    public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node)
+            throws NoNetworkInterfacesException, SocketException {
         return createInstance(nodeId, node, new MasterDatabaseImpl(), new SxpDatabaseImpl());
     }
 
@@ -111,7 +112,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      * @throws Exception
      */
     public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
-            SxpDatabaseProvider sxpDatabase) throws Exception {
+            SxpDatabaseProvider sxpDatabase) throws NoNetworkInterfacesException, SocketException {
         return createInstance(nodeId, node, masterDatabase, sxpDatabase, new ThreadsWorker());
     }
 
@@ -131,7 +132,8 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      * @throws Exception
      */
     public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
-            SxpDatabaseProvider sxpDatabase, ThreadsWorker worker) throws Exception {
+            SxpDatabaseProvider sxpDatabase, ThreadsWorker worker)
+            throws NoNetworkInterfacesException, SocketException {
         return new SxpNode(nodeId, node, masterDatabase, sxpDatabase, worker);
     }
 
@@ -158,7 +160,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
     private HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(6);
 
     private SxpNode(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
-            SxpDatabaseProvider sxpDatabase,ThreadsWorker worker) throws Exception {
+            SxpDatabaseProvider sxpDatabase,ThreadsWorker worker) throws NoNetworkInterfacesException, SocketException {
         super(Configuration.getConstants().getNodeConnectionsInitialSize());
         this.worker = worker;
         this.nodeId = nodeId;
@@ -186,7 +188,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
     }
 
-    public void addConnection(Connection connection) throws Exception {
+    public void addConnection(Connection connection) {
         if (connection == null) {
             return;
         }
@@ -196,7 +198,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         openConnection(_connection);
     }
 
-    public void addConnections(Connections connections) throws Exception {
+    public void addConnections(Connections connections) {
         if (connections == null || connections.getConnection() == null || connections.getConnection().isEmpty()) {
             return;
         }
@@ -205,7 +207,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
     }
 
-    public void cleanUpBindings(NodeId nodeID) throws Exception {
+    public void cleanUpBindings(NodeId nodeID) {
         if (svcBindingManager instanceof BindingManager) {
             ((BindingManager) svcBindingManager).cleanUpBindings(nodeID);
         }
@@ -291,17 +293,11 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return connections;
     }
 
-    public synchronized MasterDatabaseProvider getBindingMasterDatabase() throws Exception {
-        if (_masterDatabase == null) {
-            throw new DatabaseNotFoundException(DatabaseType.MasterDatabase);
-        }
+    public synchronized MasterDatabaseProvider getBindingMasterDatabase() {
         return _masterDatabase;
     }
 
-    public synchronized SxpDatabaseProvider getBindingSxpDatabase() throws Exception {
-        if (_sxpDatabase == null) {
-            throw new DatabaseNotFoundException(DatabaseType.SxpBindingDatabase);
-        }
+    public synchronized SxpDatabaseProvider getBindingSxpDatabase() {
         return _sxpDatabase;
     }
 
@@ -323,7 +319,8 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return null;
     }
 
-    public SxpConnection getConnection(SocketAddress socketAddress) throws Exception {
+    public SxpConnection getConnection(SocketAddress socketAddress)
+            throws SocketAddressNotRecognizedException, UnknownSxpConnectionException {
         if (!(socketAddress instanceof InetSocketAddress)) {
             throw new SocketAddressNotRecognizedException(socketAddress);
         }
@@ -448,7 +445,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
     }
 
-    public synchronized void openConnections() throws Exception {
+    public synchronized void openConnections() {
         // Server not created yet.
         if (serverChannel == null) {
             return;
@@ -486,21 +483,21 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
     }
 
-    public void processUpdateMessage(UpdateMessage message, SxpConnection connection) throws InterruptedException {
+    public void processUpdateMessage(UpdateMessage message, SxpConnection connection) {
         BindingHandler.processUpdateMessage(message, connection);
     }
 
-    public void processUpdateMessage(UpdateMessageLegacy message, SxpConnection connection) throws InterruptedException {
+    public void processUpdateMessage(UpdateMessageLegacy message, SxpConnection connection) {
         BindingHandler.processUpdateMessage(message, connection);
     }
 
-    public void purgeBindings(NodeId nodeID) throws Exception {
+    public void purgeBindings(NodeId nodeID) {
         if (svcBindingManager instanceof BindingManager) {
             ((BindingManager) svcBindingManager).purgeBindings(nodeID);
         }
     }
 
-    public void putLocalBindingsMasterDatabase(MasterDatabase masterDatabaseConfiguration) throws Exception {
+    public void putLocalBindingsMasterDatabase(MasterDatabase masterDatabaseConfiguration) {
         Source source = null;
         if (masterDatabaseConfiguration.getSource() != null) {
             for (Source _source : masterDatabaseConfiguration.getSource()) {
@@ -512,27 +509,31 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
 
         if (source != null && source.getPrefixGroup() != null && !source.getPrefixGroup().isEmpty()) {
-            getBindingMasterDatabase().addBindingsLocal(this,
-                    Database.assignPrefixGroups(nodeId, source.getPrefixGroup()));
+            try {
+                getBindingMasterDatabase().addBindingsLocal(this,
+                        Database.assignPrefixGroups(nodeId, source.getPrefixGroup()));
+            } catch (DatabaseAccessException  |NodeIdNotDefinedException e) {
+                LOG.error("{} Error puting Bindings to DB {} ", this, masterDatabaseConfiguration, e);
+                return;
+            }
             notifyService();
         }
     }
 
-    public SxpConnection removeConnection(InetSocketAddress destination) throws Exception {
+    public SxpConnection removeConnection(InetSocketAddress destination) {
         SxpConnection connection = remove(destination);
         connection.shutdown();
         return connection;
     }
 
-    public void setAsCleanUp(NodeId nodeID) throws Exception {
+    public void setAsCleanUp(NodeId nodeID) {
         if (svcBindingManager instanceof BindingManager) {
             ((BindingManager) svcBindingManager).setAsCleanUp(nodeID);
         }
     }
 
     protected org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.node.fields.Security setPassword(
-            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.node.fields.Security security)
-            throws Exception {
+            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.node.fields.Security security) {
         SecurityBuilder securityBuilder = new SecurityBuilder();
         if (security == null || security.getPassword() == null || security.getPassword().isEmpty()) {
             securityBuilder.setPassword("");
@@ -549,7 +550,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return securityBuilder.build();
     }
 
-    public void setServerChannel(Channel serverChannel) throws Exception {
+    public void setServerChannel(Channel serverChannel) {
         this.serverChannel = serverChannel;
         this.serverChannelInit.set(false);
     }
@@ -593,7 +594,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
     }
 
-    public ListenableScheduledFuture<?> setTimer(TimerType timerType, ListenableScheduledFuture<?> timer) {
+    private ListenableScheduledFuture<?> setTimer(TimerType timerType, ListenableScheduledFuture<?> timer) {
         ListenableScheduledFuture<?> t = this.timers.put(timerType, timer);
         if (t != null && !t.isDone()) {
             t.cancel(false);
@@ -634,11 +635,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
                 LOG.warn("{} Error while shut down ", this, e);
             }
         }
-        try {
-            setTimer(TimerType.RetryOpenTimer, 0);
-        } catch (UnknownTimerTypeException e) {
-            LOG.warn("{} Error stopping Timers ", this, e);
-        }
+        setTimer(TimerType.RetryOpenTimer, 0);
         shutdownConnections();
 
         if (serverChannel != null) {
@@ -664,7 +661,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
 
     private AtomicBoolean serverChannelInit = new AtomicBoolean(false);
 
-    public void start() throws Exception {
+    public void start() {
         // Put local bindings before services startup.
         MasterDatabase masterDatabaseConfiguration = nodeBuilder.getMasterDatabase();
         if (masterDatabaseConfiguration != null) {
@@ -676,13 +673,8 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         worker.executeTask(new Runnable() {
 
             @Override public void run() {
-                try {
                     serverChannelInit.set(true);
                     ConnectFacade.createServer(node, getServerPort(), handlerFactoryServer);
-
-                } catch (Exception e) {
-                    LOG.warn(node + " {}", e.getMessage());
-                }
             }
         }, ThreadsWorker.WorkerType.DEFAULT);
         if (getRetryOpenTime() > 0) {

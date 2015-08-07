@@ -8,39 +8,43 @@
 
 package org.opendaylight.sxp.util.database.spi;
 
-import java.util.List;
-
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.MasterBindingIdentity;
+import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
+import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 
+import java.net.UnknownHostException;
+import java.util.List;
+
 public interface MasterDatabaseInf {
-    public final String PRINT_DELIMITER = " ";
 
-    public void addBindings(NodeId owner, List<MasterBindingIdentity> contributedBindingIdentities) throws Exception;
+        String PRINT_DELIMITER = " ";
 
-    public void addBindingsLocal(SxpNode owner, List<PrefixGroup> prefixGroups) throws Exception;
+        void addBindings(NodeId owner, List<MasterBindingIdentity> contributedBindingIdentities)
+                throws DatabaseAccessException, NodeIdNotDefinedException;
 
-    public void expandBindings(int quantity) throws Exception;
+        void addBindingsLocal(SxpNode owner, List<PrefixGroup> prefixGroups)
+                throws NodeIdNotDefinedException, DatabaseAccessException;
 
-    public MasterDatabase get() throws Exception;
+        void expandBindings(int quantity) throws DatabaseAccessException, UnknownPrefixException, UnknownHostException;
 
-    public List<MasterDatabase> partition(int quantity, boolean onlyChanged) throws Exception;
+        MasterDatabase get() throws DatabaseAccessException;
 
-    public void purgeAllDeletedBindings() throws Exception;
+        List<MasterDatabase> partition(int quantity, boolean onlyChanged) throws DatabaseAccessException;
 
-    public void purgeBindings(NodeId nodeId) throws Exception;
+        void purgeAllDeletedBindings() throws DatabaseAccessException;
 
-    public List<MasterBindingIdentity> readBindings() throws Exception;
+        void purgeBindings(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException;
 
-    public List<PrefixGroup> readBindingsLocal() throws Exception;
+        List<MasterBindingIdentity> readBindings() throws DatabaseAccessException;
 
-    public void resetModified() throws Exception;
+        List<PrefixGroup> readBindingsLocal() throws DatabaseAccessException;
 
-    public boolean setAsDeleted(SxpNode owner, List<PrefixGroup> prefixGroups) throws Exception;
+        void resetModified() throws DatabaseAccessException;
 
-    @Override
-    public String toString();
+        boolean setAsDeleted(SxpNode owner, List<PrefixGroup> prefixGroups) throws Exception;
 }

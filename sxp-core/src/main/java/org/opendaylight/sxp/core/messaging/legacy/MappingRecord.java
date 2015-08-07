@@ -105,7 +105,8 @@ public class MappingRecord extends ArrayList<Tlv> {
     }
 
     public static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord decode(
-            byte[] array) throws Exception {
+            byte[] array)
+            throws AttributeLengthException, UnknownPrefixException, AddressLengthException, UnknownHostException {
         AttributeType operationCode = AttributeType.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 0, 4)));
         int length = ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 4, 4));
         if (length < 0 || 4080 < length) {
@@ -156,7 +157,7 @@ public class MappingRecord extends ArrayList<Tlv> {
         try {
             prefixLength = ((PrefixLengthTlvAttribute) mappingRecord.get(TlvType.PrefixLength))
                     .getPrefixLengthTlvAttributes().getPrefixLength();
-        } catch (Exception e) {
+        } catch (TlvNotFoundException e) {
             if (inetAddress instanceof Inet4Address) {
                 prefixLength = 32;
             } else if (inetAddress instanceof Inet6Address) {

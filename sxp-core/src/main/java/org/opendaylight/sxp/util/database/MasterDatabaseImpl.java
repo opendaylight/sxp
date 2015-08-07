@@ -12,7 +12,9 @@ import com.google.common.base.Preconditions;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseAccess;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
+import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.inet.Search;
@@ -31,6 +33,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -116,7 +119,8 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
     }
 
     @Override
-    public void addBindings(NodeId owner, List<MasterBindingIdentity> contributedBindingIdentities) throws Exception {
+    public void addBindings(NodeId owner, List<MasterBindingIdentity> contributedBindingIdentities)
+            throws NodeIdNotDefinedException, DatabaseAccessException {
         if (owner == null) {
             throw new NodeIdNotDefinedException();
         }
@@ -233,7 +237,7 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
     }
 
     @Override
-    public void addBindingsLocal(SxpNode owner, List<PrefixGroup> prefixGroups) throws Exception {
+    public void addBindingsLocal(SxpNode owner, List<PrefixGroup> prefixGroups) throws DatabaseAccessException {
         Preconditions.checkNotNull(owner);
         if (prefixGroups == null || prefixGroups.isEmpty()) {
             return;
@@ -335,7 +339,8 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
     }
 
     @Override
-    public void expandBindings(int quantity) throws Exception {
+    public void expandBindings(int quantity)
+            throws DatabaseAccessException, UnknownPrefixException, UnknownHostException {
         synchronized (database) {
             if (quantity > 0 && database.getSource() != null) {
                 for (Source source : database.getSource()) {
@@ -364,12 +369,12 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
     }
 
     @Override
-    public MasterDatabase get() throws Exception {
+    public MasterDatabase get() throws DatabaseAccessException {
         return database;
     }
 
     @Override
-    public List<MasterDatabase> partition(int quantity, boolean onlyChanged) throws Exception {
+    public List<MasterDatabase> partition(int quantity, boolean onlyChanged) throws DatabaseAccessException {
         synchronized (database) {
             List<MasterDatabase> split = new ArrayList<>();
             MasterDatabaseBuilder databaseBuilder = new MasterDatabaseBuilder(database);
@@ -424,7 +429,7 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
     }
 
     @Override
-    public synchronized void purgeAllDeletedBindings() throws Exception {
+    public synchronized void purgeAllDeletedBindings() throws DatabaseAccessException {
         synchronized (database) {
             for (Source source : database.getSource()) {
                 if (source.getPrefixGroup() != null) {
@@ -470,7 +475,7 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
     }
 
     @Override
-    public void purgeBindings(NodeId nodeId) throws Exception {
+    public void purgeBindings(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException {
         if (nodeId == null) {
             throw new NodeIdNotDefinedException();
         }
@@ -503,7 +508,7 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
     }
 
     @Override
-    public List<MasterBindingIdentity> readBindings() throws Exception {
+    public List<MasterBindingIdentity> readBindings() throws DatabaseAccessException {
         List<MasterBindingIdentity> read = new ArrayList<>();
         synchronized (database) {
             if (database.getSource() != null) {
@@ -524,7 +529,7 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
     }
 
     @Override
-    public List<PrefixGroup> readBindingsLocal() throws Exception {
+    public List<PrefixGroup> readBindingsLocal() throws DatabaseAccessException {
         synchronized (database) {
             for (Source source : database.getSource()) {
                 if (source.getBindingSource().equals(DatabaseBindingSource.Local)) {
@@ -536,7 +541,7 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
     }
 
     @Override
-    public void resetModified() throws Exception {
+    public void resetModified() throws DatabaseAccessException {
         synchronized (database) {
             if (database.getSource() != null) {
                 for (Source source : database.getSource()) {
@@ -568,7 +573,7 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
     }
 
     @Override
-    public boolean setAsDeleted(SxpNode owner, List<PrefixGroup> prefixGroups) throws Exception {
+    public boolean setAsDeleted(SxpNode owner, List<PrefixGroup> prefixGroups) throws DatabaseAccessException {
         Preconditions.checkNotNull(owner);
         if (prefixGroups == null || prefixGroups.isEmpty()) {
             return false;

@@ -9,6 +9,7 @@
 package org.opendaylight.sxp.util.inet;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Comparator;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -21,7 +22,7 @@ public class InetAddressComparator implements Comparator<InetAddress> {
         return inetAddressComparator.compare(address1, address2) == 0;
     }
 
-    public static boolean equalTo(NodeId nodeId1, NodeId nodeId2) throws Exception {
+    public static boolean equalTo(NodeId nodeId1, NodeId nodeId2) throws UnknownHostException {
         return equalTo(InetAddress.getByAddress(NodeIdConv.toBytes(nodeId1)),
                 InetAddress.getByAddress(NodeIdConv.toBytes(nodeId2)));
     }
@@ -30,7 +31,7 @@ public class InetAddressComparator implements Comparator<InetAddress> {
         return inetAddressComparator.compare(address1, address2) == 1;
     }
 
-    public static boolean greaterThan(NodeId nodeId1, NodeId nodeId2) throws Exception {
+    public static boolean greaterThan(NodeId nodeId1, NodeId nodeId2) throws UnknownHostException {
         return greaterThan(InetAddress.getByAddress(NodeIdConv.toBytes(nodeId1)),
                 InetAddress.getByAddress(NodeIdConv.toBytes(nodeId2)));
     }

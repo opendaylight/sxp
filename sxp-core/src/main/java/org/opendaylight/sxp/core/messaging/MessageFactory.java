@@ -10,18 +10,24 @@ package org.opendaylight.sxp.core.messaging;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UnknownFormatConversionException;
 import org.opendaylight.sxp.core.Configuration;
-import org.opendaylight.sxp.core.SxpConnection;
-import org.opendaylight.sxp.core.behavior.Sxpv4;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.ErrorCodeDataLengthException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageBindingSourceException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownConnectionModeException;
+import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
+import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
+import org.opendaylight.sxp.util.exception.message.attribute.AttributeVariantException;
+import org.opendaylight.sxp.util.exception.message.attribute.CapabilityLengthException;
+import org.opendaylight.sxp.util.exception.message.attribute.HoldTimeMaxException;
+import org.opendaylight.sxp.util.exception.message.attribute.HoldTimeMinException;
+import org.opendaylight.sxp.util.exception.message.attribute.PrefixTableAttributeIsNotCompactException;
+import org.opendaylight.sxp.util.exception.message.attribute.PrefixTableColumnsSizeException;
+import org.opendaylight.sxp.util.exception.message.attribute.SecurityGroupTagValueException;
+import org.opendaylight.sxp.util.exception.message.attribute.TlvNotFoundException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownSxpMessageTypeException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
@@ -32,10 +38,28 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.*;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorMessageBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorSubCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.KeepaliveMessageBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.OpenMessageBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.PurgeAllMessageBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.SxpHeader;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.SxpPayload;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.UpdateMessageBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.HoldTimeAttribute;
 import org.opendaylight.yangtools.yang.binding.Notification;
+
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UnknownFormatConversionException;
 
 public class MessageFactory {
 
@@ -45,7 +69,8 @@ public class MessageFactory {
 
     private static final int MESSAGE_LENGTH_MAX = Configuration.getConstants().getMessageLengthMax();
 
-    public static ByteBuf createError(ErrorCode errorCode, ErrorSubCode errorSubCode, byte[] data) throws Exception {
+    public static ByteBuf createError(ErrorCode errorCode, ErrorSubCode errorSubCode, byte[] data)
+            throws ErrorCodeDataLengthException {
         if (data == null) {
             data = new byte[0];
         } else if (data.length > 10) {
@@ -64,7 +89,7 @@ public class MessageFactory {
     }
 
     private static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID, Attribute attribute)
-            throws Exception {
+            throws AttributeVariantException, UnknownVersionException, CapabilityLengthException {
         AttributeList attributes = createOpenAttribute(version, nodeMode, nodeID);
         if (attribute != null) {
             attributes.add(attribute);
@@ -77,22 +102,25 @@ public class MessageFactory {
         return getMessage(MessageType.Open, payload);
     }
 
-    public static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID) throws Exception {
+    public static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID)
+            throws AttributeVariantException, UnknownVersionException, CapabilityLengthException {
         return createOpen(version, nodeMode, nodeID, null);
     }
 
     public static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID, int holdTimeMinAcceptable)
-            throws Exception {
+            throws HoldTimeMinException, AttributeVariantException, UnknownVersionException, CapabilityLengthException {
         return createOpen(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMinAcceptable));
     }
 
     public static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID, int holdTimeMin,
-            int holdTimeMax) throws Exception {
+            int holdTimeMax)
+            throws HoldTimeMaxException, HoldTimeMinException, AttributeVariantException, UnknownVersionException,
+            CapabilityLengthException {
         return createOpen(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMin, holdTimeMax));
     }
 
     private static AttributeList createOpenAttribute(Version version, ConnectionMode nodeMode, NodeId nodeID)
-            throws Exception {
+            throws UnknownVersionException, CapabilityLengthException {
         AttributeList attributes = new AttributeList();
         if (nodeMode.equals(ConnectionMode.Speaker)) {
             attributes.add(AttributeFactory.createSxpNodeId(nodeID));
@@ -103,7 +131,7 @@ public class MessageFactory {
     }
 
     private static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID, Attribute attribute)
-            throws Exception {
+            throws UnknownVersionException, CapabilityLengthException, AttributeVariantException {
         AttributeList attributes = createOpenAttribute(version, nodeMode, nodeID);
         if (attribute != null) {
             attributes.add(attribute);
@@ -116,17 +144,21 @@ public class MessageFactory {
         return getMessage(MessageType.OpenResp, payload);
     }
 
-    public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID) throws Exception {
+    public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID)
+            throws CapabilityLengthException, UnknownVersionException, AttributeVariantException {
         return createOpenResp(version, nodeMode, nodeID, null);
     }
 
     public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID,
-            int holdTimeMinAcceptable) throws Exception {
+            int holdTimeMinAcceptable)
+            throws HoldTimeMinException, CapabilityLengthException, UnknownVersionException, AttributeVariantException {
         return createOpenResp(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMinAcceptable));
     }
 
     public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID, int holdTimeMin,
-            int holdTimeMax) throws Exception {
+            int holdTimeMax)
+            throws HoldTimeMaxException, HoldTimeMinException, CapabilityLengthException, UnknownVersionException,
+            AttributeVariantException {
         return createOpenResp(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMin, holdTimeMax));
     }
 
@@ -134,7 +166,8 @@ public class MessageFactory {
         return getMessage(MessageType.PurgeAll, new byte[0]);
     }
 
-    public static ByteBuf createUpdate(MasterDatabase masterDatabase, NodeId nodeId, boolean changed) throws Exception {
+    public static ByteBuf createUpdate(MasterDatabase masterDatabase, NodeId nodeId, boolean changed)
+            throws UpdateMessageBindingSourceException, SecurityGroupTagValueException, AttributeVariantException {
         AttributeList attributes = new AttributeList();
         // 2. Processing of global optional attributes.
         for (Attribute attribute : masterDatabase.getAttribute()) {
@@ -278,7 +311,7 @@ public class MessageFactory {
     }
 
     public static ByteBuf createUpdateAddPrefixes(NodeId nodeID, List<NodeId> peerSequence,
-            List<PrefixGroup> prefixGroups) throws Exception {
+            List<PrefixGroup> prefixGroups) throws SecurityGroupTagValueException, AttributeVariantException {
         AttributeList attributes = new AttributeList();
         // Prepend local node ID.
         peerSequence.add(0, nodeID);
@@ -308,8 +341,7 @@ public class MessageFactory {
         return getMessage(MessageType.Update, attributes.toBytes());
     }
 
-    public static ByteBuf createUpdateDeletePrefixes(List<PrefixGroup> prefixGroups) throws UnknownVersionException,
-            UnknownConnectionModeException, Exception {
+    public static ByteBuf createUpdateDeletePrefixes(List<PrefixGroup> prefixGroups) throws AttributeVariantException {
         AttributeList attributes = new AttributeList();
         List<IpPrefix> removeIpv4 = new ArrayList<>();
         List<IpPrefix> removeIpv6 = new ArrayList<>();
@@ -331,7 +363,8 @@ public class MessageFactory {
     }
 
     public static ByteBuf createUpdateTableAddPrefixes(NodeId nodeID, List<NodeId> peerSequence,
-            List<PrefixGroup> prefixGroups) throws Exception {
+            List<PrefixGroup> prefixGroups) throws PrefixTableColumnsSizeException, SecurityGroupTagValueException,
+            PrefixTableAttributeIsNotCompactException, AttributeVariantException {
         AttributeList attributes = new AttributeList();
         // Prepend local node ID.
         peerSequence.add(0, nodeID);
@@ -358,7 +391,9 @@ public class MessageFactory {
         return getMessage(MessageType.Update, attributes.toBytes());
     }
 
-    private static Notification decode(Version version, byte[] headerType, byte[] payload) throws Exception {
+    private static Notification decode(Version version, byte[] headerType, byte[] payload)
+            throws ErrorMessageException, UnknownPrefixException, AddressLengthException, AttributeLengthException,
+            UnknownHostException, UnknownNodeIdException, TlvNotFoundException, UnknownSxpMessageTypeException {
         MessageType messageType = MessageType.forValue(ArraysUtil.bytes2int(headerType));
 
         // Remote can send OpenResp with different version
@@ -388,17 +423,9 @@ public class MessageFactory {
         } else if (version.equals(Version.Version4)) {
             switch (messageType) {
             case Open:
-                try {
-                    return decodeOpen(payload);
-                } catch (Exception e) {
-                    throw new ErrorMessageException(ErrorCode.OpenMessageError, e);
-                }
+                return decodeOpen(payload);
             case OpenResp:
-                try {
-                    return decodeOpenResp(payload);
-                } catch (Exception e) {
-                    throw new ErrorMessageException(ErrorCode.OpenMessageError, e);
-                }
+                return decodeOpenResp(payload);
             case Update:
                 return decodeUpdate(payload);
             case Error:
@@ -432,8 +459,8 @@ public class MessageFactory {
         messageBuilder.setErrorCodeNonExtended(ErrorCodeNonExtended.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(
                 payload, 2, 2))));
         messageBuilder.setData(ArraysUtil.readBytes(payload, 4));
-        messageBuilder.setInformation(messageBuilder.getErrorCodeNonExtended()
-                + getInformation(messageBuilder.getData()));
+        messageBuilder.setInformation(
+                messageBuilder.getErrorCodeNonExtended() + getInformation(messageBuilder.getData()));
         return messageBuilder.build();
     }
 
@@ -444,7 +471,9 @@ public class MessageFactory {
         return messageBuilder.build();
     }
 
-    public static Notification decodeOpen(byte[] payload) throws Exception {
+    public static Notification decodeOpen(byte[] payload)
+            throws AttributeLengthException, AddressLengthException, UnknownNodeIdException, UnknownPrefixException,
+            TlvNotFoundException, UnknownHostException {
         OpenMessageBuilder messageBuilder = new OpenMessageBuilder();
         messageBuilder.setType(MessageType.Open);
         messageBuilder.setLength(MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH + payload.length);
@@ -460,7 +489,9 @@ public class MessageFactory {
         return messageBuilder.build();
     }
 
-    public static Notification decodeOpenResp(byte[] payload) throws Exception {
+    public static Notification decodeOpenResp(byte[] payload)
+            throws AttributeLengthException, AddressLengthException, UnknownNodeIdException, UnknownPrefixException,
+            TlvNotFoundException, UnknownHostException, ErrorMessageException {
         OpenMessageBuilder messageBuilder = new OpenMessageBuilder();
         messageBuilder.setType(MessageType.OpenResp);
         messageBuilder.setLength(MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH + payload.length);
@@ -487,7 +518,9 @@ public class MessageFactory {
         return messageBuilder.build();
     }
 
-    public static Notification decodeUpdate(byte[] payload) throws Exception {
+    public static Notification decodeUpdate(byte[] payload)
+            throws AttributeLengthException, AddressLengthException, UnknownNodeIdException, UnknownPrefixException,
+            TlvNotFoundException, UnknownHostException {
         UpdateMessageBuilder messageBuilder = new UpdateMessageBuilder();
         messageBuilder.setType(MessageType.Update);
         messageBuilder.setLength(MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH + payload.length);
@@ -528,7 +561,9 @@ public class MessageFactory {
 
     }
 
-    public static Notification parse(Version version, ByteBuf request) throws Exception {
+    public static Notification parse(Version version, ByteBuf request)
+            throws ErrorMessageException, UnknownSxpMessageTypeException, AddressLengthException, UnknownHostException,
+            AttributeLengthException, TlvNotFoundException, UnknownPrefixException, UnknownNodeIdException {
         request.resetReaderIndex();
         byte[] headerLength, headerType, payload;
         int messageLength;
@@ -545,7 +580,7 @@ public class MessageFactory {
 
             payload = new byte[payloadLength];
             request = request.readBytes(payload);
-        } catch (Exception e) {
+        } catch (IndexOutOfBoundsException | NegativeArraySizeException e) {
             throw new ErrorMessageException(ErrorCode.MessageHeaderError, e);
         }
 
@@ -593,7 +628,7 @@ public class MessageFactory {
         return result += " " + toString(_message);
     }
 
-    private static void validate(int headerLength, int payloadLength, int messageLength) throws Exception {
+    private static void validate(int headerLength, int payloadLength, int messageLength) throws ErrorMessageException {
         if (headerLength + payloadLength > MESSAGE_LENGTH_MAX) {
             throw new ErrorMessageException(ErrorCode.MessageHeaderError, new Exception(
                     "Message maximum length exceeded"));

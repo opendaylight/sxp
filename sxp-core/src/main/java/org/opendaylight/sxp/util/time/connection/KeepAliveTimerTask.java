@@ -27,7 +27,7 @@ public class KeepAliveTimerTask extends SxpTimerTask<Void> {
         this.connection = connection;
     }
 
-    @Override public Void call() throws Exception {
+    @Override public Void call() {
         LOG.debug(connection + " {} [{}]", getClass().getSimpleName(), getPeriod());
 
         if (connection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext) && connection.isModeSpeaker()

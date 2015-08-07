@@ -34,11 +34,11 @@ public abstract class Service<T> implements Callable<T> {
         notified.set(0);
     }
 
-    public synchronized MasterDatabaseProvider getBindingMasterDatabase() throws Exception {
+    public synchronized MasterDatabaseProvider getBindingMasterDatabase() {
         return owner.getBindingMasterDatabase();
     }
 
-    public synchronized SxpDatabaseProvider getBindingSxpDatabase() throws Exception {
+    public synchronized SxpDatabaseProvider getBindingSxpDatabase() {
         return owner.getBindingSxpDatabase();
     }
 

@@ -57,7 +57,7 @@ public final class SxpDatabaseAccessImpl implements SxpDatabaseAccess {
     }
 
     @Override
-    public void delete(SxpDatabase database) throws Exception {
+    public void delete(SxpDatabase database) throws DatabaseAccessException {
         for (PathGroup pathGroup : database.getPathGroup()) {
             InstanceIdentifierBuilder<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroup> pathGroupIdentifier = InstanceIdentifier
                     .builder(NetworkTopology.class)
@@ -82,7 +82,7 @@ public final class SxpDatabaseAccessImpl implements SxpDatabaseAccess {
     }
 
     @Override
-    public void merge(SxpDatabase database) throws Exception {
+    public void merge(SxpDatabase database) throws DatabaseAccessException {
         try {
             datastoreAccess.merge(databaseIdentifier, database, logicalDatastoreType).get();
         } catch (Exception e) {
@@ -93,7 +93,7 @@ public final class SxpDatabaseAccessImpl implements SxpDatabaseAccess {
     }
 
     @Override
-    public void put(SxpDatabase database) throws Exception {
+    public void put(SxpDatabase database) throws DatabaseAccessException {
         try {
             datastoreAccess.put(databaseIdentifier, database, logicalDatastoreType).get();
         } catch (Exception e) {
@@ -104,7 +104,7 @@ public final class SxpDatabaseAccessImpl implements SxpDatabaseAccess {
     }
 
     @Override
-    public SxpDatabase read() throws Exception {
+    public SxpDatabase read() throws DatabaseAccessException {
         Optional<SxpDatabase> database;
         try {
             database = datastoreAccess.read(databaseIdentifier, logicalDatastoreType).get();

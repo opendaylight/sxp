@@ -10,7 +10,7 @@ package org.opendaylight.sxp.util.exception.unknown;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 
-public class UnknownTimerTypeException extends Exception {
+public class UnknownTimerTypeException extends RuntimeException{
 
     /** */
     private static final long serialVersionUID = 801190427695923174L;

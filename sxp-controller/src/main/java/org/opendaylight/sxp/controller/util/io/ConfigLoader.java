@@ -9,6 +9,7 @@
 package org.opendaylight.sxp.controller.util.io;
 
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +29,7 @@ import org.opendaylight.sxp.controller.util.database.access.MasterDatabaseAccess
 import org.opendaylight.sxp.controller.util.database.access.SxpDatabaseAccessImpl;
 import org.opendaylight.sxp.controller.util.exception.ConfigurationException;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.util.exception.connection.NoNetworkInterfacesException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.sxp.util.time.TimeConv;
@@ -279,7 +281,8 @@ public class ConfigLoader {
     }
 
     private org.opendaylight.sxp.core.SxpNode parseNode(NodeId nodeId,
-            org.opendaylight.controller.config.yang.sxp.controller.conf.SxpNode configuration) throws Exception {
+            org.opendaylight.controller.config.yang.sxp.controller.conf.SxpNode configuration)
+            throws ConfigurationException, NoNetworkInterfacesException, SocketException {
 
         if (nodeId == null || nodeId.toString().isEmpty()) {
             throw new ConfigurationException("Parameter 'node-id' not defined");

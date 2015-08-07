@@ -126,11 +126,12 @@ import static org.mockito.Mockito.when;
                 Exception[]
                         classes =
                         new Exception[] {new ErrorMessageException(ErrorCodeNonExtended.NoError, null),
-                                new IncompatiblePeerModeException(ConnectionMode.None, ConnectionMode.None),
                                 new ErrorMessageReceivedException(""),
                                 new UpdateMessageConnectionStateException(ConnectionState.AdministrativelyDown)};
                 for (byte i = 0; i < classes.length; i++) {
-                        doThrow(classes[i]).when(context).executeParseInput(any(ByteBuf.class));
+                        doThrow(classes[i]).when(context)
+                                .executeInputMessageStrategy(any(ChannelHandlerContext.class), any(SxpConnection.class),
+                                        any(Notification.class));
                         when(byteBuf.readableBytes()).thenReturn(1, 0);
                         decoder.channelRead(channelHandlerContext, byteBuf);
                         verify(connection, times(i + 1)).setStateOff(any(ChannelHandlerContext.class));

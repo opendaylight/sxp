@@ -8,12 +8,16 @@
 
 package org.opendaylight.sxp.controller.util.database;
 
+import java.net.UnknownHostException;
 import java.util.List;
 
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseAccess;
+import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
+import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -28,7 +32,8 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     }
 
     @Override
-    public void addBindings(NodeId owner, List<MasterBindingIdentity> contributedBindingIdentities) throws Exception {
+    public void addBindings(NodeId owner, List<MasterBindingIdentity> contributedBindingIdentities)
+            throws DatabaseAccessException, NodeIdNotDefinedException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
             synchronized (database) {
@@ -39,7 +44,7 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     }
 
     @Override
-    public void addBindingsLocal(SxpNode sxpNode, List<PrefixGroup> prefixGroups) throws Exception {
+    public void addBindingsLocal(SxpNode sxpNode, List<PrefixGroup> prefixGroups) throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
             super.addBindingsLocal(sxpNode, prefixGroups);
@@ -48,7 +53,8 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     }
 
     @Override
-    public void expandBindings(int quantity) throws Exception {
+    public void expandBindings(int quantity)
+            throws DatabaseAccessException, UnknownPrefixException, UnknownHostException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
             synchronized (database) {
@@ -59,14 +65,14 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     }
 
     @Override
-    public MasterDatabase get() throws Exception {
+    public MasterDatabase get() throws DatabaseAccessException {
         synchronized (databaseAccess) {
             return databaseAccess.read();
         }
     }
 
     @Override
-    public List<MasterDatabase> partition(int quantity, boolean onlyChanged) throws Exception {
+    public List<MasterDatabase> partition(int quantity, boolean onlyChanged) throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
             synchronized (database) {
@@ -76,7 +82,7 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     }
 
     @Override
-    public void purgeAllDeletedBindings() throws Exception {
+    public void purgeAllDeletedBindings() throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
             synchronized (database) {
@@ -87,7 +93,7 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     }
 
     @Override
-    public void purgeBindings(NodeId nodeId) throws Exception {
+    public void purgeBindings(NodeId nodeId) throws DatabaseAccessException, NodeIdNotDefinedException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
             synchronized (database) {
@@ -98,7 +104,7 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     }
 
     @Override
-    public List<MasterBindingIdentity> readBindings() throws Exception {
+    public List<MasterBindingIdentity> readBindings() throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
             synchronized (database) {
@@ -108,7 +114,7 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     }
 
     @Override
-    public List<PrefixGroup> readBindingsLocal() throws Exception {
+    public List<PrefixGroup> readBindingsLocal() throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
             synchronized (database) {
@@ -118,7 +124,7 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     }
 
     @Override
-    public void resetModified() throws Exception {
+    public void resetModified() throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
             synchronized (database) {
@@ -129,7 +135,7 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     }
 
     @Override
-    public boolean setAsDeleted(SxpNode sxpNode, List<PrefixGroup> prefixGroups) throws Exception {
+    public boolean setAsDeleted(SxpNode sxpNode, List<PrefixGroup> prefixGroups) throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
             synchronized (database) {
