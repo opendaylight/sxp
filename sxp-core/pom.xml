@@ -37,6 +37,9 @@
                 <includes>
                   <include>org.opendaylight.sxp.*</include>
                 </includes>
+                <excludes>
+                  <exclude>org.opendaylight.sxp.util.exception.*</exclude>
+                </excludes>
               </configuration>
               <executions>
                 <execution>
