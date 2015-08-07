@@ -13,6 +13,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Upda
 
 public final class UpdateNotification {
 
+    /**
+     * Creates new UpdateNotification using provided values
+     *
+     * @param message    UpdateMessage to be used
+     * @param connection SxpConnection to be used
+     * @return UpdateNotification created using provided values
+     */
     public static UpdateNotification create(UpdateMessage message, SxpConnection connection) {
         return new UpdateNotification(message, connection);
     }
@@ -21,16 +28,28 @@ public final class UpdateNotification {
 
     private UpdateMessage message;
 
+    /**
+     * Default constructor
+     *
+     * @param message    UpdateMessage to be used
+     * @param connection SxpConnection to be used
+     */
     private UpdateNotification(UpdateMessage message, SxpConnection connection) {
         super();
         this.message = message;
         this.connection = connection;
     }
 
+    /**
+     * @return Gets SxpConnection to which message belongs
+     */
     public SxpConnection getConnection() {
         return connection;
     }
 
+    /**
+     * @return Gets Message
+     */
     public UpdateMessage getMessage() {
         return message;
     }

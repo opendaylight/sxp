@@ -26,6 +26,9 @@ import org.opendaylight.yangtools.yang.binding.Notification;
 
 import java.net.UnknownHostException;
 
+/**
+ * Sxpv2 class provides logic for handling connection on Version 2
+ */
 public class Sxpv2 extends Sxpv1 {
     public Sxpv2(Context context) {
         super(context);

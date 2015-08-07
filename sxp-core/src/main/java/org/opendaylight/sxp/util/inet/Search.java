@@ -31,6 +31,9 @@ import org.slf4j.LoggerFactory;
 
 public final class Search {
 
+    /**
+     * Class representing Ip Address used for subnet conversion of binding
+     */
     private static final class IpAddress {
 
         private byte[] address, mask;
@@ -43,6 +46,13 @@ public final class Search {
 
         private byte[] subnetNumber, broadcastAddress;
 
+        /**
+         * Constructor used to set Address and prefix of Ip address
+         *
+         * @param inetAddress Ip Address of Binding
+         * @param prefix      Prefix of binding
+         * @throws UnknownHostException   If invalid Ip address was specified
+         */
         private IpAddress(InetAddress inetAddress, int prefix) throws UnknownHostException {
             address = inetAddress.getAddress();
 
@@ -110,6 +120,16 @@ public final class Search {
 
         }
 
+        /**
+         * Recursively expands Bindings into subnet
+         *
+         * @param expanded List of Bindings where will be expanded Bindings added
+         * @param ipAddress Ip Address that will be expanded
+         * @param depth Depth of recursion which is used as recursion stop
+         * @param quantity Max number to limit the expansion
+         * @throws UnknownHostException   If invalid Ip address was specified
+         * @throws UnknownPrefixException If invalid prefix was specified
+         */
         private void _expand(List<Binding> expanded, byte[] ipAddress, int depth, AtomicInteger quantity)
                 throws UnknownHostException, UnknownPrefixException {
             byte[] _ipAddress = ArraysUtil.copy(ipAddress);
@@ -149,6 +169,14 @@ public final class Search {
             }
         }
 
+        /**
+         * Expand InetAddress into subnet bindings
+         *
+         * @param quantity Max number to limit the expansion
+         * @return List of bindings that were created by expansion into subnet
+         * @throws UnknownHostException   If invalid Ip address was specified
+         * @throws UnknownPrefixException If invalid prefix was specified
+         */
         private List<Binding> expand(AtomicInteger quantity) throws UnknownPrefixException, UnknownHostException {
             List<Binding> expanded = new ArrayList<>();
             _expand(expanded, firstAddress, 0, quantity);
@@ -163,6 +191,13 @@ public final class Search {
         return new ArrayList<InetAddress>();
     }
 
+    /**
+     * Gets Local address selected by heuristic
+     *
+     * @return InetAddress that isn't virtual and is Up
+     * @throws NoNetworkInterfacesException If there is no NetworkInterface available
+     * @throws SocketException              If an I/O error occurs
+     */
     public static InetAddress getBestLocalDeviceAddress() throws NoNetworkInterfacesException, SocketException {
 
         List<InetAddress> inetAddresses = new ArrayList<InetAddress>();
@@ -184,6 +219,16 @@ public final class Search {
         return inetAddresses.get(inetAddresses.size() - 1);
     }
 
+    /**
+     * Expands specified Binding into subnet.
+     * Amount of subnet that will be expanded is limited by quantity.
+     *
+     * @param binding Bindings that will be expanded
+     * @param quantity Max number to limit the expansion
+     * @return List of bindings that were created by expansion into subnet
+     * @throws UnknownHostException   If invalid Ip address was specified
+     * @throws UnknownPrefixException If invalid prefix was specified
+     */
     public static List<Binding> getExpandedBindings(Binding binding, AtomicInteger quantity)
             throws UnknownHostException, UnknownPrefixException {
         String[] ipPrefix = new String(binding.getIpPrefix().getValue()).split("/");
@@ -204,6 +249,17 @@ public final class Search {
         return _expandedBindings;
     }
 
+    /**
+     * Expands Binding specified by Ip address and prefix into subnet.
+     * Amount of subnet that will be expanded is limited by quantity.
+     *
+     * @param inetAddress Ip Address of Binding
+     * @param prefix      Prefix of binding
+     * @param quantity    Max number to limit the expansion
+     * @return List of bindings that were created by expansion into subnet
+     * @throws UnknownHostException   If invalid Ip address was specified
+     * @throws UnknownPrefixException If invalid prefix was specified
+     */
     public static List<Binding> getExpandedBindings(String inetAddress, int prefix, AtomicInteger quantity)
             throws UnknownHostException, UnknownPrefixException {
         return new IpAddress(InetAddress.getByName(inetAddress), prefix).expand(quantity);

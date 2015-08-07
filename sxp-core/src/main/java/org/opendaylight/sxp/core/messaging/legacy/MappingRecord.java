@@ -35,11 +35,20 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlv.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlvs.fields.Tlv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlvs.fields.TlvBuilder;
 
+/**
+ * MappingRecord class represent entity that contains Tlv,
+ * and has logic to work with Tlv
+ */
 public class MappingRecord extends ArrayList<Tlv> {
 
-    /** */
     private static final long serialVersionUID = -6818880065966274888L;
 
+    /**
+     * Decode Tlv from provided Byte Array
+     *
+     * @param array Byte Array containing Tlv
+     * @return Decoded Tvl
+     */
     private static Tlv _decode(byte[] array) {
         TlvBuilder tlvBuilder = new TlvBuilder();
 
@@ -61,11 +70,26 @@ public class MappingRecord extends ArrayList<Tlv> {
         return tlvBuilder.build();
     }
 
+    /**
+     * Create MappingRecord with provided values
+     *
+     * @param operationCode Type of MappingRecord
+     * @param prefix        IpPrefix used
+     * @return MappingRecord created
+     */
     public static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord create(
             AttributeType operationCode, IpPrefix prefix) {
         return create(operationCode, prefix, null);
     }
 
+    /**
+     * Create MappingRecord with provided values
+     *
+     * @param operationCode Type of MappingRecord
+     * @param prefix        IpPrefix used
+     * @param sgt           Sgt used
+     * @return MappingRecord created
+     */
     public static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord create(
             AttributeType operationCode, IpPrefix prefix, Sgt sgt) {
         String _prefix = new String(prefix.getValue());
@@ -100,10 +124,26 @@ public class MappingRecord extends ArrayList<Tlv> {
         return recordBuilder.build();
     }
 
+    /**
+     * Create new MappingRecord using provided Attributes
+     *
+     * @param tlvs Collection of Tlv used
+     * @return MappingRecord containing provided attributes
+     */
     public static MappingRecord create(Collection<? extends Tlv> tlvs) {
         return new MappingRecord(tlvs);
     }
 
+    /**
+     * Decode MappingRecord from provided Byte Array
+     *
+     * @param array Byte Array containing MappingRecord
+     * @return Decoded MappingRecord
+     * @throws UnknownPrefixException   If attribute has incorrect or none Prefix
+     * @throws AddressLengthException   If address length of attribute is incorrect
+     * @throws AttributeLengthException If length of attribute is incorrect
+     * @throws UnknownHostException     If attribute have incorrect or none address
+     */
     public static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord decode(
             byte[] array)
             throws AttributeLengthException, UnknownPrefixException, AddressLengthException, UnknownHostException {
@@ -116,6 +156,17 @@ public class MappingRecord extends ArrayList<Tlv> {
 
     }
 
+    /**
+     * Decode MappingRecord from provided Byte Array
+     *
+     * @param operationCode Type attribute
+     * @param length        Length of attribute
+     * @param array         Byte Array containing MappingRecord
+     * @return Decoded MappingRecord
+     * @throws AddressLengthException If address length of attribute is incorrect
+     * @throws UnknownPrefixException If attribute has incorrect or none Prefix
+     * @throws UnknownHostException   If attribute have incorrect or none address
+     */
     public static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord decodeAddress(
             AttributeType operationCode, int length, byte[] array) throws AddressLengthException, UnknownPrefixException, UnknownHostException {
         int addressLength;
@@ -171,6 +222,12 @@ public class MappingRecord extends ArrayList<Tlv> {
         return recordBuilder.build();
     }
 
+    /**
+     * Decode PrefixLengthTlvAttribute from provided Byte Array
+     *
+     * @param value Byte Array containing attribute
+     * @return Decoded PrefixLengthTlvAttribute
+     */
     private static TlvOptionalFields decodeTlvPrefixLength(byte[] value) {
         PrefixLengthTlvAttributeBuilder _attributeBuilder = new PrefixLengthTlvAttributeBuilder();
         PrefixLengthTlvAttributesBuilder _attributesBuilder = new PrefixLengthTlvAttributesBuilder();
@@ -179,6 +236,12 @@ public class MappingRecord extends ArrayList<Tlv> {
         return _attributeBuilder.build();
     }
 
+    /**
+     * Decode SourceGroupTagTlvAttribute from provided Byte Array
+     *
+     * @param value Byte Array containing attribute
+     * @return Decoded SourceGroupTagTlvAttribute
+     */
     private static TlvOptionalFields decodeTlvSourceGroupTag(byte[] value) {
         SourceGroupTagTlvAttributeBuilder _attributeBuilder = new SourceGroupTagTlvAttributeBuilder();
         SourceGroupTagTlvAttributesBuilder _attributesBuilder = new SourceGroupTagTlvAttributesBuilder();
@@ -190,13 +253,11 @@ public class MappingRecord extends ArrayList<Tlv> {
     /**
      * TLV = [Type (4 octets), Length of the value portion below (4 octets),
      * Value (variable number of octets)]
-     * <p>
      * Optional Prefix Length TLV [Type = 02, Length = 1, Value = The prefix
      * length of the IP address] <br>
-     * 
      * If the Prefix Length TLV is not presented, the IP address is considered
      * as host address.
-     * */
+     */
     private static Tlv getTlvPrefixLength(int length) {
         TlvBuilder tlvBuilder = new TlvBuilder();
         tlvBuilder.setType(TlvType.PrefixLength);
@@ -208,7 +269,6 @@ public class MappingRecord extends ArrayList<Tlv> {
     /**
      * TLV = [Type (4 octets), Length of the value portion below (4 octets),
      * Value (variable number of octets)]
-     * <p>
      * Mandatory SGT TLV [Type = 01, Length = 2, Value = SGT value (16 bits)]
      */
     private static Tlv getTlvSgt(int sgt) {
@@ -224,6 +284,12 @@ public class MappingRecord extends ArrayList<Tlv> {
     private MappingRecord() {
     }
 
+    /**
+     * Create new MappingRecord using provided Attributes
+     *
+     * @param tlvs Collection of Tlv used
+     * @return MappingRecord containing provided attributes
+     */
     private MappingRecord(Collection<? extends Tlv> tlvs) {
         super(tlvs);
     }
@@ -237,6 +303,9 @@ public class MappingRecord extends ArrayList<Tlv> {
         throw new TlvNotFoundException(type);
     }
 
+    /**
+     * @return Gets current MappingRecord
+     */
     public org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord getMappingRecord() {
         return mappingRecord;
     }

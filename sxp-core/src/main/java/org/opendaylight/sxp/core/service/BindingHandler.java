@@ -62,10 +62,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+/**
+ * BindingHandler class contains logic for parsing and propagating
+ * changes into SxpDatabase based on received UpdateMessages
+ */
 public final class BindingHandler {
 
     protected static final Logger LOG = LoggerFactory.getLogger(BindingHandler.class.getName());
 
+    /**
+     * Gets PathGroup generated from specified values
+     *
+     * @param updateMessage String representation of message
+     * @param pathGroups    PathGroup where the new one will be placed
+     * @param peerSequence  PeerSequence used in new PathGroup
+     * @param prefixGroups  PrefixGroup used in new PathGroup
+     * @return List of PathGroups with newly generated one
+     * @throws UpdateMessagePeerSequenceException If PeerSequence is empty or null
+     * @throws UpdateMessagePrefixGroupsException If PrefixGroup is empty or null
+     */
     private static List<PathGroup> getPathGroups(String updateMessage, List<PathGroup> pathGroups,
             List<NodeId> peerSequence, List<PrefixGroup> prefixGroups)
             throws UpdateMessagePeerSequenceException, UpdateMessagePrefixGroupsException {
@@ -87,6 +102,16 @@ public final class BindingHandler {
         return pathGroups;
     }
 
+    /**
+     * Gets PrefixGroup generated from specified values
+     *
+     * @param updateMessage String representation of message
+     * @param sgt           Sgt value assigned to PrefixGroup
+     * @param prefixes      IpPrefixes used in new PrefixGroup
+     * @return Newly created PrefixGroup
+     * @throws UpdateMessageSgtException    If is Sgt value isn't correct
+     * @throws UpdateMessagePrefixException If Prefixes are empty or null
+     */
     private static PrefixGroup getPrefixGroups(String updateMessage, int sgt, List<IpPrefix> prefixes)
             throws UpdateMessageSgtException, UpdateMessagePrefixException {
         if (sgt == -1) {
@@ -115,6 +140,14 @@ public final class BindingHandler {
         return prefixGroupBuilder.build();
     }
 
+    /**
+     * Removes all paths that contains specified NodeId,
+     * thus performs loop filtering
+     *
+     * @param nodeId   NodeId to be used as filter
+     * @param database SxpDatabase containing data
+     * @return SxpDatabase without loops
+     */
     public static SxpDatabase loopDetection(NodeId nodeId, SxpDatabase database) {
         List<PathGroup> removed = new ArrayList<>();
         for (PathGroup pathGroup : database.getPathGroup()) {
@@ -128,6 +161,16 @@ public final class BindingHandler {
         return database;
     }
 
+    /**
+     * Parse UpdateMessageLegacy and process addition of Bindings into new SxpDatabase
+     *
+     * @param nodeId  NodeId of Peer where message came from
+     * @param message UpdateMessageLegacy containing data to be proceed
+     * @return SxpDatabase containing added Bindings
+     * @throws TlvNotFoundException               If Tlv isn't present in message
+     * @throws UpdateMessagePrefixGroupsException If PrefixGroup isn't correct in message
+     * @throws UpdateMessagePeerSequenceException If PeerSequence isn't correct in message
+     */
     public static SxpDatabase processMessageAddition(NodeId nodeId, UpdateMessageLegacy message)
             throws TlvNotFoundException, UpdateMessagePrefixGroupsException, UpdateMessagePeerSequenceException {
         SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
@@ -184,6 +227,15 @@ public final class BindingHandler {
         return databaseBuilder.build();
     }
 
+    /**
+     * Parse UpdateMessage and process addition of Bindings into new SxpDatabase
+     *
+     * @param message UpdateMessage containing data to be proceed
+     * @return SxpDatabase containing added Bindings
+     * @throws TlvNotFoundException               If Tlv isn't present in message
+     * @throws UpdateMessagePrefixGroupsException If PrefixGroup isn't correct in message
+     * @throws UpdateMessagePeerSequenceException If PeerSequence isn't correct in message
+     */
     public static SxpDatabase processMessageAddition(UpdateMessage message)
             throws UpdateMessageSgtException, UpdateMessagePrefixException, UpdateMessagePrefixGroupsException,
             UpdateMessagePeerSequenceException {
@@ -316,6 +368,17 @@ public final class BindingHandler {
         return databaseBuilder.build();
     }
 
+    /**
+     * Parse UpdateMessage and process deletion of Bindings into new SxpDatabase
+     *
+     * @param nodeId  NodeId of Peer where message came from
+     * @param message UpdateMessage containing data to be proceed
+     * @return SxpDatabase containing deleted Bindings
+     * @throws UpdateMessageSgtException          If Sgt in message isn't correct
+     * @throws UpdateMessagePrefixException       If Prefix isn't correct in message
+     * @throws UpdateMessagePrefixGroupsException If PrefixGroup isn't correct in message
+     * @throws UpdateMessagePeerSequenceException If PeerSequence isn't correct in message
+     */
     public static SxpDatabase processMessageDeletion(NodeId nodeId, UpdateMessage message)
             throws UpdateMessageSgtException, UpdateMessagePrefixException, UpdateMessagePrefixGroupsException,
             UpdateMessagePeerSequenceException {
@@ -378,6 +441,17 @@ public final class BindingHandler {
         return databaseBuilder.build();
     }
 
+    /**
+     * Parse UpdateMessageLegacy and process deletion of Bindings into new SxpDatabase
+     *
+     * @param nodeId  NodeId of Peer where message came from
+     * @param message UpdateMessageLegacy containing data to be proceed
+     * @return SxpDatabase containing deleted Bindings
+     * @throws UpdateMessageSgtException          If Sgt in message isn't correct
+     * @throws UpdateMessagePrefixException       If Prefix isn't correct in message
+     * @throws UpdateMessagePrefixGroupsException If PrefixGroup isn't correct in message
+     * @throws UpdateMessagePeerSequenceException If PeerSequence isn't correct in message
+     */
     public static SxpDatabase processMessageDeletion(NodeId nodeId, UpdateMessageLegacy message)
             throws UpdateMessagePrefixGroupsException, UpdateMessagePeerSequenceException, UpdateMessageSgtException,
             UpdateMessagePrefixException {
@@ -411,6 +485,12 @@ public final class BindingHandler {
         return databaseBuilder.build();
     }
 
+    /**
+     * Validate if UpdateMessageLegacy isn't corrupted
+     *
+     * @param updateMessage UpdateMessageLegacy to be checked for errors
+     * @return Validated UpdateMessageLegacy
+     */
     private static UpdateMessageLegacy validateLegacyMessage(UpdateMessageLegacy updateMessage) {
         // TODO: Message validation.
         // Message decomposition.
@@ -418,6 +498,12 @@ public final class BindingHandler {
         return updateMessage;
     }
 
+    /**
+     * Validate if UpdateMessage isn't corrupted
+     *
+     * @param updateMessage UpdateMessage to be checked for errors
+     * @return Validated UpdateMessage
+     */
     private static UpdateMessage validateMessage(UpdateMessage updateMessage) {
         // TODO: Message validation.
         // Message decomposition.
@@ -429,7 +515,7 @@ public final class BindingHandler {
      * Execute new task which perform SXP-DB changes according to received Update Messages
      * and recursively check,if connection has Update Messages to proceed, if so start again.
      *
-     * @param task Task containing logic for exporting changes to SXP-DB
+     * @param task       Task containing logic for exporting changes to SXP-DB
      * @param connection Connection on which Update Messages was received
      */
     private static void startBindingHandle(Callable<?> task, final SxpConnection connection) {
@@ -449,6 +535,13 @@ public final class BindingHandler {
         });
     }
 
+    /**
+     * Parse UpdateLegacyNotification for deleted and added Bindings,
+     * afterwards propagate those changes into SxpDatabase and
+     * notifies BindingManager to export Bindings
+     *
+     * @param updateLegacyNotification UpdateLegacyNotification containing received message
+     */
     private static void processUpdateLegacyNotification(UpdateLegacyNotification updateLegacyNotification) {
         SxpNode owner = updateLegacyNotification.getConnection().getOwner();
         // Validate message.
@@ -503,6 +596,14 @@ public final class BindingHandler {
         }
     }
 
+    /**
+     * Adds received UpdateMessage into queue for its
+     * parsing and propagating changes contained in message
+     * Used for Version 4
+     *
+     * @param message    UpdateMessage containing data to be proceed
+     * @param connection Connection on which Update Messages was received
+     */
     public static void processUpdateMessage(final UpdateMessage message, final SxpConnection connection) {
         Callable task = new Callable<Void>() {
 
@@ -518,6 +619,14 @@ public final class BindingHandler {
         }
     }
 
+    /**
+     * Adds received UpdateMessageLegacy into queue for its
+     * parsing and propagating changes contained in message
+     * Used for Version 1/2/3
+     *
+     * @param message    UpdateMessageLegacy containing data to be proceed
+     * @param connection Connection on which Update Messages was received
+     */
     public static void processUpdateMessage(final UpdateMessageLegacy message, final SxpConnection connection) {
         Callable task = new Callable<Void>() {
 
@@ -533,6 +642,13 @@ public final class BindingHandler {
         }
     }
 
+    /**
+     * Parse UpdateNotification for deleted and added Bindings,
+     * afterwards propagate those changes into SxpDatabase and
+     * notifies BindingManager to export Bindings
+     *
+     * @param updateNotification UpdateNotification containing received message
+     */
     private static void processUpdateNotification(UpdateNotification updateNotification)
             throws UpdateMessagePrefixGroupsException {
         SxpNode owner = updateNotification.getConnection().getOwner();

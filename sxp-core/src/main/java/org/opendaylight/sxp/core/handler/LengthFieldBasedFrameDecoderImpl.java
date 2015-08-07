@@ -12,6 +12,9 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
 import org.opendaylight.sxp.core.Configuration;
 
+/**
+ * LengthFieldBasedFrameDecoderImpl class is wrapper for LengthFieldBasedFrameDecoder that sets it with preset values
+ */
 public final class LengthFieldBasedFrameDecoderImpl extends LengthFieldBasedFrameDecoder {
 
     private static boolean failFast = true;
@@ -26,6 +29,10 @@ public final class LengthFieldBasedFrameDecoderImpl extends LengthFieldBasedFram
 
     private static int maxFrameLength = Configuration.getConstants().getMessageLengthMax();
 
+    /**
+     * Constructor that sets LengthFieldBasedFrameDecoder
+     * with default settings
+     */
     public LengthFieldBasedFrameDecoderImpl() {
         super(maxFrameLength, lengthFieldOffset, lengthFieldLength, lengthAdjustment, initialBytesToStrip, failFast);
     }

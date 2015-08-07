@@ -18,13 +18,21 @@ import org.opendaylight.sxp.util.exception.message.attribute.PrefixTableColumnsS
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 
+/**
+ * PrefixTable class represent entity holding List of Attributes per IpPrefix
+ */
 public class PrefixTable extends HashMap<IpPrefix, List<Attribute>> {
 
-    /** */
     private static final long serialVersionUID = -5663814987902930673L;
 
     private byte columns;
 
+    /**
+     * Constructor creating empty PrefixTable with custom number of columns
+     *
+     * @param columns Number of columns to be created
+     * @throws PrefixTableColumnsSizeException If columns aren't in range <1,255>
+     */
     public PrefixTable(int columns) throws PrefixTableColumnsSizeException {
         if (columns < 1 || 255 < columns) {
             throw new PrefixTableColumnsSizeException();
@@ -32,6 +40,14 @@ public class PrefixTable extends HashMap<IpPrefix, List<Attribute>> {
         this.columns = (byte) columns;
     }
 
+    /**
+     * Adds new IpPrefixes associated with attribute
+     *
+     * @param prefix     IpPrefix to be added
+     * @param attributes Attributes that are added to IpPrefix
+     * @throws PrefixTableAttributeIsNotCompactException If some Attribute isn't compact
+     * @throws PrefixTableColumnsSizeException           If amount of attributes isn't same as in the table
+     */
     public void addItem(IpPrefix prefix, Attribute... attributes)
             throws PrefixTableAttributeIsNotCompactException, PrefixTableColumnsSizeException {
         if (prefix == null) {
@@ -52,6 +68,9 @@ public class PrefixTable extends HashMap<IpPrefix, List<Attribute>> {
         put(prefix, _attributes);
     }
 
+    /**
+     * @return Generate Byte representation of current PrefixTable
+     */
     public byte[] toBytes() {
         // Number of columns and reserved fields.
         byte[] _head = new byte[] { columns, 0x00, 0x00, 0x00 };

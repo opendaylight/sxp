@@ -59,6 +59,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.capabilities.attribute.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.capabilities.attribute.fields.CapabilitiesBuilder;
 
+/**
+ * AttributeFactory class contains logic for decoding and encoding Attributes
+ */
 public final class AttributeFactory {
 
     /** ONPCE000 (Optional-NonTransitive-Partial-Compact-ExtendedLength-0-0-0) */
@@ -69,6 +72,12 @@ public final class AttributeFactory {
     private static final byte _oNpCe = 80;
     private static final byte _oNpCE = 88;
 
+    /**
+     * Decode Capabilities from Byte Array
+     *
+     * @param array Byte Array containing Capabilities
+     * @return Decoded Capabilities
+     */
     private static List<Capabilities> _decodeCapabilities(byte[] array) {
         List<Capabilities> _capabilities = new ArrayList<Capabilities>();
         while (array != null && array.length != 0) {
@@ -79,6 +88,12 @@ public final class AttributeFactory {
         return _capabilities;
     }
 
+    /**
+     * Decode Capability from Byte Array
+     *
+     * @param array Byte Array containing Capability
+     * @return Decoded Capabilities
+     */
     private static Capabilities _decodeCapability(byte[] array) {
         int code = ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 0, 1));
         short length = (short) ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 1, 1));
@@ -91,6 +106,14 @@ public final class AttributeFactory {
         return capabilitiesBuilder.build();
     }
 
+    /**
+     * Create Capability Attribute according to provided version
+     *
+     * @param version Version used
+     * @return Attribute with Capabilities unique to each version
+     * @throws UnknownVersionException   If version isn't supported
+     * @throws CapabilityLengthException If some Attributes has incorrect length
+     */
     public static Attribute createCapabilities(Version version)
             throws UnknownVersionException, CapabilityLengthException {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
@@ -111,6 +134,13 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Create HoldTime Attribute using provided value
+     *
+     * @param holdTimeMin Value used in attribute
+     * @return New HoldTime attribute
+     * @throws HoldTimeMinException If Hold time value isn't <0,65535>.
+     */
     public static Attribute createHoldTime(int holdTimeMin) throws HoldTimeMinException {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setFlags(getFlags(_oNpCe));
@@ -142,6 +172,15 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Create HoldTime Attribute using provided values
+     *
+     * @param holdTimeMin Minimal Hold time
+     * @param holdTimeMax Maximal Hold time
+     * @return New HoldTime attribute
+     * @throws HoldTimeMinException If value is lower than 3 or greater than 65535
+     * @throws HoldTimeMaxException If value is lower than minimal Hold time
+     */
     public static Attribute createHoldTime(int holdTimeMin, int holdTimeMax)
             throws HoldTimeMinException, HoldTimeMaxException {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
@@ -177,6 +216,12 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Create AddIpv4Prefix Attribute using provided prefixes
+     *
+     * @param prefixes Prefixes to be used in attribute
+     * @return Attribute containing AddIpv4 prefixes
+     */
     public static Attribute createIpv4AddPrefix(List<IpPrefix> prefixes) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setType(AttributeType.Ipv4AddPrefix);
@@ -200,6 +245,12 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Creates AddIpv4Table Attribute using provided table
+     *
+     * @param prefixTable PrefixTable to be used in attribute
+     * @return Attribute containing AddIpv4 table
+     */
     // TODO: createIpv4AddTable
     public static Attribute createIpv4AddTable(PrefixTable prefixTable) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
@@ -222,6 +273,12 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Create DeleteIpv4Prefix Attribute using provided prefixes
+     *
+     * @param prefixes Prefixes to be used in attribute
+     * @return Attribute containing DeleteIpv4 prefixes
+     */
     public static Attribute createIpv4DeletePrefix(List<IpPrefix> prefixes) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setType(AttributeType.Ipv4DeletePrefix);
@@ -245,6 +302,12 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Create AddIpv6Prefix Attribute using provided prefixes
+     *
+     * @param prefixes Prefixes to be used in attribute
+     * @return Attribute containing AddIpv6 prefixes
+     */
     public static Attribute createIpv6AddPrefix(List<IpPrefix> prefixes) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setType(AttributeType.Ipv6AddPrefix);
@@ -269,6 +332,12 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Creates AddIpv6Table Attribute using provided table
+     *
+     * @param prefixTable PrefixTable to be used in attribute
+     * @return Attribute containing AddIpv6 table
+     */
     // TODO: createIpv6AddTable
     public static Attribute createIpv6AddTable(PrefixTable prefixTable) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
@@ -291,6 +360,12 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Create DeleteIpv6Prefix Attribute using provided prefixes
+     *
+     * @param prefixes Prefixes to be used in attribute
+     * @return Attribute containing DeleteIpv6 prefixes
+     */
     public static Attribute createIpv6DeletePrefix(List<IpPrefix> prefixes) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setType(AttributeType.Ipv6DeletePrefix);
@@ -314,6 +389,12 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Create PeerSequence Attribute using provided NodeIds
+     *
+     * @param nodesIds NodeIds to be used in attribute
+     * @return Attribute containing Peer sequence
+     */
     public static Attribute createPeerSequence(List<NodeId> nodesIds) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setFlags(getFlags(_onpCe));
@@ -332,6 +413,13 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Creates Sgt Attribute using provided value
+     *
+     * @param sgt Value of Sgt to be used in attribute
+     * @return Attribute containing Sgt
+     * @throws SecurityGroupTagValueException If Sgt isn't in rage <2,65519>
+     */
     public static Attribute createSourceGroupTag(int sgt) throws SecurityGroupTagValueException {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setFlags(getFlags(_onpCe));
@@ -356,6 +444,12 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Create NodeId Attribute using provided value
+     *
+     * @param nodeId NodeId used in attribute
+     * @return Attribute containing NodeID
+     */
     public static Attribute createSxpNodeId(NodeId nodeId) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setFlags(getFlags(_oNpCe));
@@ -432,6 +526,21 @@ public final class AttributeFactory {
         return decode(flags, variant, type, length, value);
     }
 
+    /**
+     * Decode specific Attribute according to provided data
+     *
+     * @param flags   Flags to be set
+     * @param variant Variant of attribute
+     * @param type    Type of attribute that will be decoded
+     * @param length  Length of attribute
+     * @param value   Data that will be decoded
+     * @return Attribute with specific type and data
+     * @throws AddressLengthException If length of Attribute is incorrect
+     * @throws TlvNotFoundException   If Attribute doesn't have Tlv
+     * @throws UnknownPrefixException If Attribute has incorrect or none Prefix
+     * @throws UnknownHostException   If address in Attribute is incorrect
+     * @throws UnknownNodeIdException If Attribute doesn't have NodeId
+     */
     private static Attribute decode(Flags flags, AttributeVariant variant, AttributeType type, int length, byte[] value)
             throws AddressLengthException, TlvNotFoundException, UnknownPrefixException, UnknownHostException,
             UnknownNodeIdException {
@@ -499,6 +608,12 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Decode Capabilities from Byte Array
+     *
+     * @param value Byte Array containing Capabilities
+     * @return Decoded Capabilities
+     */
     private static AttributeOptionalFields decodeCapabilities(byte[] value) {
         CapabilitiesAttributeBuilder attributeBuilder = new CapabilitiesAttributeBuilder();
         CapabilitiesAttributesBuilder attributesBuilder = new CapabilitiesAttributesBuilder();
@@ -507,6 +622,12 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Decode HoldTime attribute from Byte Array
+     *
+     * @param value Byte Array containing HoldTime attribute
+     * @return Decoded HoldTime attribute
+     */
     private static AttributeOptionalFields decodeHoldTime(byte[] value) {
         int holdTimeMin = 0, holdTimeMax = 0;
         if (value.length > 1 && value[0] != 0xFF && value[1] != 0xFF) {
@@ -523,6 +644,15 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Decode AddIpv4 prefix from Byte Array
+     *
+     * @param value   Byte Array containing attribute
+     * @param compact If attribute is compact type
+     * @return Decoded AddIpv4 prefix attribute
+     * @throws UnknownHostException   If address in Attribute is incorrect
+     * @throws UnknownPrefixException If Attribute has incorrect or none Prefix
+     */
     private static AttributeOptionalFields decodeIpv4AddPrefix(byte[] value, boolean compact) throws UnknownHostException, UnknownPrefixException {
         Ipv4AddPrefixAttributeBuilder attributeBuilder = new Ipv4AddPrefixAttributeBuilder();
         Ipv4AddPrefixAttributesBuilder attributesBuilder = new Ipv4AddPrefixAttributesBuilder();
@@ -531,6 +661,12 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Decode AddIpv4 table from Byte Array
+     *
+     * @param value Byte Array containing attribute
+     * @return Decoded AddIpv4 table attribute
+     */
     // TODO: decodeIpv4AddTable
     private static AttributeOptionalFields decodeIpv4AddTable(byte[] value) {
         Ipv4AddTableAttributeBuilder attributeBuilder = new Ipv4AddTableAttributeBuilder();
@@ -540,6 +676,15 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Decode DeleteIpv4 prefix from Byte Array
+     *
+     * @param value   Byte Array containing attribute
+     * @param compact If attribute is compact type
+     * @return Decoded DeleteIpv4 prefix attribute
+     * @throws UnknownHostException   If address in Attribute is incorrect
+     * @throws UnknownPrefixException If Attribute has incorrect or none Prefix
+     */
     private static AttributeOptionalFields decodeIpv4DeletePrefix(byte[] value, boolean compact) throws UnknownHostException, UnknownPrefixException {
         Ipv4DeletePrefixAttributeBuilder attributeBuilder = new Ipv4DeletePrefixAttributeBuilder();
         Ipv4DeletePrefixAttributesBuilder attributesBuilder = new Ipv4DeletePrefixAttributesBuilder();
@@ -548,6 +693,15 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Decode AddIpv6 prefix from Byte Array
+     *
+     * @param value   Byte Array containing attribute
+     * @param compact If attribute is compact type
+     * @return Decoded AddIpv6 prefix attribute
+     * @throws UnknownHostException   If address in Attribute is incorrect
+     * @throws UnknownPrefixException If Attribute has incorrect or none Prefix
+     */
     private static AttributeOptionalFields decodeIpv6AddPrefix(byte[] value, boolean compact) throws UnknownHostException, UnknownPrefixException {
         Ipv6AddPrefixAttributeBuilder attributeBuilder = new Ipv6AddPrefixAttributeBuilder();
         Ipv6AddPrefixAttributesBuilder attributesBuilder = new Ipv6AddPrefixAttributesBuilder();
@@ -556,6 +710,12 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Decode AddIpv6 table from Byte Array
+     *
+     * @param value Byte Array containing attribute
+     * @return Decoded AddIpv6 table attribute
+     */
     // TODO: decodeIpv6AddTable
     private static AttributeOptionalFields decodeIpv6AddTable(byte[] value) {
         Ipv6AddTableAttributeBuilder attributeBuilder = new Ipv6AddTableAttributeBuilder();
@@ -565,6 +725,15 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Decode DeleteIpv6 prefix from Byte Array
+     *
+     * @param value   Byte Array containing attribute
+     * @param compact If attribute is compact type
+     * @return Decoded DeleteIpv4 prefix attribute
+     * @throws UnknownHostException   If address in Attribute is incorrect
+     * @throws UnknownPrefixException If Attribute has incorrect or none Prefix
+     */
     private static AttributeOptionalFields decodeIpv6DeletePrefix(byte[] value, boolean compact) throws UnknownHostException, UnknownPrefixException {
         Ipv6DeletePrefixAttributeBuilder attributeBuilder = new Ipv6DeletePrefixAttributeBuilder();
         Ipv6DeletePrefixAttributesBuilder attributesBuilder = new Ipv6DeletePrefixAttributesBuilder();
@@ -573,6 +742,14 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Decode PeerSequence attribute from Byte Array
+     *
+     * @param value Byte Array containing PeerSequence attribute
+     * @return Decoded PeerSequence attribute
+     * @throws UnknownHostException      If address in Attribute is incorrect
+     * @throws UnknownPrefixException    If Attribute has incorrect or none Prefix
+     */
     private static AttributeOptionalFields decodePeerSequence(byte[] value) throws UnknownHostException, UnknownNodeIdException {
         PeerSequenceAttributeBuilder attributeBuilder = new PeerSequenceAttributeBuilder();
         PeerSequenceAttributesBuilder attributesBuilder = new PeerSequenceAttributesBuilder();
@@ -581,6 +758,12 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Decode Sgt attribute from Byre Array
+     *
+     * @param value Byte Array containing Sgt attribute
+     * @return Decoded Sgt attribute
+     */
     private static AttributeOptionalFields decodeSourceGroupTag(byte[] value) {
         SourceGroupTagAttributeBuilder attributeBuilder = new SourceGroupTagAttributeBuilder();
         SourceGroupTagAttributesBuilder attributesBuilder = new SourceGroupTagAttributesBuilder();
@@ -589,6 +772,14 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * Decode NodeId attribute from Byte Array
+     *
+     * @param value Byte Array containing NodeId attribute
+     * @return Decode NodeId attribute
+     * @throws UnknownHostException   If address in Attribute is incorrect
+     * @throws UnknownNodeIdException If address isn't in IPv4 format
+     */
     private static AttributeOptionalFields decodeSxpNodeId(byte[] value) throws UnknownHostException, UnknownNodeIdException {
         SxpNodeIdAttributeBuilder attributeBuilder = new SxpNodeIdAttributeBuilder();
         SxpNodeIdAttributesBuilder attributesBuilder = new SxpNodeIdAttributesBuilder();
@@ -597,10 +788,21 @@ public final class AttributeFactory {
         return attributeBuilder.build();
     }
 
+    /**
+     * @param value Unimportant
+     * @return Gets null
+     */
     private static AttributeOptionalFields decodeUnrecognized(byte[] value) {
         return null;
     }
 
+    /**
+     * Generate Byte Array representation of Capabilities
+     *
+     * @param capabilities Capabilities to be encoded
+     * @return Encoded Capabilities
+     * @throws CapabilityLengthException If one of Capabilities length isn't correct
+     */
     private static byte[] encodeCapabilities(List<Capabilities> capabilities) throws CapabilityLengthException {
         byte[] _capabilities = new byte[0];
         for (Capabilities capabilityType : capabilities) {
@@ -609,6 +811,13 @@ public final class AttributeFactory {
         return _capabilities;
     }
 
+    /**
+     * Generate Byte Array representation of Capability
+     *
+     * @param capability Capability to be encoded
+     * @return Encoded Capability
+     * @throws CapabilityLengthException If Capability length isn't correct
+     */
     public static byte[] encodeCapability(Capabilities capability) throws CapabilityLengthException {
         byte code = (byte) capability.getCode().getIntValue();
 
@@ -624,6 +833,13 @@ public final class AttributeFactory {
         return ArraysUtil.combine(new byte[] { code, length }, reserved, value);
     }
 
+    /**
+     * Create List of capabilities according to provided version
+     *
+     * @param version Version used
+     * @return List of Capabilities unique to each version
+     * @throws UnknownVersionException If version isn't supported
+     */
     private static List<Capabilities> getCapabilities(Version version) throws UnknownVersionException {
         List<Capabilities> capabilities = new ArrayList<Capabilities>();
         switch (version) {
@@ -647,6 +863,12 @@ public final class AttributeFactory {
         return capabilities;
     }
 
+    /**
+     * Converts Byte into Flags according to bit values
+     *
+     * @param flags Byte to be converted
+     * @return Generated Flags
+     */
     private static Flags getFlags(byte flags) {
         boolean o = ArraysUtil.getBit(flags, 8) == 1;
         boolean n = ArraysUtil.getBit(flags, 7) == 1;
