@@ -20,12 +20,11 @@ public class TransactionChainListenerImpl implements TransactionChainListener {
     @Override
     public void onTransactionChainFailed(TransactionChain<?, ?> transactionChain,
             AsyncTransaction<?, ?> asyncTransaction, Throwable throwable) {
-        LOG.warn("Transaction chain failed");
-        throwable.printStackTrace();
+            LOG.warn("Transaction chain failed ", throwable);
     }
 
     @Override
     public void onTransactionChainSuccessful(TransactionChain<?, ?> transactionChain) {
-
+            LOG.trace("Transaction chain Success");
     }
 }
