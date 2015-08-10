@@ -92,7 +92,7 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <configuration>
                     <includes>
-                        <include>org.opendaylight.controller.*</include>
+                        <include>org.opendaylight.sxp.*</include>
                     </includes>
                 </configuration>
                 <executions>
