@@ -269,7 +269,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     LOG.warn("RpcAddConnection exception | Parameter 'connections' not defined");
                     AddConnectionOutputBuilder output = new AddConnectionOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<AddConnectionOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
 
                 String nodeId = getNodeId(input.getRequestedNode());
@@ -296,7 +296,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     LOG.warn("RpcAddConnection exception | No new connections");
                     AddConnectionOutputBuilder output = new AddConnectionOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<AddConnectionOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
 
                 ConnectionsBuilder connectionsBuilder = new ConnectionsBuilder();
@@ -323,16 +323,14 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     LOG.warn("RpcAddEntry exception | Parameter 'ip-prefix' not defined");
                     AddEntryOutputBuilder addEntryOutput = new AddEntryOutputBuilder();
                     addEntryOutput.setResult(false);
-                    RpcResultBuilder<AddEntryOutput> rpcResultBuilder = RpcResultBuilder
-                            .from((RpcResult<AddEntryOutput>) addEntryOutput);
-                    return rpcResultBuilder.build();
+                    return RpcResultBuilder.success(addEntryOutput.build()).build();
                 }
                 Sgt sgt = input.getSgt();
                 if (sgt == null) {
                     LOG.warn("RpcAddEntry exception | Parameter 'sgt' not defined");
                     AddEntryOutputBuilder output = new AddEntryOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<AddEntryOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
                 String nodeId = getNodeId(input.getRequestedNode());
 
@@ -341,7 +339,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                             IpPrefixConv.toString(ipPrefix));
                     AddEntryOutputBuilder output = new AddEntryOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<AddEntryOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
 
                 DateAndTime timestamp = TimeConv.toDt(System.currentTimeMillis());
@@ -396,7 +394,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     LOG.warn("RpcDeleteConnection exception | Parameter 'peer-address' not defined");
                     DeleteConnectionOutputBuilder output = new DeleteConnectionOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<DeleteConnectionOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
 
                 PortNumber portNumber = input.getTcpPort();
@@ -409,7 +407,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     LOG.warn("RpcDeleteConnection exception | Parameter 'tcp-port' <= 0");
                     DeleteConnectionOutputBuilder output = new DeleteConnectionOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<DeleteConnectionOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
                 InetSocketAddress destination = IpPrefixConv.parseInetPrefix(peerAddress.getValue());
                 destination = new InetSocketAddress(destination.getAddress(), portNumber.getValue());
@@ -421,7 +419,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     LOG.warn("RpcDeleteConnection exception | Connection '{}' not exists", destination);
                     DeleteConnectionOutputBuilder output = new DeleteConnectionOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<DeleteConnectionOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
                 DeleteConnectionOutputBuilder output = new DeleteConnectionOutputBuilder();
                 output.setResult(true);
@@ -443,7 +441,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     LOG.warn("RpcDeleteEntry exception | Parameter 'sgt' not defined");
                     DeleteEntryOutputBuilder output = new DeleteEntryOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<DeleteEntryOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
                 String nodeId = getNodeId(input.getRequestedNode());
 
@@ -451,7 +449,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     LOG.warn("RpcDeleteEntry exception | Prefix group doesn't exist '{}'", sgt.getValue());
                     DeleteEntryOutputBuilder output = new DeleteEntryOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<DeleteEntryOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
 
                 List<PrefixGroup> prefixGroups = new ArrayList<>();
@@ -491,7 +489,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     LOG.warn("RpcGetBindingSgts exception | Parameter 'ip-prefix' not defined");
                     GetBindingSgtsOutputBuilder output = new GetBindingSgtsOutputBuilder();
                     output.setSgt(null);
-                    return RpcResultBuilder.from((RpcResult<GetBindingSgtsOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
                 String nodeId = getNodeId(input.getRequestedNode());
 
@@ -525,7 +523,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     LOG.warn("RpcGetConnectionsStatus exception | Requested node '" + nodeId + "' not exist");
                     GetConnectionsOutputBuilder output = new GetConnectionsOutputBuilder();
                     output.setConnections(connectionsBuilder.build());
-                    return RpcResultBuilder.from((RpcResult<GetConnectionsOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
 
                 }
 
@@ -554,7 +552,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     LOG.warn("RpcGetBindingSgts exception | Parameter 'requested-node' not defined");
                     GetNodeBindingsOutputBuilder output = new GetNodeBindingsOutputBuilder();
                     output.setBinding(new ArrayList<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.configuration.fields.Binding>());
-                    return RpcResultBuilder.from((RpcResult<GetNodeBindingsOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
 
                 String nodeId = getNodeId(input.getLocalRequestedNode());
@@ -581,28 +579,28 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     LOG.warn("RpcUpdateEntry exception | Parameter 'original-binding/ip-prefix' not defined");
                     UpdateEntryOutputBuilder output = new UpdateEntryOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<UpdateEntryOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
                 Sgt originalSgt = input.getOriginalBinding().getSgt();
                 if (originalSgt == null) {
                     LOG.warn("RpcUpdateEntry exception | Parameter 'original-binding/sgt' not defined");
                     UpdateEntryOutputBuilder output = new UpdateEntryOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<UpdateEntryOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
                 IpPrefix newIpPrefix = input.getNewBinding().getIpPrefix();
                 if (newIpPrefix == null) {
                     LOG.warn("RpcUpdateEntry exception | Parameter 'new-binding/ip-prefix' not defined");
                     UpdateEntryOutputBuilder output = new UpdateEntryOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<UpdateEntryOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
                 Sgt newSgt = input.getNewBinding().getSgt();
                 if (newSgt == null) {
                     LOG.warn("RpcUpdateEntry exception | Parameter 'new-binding/sgt' not defined");
                     UpdateEntryOutputBuilder output = new UpdateEntryOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<UpdateEntryOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
                 String nodeId = getNodeId(input.getRequestedNode());
 
@@ -611,13 +609,13 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                             IpPrefixConv.toString(originalIpPrefix));
                     UpdateEntryOutputBuilder output = new UpdateEntryOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<UpdateEntryOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 } else if (isBindingPresent(nodeId, newSgt, newIpPrefix)) {
                     LOG.warn("RpcAddEntry exception | New binding already exists '{} {}'", newSgt.getValue(),
                             IpPrefixConv.toString(newIpPrefix));
                     UpdateEntryOutputBuilder output = new UpdateEntryOutputBuilder();
                     output.setResult(false);
-                    return RpcResultBuilder.from((RpcResult<UpdateEntryOutput>) output).build();
+                    return RpcResultBuilder.success(output.build()).build();
                 }
 
                 // Remove original.
