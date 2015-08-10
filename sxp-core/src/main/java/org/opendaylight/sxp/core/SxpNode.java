@@ -90,7 +90,8 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      * @param nodeId ID of newly created Node
      * @param node   Node setup data
      * @return New instance of SxpNode
-     * @throws Exception
+     * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
+     * @throws SocketException              If IO error occurs
      */
     public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node)
             throws NoNetworkInterfacesException, SocketException {
@@ -109,7 +110,8 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      * @param masterDatabase Data which will be added to Master-DB
      * @param sxpDatabase    Data which will be added to SXP-DB
      * @return New instance of SxpNode
-     * @throws Exception
+     * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
+     * @throws SocketException              If IO error occurs
      */
     public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
             SxpDatabaseProvider sxpDatabase) throws NoNetworkInterfacesException, SocketException {
@@ -129,7 +131,8 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      * @param sxpDatabase    Data which will be added to SXP-DB
      * @param worker         Thread workers which will be executing task inside SxpNode
      * @return New instance of SxpNode
-     * @throws Exception
+     * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
+     * @throws SocketException              If IO error occurs
      */
     public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
             SxpDatabaseProvider sxpDatabase, ThreadsWorker worker)
@@ -159,6 +162,17 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
     /** Common timers setup. */
     private HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(6);
 
+    /**
+     * Default constructor that creates and start SxpNode using provided values
+     *
+     * @param nodeId         ID of newly created Node
+     * @param node           Node setup data
+     * @param masterDatabase Data which will be added to Master-DB
+     * @param sxpDatabase    Data which will be added to SXP-DB
+     * @param worker         Thread workers which will be executing task inside SxpNode
+     * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
+     * @throws SocketException              If IO error occurs
+     */
     private SxpNode(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
             SxpDatabaseProvider sxpDatabase,ThreadsWorker worker) throws NoNetworkInterfacesException, SocketException {
         super(Configuration.getConstants().getNodeConnectionsInitialSize());
@@ -188,6 +202,11 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
     }
 
+    /**
+     * Adds and afterward start new Connection
+     *
+     * @param connection Connection to be added
+     */
     public void addConnection(Connection connection) {
         if (connection == null) {
             return;
@@ -198,6 +217,11 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         openConnection(_connection);
     }
 
+    /**
+     * Adds and afterwards starts new Connections
+     *
+     * @param connections Connections to be added
+     */
     public void addConnections(Connections connections) {
         if (connections == null || connections.getConnection() == null || connections.getConnection().isEmpty()) {
             return;
@@ -207,12 +231,25 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
     }
 
+    /**
+     * Notifies BindingManager to remove Bindings of specified NodeId,
+     * with Flag CleanUp
+     *
+     * @param nodeID NodeId that filters removed Bindings
+     */
     public void cleanUpBindings(NodeId nodeID) {
         if (svcBindingManager instanceof BindingManager) {
             ((BindingManager) svcBindingManager).cleanUpBindings(nodeID);
         }
     }
 
+    /**
+     * Gets SxpConnection from Node
+     *
+     * @param key InetSocketAddress representing connection
+     * @return SxpConnection or null if not present,
+     * or key isn't instance of InetSocketAddress
+     */
     @Override
     public SxpConnection get(Object key) {
         if (!(key instanceof InetSocketAddress)) {
@@ -221,6 +258,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return super.get(key);
     }
 
+    /**
+     * @return Gets all SxpConnections with state set to DeleteHoldDown
+     */
     public List<SxpConnection> getAllDeleteHoldDownConnections() {
         List<SxpConnection> connections = new ArrayList<SxpConnection>();
         for (InetSocketAddress inetAddress : keySet()) {
@@ -235,6 +275,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return connections;
     }
 
+    /**
+     * @return Gets all SxpConnections with state set to Off
+     */
     public List<SxpConnection> getAllOffConnections() {
         List<SxpConnection> connections = new ArrayList<SxpConnection>();
         for (InetSocketAddress inetAddress : keySet()) {
@@ -249,6 +292,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return connections;
     }
 
+    /**
+     * @return Gets all SxpConnections with state set to On
+     */
     public List<SxpConnection> getAllOnConnections() {
         List<SxpConnection> connections = new ArrayList<SxpConnection>();
         for (InetSocketAddress inetAddress : keySet()) {
@@ -263,6 +309,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return connections;
     }
 
+    /**
+     * @return Gets all SxpConnections with state set to On and mode Listener or Both
+     */
     public List<SxpConnection> getAllOnListenerConnections() {
         List<SxpConnection> connections = new ArrayList<SxpConnection>();
         for (InetSocketAddress inetAddress : keySet()) {
@@ -278,6 +327,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return connections;
     }
 
+    /**
+     * @return Gets all SxpConnections with state set to On and mode Speaker or Both
+     */
     public List<SxpConnection> getAllOnSpeakerConnections() {
         List<SxpConnection> connections = new ArrayList<SxpConnection>();
         for (InetSocketAddress inetAddress : keySet()) {
@@ -293,14 +345,26 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return connections;
     }
 
+    /**
+     * @return Gets MasterDatabase that is used in Node
+     */
     public synchronized MasterDatabaseProvider getBindingMasterDatabase() {
         return _masterDatabase;
     }
 
+    /**
+     * @return Gets SxpDatabase that is used in Node
+     */
     public synchronized SxpDatabaseProvider getBindingSxpDatabase() {
         return _sxpDatabase;
     }
 
+    /**
+     * Gets SxpConnection by its address
+     *
+     * @param inetSocketAddress InetSocketAddress that is used by SxpConnection
+     * @return SxpConnection or null if Node doesn't contains specified address
+     */
     public SxpConnection getByAddress(InetSocketAddress inetSocketAddress) {
         for (InetSocketAddress _inetSocketAddress : keySet()) {
             if (_inetSocketAddress.getAddress().equals(inetSocketAddress.getAddress())) {
@@ -310,6 +374,12 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return null;
     }
 
+    /**
+     * Gets SxpConnection by its port
+     *
+     * @param port Port that is used by SxpConnection
+     * @return SxpConnection or null if Node doesn't contains address with specified port
+     */
     public SxpConnection getByPort(int port) {
         for (InetSocketAddress inetSocketAddress : keySet()) {
             if (inetSocketAddress.getPort() == port) {
@@ -319,6 +389,14 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return null;
     }
 
+    /**
+     * Gets SxpConnection by its address
+     *
+     * @param socketAddress SocketAddress that is used by SxpConnection
+     * @return SxpConnection if exists
+     * @throws SocketAddressNotRecognizedException If SocketAddress isn't instance of InetSocketAddress
+     * @throws UnknownSxpConnectionException       If cannot find any SxpConnection
+     */
     public SxpConnection getConnection(SocketAddress socketAddress)
             throws SocketAddressNotRecognizedException, UnknownSxpConnectionException {
         if (!(socketAddress instanceof InetSocketAddress)) {
@@ -337,6 +415,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return connection;
     }
 
+    /**
+     * @return Gets Bindings expansion quantity or zero if disabled
+     */
     public int getExpansionQuantity() {
         if (nodeBuilder.getMappingExpanded() == null) {
             return 0;
@@ -344,6 +425,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return nodeBuilder.getMappingExpanded();
     }
 
+    /**
+     * @return Gets HoldTime value or zero if disabled
+     */
     public int getHoldTime() {
         if (nodeBuilder.getTimers() == null || nodeBuilder.getTimers().getListenerProfile() == null
                 || nodeBuilder.getTimers().getListenerProfile().getHoldTime() == null) {
@@ -352,6 +436,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return nodeBuilder.getTimers().getListenerProfile().getHoldTime();
     }
 
+    /**
+     * @return Gets HoldTimeMax value or zero if disabled
+     */
     public int getHoldTimeMax() {
         if (nodeBuilder.getTimers() == null || nodeBuilder.getTimers().getListenerProfile() == null
                 || nodeBuilder.getTimers().getListenerProfile().getHoldTimeMax() == null) {
@@ -360,6 +447,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return nodeBuilder.getTimers().getListenerProfile().getHoldTimeMax();
     }
 
+    /**
+     * @return Gets HoldTimeMin value or zero if disabled
+     */
     public int getHoldTimeMin() {
         if (nodeBuilder.getTimers() == null || nodeBuilder.getTimers().getListenerProfile() == null
                 || nodeBuilder.getTimers().getListenerProfile().getHoldTimeMin() == null) {
@@ -368,6 +458,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return nodeBuilder.getTimers().getListenerProfile().getHoldTimeMin();
     }
 
+    /**
+     * @return Gets HoldTimeMinAcceptable value or zero if disabled
+     */
     public int getHoldTimeMinAcceptable() {
         if (nodeBuilder.getTimers() == null || nodeBuilder.getTimers().getSpeakerProfile() == null
                 || nodeBuilder.getTimers().getSpeakerProfile().getHoldTimeMinAcceptable() == null) {
@@ -376,6 +469,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return nodeBuilder.getTimers().getSpeakerProfile().getHoldTimeMinAcceptable();
     }
 
+    /**
+     * @return Gets KeepAlive value or zero if disabled
+     */
     public int getKeepAliveTime() {
         if (nodeBuilder.getTimers() == null || nodeBuilder.getTimers().getSpeakerProfile() == null
                 || nodeBuilder.getTimers().getSpeakerProfile().getKeepAliveTime() == null) {
@@ -384,15 +480,24 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return nodeBuilder.getTimers().getSpeakerProfile().getKeepAliveTime();
     }
 
+    /**
+     * @return Gets Name of Node
+     */
     public String getName() {
         return nodeBuilder.getName() == null || nodeBuilder.getName().isEmpty() ? NodeIdConv.toString(nodeId)
                 : nodeBuilder.getName();
     }
 
+    /**
+     * @return Gets NodeId
+     */
     public NodeId getNodeId() {
         return nodeId;
     }
 
+    /**
+     * @return Gets Password used to connect to peers or null if disabled
+     */
     public String getPassword() {
         if (nodeBuilder.getSecurity() == null) {
             return null;
@@ -401,6 +506,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return nodeBuilder.getSecurity().getPassword();
     }
 
+    /**
+     * @return Gets RetryOpen value or zero if disabled
+     */
     public int getRetryOpenTime() {
         if (nodeBuilder.getTimers() == null || nodeBuilder.getTimers().getRetryOpenTime() == null) {
             return 0;
@@ -408,6 +516,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return nodeBuilder.getTimers().getRetryOpenTime();
     }
 
+    /**
+     * @return Gets Node server port or -1 if dissabled
+     */
     public int getServerPort() {
         if (nodeBuilder.getTcpPort() == null || nodeBuilder.getTcpPort().getValue() == null) {
             return -1;
@@ -416,10 +527,19 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return nodeBuilder.getTcpPort().getValue();
     }
 
+    /**
+     * Gets SxpNode specific Timer
+     *
+     * @param timerType Type of Timer
+     * @return TimerType or null if not present
+     */
     public ListenableScheduledFuture<?> getTimer(TimerType timerType) {
         return timers.get(timerType);
     }
 
+    /**
+     * @return Gets Version of of Node
+     */
     public Version getVersion() {
         if (nodeBuilder.getVersion() == null) {
             return Version.Version4;
@@ -427,24 +547,39 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return nodeBuilder.getVersion();
     }
 
+    /**
+     * @return If Node is enabled
+     */
     public boolean isEnabled() {
         return nodeBuilder.isEnabled() == null ? false : nodeBuilder.isEnabled();
     }
 
+    /**
+     * @return If BindingDispatcher service is enabled
+     */
     public boolean isSvcBindingDispatcherStarted() {
         return svcBindingDispatcher != null;
     }
 
+    /**
+     * @return If BindingManager service is enabled
+     */
     public boolean isSvcBindingManagerStarted() {
         return svcBindingManager != null;
     }
 
+    /**
+     * Notify BindingManager service to update MasterDatabase
+     */
     public void notifyService() {
         if (isSvcBindingManagerStarted()) {
             setSvcBindingManagerNotify();
         }
     }
 
+    /**
+     * Start all Connections that are in state Off
+     */
     public synchronized void openConnections() {
         // Server not created yet.
         if (serverChannel == null) {
@@ -483,20 +618,44 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
     }
 
+    /**
+     * Propagate changes learned from network to SxpDatabase
+     * Used by Version 4
+     *
+     * @param message    UpdateMessage containing changes
+     * @param connection SxpConnection on which the message was received
+     */
     public void processUpdateMessage(UpdateMessage message, SxpConnection connection) {
         BindingHandler.processUpdateMessage(message, connection);
     }
 
+    /**
+     * Propagate changes learned from network to SxpDatabase
+     * Used by Version 1/2/3
+     *
+     * @param message    UpdateMessageLegacy containing changes
+     * @param connection SxpConnection on which the message was received
+     */
     public void processUpdateMessage(UpdateMessageLegacy message, SxpConnection connection) {
         BindingHandler.processUpdateMessage(message, connection);
     }
 
+    /**
+     * Notifies BindingManager to delete all Bindings from specified NodeId
+     *
+     * @param nodeID NodeId used to filter deletion
+     */
     public void purgeBindings(NodeId nodeID) {
         if (svcBindingManager instanceof BindingManager) {
             ((BindingManager) svcBindingManager).purgeBindings(nodeID);
         }
     }
 
+    /**
+     * Adds Bindings to database as Local bindings
+     *
+     * @param masterDatabaseConfiguration MasterDatabase containing bindings that will be added
+     */
     public void putLocalBindingsMasterDatabase(MasterDatabase masterDatabaseConfiguration) {
         Source source = null;
         if (masterDatabaseConfiguration.getSource() != null) {
@@ -520,18 +679,35 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
     }
 
+    /**
+     * Remove and afterwards shutdown connection
+     *
+     * @param destination InetSocketAddress that is used by SxpConnection
+     * @return Removed SxpConnection
+     */
     public SxpConnection removeConnection(InetSocketAddress destination) {
         SxpConnection connection = remove(destination);
         connection.shutdown();
         return connection;
     }
 
+    /**
+     * Notify BindingManager to set Flag CleanUp on Bindings specified by NodeId
+     *
+     * @param nodeID NodeId that filters setting flag Bindings
+     */
     public void setAsCleanUp(NodeId nodeID) {
         if (svcBindingManager instanceof BindingManager) {
             ((BindingManager) svcBindingManager).setAsCleanUp(nodeID);
         }
     }
 
+    /**
+     * Sets Security password used to connect
+     *
+     * @param security Security to be set
+     * @return Newly set Security
+     */
     protected org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.node.fields.Security setPassword(
             org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.node.fields.Security security) {
         SecurityBuilder securityBuilder = new SecurityBuilder();
@@ -550,11 +726,20 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return securityBuilder.build();
     }
 
+    /**
+     * Sets Channel on which Node operates
+     *
+     * @param serverChannel Channel to be set
+     */
     public void setServerChannel(Channel serverChannel) {
         this.serverChannel = serverChannel;
         this.serverChannelInit.set(false);
     }
 
+    /**
+     * Notify BindingDispatcher to execute dispatch of bindings to all Connection,
+     * mainly after Database modification
+     */
     public void setSvcBindingDispatcherDispatch() {
         if (svcBindingDispatcher instanceof BindingDispatcher) {
             ((BindingDispatcher) svcBindingDispatcher).dispatch();
@@ -570,12 +755,24 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
     }
 
+    /**
+     * Notify BindingManager to execute propagation of newly learned Bindings to MasterDatabase
+     * and afterwards to Connections
+     */
     public void setSvcBindingManagerNotify() {
         if (isSvcBindingManagerStarted()) {
             svcBindingManager.notifyChange();
         }
     }
 
+    /**
+     * Sets SxpNode specific Timer
+     *
+     * @param timerType Type of Timer that will be set
+     * @param period    Time period to wait till execution in Seconds
+     * @return ListenableScheduledFuture callback
+     * @throws UnknownTimerTypeException If current TimerType isn't supported
+     */
     public synchronized ListenableScheduledFuture<?> setTimer(TimerType timerType, int period)
             throws UnknownTimerTypeException {
         SxpTimerTask timer;
@@ -594,6 +791,13 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
     }
 
+    /**
+     * Sets SxpNode specific Timer
+     *
+     * @param timerType Type of Timer that will be set
+     * @param timer     Timer logic
+     * @return ListenableScheduledFuture callback
+     */
     private ListenableScheduledFuture<?> setTimer(TimerType timerType, ListenableScheduledFuture<?> timer) {
         ListenableScheduledFuture<?> t = this.timers.put(timerType, timer);
         if (t != null && !t.isDone()) {
@@ -651,6 +855,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         nodeBuilder.setEnabled(false);
     }
 
+    /**
+     * Shutdown all Connections
+     */
     public synchronized void shutdownConnections() {
         for (SxpConnection connection : values()) {
             if (!connection.isStateOff()) {
@@ -661,6 +868,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
 
     private AtomicBoolean serverChannelInit = new AtomicBoolean(false);
 
+    /**
+     * Start SxpNode
+     */
     public void start() {
         // Put local bindings before services startup.
         MasterDatabase masterDatabaseConfiguration = nodeBuilder.getMasterDatabase();

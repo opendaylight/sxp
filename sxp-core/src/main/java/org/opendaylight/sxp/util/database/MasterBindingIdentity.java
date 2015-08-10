@@ -20,14 +20,32 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.data
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * MasterBindingIdentity class represent entity stored in MasterDatabase
+ */
 public class MasterBindingIdentity {
 
     private boolean deleteReplace;
 
+    /**
+     * Creates MasterBindingIdentity from specified values
+     *
+     * @param binding     Binding to be used
+     * @param prefixGroup PrefixGroup to be used
+     * @param source      Source to be used
+     * @return Newly created MasterBindingIdentity
+     */
     public static MasterBindingIdentity create(Binding binding, PrefixGroup prefixGroup, Source source) {
         return new MasterBindingIdentity(binding, prefixGroup, source);
     }
 
+    /**
+     * Creates MasterBindingIdentities from MasterDatabase
+     *
+     * @param database    MasterDatabase where to look for data
+     * @param onlyChanged If add only Bindings with Flag Changed
+     * @return List of newly created Bindings
+     */
     public static List<MasterBindingIdentity> create(MasterDatabase database, boolean onlyChanged) {
         List<MasterBindingIdentity> identities = new ArrayList<>();
 
@@ -53,6 +71,12 @@ public class MasterBindingIdentity {
         return identities;
     }
 
+    /**
+     * Create String representation of MasterBindingIdentities
+     *
+     * @param identities List of MasterBindingIdentity to be used
+     * @return String representations of specified data
+     */
     public static String toString(List<MasterBindingIdentity> identities) {
         String result = "";
         for (MasterBindingIdentity bindingDesc : identities) {
@@ -67,10 +91,27 @@ public class MasterBindingIdentity {
 
     protected Source source;
 
+    /**
+     * Constructor that creates MasterBindingIdentity using provided data
+     * and set Flag deleteReplace to false
+     *
+     * @param binding       Binding to be used
+     * @param prefixGroup   PrefixGroup to be used
+     * @param source        Source to be used
+     */
     private MasterBindingIdentity(Binding binding, PrefixGroup prefixGroup, Source source) {
         this(binding, prefixGroup, source, false);
     }
 
+    /**
+     * Default constructor that creates MasterBindingIdentity using provided data
+     *
+     * @param binding       Binding to be used
+     * @param prefixGroup   PrefixGroup to be used
+     * @param source        Source to be used
+     * @param deleteReplace If MasterBindingIdentity is replacement,
+     *                      for MasterBindingIdentity with Flag Delete
+     */
     private MasterBindingIdentity(Binding binding, PrefixGroup prefixGroup, Source source, boolean deleteReplace) {
         super();
         this.binding = new BindingBuilder(binding).build();
@@ -113,14 +154,23 @@ public class MasterBindingIdentity {
                 && IpPrefixConv.equalTo(this.binding.getIpPrefix(), bindingIdentity.binding.getIpPrefix());
     }
 
+    /**
+     * @return Gets Binding
+     */
     public Binding getBinding() {
         return binding;
     }
 
+    /**
+     * @return Gets PrefixGroup
+     */
     public PrefixGroup getPrefixGroup() {
         return prefixGroup;
     }
 
+    /**
+     * @return Gets Source
+     */
     public Source getSource() {
         return source;
     }

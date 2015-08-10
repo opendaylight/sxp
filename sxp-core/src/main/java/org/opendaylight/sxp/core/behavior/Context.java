@@ -25,6 +25,9 @@ import org.opendaylight.yangtools.yang.binding.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Context class is used for handling different behaviour in versions
+ */
 public final class Context {
 
     protected static final Logger LOG = LoggerFactory.getLogger(Context.class.getName());
@@ -35,24 +38,59 @@ public final class Context {
 
     private Version version;
 
+    /**
+     * Default constructor that sets strategy according to provided version
+     *
+     * @param owner   SxpNode on which is this context executed
+     * @param version Version according to which strategy will be set
+     * @throws UnknownVersionException If Version isn't supported
+     */
     public Context(SxpNode owner, Version version) throws UnknownVersionException {
         this.owner = owner;
         this.version = version;
         this.strategy = StrategyFactory.getStrategy(this, version);
     }
 
+    /**
+     * Logic for establishment of Connection
+     *
+     * @param ctx        ChannelHandlerContext on which is communication
+     * @param connection SxpConnection that participate in communication
+     */
     public void executeChannelActivationStrategy(ChannelHandlerContext ctx, SxpConnection connection) {
         this.strategy.onChannelActivation(ctx, connection);
     }
 
+    /**
+     * Logic for disconnecting of Connection
+     *
+     * @param ctx        ChannelHandlerContext on which communication will be closed
+     * @param connection SxpConnection that participated in communication
+     */
     public void executeChannelInactivationStrategy(ChannelHandlerContext ctx, SxpConnection connection) {
         this.strategy.onChannelInactivation(ctx, connection);
     }
 
+    /**
+     * Logic for handling of errors
+     *
+     * @param ctx        ChannelHandlerContext on which is communication
+     * @param connection SxpConnection that participate in communication
+     */
     public void executeExceptionCaughtStrategy(ChannelHandlerContext ctx, SxpConnection connection) {
         strategy.onException(ctx, connection);
     }
 
+    /**
+     * Logic for handling incoming messages, including version negotiation
+     *
+     * @param ctx        ChannelHandlerContext on which is communication
+     * @param connection SxpConnection that participate in communication
+     * @param message    Notification that have been received
+     * @throws ErrorMessageException                 If error occurs during handling of Notification
+     * @throws UpdateMessageConnectionStateException If Update message was received in wrong state
+     * @throws ErrorMessageReceivedException         If Peer send error message
+     */
     public void executeInputMessageStrategy(ChannelHandlerContext ctx, SxpConnection connection, Notification message)
             throws ErrorMessageReceivedException, ErrorMessageException, UpdateMessageConnectionStateException {
         // Version negotiation detection
@@ -90,11 +128,21 @@ public final class Context {
         this.strategy.onInputMessage(ctx, connection, message);
     }
 
+    /**
+     * @param remoteVersion Version to be checked
+     * @return If isMismatch of Versions
+     */
     private boolean isVersionMismatch(final Version remoteVersion) {
         Preconditions.checkState(remoteVersion.compareTo(version) <= 0, "Remote peer sent higher version of SXP in open resp message");
         return remoteVersion != version;
     }
 
+    /**
+     * Extract version of Peer from Notification
+     *
+     * @param message Notification to be checked
+     * @return Found Version
+     */
     private Version extractVersion(final Notification message) {
         Version remoteVersion;
         if(message instanceof OpenMessage) {
@@ -125,19 +173,40 @@ public final class Context {
         return isOpen;
     }
 
+    /**
+     * Logic for decoding incoming data
+     *
+     * @param request ByteBuf containing received data
+     * @return Notification with decoded message
+     * @throws ErrorMessageException If received data was corrupted or incorrect
+     */
     public Notification executeParseInput(ByteBuf request) throws ErrorMessageException {
         return this.strategy.onParseInput(request);
     }
 
+    /**
+     * Logic that generate message containing Bindings for export
+     *
+     * @param connection     SxpConnection that participate in communication
+     * @param masterDatabase MasterDatabase containing Bindings
+     * @return ByteBuf containing Update message
+     * @throws UpdateMessageCompositionException If during generating of message error occurs
+     */
     public ByteBuf executeUpdateMessageStrategy(SxpConnection connection, MasterDatabase masterDatabase)
             throws UpdateMessageCompositionException {
         return this.strategy.onUpdateMessage(connection, masterDatabase);
     }
 
+    /**
+     * @return Gets SxpNode on which is this context executed
+     */
     public SxpNode getOwner() {
         return owner;
     }
 
+    /**
+     * @return Gets Version of current Context
+     */
     public Version getVersion() {
         return version;
     }

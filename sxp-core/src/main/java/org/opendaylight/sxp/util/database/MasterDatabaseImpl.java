@@ -38,10 +38,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * MasterDatabaseImpl class contains logic to operate with Database,
+ * used for storing all Bindings and their propagation
+ */
 public class MasterDatabaseImpl extends MasterDatabaseProvider {
 
     protected MasterDatabase database;
 
+    /**
+     * Default constructor that sets empty Database
+     */
     public MasterDatabaseImpl() {
         super(null);
         MasterDatabaseBuilder databaseBuilder = new MasterDatabaseBuilder();
@@ -51,15 +58,31 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
         database = databaseBuilder.build();
     }
 
+    /**
+     * Constructor that sets predefined Database
+     *
+     * @param database MasterDatabase to be used
+     */
     public MasterDatabaseImpl(MasterDatabase database) {
         super(null);
         this.database = database;
     }
 
+    /**
+     * Constructor that sets predefined access checked Database
+     *
+     * @param databaseAccess MasterDatabaseAccess to be used
+     */
     public MasterDatabaseImpl(MasterDatabaseAccess databaseAccess) {
         super(databaseAccess);
     }
 
+    /**
+     * Adds MasterBindingIdentity into Database
+     *
+     * @param bindingIdentity MasterBindingIdentity to be added
+     * @return If operation was successful
+     */
     private boolean addBindingIdentity(MasterBindingIdentity bindingIdentity) {
         synchronized (database) {
             if (database.getSource() != null && !database.getSource().isEmpty()) {
@@ -263,6 +286,12 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
         }
     }
 
+    /**
+     * Adds PrefixGroups into Source
+     *
+     * @param prefixGroups PrefixGroup to be added
+     * @param source Source where the PrefixGroup will be added
+     */
     private void addPrefixGroups(List<PrefixGroup> prefixGroups, Source source) {
         for (PrefixGroup prefixGroup : prefixGroups) {
             Sgt sgt = prefixGroup.getSgt();
@@ -303,6 +332,12 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
         }
     }
 
+    /**
+     * Delete MasterBindingIdentity from database
+     *
+     * @param bindingIdentity MasterBindingIdentity to be removed
+     * @return If operation was successful
+     */
     private boolean deleteBindingIdentity(MasterBindingIdentity bindingIdentity) {
         synchronized (database) {
             if (database.getSource() != null) {

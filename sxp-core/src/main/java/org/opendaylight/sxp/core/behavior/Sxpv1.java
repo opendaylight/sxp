@@ -42,10 +42,18 @@ import org.opendaylight.yangtools.yang.binding.Notification;
 
 import java.net.UnknownHostException;
 
+/**
+ * Sxpv1 class provides logic for handling connection on Version 1
+ */
 public class Sxpv1 implements Strategy {
 
     protected Context context;
 
+    /**
+     * Default constructor that sets its Context
+     *
+     * @param context Context to be set
+     */
     public Sxpv1(Context context) {
         this.context = context;
     }

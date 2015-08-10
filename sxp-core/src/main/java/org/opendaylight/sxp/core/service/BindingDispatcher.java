@@ -42,6 +42,11 @@ public final class BindingDispatcher extends Service<Void> {
 
     private final AtomicInteger partitionSize = new AtomicInteger(0);
 
+    /**
+     * Default constructor that sets SxpNode
+     * 
+     * @param owner SxpNode to be set
+     */
     public BindingDispatcher(SxpNode owner) {
         super(owner);
     }
@@ -60,6 +65,9 @@ public final class BindingDispatcher extends Service<Void> {
         }
     }
 
+    /**
+     * Exports change from MasterDatabase to all On SxpConnections
+     */
     public void dispatch() {
         LOG.debug(owner + " Starting {}", getClass().getSimpleName());
 
@@ -102,6 +110,13 @@ public final class BindingDispatcher extends Service<Void> {
         return partitionSize.get();
     }
 
+    /**
+     * Prepares data for propagation to listeners and afterwards
+     * send them to peers
+     *
+     * @param masterDatabase MasterDatabaseProvider containing Bindings to be exported
+     * @param connections    SxpConnections on which the export will be performed
+     */
     private void processUpdateSequence(MasterDatabaseProvider masterDatabase, List<SxpConnection> connections)
             throws DatabaseAccessException {
 

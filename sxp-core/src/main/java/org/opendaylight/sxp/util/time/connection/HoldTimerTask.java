@@ -19,10 +19,21 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Erro
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * HoldTimerTask is used by an SXP Listener for detect when a connection is no longer live.
+ * The Hold Timer is started when the connection reached ON state.
+ * The interval is set to the negotiated Hold Time during OPEN/OPEN_RESP exchange.
+ */
 public class HoldTimerTask extends SxpTimerTask<Void> {
 
     private final SxpConnection connection;
 
+    /**
+     * Constructor that sets timer period, and set Connection
+     *
+     * @param connection SxpConnection that timer belongs to
+     * @param period     Value representing time in some Time unit
+     */
     public HoldTimerTask(SxpConnection connection, int period) {
         super(period);
         this.connection = connection;

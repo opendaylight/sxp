@@ -18,10 +18,21 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerTyp
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * KeepAliveTimerTask is used by SXP speaker to send KEEPALIVE message
+ * in order to indicate to the listener that the connection remains live.
+ * (The default timer period is 1/3 of HoldTimerTask period)
+ */
 public class KeepAliveTimerTask extends SxpTimerTask<Void> {
 
     private final SxpConnection connection;
 
+    /**
+     * Constructor that sets timer period, and set Connection
+     *
+     * @param connection SxpConnection that timer belongs to
+     * @param period     Value representing time in some Time unit
+     */
     public KeepAliveTimerTask(SxpConnection connection, int period) {
         super(period);
         this.connection = connection;

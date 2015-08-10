@@ -25,6 +25,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 
 public class Database {
+
+    /**
+     * Assign NodeId to PrefixGroups using specified PrefixGroups data
+     *
+     * @param nodeId       NodeId to be set
+     * @param prefixGroups PrefixGroups which data will be used
+     * @return List of PrefixGroup generated with specified data
+     */
     public static List<PrefixGroup> assignPrefixGroups(NodeId nodeId, List<PrefixGroup> prefixGroups) {
         DateAndTime timestamp = TimeConv.toDt(System.currentTimeMillis());
 
@@ -63,6 +71,14 @@ public class Database {
         return _prefixGroups;
     }
 
+    /**
+     * Creates PrefixGroup
+     *
+     * @param sgt      Sgt that will be assigned to PrefixGroup
+     * @param bindings Bindings that will be included into PrefixGroup
+     * @return PrefixGroup created using provided data
+     * @throws UnknownPrefixException If one of bindings is null or empty
+     */
     public static PrefixGroup createPrefixGroup(int sgt, String... bindings) throws UnknownPrefixException {
         PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder();
         prefixGroupBuilder.setSgt(new Sgt(sgt));

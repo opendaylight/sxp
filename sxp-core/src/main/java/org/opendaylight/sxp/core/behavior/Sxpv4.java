@@ -52,26 +52,62 @@ import org.opendaylight.yangtools.yang.binding.Notification;
 
 import java.net.UnknownHostException;
 
+/**
+ * Sxpv4 class provides logic for handling connection on Version 4
+ */
 public final class Sxpv4 extends Sxpv3 {
 
+    /**
+     * OpenMessageType enum is used to distinguish between messages types
+     */
     private enum OpenMessageType {
         Open, OperResp
     }
 
+    /**
+     * Default constructor that sets its Context
+     *
+     * @param context Context to be set
+     */
     public Sxpv4(Context context) {
         super(context);
     }
 
+    /**
+     * Creates OpenMessage containing HoldTime attribute
+     *
+     * @param connection      SxpConnection containing setting
+     * @param openMessageType Type of message to be generated
+     * @return ByteBuf representation of generated message
+     * @throws CapabilityLengthException If some Attributes has incorrect length
+     * @throws UnknownVersionException   If version isn't supported
+     * @throws HoldTimeMaxException      If Max hold time is greater than minimal
+     * @throws HoldTimeMinException      If Min hold time isn't in range of <0,65535>
+     * @throws AttributeVariantException If attribute variant isn't supported
+     */
     private ByteBuf composeOpenHoldTimeMessage(SxpConnection connection, OpenMessageType openMessageType)
             throws CapabilityLengthException, HoldTimeMaxException, AttributeVariantException, HoldTimeMinException,
-            UnknownVersionException, UnknownConnectionModeException {
+            UnknownVersionException {
         return composeOpenHoldTimeMessage(connection, openMessageType, connection.getMode());
     }
 
+    /**
+     * Creates OpenMessage containing HoldTime attribute
+     *
+     * @param connection      SxpConnection containing setting
+     * @param openMessageType Type of message to be generated
+     * @param connectionMode  ConnectionMode for which message will be generated
+     * @return ByteBuf representation of generated message
+     * @throws CapabilityLengthException If some Attributes has incorrect length
+     * @throws UnknownVersionException   If version isn't supported
+     * @throws HoldTimeMaxException      If Max hold time is greater than minimal
+     * @throws HoldTimeMinException      If Min hold time isn't in range of <0,65535>
+     * @throws AttributeVariantException If attribute variant isn't supported
+     */
     private ByteBuf composeOpenHoldTimeMessage(SxpConnection connection, OpenMessageType openMessageType,
             ConnectionMode connectionMode)
             throws CapabilityLengthException, UnknownVersionException, HoldTimeMaxException, HoldTimeMinException,
-            AttributeVariantException, UnknownConnectionModeException {
+            AttributeVariantException {
         if (connectionMode.equals(ConnectionMode.Listener)) {
             // Per-connection time settings: User (not)defined.
             Integer holdTimeMin = connection.getHoldTimeMin();
@@ -129,16 +165,41 @@ public final class Sxpv4 extends Sxpv3 {
         throw new UnknownConnectionModeException();
     }
 
+    /**
+     * Creates OpenRespMessage containing HoldTime attribute
+     *
+     * @param connection SxpConnection containing setting
+     * @param message    OpenMessage to be parsed for values
+     * @return ByteBuf representation of generated message
+     * @throws CapabilityLengthException If some Attributes has incorrect length
+     * @throws UnknownVersionException   If version isn't supported
+     * @throws HoldTimeMaxException      If Max hold time is greater than minimal
+     * @throws HoldTimeMinException      If Min hold time isn't in range of <0,65535>
+     * @throws AttributeVariantException If attribute variant isn't supported
+     */
     private ByteBuf composeOpenRespHoldTimeMessage(SxpConnection connection, OpenMessage message)
-            throws CapabilityLengthException, AttributeVariantException, UnknownConnectionModeException,
-            HoldTimeMaxException, HoldTimeMinException, UnknownVersionException {
+            throws CapabilityLengthException, AttributeVariantException, HoldTimeMaxException,
+            HoldTimeMinException, UnknownVersionException {
         return composeOpenRespHoldTimeMessage(connection, message, connection.getMode());
     }
 
+    /**
+     * Creates OpenRespMessage containing HoldTime attribute
+     *
+     * @param connection     SxpConnection containing setting
+     * @param message        OpenMessage to be parsed for values
+     * @param connectionMode ConnectionMode for which message will be generated
+     * @return ByteBuf representation of generated message
+     * @throws CapabilityLengthException If some Attributes has incorrect length
+     * @throws UnknownVersionException   If version isn't supported
+     * @throws HoldTimeMaxException      If Max hold time is greater than minimal
+     * @throws HoldTimeMinException      If Min hold time isn't in range of <0,65535>
+     * @throws AttributeVariantException If attribute variant isn't supported
+     */
     private ByteBuf composeOpenRespHoldTimeMessage(SxpConnection connection, OpenMessage message,
             ConnectionMode connectionMode)
             throws CapabilityLengthException, UnknownVersionException, AttributeVariantException,
-            UnknownConnectionModeException, HoldTimeMaxException, HoldTimeMinException {
+            HoldTimeMaxException, HoldTimeMinException {
         // If valid HoldTimeAttribute is received, HoldTimeAttribute must be
         // included.
         HoldTimeAttribute attHoldTime;

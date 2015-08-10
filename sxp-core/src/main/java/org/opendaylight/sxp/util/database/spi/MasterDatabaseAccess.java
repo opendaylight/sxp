@@ -13,11 +13,35 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.data
 
 public interface MasterDatabaseAccess {
 
-    void delete(MasterDatabase database) throws DatabaseAccessException;
+        /**
+         * Delete Bindings from MasterDatabase
+         *
+         * @param database MasterDatabase containing Bindings to be deleted
+         * @throws DatabaseAccessException If database isn't accessible
+         */
+        void delete(MasterDatabase database) throws DatabaseAccessException;
 
-    void merge(MasterDatabase database) throws DatabaseAccessException;
+        /**
+         * Merge MasterDatabase with current one
+         *
+         * @param database MasterDatabase that will be merged
+         * @throws DatabaseAccessException If database isn't accessible
+         */
+        void merge(MasterDatabase database) throws DatabaseAccessException;
 
-    void put(MasterDatabase database) throws DatabaseAccessException;
+        /**
+         * Adds Bindings to MasterDatabase
+         *
+         * @param database MasterDatabase containing Bindings to be added
+         * @throws DatabaseAccessException If database isn't accessible
+         */
+        void put(MasterDatabase database) throws DatabaseAccessException;
 
-    MasterDatabase read() throws DatabaseAccessException;
+        /**
+         * Gets access to MasterDatabase
+         *
+         * @return MasterDatabase
+         * @throws DatabaseAccessException If database isn't accessible
+         */
+        MasterDatabase read() throws DatabaseAccessException;
 }

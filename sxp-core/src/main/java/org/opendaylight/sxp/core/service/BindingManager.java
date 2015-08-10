@@ -35,8 +35,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public final class BindingManager extends Service<Void> {
 
@@ -62,6 +60,14 @@ public final class BindingManager extends Service<Void> {
         return false;
     }
 
+    /**
+     * Look for PrefixGroup in provided MasterPrefixGroups, if PrefixGroup
+     * isn't present create new one and adds it there
+     *
+     * @param masterPrefixGroups MasterPrefixGroups where to look for
+     * @param bindingItentity    SxpBindingIdentities that we are looking for
+     * @return MasterPrefixGroups that have been updated
+     */
     private static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup getPrefixGroup(
             List<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup> masterPrefixGroups,
             SxpBindingIdentity bindingItentity) {
@@ -82,12 +88,20 @@ public final class BindingManager extends Service<Void> {
         return prefixGroup;
     }
 
-    private final BlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(32);
-
+    /**
+     * Default constructor that sets SxpNode
+     *
+     * @param owner SxpNode to be set
+     */
     public BindingManager(SxpNode owner) {
         super(owner);
     }
 
+    /**
+     * Remove all bindings with Flag CleanUp from specified NodeId
+     *
+     * @param nodeID NodeId used to filter Binding that will be removed
+     */
     public void cleanUpBindings(NodeId nodeID) {
         try {
             getBindingSxpDatabase().cleanUpBindings(nodeID);
@@ -97,6 +111,13 @@ public final class BindingManager extends Service<Void> {
         }
     }
 
+    /**
+     * Filter List of SxpBindingIdentities and return only unique Bindings
+     * according Shortest Path rule and Most recent rule
+     *
+     * @param bindingIdentities SxpBindingIdentities to be filtered
+     * @return List of SxpBindingIdentities with only unique Bindings
+     */
     private List<MasterBindingIdentity> databaseArbitration(List<SxpBindingIdentity> bindingIdentities) {
         Map<String, SxpBindingIdentity> biMap = new HashMap<>();
 
@@ -197,6 +218,11 @@ public final class BindingManager extends Service<Void> {
         return masterBindingIdentityContributed;
     }
 
+    /**
+     * Delete all Bindings from specified NodeId
+     *
+     * @param nodeID NodeId used to filter Bindings that will be deleted
+     */
     public void purgeBindings(NodeId nodeID) {
         try {
             getBindingSxpDatabase().purgeBindings(nodeID);
@@ -228,6 +254,11 @@ public final class BindingManager extends Service<Void> {
         return null;
     }
 
+    /**
+     * Sets CleanUp flag for all bindings from specified NodeId
+     *
+     * @param nodeID NodeId used to filter Bindings that will set set for CleanUp
+     */
     public void setAsCleanUp(NodeId nodeID) {
         try {
             getBindingSxpDatabase().setAsCleanUp(nodeID);
