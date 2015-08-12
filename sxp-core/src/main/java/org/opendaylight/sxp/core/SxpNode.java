@@ -687,7 +687,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      */
     public SxpConnection removeConnection(InetSocketAddress destination) {
         SxpConnection connection = remove(destination);
-        connection.shutdown();
+        if (connection != null) {
+            connection.shutdown();
+        }
         return connection;
     }
 
