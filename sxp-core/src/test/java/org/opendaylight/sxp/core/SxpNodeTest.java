@@ -89,13 +89,15 @@ import static org.mockito.Mockito.verify;
                         mock(ListenableFuture.class));
                 when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(
                         mock(ListenableFuture.class));
-                timers = mock(Timers.class);
+                timers = Configuration.getNodeTimers();
                 nodeIdentity = mock(SxpNodeIdentity.class);
                 when(nodeIdentity.getTimers()).thenReturn(timers);
                 when(nodeIdentity.getVersion()).thenReturn(Version.Version4);
                 Security security = mock(Security.class);
                 when(security.getPassword()).thenReturn("default");
+                when(nodeIdentity.getName()).thenReturn("NAME");
                 when(nodeIdentity.getSecurity()).thenReturn(security);
+                when(nodeIdentity.getMappingExpanded()).thenReturn(150);
 
                 databaseProvider = mock(MasterDatabaseProvider.class);
                 sxpDatabaseProvider = mock(SxpDatabaseProvider.class);
@@ -111,6 +113,21 @@ import static org.mockito.Mockito.verify;
                         Ipv4Address.getDefaultInstance("127.0.0." + (++ip4Adrres)));
                 when(connection.getState()).thenReturn(state);
                 return connection;
+        }
+
+        @Test public void testSxpNodeGetters() {
+                assertEquals((long) timers.getRetryOpenTime(), node.getRetryOpenTime());
+                assertEquals(150l, node.getExpansionQuantity());
+                assertEquals((long) timers.getListenerProfile().getHoldTime(), node.getHoldTime());
+                assertEquals((long) timers.getListenerProfile().getHoldTimeMax(), node.getHoldTimeMax());
+                assertEquals((long) timers.getListenerProfile().getHoldTimeMin(), node.getHoldTimeMin());
+                assertEquals((long) timers.getSpeakerProfile().getHoldTimeMinAcceptable(),
+                        node.getHoldTimeMinAcceptable());
+                assertEquals((long) timers.getSpeakerProfile().getKeepAliveTime(), node.getKeepAliveTime());
+                assertEquals("NAME", node.getName());
+                assertEquals(NodeId.getDefaultInstance("127.0.0.1"), node.getNodeId());
+                assertEquals("default", node.getPassword());
+
         }
 
         @Test public void testGetAllDeleteHoldDownConnections() throws Exception {
@@ -268,11 +285,10 @@ import static org.mockito.Mockito.verify;
                 PowerMockito.mockStatic(ConnectFacade.class);
                 ArgumentCaptor<Runnable> argument = ArgumentCaptor.forClass(Runnable.class);
                 when(nodeIdentity.getMasterDatabase()).thenReturn(null);
-                when(timers.getRetryOpenTime()).thenReturn(50);
 
                 node.start();
                 verify(worker).executeTask(argument.capture(), (ThreadsWorker.WorkerType) anyObject());
-                assertEquals(50, node.getRetryOpenTime());
+                assertEquals(5, node.getRetryOpenTime());
                 assertNotNull(node.getTimer(TimerType.RetryOpenTimer));
                 assertTrue(node.isEnabled());
 
