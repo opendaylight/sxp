@@ -40,26 +40,6 @@ public final class BindingManager extends Service<Void> {
 
     protected static final Logger LOG = LoggerFactory.getLogger(BindingManager.class.getName());
 
-    private static boolean contains(
-            List<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup> masterPrefixGroups,
-            Sgt sgt, IpPrefix ipPrefix) {
-        for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup prefixGroup : masterPrefixGroups) {
-            if (!prefixGroup.getSgt().equals(sgt)) {
-                continue;
-            }
-            if (prefixGroup.getBinding() == null) {
-                continue;
-            }
-            for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding binding : prefixGroup
-                    .getBinding()) {
-                if (IpPrefixConv.equalTo(binding.getIpPrefix(), ipPrefix)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     /**
      * Look for PrefixGroup in provided MasterPrefixGroups, if PrefixGroup
      * isn't present create new one and adds it there
