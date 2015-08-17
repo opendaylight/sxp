@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3a79b1b5_d08f4f22",
+        "filename": "sxp-core/src/test/java/org/opendaylight/sxp/util/exception/ExceptionTest.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 3576
+      },
+      "writtenOn": "2015-08-17T17:15:47Z",
+      "side": 1,
+      "message": "This is absolutely the wrong way to increase test coverage.  If you can\u0027t write a meaningful test for something that increases your coverage, then you should not write that test.  This test method is not a test.  All you\u0027re doing is \"exercising\" the code, not testing anything.",
+      "revId": "3d5115cfa92717ae9fa9b7e42fbe36c67bb61bbb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
