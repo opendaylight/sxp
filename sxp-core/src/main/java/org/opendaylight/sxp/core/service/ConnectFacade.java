@@ -16,6 +16,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -40,6 +41,7 @@ import org.opendaylight.tcpmd5.netty.MD5ChannelOption;
 import org.opendaylight.tcpmd5.netty.MD5NioServerSocketChannelFactory;
 import org.opendaylight.tcpmd5.netty.MD5NioSocketChannelFactory;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +50,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConnectFacade {
 
@@ -117,58 +120,52 @@ public class ConnectFacade {
      * Create new Node that listens to incoming connections
      *
      * @param node SxpNode containing options
-     * @param port Port on which Node will be listening
      * @param hf   HandlerFactory providing handling of communication
-     * @return If Node was successfully created
+     * @return ChannelFuture callback
      */
-    public static boolean createServer(SxpNode node, int port, final HandlerFactory hf) {
-        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+    public static ChannelFuture createServer(final SxpNode node,final HandlerFactory hf) {
+        final EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         if (eventLoopGroup == null) {
             eventLoopGroup = new NioEventLoopGroup();
         }
-        boolean result = true;
 
-        try {
-            ServerBootstrap bootstrap = new ServerBootstrap();
-            if (node.getPassword() != null && !node.getPassword().isEmpty()) {
-                final Collection<InetAddress> connectionsWithPassword =
-                        Collections2.transform(Collections2.filter(node.entrySet(), CONNECTION_ENTRY_WITH_PASSWORD), CONNECTION_ENTRY_TO_INET_ADDR);
-                bootstrap = customizeServerBootstrap(bootstrap, connectionsWithPassword, node.getPassword());
-            }
-
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        if (node.getPassword() != null && !node.getPassword().isEmpty()) {
             try {
-                bootstrap.group(bossGroup, eventLoopGroup).channel(NioServerSocketChannel.class);
-            } catch (final IllegalStateException e) {
-                LOG.info("Not overriding channelFactory on bootstrap {} | {}", bootstrap, e.getMessage());
+                final Collection<InetAddress>
+                        connectionsWithPassword =
+                        Collections2.transform(Collections2.filter(node.entrySet(), CONNECTION_ENTRY_WITH_PASSWORD),
+                                CONNECTION_ENTRY_TO_INET_ADDR);
+                bootstrap = customizeServerBootstrap(bootstrap, connectionsWithPassword, node.getPassword());
+            } catch (NativeSupportUnavailableException e) {
+                LOG.error(node + "Could not customize bootstrap " + e);
             }
-
-            ChannelInitializer<SocketChannel> channelInitializer = new ChannelInitializer<SocketChannel>() {
-                @Override
-                protected void initChannel(SocketChannel ch) throws Exception {
-                    ch.pipeline().addLast(hf.getDecoders());
-                    ch.pipeline().addLast(hf.getEncoders());
-                }
-            };
-
-            if (Configuration.NETTY_LOGGER_HANDLER) {
-                bootstrap.handler(new LoggingHandler(LogLevel.INFO)).childHandler(channelInitializer);
-            } else {
-                bootstrap.childHandler(channelInitializer);
-            }
-
-            Channel channel = bootstrap.bind(port).sync().channel();
-            node.setServerChannel(channel);
-            LOG.info(node + " Server created [port=" + port + "]");
-            channel.closeFuture().sync();
-
-        } catch (InterruptedException | NativeSupportUnavailableException e) {
-            LOG.error(node + "Server created exception [port=\"{}\"] " + e.getMessage(), port);
-            result = false;
-        } finally {
-            bossGroup.shutdownGracefully();
+        } else {
+            bootstrap.channel(NioServerSocketChannel.class);
         }
-        return result;
+        bootstrap.group(bossGroup, eventLoopGroup);
 
+        ChannelInitializer<SocketChannel> channelInitializer = new ChannelInitializer<SocketChannel>() {
+
+            @Override protected void initChannel(SocketChannel ch) throws Exception {
+                ch.pipeline().addLast(hf.getDecoders());
+                ch.pipeline().addLast(hf.getEncoders());
+            }
+        };
+
+        if (Configuration.NETTY_LOGGER_HANDLER) {
+            bootstrap.handler(new LoggingHandler(LogLevel.INFO)).childHandler(channelInitializer);
+        } else {
+            bootstrap.childHandler(channelInitializer);
+        }
+        ChannelFuture channelFuture = bootstrap.bind(node.getSourceIp(), node.getServerPort());
+        channelFuture.channel().closeFuture().addListener(new ChannelFutureListener() {
+
+            @Override public void operationComplete(ChannelFuture future) throws Exception {
+                bossGroup.shutdownGracefully();
+            }
+        });
+        return channelFuture;
     }
 
     /**
