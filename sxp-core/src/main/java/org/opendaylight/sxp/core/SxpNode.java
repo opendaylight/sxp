@@ -13,6 +13,7 @@ import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.EventLoopGroup;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -856,6 +857,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
             serverChannel.close();
             serverChannel = null;
         }
+        ConnectFacade.removeServer(getNodeId());
         if (svcBindingDispatcher != null) {
             svcBindingDispatcher.cancel();
         }
