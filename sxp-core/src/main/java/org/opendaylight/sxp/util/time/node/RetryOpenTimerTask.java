@@ -32,7 +32,7 @@ public class RetryOpenTimerTask extends SxpTimerTask<Void> {
     }
 
     @Override public Void call() {
-        if (owner.getServerPort() >= 1) {
+        if (owner.isEnabled()) {
             LOG.debug(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
             owner.openConnections();
             owner.setTimer(TimerType.RetryOpenTimer, getPeriod());
