@@ -48,14 +48,13 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
         }
 
         @Test public void testRetryOpenTimerTask() throws Exception {
-                PowerMockito.when(sxpNode.getServerPort()).thenReturn(0);
-                PowerMockito.when(sxpNode.getServerPort()).thenReturn(64999);
+                PowerMockito.when(sxpNode.isEnabled()).thenReturn(true).thenReturn(false);
                 RetryOpenTimerTask timerTask = new RetryOpenTimerTask(sxpNode, 0);
                 timerTask.call();
                 verify(sxpNode).openConnections();
                 verify(sxpNode).setTimer(TimerType.RetryOpenTimer, timerTask.getPeriod());
                 timerTask.call();
-                verify(sxpNode, times(1));
+                verify(sxpNode, times(1)).openConnections();
         }
 
         @Test public void testKeepAliveTimerTask() throws Exception {
