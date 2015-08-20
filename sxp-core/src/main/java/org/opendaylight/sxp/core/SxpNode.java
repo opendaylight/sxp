@@ -856,6 +856,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
             serverChannel.close();
             serverChannel = null;
         }
+        ConnectFacade.shutdownServerWorker(getNodeId());
         if (svcBindingDispatcher != null) {
             svcBindingDispatcher.cancel();
         }

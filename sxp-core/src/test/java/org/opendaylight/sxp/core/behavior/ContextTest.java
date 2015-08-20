@@ -91,7 +91,7 @@ import static org.mockito.Mockito.when;
 
                 context.executeInputMessageStrategy(channelHandlerContext, connection, message);
                 verify(channelHandlerContext).writeAndFlush(any(ByteBuf.class));
-                verify(sxpNode).openConnection(any(SxpConnection.class));
+                verify(connection).setStateOff(channelHandlerContext);
 
                 when(connection.getVersion()).thenReturn(Version.Version4, Version.Version1);
                 context.executeInputMessageStrategy(channelHandlerContext, connection, message);
