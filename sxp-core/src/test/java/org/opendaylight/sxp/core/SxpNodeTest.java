@@ -283,17 +283,14 @@ import static org.mockito.Mockito.verify;
 
         @Test public void testStart() throws Exception {
                 PowerMockito.mockStatic(ConnectFacade.class);
-                ArgumentCaptor<Runnable> argument = ArgumentCaptor.forClass(Runnable.class);
                 when(nodeIdentity.getMasterDatabase()).thenReturn(null);
 
                 node.start();
-                verify(worker).executeTask(argument.capture(), (ThreadsWorker.WorkerType) anyObject());
+                verify(worker).executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class));
                 assertEquals(5, node.getRetryOpenTime());
-                assertNotNull(node.getTimer(TimerType.RetryOpenTimer));
-                assertTrue(node.isEnabled());
 
-                argument.getValue().run();
-                PowerMockito.verifyStatic();
+                node.start();
+                verify(worker).executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class));
         }
 
         @Test public void testPutLocalBindingsMasterDatabase() throws Exception {
