@@ -309,12 +309,6 @@ public class SxpConnection {
                 }
                 initCtxs.clear();
             }
-            //Aware that this method is only used for Non Both mode so there is no setup for it ...
-            if (isModeListener()) {
-                markChannelHandlerContext(ctx, ChannelHandlerContextType.ListenerContext);
-            } else if (isModeSpeaker()) {
-                markChannelHandlerContext(ctx, ChannelHandlerContextType.SpeakerContext);
-            }
         } catch (InterruptedException e) {
             LOG.warn("{} Error closing ChannelHandlerContext", this, e);
         }
@@ -774,6 +768,23 @@ public class SxpConnection {
         }
         synchronized (ctxs) {
             ctxs.put(channelHandlerContextType, ctx);
+        }
+    }
+
+    /**
+     * Mark ChannelHandlerContext with Role Speaker or Listener,
+     * removes ChannelHandlerContext from init queue
+     * Aware that this method is only used for Non Both mode
+     *
+     * @param ctx ChannelHandlerContext to be marked
+     */
+    public void markChannelHandlerContext(ChannelHandlerContext ctx) {
+        if (isModeBoth()) {
+            LOG.error("{} Cannot automatically mark ChannelHandlerContext {}", this, ctx);
+        } else if (isModeListener()) {
+            markChannelHandlerContext(ctx, ChannelHandlerContextType.ListenerContext);
+        } else if (isModeSpeaker()) {
+            markChannelHandlerContext(ctx, ChannelHandlerContextType.SpeakerContext);
         }
     }
 

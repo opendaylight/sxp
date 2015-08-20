@@ -14,14 +14,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.FixedRecvByteBufAllocator;
-import io.netty.channel.RecvByteBufAllocator;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -41,18 +34,20 @@ import org.opendaylight.tcpmd5.netty.MD5ChannelOption;
 import org.opendaylight.tcpmd5.netty.MD5NioServerSocketChannelFactory;
 import org.opendaylight.tcpmd5.netty.MD5NioSocketChannelFactory;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ConnectFacade {
 
+    private static HashMap<String, EventLoopGroup> nodes = new HashMap<>();
     private static EventLoopGroup eventLoopGroup = null;
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectFacade.class.getName());
 
@@ -92,7 +87,7 @@ public class ConnectFacade {
                 .getMessageLengthMax());
         bootstrap.option(ChannelOption.RCVBUF_ALLOCATOR, recvByteBufAllocator);
         bootstrap.option(ChannelOption.TCP_NODELAY, true);
-
+        bootstrap.localAddress(node.getSourceIp().getHostAddress(), 0);
         if (eventLoopGroup == null) {
             eventLoopGroup = new NioEventLoopGroup();
         }
@@ -124,6 +119,9 @@ public class ConnectFacade {
      */
     public static ChannelFuture createServer(final SxpNode node,final HandlerFactory hf) {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+        synchronized (nodes) {
+            nodes.put(node.getNodeId().getValue(), bossGroup);
+        }
         if (eventLoopGroup == null) {
             eventLoopGroup = new NioEventLoopGroup();
         }
@@ -160,7 +158,29 @@ public class ConnectFacade {
         } else {
             bootstrap.childHandler(channelInitializer);
         }
-        return bootstrap.bind(node.getSourceIp(), node.getServerPort());
+        ChannelFuture channelFuture = bootstrap.bind(node.getSourceIp(), node.getServerPort());
+        channelFuture.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                if (!channelFuture.isSuccess()) {
+                    shutdownServerWorker(node.getNodeId());
+                }
+            }
+        });
+        return channelFuture;
+    }
+
+    public static void shutdownServerWorker(NodeId nodeId) {
+        synchronized (nodes) {
+            EventLoopGroup executors = nodes.remove(nodeId.getValue());
+            if (executors != null) {
+                executors.shutdownGracefully();
+            }
+            if (nodes.isEmpty() && eventLoopGroup != null) {
+                eventLoopGroup.shutdownGracefully();
+                eventLoopGroup = null;
+            }
+        }
     }
 
     /**
