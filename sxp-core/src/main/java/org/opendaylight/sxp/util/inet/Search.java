@@ -185,6 +185,7 @@ public final class Search {
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(Search.class.getName());
+    private static int bestAddresPointer = 1;
 
     public static List<?> getAllSxpNodes() {
 
@@ -216,7 +217,8 @@ public final class Search {
         }
 
         Collections.sort(inetAddresses, new InetAddressComparator());
-        return inetAddresses.get(inetAddresses.size() - 1);
+        return inetAddresses.get(inetAddresses.size() > bestAddresPointer + 1 ?
+                inetAddresses.size() - bestAddresPointer++ : inetAddresses.size() - (bestAddresPointer = 1));
     }
 
     /**

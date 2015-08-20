@@ -11,6 +11,8 @@ package org.opendaylight.sxp.core;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -197,7 +199,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         svcBindingDispatcher = new BindingDispatcher(this);
 
         // Start services.
-        if (isEnabled()) {
+        if (nodeBuilder.isEnabled()) {
             start();
         }
     }
@@ -256,6 +258,13 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
             return null;
         }
         return super.get(key);
+    }
+
+    /**
+     * @return Ip used by SxpNode
+     */
+    public InetAddress getSourceIp() {
+        return sourceIp;
     }
 
     /**
@@ -551,7 +560,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      * @return If Node is enabled
      */
     public boolean isEnabled() {
-        return nodeBuilder.isEnabled() == null ? false : nodeBuilder.isEnabled();
+        return serverChannel != null ? serverChannel.isActive() : false;
     }
 
     /**
@@ -735,7 +744,6 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      */
     public void setServerChannel(Channel serverChannel) {
         this.serverChannel = serverChannel;
-        this.serverChannelInit.set(false);
     }
 
     /**
@@ -854,7 +862,6 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         if (svcBindingManager != null) {
             svcBindingManager.cancel();
         }
-        nodeBuilder.setEnabled(false);
     }
 
     /**
@@ -874,6 +881,9 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      * Start SxpNode
      */
     public void start() {
+        if (isEnabled() || serverChannelInit.getAndSet(true)) {
+            return;
+        }
         // Put local bindings before services startup.
         MasterDatabase masterDatabaseConfiguration = nodeBuilder.getMasterDatabase();
         if (masterDatabaseConfiguration != null) {
@@ -885,14 +895,23 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         worker.executeTask(new Runnable() {
 
             @Override public void run() {
-                    serverChannelInit.set(true);
-                    ConnectFacade.createServer(node, getServerPort(), handlerFactoryServer);
+                ConnectFacade.createServer(node, handlerFactoryServer).addListener(new ChannelFutureListener() {
+
+                    @Override public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                        if (channelFuture.isSuccess()) {
+                            node.setServerChannel(channelFuture.channel());
+                            LOG.info(node + " Server created [" + getSourceIp().getHostAddress() + ":" + getServerPort()
+                                    + "]");
+                            node.setTimer(TimerType.RetryOpenTimer, node.getRetryOpenTime());
+                        } else {
+                            LOG.info(node + " Server [" + node.getSourceIp().getHostAddress() + ":" + getServerPort()
+                                    + "] Could not be created " + channelFuture.cause());
+                        }
+                        serverChannelInit.set(false);
+                    }
+                });
             }
         }, ThreadsWorker.WorkerType.DEFAULT);
-        if (getRetryOpenTime() > 0) {
-            setTimer(TimerType.RetryOpenTimer, getRetryOpenTime());
-        }
-        nodeBuilder.setEnabled(true);
     }
 
     @Override
