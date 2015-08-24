@@ -179,20 +179,20 @@ import static org.mockito.Mockito.verify;
                 Connection connection1 = mockConnection(ConnectionMode.Listener, ConnectionState.On);
 
                 node.addConnection(connection);
-                assertNotNull(node.getByAddress(getInetSocketAddress(connection.getPeerAddress().getValue())));
-                assertNull(node.getByAddress(getInetSocketAddress(connection1.getPeerAddress().getValue())));
+                assertFalse(node.getByAddress(getInetSocketAddress(connection.getPeerAddress().getValue())).isEmpty());
+                assertTrue(node.getByAddress(getInetSocketAddress(connection1.getPeerAddress().getValue())).isEmpty());
 
                 node.addConnection(connection1);
-                assertNotNull(node.getByAddress(getInetSocketAddress(connection.getPeerAddress().getValue())));
-                assertNotNull(node.getByAddress(getInetSocketAddress(connection1.getPeerAddress().getValue())));
+                assertFalse(node.getByAddress(getInetSocketAddress(connection.getPeerAddress().getValue())).isEmpty());
+                assertFalse(node.getByAddress(getInetSocketAddress(connection1.getPeerAddress().getValue())).isEmpty());
         }
 
         @Test public void testGetByPort() throws Exception {
                 Connection connection = mockConnection(ConnectionMode.Listener, ConnectionState.On);
 
                 node.addConnection(connection);
-                assertNotNull(node.getByPort(64999));
-                assertNull(node.getByPort(64950));
+                assertFalse(node.getByPort(64999).isEmpty());
+                assertTrue(node.getByPort(64950).isEmpty());
         }
 
         @Test public void testOpenConnections() throws Exception {
@@ -333,10 +333,10 @@ import static org.mockito.Mockito.verify;
         @Test public void testAddConnection() throws Exception {
                 PowerMockito.mockStatic(ConnectFacade.class);
                 node.addConnection(null);
-                assertEquals(0, node.size());
+                assertEquals(0, node.getAllConnections().size());
 
                 node.addConnection(mockConnection(ConnectionMode.Both, ConnectionState.On));
-                assertEquals(1, node.size());
+                assertEquals(1, node.getAllConnections().size());
                 PowerMockito.verifyStatic();
         }
 
@@ -345,16 +345,16 @@ import static org.mockito.Mockito.verify;
                 List<Connection> connection = new ArrayList<>();
 
                 node.addConnections(null);
-                assertEquals(0, node.size());
+                assertEquals(0, node.getAllConnections().size());
 
                 Connections connections = mock(Connections.class);
                 when(connections.getConnection()).thenReturn(connection);
                 node.addConnections(connections);
-                assertEquals(0, node.size());
+                assertEquals(0, node.getAllConnections().size());
 
                 connection.add(mockConnection(ConnectionMode.Both, ConnectionState.On));
                 node.addConnections(connections);
-                assertEquals(1, node.size());
+                assertEquals(1, node.getAllConnections().size());
                 PowerMockito.verifyStatic();
         }
 }
