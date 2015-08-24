@@ -14,7 +14,13 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.FixedRecvByteBufAllocator;
+import io.netty.channel.RecvByteBufAllocator;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -39,10 +45,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ConnectFacade {
@@ -51,16 +55,18 @@ public class ConnectFacade {
     private static EventLoopGroup eventLoopGroup = null;
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectFacade.class.getName());
 
-    private static final Function<Map.Entry<InetSocketAddress, SxpConnection>, InetAddress> CONNECTION_ENTRY_TO_INET_ADDR = new Function<Map.Entry<InetSocketAddress, SxpConnection>, InetAddress>() {
-        @Override
-        public InetAddress apply(final Map.Entry<InetSocketAddress, SxpConnection> input) {
-            return input.getKey().getAddress();
-        }
-    };
-    private static final Predicate<Map.Entry<InetSocketAddress, SxpConnection>> CONNECTION_ENTRY_WITH_PASSWORD = new Predicate<Map.Entry<InetSocketAddress, SxpConnection>>() {
-        @Override
-        public boolean apply(final Map.Entry<InetSocketAddress, SxpConnection> input) {
-            return input.getValue().getPasswordType() == PasswordType.Default;
+    private static final Function<SxpConnection, InetAddress>
+            CONNECTION_ENTRY_TO_INET_ADDR =
+            new Function<SxpConnection, InetAddress>() {
+
+                @Override public InetAddress apply(final SxpConnection input) {
+                    return input.getDestination().getAddress();
+                }
+            };
+    private static final Predicate<SxpConnection> CONNECTION_ENTRY_WITH_PASSWORD = new Predicate<SxpConnection>() {
+
+        @Override public boolean apply(final SxpConnection input) {
+            return input.getPasswordType() == PasswordType.Default;
         }
     };
 
@@ -131,7 +137,7 @@ public class ConnectFacade {
             try {
                 final Collection<InetAddress>
                         connectionsWithPassword =
-                        Collections2.transform(Collections2.filter(node.entrySet(), CONNECTION_ENTRY_WITH_PASSWORD),
+                        Collections2.transform(Collections2.filter(node.getAllConnections(), CONNECTION_ENTRY_WITH_PASSWORD),
                                 CONNECTION_ENTRY_TO_INET_ADDR);
                 bootstrap = customizeServerBootstrap(bootstrap, connectionsWithPassword, node.getPassword());
             } catch (NativeSupportUnavailableException e) {

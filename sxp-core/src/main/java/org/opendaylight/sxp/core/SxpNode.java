@@ -9,6 +9,8 @@
 package org.opendaylight.sxp.core;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -60,9 +62,10 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -76,7 +79,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * SGT to which an endpoint belongs can be assigned statically or dynamically,
  * and the SGT can be used as a classifier in network policies.
  */
-public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConnection> {
+public final class SxpNode {
 
     private static final Logger LOG = LoggerFactory.getLogger(SxpNode.class.getName());
 
@@ -142,6 +145,10 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         return new SxpNode(nodeId, node, masterDatabase, sxpDatabase, worker);
     }
 
+    private final HashMap<InetSocketAddress, SxpConnection>
+            connectionsHashMap =
+            new HashMap<>(Configuration.getConstants().getNodeConnectionsInitialSize());
+
     protected volatile MasterDatabaseProvider _masterDatabase = null;
 
     protected volatile SxpDatabaseProvider _sxpDatabase = null;
@@ -177,7 +184,6 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      */
     private SxpNode(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
             SxpDatabaseProvider sxpDatabase,ThreadsWorker worker) throws NoNetworkInterfacesException, SocketException {
-        super(Configuration.getConstants().getNodeConnectionsInitialSize());
         this.worker = worker;
         this.nodeId = nodeId;
         this.nodeBuilder = new SxpNodeIdentityBuilder(node);
@@ -208,6 +214,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      * Adds and afterward start new Connection
      *
      * @param connection Connection to be added
+     * @throws IllegalArgumentException If Connection exist in Node
      */
     public void addConnection(Connection connection) {
         if (connection == null) {
@@ -215,7 +222,13 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
 
         SxpConnection _connection = SxpConnection.create(this, connection);
-        put(_connection.getDestination(), _connection);
+        synchronized (connectionsHashMap) {
+            if (connectionsHashMap.containsKey(_connection.getDestination())) {
+                throw new IllegalArgumentException(
+                        "Connection " + _connection + " with destination " + _connection.getDestination() + " exist.");
+            }
+            connectionsHashMap.put(_connection.getDestination(), _connection);
+        }
         openConnection(_connection);
     }
 
@@ -245,19 +258,21 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
         }
     }
 
-    /**
-     * Gets SxpConnection from Node
-     *
-     * @param key InetSocketAddress representing connection
-     * @return SxpConnection or null if not present,
-     * or key isn't instance of InetSocketAddress
-     */
-    @Override
-    public SxpConnection get(Object key) {
-        if (!(key instanceof InetSocketAddress)) {
-            return null;
+    private List<SxpConnection> filterConnections(Predicate predicate) {
+        Collection<SxpConnection> connections;
+        synchronized (connectionsHashMap) {
+            connections = Collections2.filter(connectionsHashMap.values(), predicate);
         }
-        return super.get(key);
+        return Collections.unmodifiableList(new ArrayList<SxpConnection>(connections));
+    }
+
+    /**
+     * @return All SxpConnections on Node
+     */
+    public List<SxpConnection> getAllConnections() {
+        synchronized (connectionsHashMap) {
+            return Collections.unmodifiableList(new ArrayList<SxpConnection>(connectionsHashMap.values()));
+        }
     }
 
     /**
@@ -271,87 +286,62 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      * @return Gets all SxpConnections with state set to DeleteHoldDown
      */
     public List<SxpConnection> getAllDeleteHoldDownConnections() {
-        List<SxpConnection> connections = new ArrayList<SxpConnection>();
-        for (InetSocketAddress inetAddress : keySet()) {
-            if (!(get(inetAddress) instanceof SxpConnection)) {
-                continue;
+        return filterConnections(new Predicate<SxpConnection>() {
+
+            @Override public boolean apply(SxpConnection sxpConnection) {
+                return sxpConnection.isStateDeleteHoldDown();
             }
-            SxpConnection connection = get(inetAddress);
-            if (connection.isStateDeleteHoldDown()) {
-                connections.add(connection);
-            }
-        }
-        return connections;
+        });
     }
 
     /**
      * @return Gets all SxpConnections with state set to Off
      */
     public List<SxpConnection> getAllOffConnections() {
-        List<SxpConnection> connections = new ArrayList<SxpConnection>();
-        for (InetSocketAddress inetAddress : keySet()) {
-            if (!(get(inetAddress) instanceof SxpConnection)) {
-                continue;
+        return filterConnections(new Predicate<SxpConnection>() {
+
+            @Override public boolean apply(SxpConnection sxpConnection) {
+                return sxpConnection.isStateOff();
             }
-            SxpConnection connection = get(inetAddress);
-            if (connection.isStateOff()) {
-                connections.add(connection);
-            }
-        }
-        return connections;
+        });
     }
 
     /**
      * @return Gets all SxpConnections with state set to On
      */
     public List<SxpConnection> getAllOnConnections() {
-        List<SxpConnection> connections = new ArrayList<SxpConnection>();
-        for (InetSocketAddress inetAddress : keySet()) {
-            if (!(get(inetAddress) instanceof SxpConnection)) {
-                continue;
+        return filterConnections(new Predicate<SxpConnection>() {
+
+            @Override public boolean apply(SxpConnection sxpConnection) {
+                return sxpConnection.isStateOn();
             }
-            SxpConnection connection = get(inetAddress);
-            if (connection.isStateOn()) {
-                connections.add(connection);
-            }
-        }
-        return connections;
+        });
     }
 
     /**
      * @return Gets all SxpConnections with state set to On and mode Listener or Both
      */
     public List<SxpConnection> getAllOnListenerConnections() {
-        List<SxpConnection> connections = new ArrayList<SxpConnection>();
-        for (InetSocketAddress inetAddress : keySet()) {
-            if (!(get(inetAddress) instanceof SxpConnection)) {
-                continue;
+        return filterConnections(new Predicate<SxpConnection>() {
+
+            @Override public boolean apply(SxpConnection connection) {
+                return connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext) && (
+                        connection.getMode().equals(ConnectionMode.Listener) || connection.isModeBoth());
             }
-            SxpConnection connection = get(inetAddress);
-            if (connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)
-                    && (connection.getMode().equals(ConnectionMode.Listener) || connection.isModeBoth())) {
-                connections.add(connection);
-            }
-        }
-        return connections;
+        });
     }
 
     /**
      * @return Gets all SxpConnections with state set to On and mode Speaker or Both
      */
     public List<SxpConnection> getAllOnSpeakerConnections() {
-        List<SxpConnection> connections = new ArrayList<SxpConnection>();
-        for (InetSocketAddress inetAddress : keySet()) {
-            if (!(get(inetAddress) instanceof SxpConnection)) {
-                continue;
+        return filterConnections(new Predicate<SxpConnection>() {
+
+            @Override public boolean apply(SxpConnection connection) {
+                return connection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext) && (
+                        connection.getMode().equals(ConnectionMode.Speaker) || connection.isModeBoth());
             }
-            SxpConnection connection = get(inetAddress);
-            if (connection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext)
-                    && (connection.getMode().equals(ConnectionMode.Speaker) || connection.isModeBoth())) {
-                connections.add(connection);
-            }
-        }
-        return connections;
+        });
     }
 
     /**
@@ -373,14 +363,23 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      *
      * @param inetSocketAddress InetSocketAddress that is used by SxpConnection
      * @return SxpConnection or null if Node doesn't contains specified address
+     * @throws IllegalStateException If found more than 1 SxpConnection
      */
-    public SxpConnection getByAddress(InetSocketAddress inetSocketAddress) {
-        for (InetSocketAddress _inetSocketAddress : keySet()) {
-            if (_inetSocketAddress.getAddress().equals(inetSocketAddress.getAddress())) {
-                return get(_inetSocketAddress);
-            }
+    public SxpConnection getByAddress(final InetSocketAddress inetSocketAddress) {
+        List<SxpConnection> sxpConnections =
+                filterConnections(new Predicate<SxpConnection>() {
+
+                    @Override
+                    public boolean apply(SxpConnection connection) {
+                        return inetSocketAddress.getAddress().equals(connection.getDestination().getAddress());
+                    }
+                });
+        if (sxpConnections.isEmpty()) {
+            return null;
+        } else if (sxpConnections.size() == 1) {
+            return sxpConnections.get(0);
         }
-        return null;
+        throw new IllegalStateException("Found multiple Connections on specified address");
     }
 
     /**
@@ -388,14 +387,23 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      *
      * @param port Port that is used by SxpConnection
      * @return SxpConnection or null if Node doesn't contains address with specified port
+     * @throws IllegalStateException If found more than 1 SxpConnection
      */
-    public SxpConnection getByPort(int port) {
-        for (InetSocketAddress inetSocketAddress : keySet()) {
-            if (inetSocketAddress.getPort() == port) {
-                return get(inetSocketAddress);
-            }
+    public SxpConnection getByPort(final int port) {
+        List<SxpConnection> sxpConnections =
+                filterConnections(new Predicate<SxpConnection>() {
+
+                    @Override
+                    public boolean apply(SxpConnection connection) {
+                        return port == connection.getDestination().getPort();
+                    }
+                });
+        if (sxpConnections.isEmpty()) {
+            return null;
+        } else if (sxpConnections.size() == 1) {
+            return sxpConnections.get(0);
         }
-        return null;
+        throw new IllegalStateException("Found multiple Connections on specified address");
     }
 
     /**
@@ -412,16 +420,16 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
             throw new SocketAddressNotRecognizedException(socketAddress);
         }
         InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
-
-        SxpConnection connection = get(inetSocketAddress);
-        // Devices addresses.
-        if (connection == null) {
-            connection = getByAddress(inetSocketAddress);
+        synchronized (connectionsHashMap) {
+            SxpConnection connection = connectionsHashMap.get(inetSocketAddress);
+            if (connection == null) {
+                connection = getByAddress(inetSocketAddress);
+            }
+            if (connection == null || !(connection instanceof SxpConnection)) {
+                throw new UnknownSxpConnectionException("InetSocketAddress: " + inetSocketAddress);
+            }
+            return connection;
         }
-        if (connection == null || !(connection instanceof SxpConnection)) {
-            throw new UnknownSxpConnectionException("InetSocketAddress: " + inetSocketAddress);
-        }
-        return connection;
     }
 
     /**
@@ -597,6 +605,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
 
         final SxpNode node = this;
 
+        final int connectionsAllSize = getAllConnections().size();
         final int connectionsOnSize = getAllOnConnections().size();
         final List<SxpConnection> connections = getAllOffConnections();
 
@@ -604,7 +613,7 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
 
             @Override public void run() {
                 LOG.info(node + " Open connections [X/O/All=\"" + connections.size() + "/" + connectionsOnSize + "/"
-                                + node.size() + "\"]");
+                                + connectionsAllSize + "\"]");
                 for (final SxpConnection connection : connections) {
                     openConnection(connection);
                 }
@@ -695,11 +704,13 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      * @return Removed SxpConnection
      */
     public SxpConnection removeConnection(InetSocketAddress destination) {
-        SxpConnection connection = remove(destination);
-        if (connection != null) {
-            connection.shutdown();
+        synchronized (connectionsHashMap) {
+            SxpConnection connection = connectionsHashMap.remove(destination);
+            if (connection != null) {
+                connection.shutdown();
+            }
+            return connection;
         }
-        return connection;
     }
 
     /**
@@ -869,9 +880,11 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
      * Shutdown all Connections
      */
     public synchronized void shutdownConnections() {
-        for (SxpConnection connection : values()) {
-            if (!connection.isStateOff()) {
-                connection.shutdown();
+        synchronized (connectionsHashMap) {
+            for (SxpConnection connection : connectionsHashMap.values()) {
+                if (!connection.isStateOff()) {
+                    connection.shutdown();
+                }
             }
         }
     }
