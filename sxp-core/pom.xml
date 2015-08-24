@@ -9,7 +9,9 @@
     </parent>
     <artifactId>sxp-core</artifactId>
    	<packaging>bundle</packaging>
-
+    <properties>
+        <sonar.exclusions>**Exception.java**</sonar.exclusions>
+    </properties>
     <build>
         <plugins>
             <plugin>
