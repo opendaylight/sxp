@@ -273,24 +273,20 @@ public class SxpConnection {
      */
     public ChannelHandlerContextType closeChannelHandlerContext(ChannelHandlerContext ctx) {
         ChannelHandlerContextType type = ChannelHandlerContextType.None;
-        try {
-            synchronized (initCtxs) {
-                initCtxs.remove(ctx);
-            }
-            synchronized (ctxs) {
-                for (Map.Entry<ChannelHandlerContextType, ChannelHandlerContext> e : ctxs.entrySet()) {
-                    if (e.getValue().equals(ctx)) {
-                        type = e.getKey();
-                    }
-                }
-                if (type != ChannelHandlerContextType.None) {
-                    ctxs.remove(type);
-                }
-            }
-            ctx.close().sync();
-        } catch (InterruptedException e) {
-            LOG.warn("{} Error closing ChannelHandlerContext", this, e);
+        synchronized (initCtxs) {
+            initCtxs.remove(ctx);
         }
+        synchronized (ctxs) {
+            for (Map.Entry<ChannelHandlerContextType, ChannelHandlerContext> e : ctxs.entrySet()) {
+                if (e.getValue().equals(ctx)) {
+                    type = e.getKey();
+                }
+            }
+            if (type != ChannelHandlerContextType.None) {
+                ctxs.remove(type);
+            }
+        }
+        ctx.close();
         return type;
     }
 
@@ -301,16 +297,12 @@ public class SxpConnection {
      * @param ctx ChannelHandlerContext ChannelHandlerContext to be marked
      */
     public void closeChannelHandlerContextComplements(ChannelHandlerContext ctx) {
-        try {
-            synchronized (initCtxs) {
-                initCtxs.remove(ctx);
-                for (ChannelHandlerContext _ctx : initCtxs) {
-                    _ctx.close().sync();
-                }
-                initCtxs.clear();
+        synchronized (initCtxs) {
+            initCtxs.remove(ctx);
+            for (ChannelHandlerContext _ctx : initCtxs) {
+                _ctx.close();
             }
-        } catch (InterruptedException e) {
-            LOG.warn("{} Error closing ChannelHandlerContext", this, e);
+            initCtxs.clear();
         }
     }
 
@@ -318,21 +310,17 @@ public class SxpConnection {
      * Close and remove all ChannelHandlerContext associated with this connection
      */
     public void closeChannelHandlerContexts() {
-        try {
-            synchronized (initCtxs) {
-                for (ChannelHandlerContext _ctx : initCtxs) {
-                    _ctx.close().sync();
-                }
-                initCtxs.clear();
+        synchronized (initCtxs) {
+            for (ChannelHandlerContext _ctx : initCtxs) {
+                _ctx.close();
             }
-            synchronized (ctxs) {
-                for (ChannelHandlerContext _ctx : ctxs.values()) {
-                    _ctx.close().sync();
-                }
-                ctxs.clear();
+            initCtxs.clear();
+        }
+        synchronized (ctxs) {
+            for (ChannelHandlerContext _ctx : ctxs.values()) {
+                _ctx.close();
             }
-        } catch (InterruptedException e) {
-            LOG.warn("{} Error closing ChannelHandlerContext", this, e);
+            ctxs.clear();
         }
     }
 
