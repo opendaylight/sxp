@@ -13,6 +13,7 @@ import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
+import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
@@ -27,6 +28,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,8 +86,11 @@ public final class BindingManager extends Service<Void> {
      */
     public void cleanUpBindings(NodeId nodeID) {
         try {
-            getBindingSxpDatabase().cleanUpBindings(nodeID);
-            LOG.info(owner + " cleanUpBindings {}", getBindingSxpDatabase());
+            SxpDatabaseProvider database = getBindingSxpDatabase();
+            synchronized (database) {
+                database.cleanUpBindings(nodeID);
+                LOG.info(owner + " cleanUpBindings {}", getBindingSxpDatabase());
+            }
         } catch (NodeIdNotDefinedException e) {
             LOG.error("{} Error cleaning bindings ", this, e);
         }
@@ -205,7 +210,10 @@ public final class BindingManager extends Service<Void> {
      */
     public void purgeBindings(NodeId nodeID) {
         try {
-            getBindingSxpDatabase().purgeBindings(nodeID);
+            SxpDatabaseProvider database = getBindingSxpDatabase();
+            synchronized (database) {
+                database.purgeBindings(nodeID);
+            }
         } catch (NodeIdNotDefinedException | DatabaseAccessException e) {
             LOG.error("{} Error purging bindings ", this, e);
         }
@@ -241,8 +249,11 @@ public final class BindingManager extends Service<Void> {
      */
     public void setAsCleanUp(NodeId nodeID) {
         try {
-            getBindingSxpDatabase().setAsCleanUp(nodeID);
-            LOG.info(owner + " setAsCleanUp {}", getBindingSxpDatabase());
+            SxpDatabaseProvider database = getBindingSxpDatabase();
+            synchronized (database) {
+                database.setAsCleanUp(nodeID);
+                LOG.info(owner + " setAsCleanUp {}", database);
+            }
         } catch (NodeIdNotDefinedException e) {
             LOG.error("{} Error setting to clean up bindings ", this, e);
         }

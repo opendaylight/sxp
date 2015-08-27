@@ -75,10 +75,10 @@ public final class BindingDispatcher extends Service<Void> {
         MasterDatabaseProvider masterDatabase = null;
         if (owner.isEnabled()) {
             connections = owner.getAllOnSpeakerConnections();
-            if (!connections.isEmpty()) {
-                try {
-                    masterDatabase = getBindingMasterDatabase();
-                    synchronized (masterDatabase) {
+            try {
+                masterDatabase = getBindingMasterDatabase();
+                synchronized (masterDatabase) {
+                    if (!connections.isEmpty()) {
                         // Expand bindings.
                         if (owner.getExpansionQuantity() > 0) {
                             masterDatabase.expandBindings(owner.getExpansionQuantity());
@@ -90,10 +90,13 @@ public final class BindingDispatcher extends Service<Void> {
                         processUpdateSequence(masterDatabase, connections);
                         masterDatabase.purgeAllDeletedBindings();
                         masterDatabase.resetModified();
+                    } else if (owner.getAllConnections().isEmpty()) {
+                        masterDatabase.purgeAllDeletedBindings();
+                        masterDatabase.resetModified();
                     }
-                } catch (UnknownPrefixException | UnknownHostException | DatabaseAccessException e) {
-                    LOG.warn(owner + " Processing export {}", e.getClass().getSimpleName(), e);
                 }
+            } catch (UnknownPrefixException | UnknownHostException | DatabaseAccessException e) {
+                LOG.warn(owner + " Processing export {}", e.getClass().getSimpleName(), e);
             }
         }
     }

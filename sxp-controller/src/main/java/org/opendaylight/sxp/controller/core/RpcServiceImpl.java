@@ -16,8 +16,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import com.sun.org.apache.bcel.internal.generic.RETURN;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
+import org.opendaylight.sxp.controller.util.database.DatastoreValidator;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
@@ -27,6 +29,7 @@ import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.MasterBindingIdentity;
+import org.opendaylight.sxp.util.database.spi.MasterDatabaseAccess;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
@@ -132,13 +135,11 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
     }
 
     protected static MasterDatabaseInf getDatastoreProviderMaster(String nodeId) {
-        return new MasterDatastoreImpl(nodeId, new MasterDatabaseAccessImpl(nodeId, datastoreAccess,
-                LogicalDatastoreType.OPERATIONAL));
+        return Configuration.getRegisteredNode(nodeId).getBindingMasterDatabase();
     }
 
     protected static SxpDatabaseInf getDatastoreProviderSxp(String nodeId) {
-        return new SxpDatastoreImpl(nodeId, new SxpDatabaseAccessImpl(nodeId, datastoreAccess,
-                LogicalDatastoreType.OPERATIONAL));
+        return Configuration.getRegisteredNode(nodeId).getBindingSxpDatabase();
     }
 
     public static List<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.configuration.fields.Binding> getNodeBindings(
@@ -648,10 +649,10 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 bindingBuilder.setTimestamp(timestamp);
                 bindingBuilder.setChanged(true);
 
-                bindings.clear();
+                bindings = new ArrayList<>();
                 bindings.add(bindingBuilder.build());
 
-                prefixGroups.clear();
+                prefixGroups = new ArrayList<>();
                 prefixGroupBuilder = new PrefixGroupBuilder();
                 prefixGroupBuilder.setSgt(newSgt);
                 prefixGroupBuilder.setBinding(bindings);

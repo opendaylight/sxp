@@ -147,7 +147,7 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
         if (owner == null) {
             throw new NodeIdNotDefinedException();
         }
-        if (contributedBindingIdentities == null || contributedBindingIdentities.isEmpty()) {
+        if (contributedBindingIdentities == null ) {
             return;
         }
         // Local bindings have the priority.

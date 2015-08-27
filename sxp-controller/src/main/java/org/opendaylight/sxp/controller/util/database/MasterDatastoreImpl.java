@@ -36,10 +36,8 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
             throws DatabaseAccessException, NodeIdNotDefinedException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
-            synchronized (database) {
-                super.addBindings(owner, contributedBindingIdentities);
-                databaseAccess.put(database);
-            }
+            super.addBindings(owner, contributedBindingIdentities);
+            databaseAccess.put(database);
         }
     }
 
@@ -57,10 +55,8 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
             throws DatabaseAccessException, UnknownPrefixException, UnknownHostException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
-            synchronized (database) {
-                super.expandBindings(quantity);
-                databaseAccess.put(database);
-            }
+            super.expandBindings(quantity);
+            databaseAccess.put(database);
         }
     }
 
@@ -75,9 +71,7 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     public List<MasterDatabase> partition(int quantity, boolean onlyChanged) throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
-            synchronized (database) {
-                return super.partition(quantity, onlyChanged);
-            }
+            return super.partition(quantity, onlyChanged);
         }
     }
 
@@ -85,10 +79,8 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     public void purgeAllDeletedBindings() throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
-            synchronized (database) {
-                super.purgeAllDeletedBindings();
-                databaseAccess.put(database);
-            }
+            super.purgeAllDeletedBindings();
+            databaseAccess.put(database);
         }
     }
 
@@ -96,10 +88,8 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     public void purgeBindings(NodeId nodeId) throws DatabaseAccessException, NodeIdNotDefinedException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
-            synchronized (database) {
-                super.purgeBindings(nodeId);
-                databaseAccess.put(database);
-            }
+            super.purgeBindings(nodeId);
+            databaseAccess.put(database);
         }
     }
 
@@ -107,9 +97,7 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     public List<MasterBindingIdentity> readBindings() throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
-            synchronized (database) {
-                return super.readBindings();
-            }
+            return super.readBindings();
         }
     }
 
@@ -117,9 +105,7 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     public List<PrefixGroup> readBindingsLocal() throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
-            synchronized (database) {
-                return super.readBindingsLocal();
-            }
+            return super.readBindingsLocal();
         }
     }
 
@@ -127,10 +113,8 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     public void resetModified() throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
-            synchronized (database) {
-                super.resetModified();
-                databaseAccess.put(database);
-            }
+            super.resetModified();
+            databaseAccess.put(database);
         }
     }
 
@@ -138,11 +122,9 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     public boolean setAsDeleted(SxpNode sxpNode, List<PrefixGroup> prefixGroups) throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
-            synchronized (database) {
-                boolean result = super.setAsDeleted(sxpNode, prefixGroups);
-                databaseAccess.put(database);
-                return result;
-            }
+            boolean result = super.setAsDeleted(sxpNode, prefixGroups);
+            databaseAccess.put(database);
+            return result;
         }
     }
 
@@ -151,12 +133,10 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
         synchronized (databaseAccess) {
             try {
                 database = databaseAccess.read();
+                return super.toString();
             } catch (Exception e) {
                 LOG.warn(controllerName + " {} | {}", e.getClass().getSimpleName(), e.getMessage());
                 return "[error]";
-            }
-            synchronized (database) {
-                return super.toString();
             }
         }
     }

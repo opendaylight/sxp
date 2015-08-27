@@ -17,9 +17,11 @@ import org.junit.runner.RunWith;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
+import org.opendaylight.sxp.controller.util.database.access.MasterDatabaseAccessImpl;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
@@ -94,6 +96,8 @@ public class RpcServiceImplTest {
                 when(datastoreAccess.put(any(InstanceIdentifier.class), any(DataObject.class),
                         any(LogicalDatastoreType.class))).thenReturn(checkedFuture);
                 service = new RpcServiceImpl(datastoreAccess);
+                when(node.getBindingMasterDatabase()).thenReturn(new MasterDatastoreImpl("0.0.0.0",
+                        new MasterDatabaseAccessImpl("0.0.0.0", datastoreAccess, LogicalDatastoreType.OPERATIONAL)));
         }
 
         private Binding getBinding(String prefix) {
@@ -347,12 +351,12 @@ public class RpcServiceImplTest {
                         NodeId.getDefaultInstance("0.0.0.0"));
                 when(checkedFuture.get()).thenReturn(optional);
                 GetNodeBindingsInputBuilder input = new GetNodeBindingsInputBuilder();
-                input.setLocalRequestedNode(NodeId.getDefaultInstance("1.1.1.1"));
+                input.setLocalRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
 
                 input.setRequestedNode(null);
                 assertTrue(service.getNodeBindings(input.build()).get().getResult().getBinding().isEmpty());
 
-                input.setRequestedNode(NodeId.getDefaultInstance("1.1.1.1"));
+                input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
                 assertFalse(service.getNodeBindings(input.build()).get().getResult().getBinding().isEmpty());
         }
 
