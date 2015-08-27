@@ -350,10 +350,10 @@ import static org.mockito.Mockito.verify;
         @Test public void testAddConnection() throws Exception {
                 PowerMockito.mockStatic(ConnectFacade.class);
                 node.addConnection(null);
-                assertEquals(0, node.size());
+                assertEquals(0, node.getAllConnections().size());
 
                 node.addConnection(mockConnection(ConnectionMode.Both, ConnectionState.On));
-                assertEquals(1, node.size());
+                assertEquals(1, node.getAllConnections().size());
                 PowerMockito.verifyStatic();
         }
 
@@ -362,16 +362,16 @@ import static org.mockito.Mockito.verify;
                 List<Connection> connection = new ArrayList<>();
 
                 node.addConnections(null);
-                assertEquals(0, node.size());
+                assertEquals(0, node.getAllConnections().size());
 
                 Connections connections = mock(Connections.class);
                 when(connections.getConnection()).thenReturn(connection);
                 node.addConnections(connections);
-                assertEquals(0, node.size());
+                assertEquals(0, node.getAllConnections().size());
 
                 connection.add(mockConnection(ConnectionMode.Both, ConnectionState.On));
                 node.addConnections(connections);
-                assertEquals(1, node.size());
+                assertEquals(1, node.getAllConnections().size());
                 PowerMockito.verifyStatic();
         }
 }
