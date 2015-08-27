@@ -11,16 +11,22 @@ package org.opendaylight.sxp.controller.core;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.CheckedFuture;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.DatastoreValidator;
+import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
+import org.opendaylight.sxp.controller.util.database.access.MasterDatabaseAccessImpl;
+import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Prefix;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.controller.sxp.controller.conf.rev141002.modules.module.configuration.sxp.controller.sxp.controller.SxpNodeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
@@ -34,6 +40,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sources.fields.SourcesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.DataObject;
@@ -52,14 +59,21 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
-@RunWith(PowerMockRunner.class) @PrepareForTest({DatastoreAccess.class, DatastoreValidator.class})
+@RunWith(PowerMockRunner.class) @PrepareForTest({DatastoreAccess.class, DatastoreValidator.class, SxpNode.class})
 public class DataChangeOperationalListenerImplTest {
 
+        private static SxpNode node;
         private static DatastoreAccess datastoreAccess;
         private static DatastoreValidator datastoreValidator;
         private static DataChangeOperationalListenerImpl operationalListener;
         private static MasterDatabase database;
         private static List<Source> sources;
+
+        @BeforeClass public static void initClass() throws Exception {
+                node = PowerMockito.mock(SxpNode.class);
+                when(node.getNodeId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
+                Configuration.register(node);
+        }
 
         @Before public void init() throws ExecutionException, InterruptedException {
                 MasterDatabaseBuilder masterDatabaseBuilder = new MasterDatabaseBuilder();
@@ -80,6 +94,8 @@ public class DataChangeOperationalListenerImplTest {
                         any(LogicalDatastoreType.class))).thenReturn(future);
                 PowerMockito.when(datastoreValidator.getDatastoreAccess()).thenReturn(datastoreAccess);
                 operationalListener = new DataChangeOperationalListenerImpl("0.0.0.0", datastoreValidator);
+                when(node.getBindingMasterDatabase()).thenReturn(new MasterDatastoreImpl("0.0.0.0",
+                        new MasterDatabaseAccessImpl("0.0.0.0", datastoreAccess, LogicalDatastoreType.OPERATIONAL)));
         }
 
         private Binding getBinding(String prefix) {
