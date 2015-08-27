@@ -216,7 +216,6 @@ public final class SxpNode extends ConcurrentHashMap<InetSocketAddress, SxpConne
 
         SxpConnection _connection = SxpConnection.create(this, connection);
         put(_connection.getDestination(), _connection);
-        openConnection(_connection);
     }
 
     /**

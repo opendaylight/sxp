@@ -110,7 +110,7 @@ public final class Context {
                 if (connection.getVersion().equals(Version.Version1)) {
                     MessageDecoder.sendErrorMessage(ctx,
                             new ErrorMessageException(ErrorCodeNonExtended.VersionMismatch, null), connection);
-                    connection.getOwner().openConnection(connection);
+                    connection.setStateOff(ctx);
                     return;
                 } else if (messageVersion.compareTo(version) < 0) {
                     // Update strategy according to version specified in Open from remote

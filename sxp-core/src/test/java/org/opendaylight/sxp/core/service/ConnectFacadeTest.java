@@ -23,6 +23,7 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import static org.junit.Assert.assertFalse;
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.when;
         @Before public void init() throws Exception {
                 sxpNode = PowerMockito.mock(SxpNode.class);
                 PowerMockito.when(sxpNode.getPassword()).thenReturn("cisco");
+                PowerMockito.when(sxpNode.getSourceIp()).thenReturn(InetAddress.getByName("127.0.0.1"));
         }
 
         @Test public void testCreateClient() throws Exception {

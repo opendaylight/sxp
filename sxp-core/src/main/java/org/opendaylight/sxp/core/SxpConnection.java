@@ -309,12 +309,6 @@ public class SxpConnection {
                 }
                 initCtxs.clear();
             }
-            //Aware that this method is only used for Non Both mode so there is no setup for it ...
-            if (isModeListener()) {
-                markChannelHandlerContext(ctx, ChannelHandlerContextType.ListenerContext);
-            } else if (isModeSpeaker()) {
-                markChannelHandlerContext(ctx, ChannelHandlerContextType.SpeakerContext);
-            }
         } catch (InterruptedException e) {
             LOG.warn("{} Error closing ChannelHandlerContext", this, e);
         }
@@ -777,6 +771,23 @@ public class SxpConnection {
         }
     }
 
+    /**
+     * Mark ChannelHandlerContext with Role Speaker or Listener,
+     * removes ChannelHandlerContext from init queue
+     * Aware that this method is only used for Non Both mode
+     *
+     * @param ctx ChannelHandlerContext to be marked
+     */
+    public void markChannelHandlerContext(ChannelHandlerContext ctx) {
+        if (isModeBoth()) {
+            LOG.error("{} Cannot automatically mark ChannelHandlerContext {}", this, ctx);
+        } else if (isModeListener()) {
+            markChannelHandlerContext(ctx, ChannelHandlerContextType.ListenerContext);
+        } else if (isModeSpeaker()) {
+            markChannelHandlerContext(ctx, ChannelHandlerContextType.SpeakerContext);
+        }
+    }
+
     public void purgeBindings() {
         // Get message relevant peer node ID.
         NodeId peerId;
@@ -793,6 +804,7 @@ public class SxpConnection {
         } catch (UnknownNodeIdException e) {
             LOG.warn(this + " Unknown message relevant peer node ID | {} | {}", e.getClass().getSimpleName(),
                     e.getMessage());
+            setStateOff();
             return;
         }
 
@@ -801,7 +813,8 @@ public class SxpConnection {
         try {
             setStateOff(getChannelHandlerContext(ChannelHandlerContextType.ListenerContext));
         } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-            LOG.error("{} Error setting Off connection", this, e);
+            LOG.warn("{} Error setting Off connection", this, e);
+            setStateOff();
         }
     }
 
@@ -1402,11 +1415,11 @@ public class SxpConnection {
      * or purge learned Bindings if Listener mode
      */
     public void shutdown() {
-        if (isModeListener()){
+        if (isModeListener() && isStateOn()){
             LOG.info("{} PURGE bindings ", this);
             purgeBindings();
         }
-        if (isModeSpeaker()) {
+        if (isModeSpeaker() && isStateOn()) {
             ByteBuf message = MessageFactory.createPurgeAll();
             LOG.info("{} Sending PURGEALL {}", this, MessageFactory.toString(message));
             try {
