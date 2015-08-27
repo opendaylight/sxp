@@ -30,6 +30,7 @@ import org.opendaylight.yangtools.yang.binding.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 
 /** Handles server and client sides of a channel. */
@@ -278,6 +279,11 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
             connection = owner.getConnection(ctx.channel().remoteAddress());
         } catch (SocketAddressNotRecognizedException | UnknownSxpConnectionException e) {
             LOG.warn(getLogMessage(owner, ctx, "Channel exception", e));
+            return;
+        }
+        if (cause instanceof IOException) {
+            LOG.debug("IO error {} shutting down connection {}", cause, connection);
+            connection.setStateOff(ctx);
             return;
         }
         connection.getContext().executeExceptionCaughtStrategy(ctx, connection);
