@@ -105,7 +105,7 @@ public final class UpdateExportTask implements Callable<Void> {
                         connection.setUpdateMessageExportTimestamp();
                         connection.setUpdateAllExported();
                 } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-                        LOG.debug("{} Cannot find context aborting bindings export.", connection, e);
+                        LOG.error("{} Cannot find context aborting bindings export.", connection, e);
                         connection.resetUpdateExported();
                 } catch (InterruptedException e) {
                         connection.resetUpdateExported();

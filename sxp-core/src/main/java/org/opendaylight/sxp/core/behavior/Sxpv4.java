@@ -326,6 +326,7 @@ public final class Sxpv4 extends Sxpv3 {
                     connection.closeChannelHandlerContext(ctx);
                     return;
                 }
+                connection.markChannelHandlerContext(ctx);
                 // Setup connection parameters.
                 connection.setConnection(_message);
 
@@ -370,6 +371,7 @@ public final class Sxpv4 extends Sxpv3 {
                     connection.closeChannelHandlerContext(ctx);
                     return;
                 }
+                connection.markChannelHandlerContext(ctx);
                 // Setup connection parameters.
                 connection.setConnection(_message);
                 LOG.info("{} Connected", connection);

@@ -97,6 +97,8 @@ public class Sxpv1 implements Strategy {
                     connection.setStateOff(ctx);
                     break;
             }
+        } else {
+            connection.setStateOff();
         }
     }
 
@@ -140,6 +142,7 @@ public class Sxpv1 implements Strategy {
                 if (!checkModeMismatch(connection, _message, ctx)) {
                     // Close the dual channels.
                     connection.closeChannelHandlerContextComplements(ctx);
+                    connection.markChannelHandlerContext(ctx);
                     // Set connection state.
                     connection.setStateOn();
                     // Starts sending IP-SGT mappings using the SXP connection.
@@ -162,6 +165,7 @@ public class Sxpv1 implements Strategy {
                 if (!checkModeMismatch(connection, _message, ctx)) {
                     // Close the dual channels.
                     connection.closeChannelHandlerContextComplements(ctx);
+                    connection.markChannelHandlerContext(ctx);
                     // Set connection state.
                     connection.setStateOn();
                     // Starts sending IP-SGT mappings using the SXP connection.
