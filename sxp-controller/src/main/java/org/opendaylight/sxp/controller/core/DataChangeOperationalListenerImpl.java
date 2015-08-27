@@ -53,8 +53,7 @@ public class DataChangeOperationalListenerImpl implements
     private static final Logger LOG = LoggerFactory.getLogger(DataChangeOperationalListenerImpl.class);
 
     protected static MasterDatabaseInf getDatastoreProviderMaster(String nodeId) {
-        return new MasterDatastoreImpl(nodeId, new MasterDatabaseAccessImpl(nodeId,
-                datastoreValidator.getDatastoreAccess(), LogicalDatastoreType.OPERATIONAL));
+        return Configuration.getRegisteredNode(nodeId).getBindingMasterDatabase();
     }
 
     private String nodeId;
