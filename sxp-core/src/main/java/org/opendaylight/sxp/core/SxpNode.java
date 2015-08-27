@@ -39,9 +39,12 @@ import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
+import org.opendaylight.tcpmd5.api.KeyMapping;
 import org.opendaylight.tcpmd5.jni.NativeSupportUnavailableException;
+import org.opendaylight.tcpmd5.netty.MD5ChannelOption;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
@@ -228,6 +231,7 @@ public final class SxpNode {
                 throw new IllegalArgumentException(
                         "Connection " + _connection + " with destination " + _connection.getDestination() + " exist.");
             }
+            updateMD5keys(_connection);
             addressToSxpConnection.put(_connection.getDestination(), _connection);
         }
     }
@@ -709,6 +713,7 @@ public final class SxpNode {
             if (connection != null) {
                 connection.shutdown();
             }
+            updateMD5keys(connection);
             return connection;
         }
     }
@@ -925,6 +930,30 @@ public final class SxpNode {
                 });
             }
         }, ThreadsWorker.WorkerType.DEFAULT);
+    }
+
+    private void updateMD5keys(SxpConnection connection) {
+        if (!isEnabled() || !(connection.getPasswordType().equals(PasswordType.Default) && getPassword() != null
+                && !getPassword().isEmpty())) {
+            return;
+        }
+        KeyMapping mapping = serverChannel.config().getOption(MD5ChannelOption.TCP_MD5SIG);
+        final SxpNode sxpNode = this;
+        if (!mapping.containsKey(connection.getDestination().getAddress()) && !serverChannelInit.getAndSet(true)) {
+            LOG.info("{} Updating MD5 keys", this);
+            serverChannel.close().addListener(new ChannelFutureListener() {
+
+                @Override public void operationComplete(ChannelFuture future) throws Exception {
+                    ConnectFacade.createServer(sxpNode, handlerFactoryServer).addListener(new ChannelFutureListener() {
+
+                        @Override public void operationComplete(ChannelFuture future) throws Exception {
+                            setServerChannel(future.channel());
+                            serverChannelInit.set(false);
+                        }
+                    });
+                }
+            });
+        }
     }
 
     @Override
