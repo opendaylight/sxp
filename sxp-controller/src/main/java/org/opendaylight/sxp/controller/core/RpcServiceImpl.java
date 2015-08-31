@@ -528,7 +528,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 }
 
                 List<Connection> connections = new ArrayList<Connection>();
-                for (SxpConnection connection : Configuration.getRegisteredNode(nodeId).values()) {
+                for (SxpConnection connection : Configuration.getRegisteredNode(nodeId).getAllConnections()) {
                     connections.add(connection.getConnection());
                 }
                 connectionsBuilder.setConnection(connections);
