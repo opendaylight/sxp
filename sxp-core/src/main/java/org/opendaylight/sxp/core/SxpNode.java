@@ -39,9 +39,12 @@ import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
+import org.opendaylight.tcpmd5.api.KeyMapping;
 import org.opendaylight.tcpmd5.jni.NativeSupportUnavailableException;
+import org.opendaylight.tcpmd5.netty.MD5ChannelOption;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
@@ -69,6 +72,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The source-group tag exchange protocol (SXP) aware node implementation. SXP
@@ -229,8 +233,9 @@ public final class SxpNode {
                         "Connection " + _connection + " with destination " + _connection.getDestination() + " exist.");
             }
             addressToSxpConnection.put(_connection.getDestination(), _connection);
-            openConnection(_connection);
         }
+        updateMD5keys(_connection);
+        openConnection(_connection);
     }
 
     /**
@@ -709,6 +714,7 @@ public final class SxpNode {
             SxpConnection connection = addressToSxpConnection.remove(destination);
             if (connection != null) {
                 connection.shutdown();
+                updateMD5keys(connection);
             }
             return connection;
         }
@@ -926,6 +932,39 @@ public final class SxpNode {
                 });
             }
         }, ThreadsWorker.WorkerType.DEFAULT);
+    }
+
+    private AtomicInteger updateMD5counter = new AtomicInteger();
+
+    private void updateMD5keys(final SxpConnection connection) {
+        if (serverChannel == null || !(connection.getPasswordType().equals(PasswordType.Default)
+                && getPassword() != null && !getPassword().isEmpty())) {
+            return;
+        }
+        updateMD5counter.incrementAndGet();
+        final SxpNode sxpNode = this;
+        if (isEnabled() && !serverChannelInit.getAndSet(true)) {
+            LOG.info("{} Updating MD5 keys", this);
+            serverChannel.close().addListener(createMD5updateListener(sxpNode));
+        }
+    }
+
+    private ChannelFutureListener createMD5updateListener(final SxpNode sxpNode) {
+        return new ChannelFutureListener() {
+
+            @Override public void operationComplete(ChannelFuture future) throws Exception {
+                ConnectFacade.createServer(sxpNode, handlerFactoryServer).addListener(new ChannelFutureListener() {
+
+                    @Override public void operationComplete(ChannelFuture future) throws Exception {
+                        setServerChannel(future.channel());
+                        serverChannelInit.set(false);
+                        if (updateMD5counter.decrementAndGet() > 0) {
+                            serverChannel.close().addListener(createMD5updateListener(sxpNode));
+                        }
+                    }
+                });
+            }
+        };
     }
 
     @Override
