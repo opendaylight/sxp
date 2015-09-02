@@ -35,8 +35,8 @@ public class RetryOpenTimerTask extends SxpTimerTask<Void> {
         if (owner.isEnabled()) {
             LOG.debug(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
             owner.openConnections();
-            owner.setTimer(TimerType.RetryOpenTimer, getPeriod());
         }
+        owner.setTimer(TimerType.RetryOpenTimer, getPeriod());
         return null;
     }
 }

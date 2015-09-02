@@ -324,7 +324,7 @@ public class RpcServiceImplTest {
                 input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
                 List<SxpConnection> map = new ArrayList<>();
                 map.add(mock(SxpConnection.class));
-                when(node.values()).thenReturn(map);
+                when(node.getAllConnections()).thenReturn(map);
 
                 assertFalse(service.getConnections(input.build())
                         .get()
