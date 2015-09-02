@@ -7,6 +7,7 @@
  and is available at http://www.eclipse.org/legal/epl-v10.html
 --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
    <modelVersion>4.0.0</modelVersion>
+   <!-- FIXME: Migrate to features-parent -->
    <parent>
     <artifactId>sxp-parent</artifactId>
     <groupId>org.opendaylight.sxp</groupId>
@@ -30,6 +31,9 @@
       <branding.version>1.1.0-SNAPSHOT</branding.version>
       <karaf.resources.version>1.6.0-SNAPSHOT</karaf.resources.version>
       <karaf.empty.version>1.6.0-SNAPSHOT</karaf.empty.version>
+      <controller.mdsal.version>1.3.0-SNAPSHOT</controller.model.version>
+      <mdsal.model.version>0.8.0-SNAPSHOT</mdsal.model.version>
+      <restconf.version>1.3.0-SNAPSHOT</restconf.version>
    </properties>
    <dependencies>
     <!--
@@ -65,7 +69,16 @@
           <type>xml</type>
         </dependency>
     -->
-    
+
+    <dependency>
+        <groupId>org.opendaylight.mdsal.model</groupId>
+        <artifactId>features-mdsal-model</artifactId>
+        <version>${mdsal.model.version}</version>
+        <classifier>features</classifier>
+        <type>xml</type>
+        <scope>runtime</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>features-mdsal</artifactId>
@@ -88,9 +101,9 @@
       <type>xml</type>
     </dependency>
     <dependency>
-      <groupId>org.opendaylight.controller</groupId>
+      <groupId>org.opendaylight.netconf</groupId>
       <artifactId>features-restconf</artifactId>
-      <version>${mdsal.version}</version>
+      <version>${restconf.version}</version>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>
@@ -110,13 +123,13 @@
       <artifactId>sxp-controller</artifactId>
       <version>${project.version}</version>
     </dependency>
-    
+
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-all</artifactId>
       <version>${netty.version}</version>
-  	</dependency>
-       
+    </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -124,7 +137,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
-    </dependency>   
+    </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
