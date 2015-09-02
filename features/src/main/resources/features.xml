@@ -22,9 +22,9 @@
             <repository>mvn:org.opendaylight.controller/features-mdsal/1.2.0-SNAPSHOT/xml/features</repository>
             <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/0.1.0-SNAPSHOT/xml/features</repository>
     -->
-   
-    <repository>mvn:org.opendaylight.yangtools/features-yangtools/${yangtools.feature.version}/xml/features</repository>
-    <repository>mvn:org.opendaylight.controller/features-mdsal/${mdsal.version}/xml/features</repository>
+    <repository>mvn:org.opendaylight.mdsal/features-mdsal/${mdsal.version}/xml/features</repository>
+    <repository>mvn:org.opendaylight.mdsal.model/features-mdsal-model/${mdsal.model.version}/xml/features</repository>
+    <repository>mvn:org.opendaylight.controller/features-mdsal/${controller.mdsal.version}/xml/features</repository>
     <repository>mvn:org.opendaylight.controller/features-config/${config.version}/xml/features</repository>
     <repository>mvn:org.opendaylight.tcpmd5/features-tcpmd5/${tcpmd5.version}/xml/features</repository>
     <repository>mvn:org.opendaylight.controller/features-restconf/${restconf.version}/xml/features</repository>
@@ -39,8 +39,8 @@
             Examples:
             <feature version='${project.version}'>odl-sxp-provider</feature>
             <feature version='${project.version}'>odl-sxp-model</feature>
-        -->  
-        <feature version='${project.version}'>odl-sxp-api</feature>       
+        -->
+        <feature version='${project.version}'>odl-sxp-api</feature>
         <feature version='${project.version}'>odl-sxp-core</feature>
         <feature version='${project.version}'>odl-sxp-controller</feature>
     </feature>
@@ -66,8 +66,8 @@
 
         * Basic MD-SAL Model feature
         <feature name='odl-sxp-model' version='${project.version}' description='OpenDaylight :: sxp :: Model'>
-            <feature version='0.7.0-SNAPSHOT'>odl-yangtools-binding</feature>
-            <feature version='0.7.0-SNAPSHOT'>odl-yangtools-models</feature>
+            <feature version='0.7.0-SNAPSHOT'>odl-mdsal-binding-base</feature>
+            <feature version='0.7.0-SNAPSHOT'>odl-mdsal-models</feature>
             <bundle>mvn:org.opendaylight.sxp/sxp-model/${project.version}</bundle>
             ... whatever other bundles you need
         </feature>
@@ -87,12 +87,12 @@
             ... whatever other bundles you need
         </feature>
 
-    -->   
+    -->
     <feature name='odl-sxp-api' version='${project.version}' description='OpenDaylight :: Sxp :: Api'>
-      <feature version='${yangtools.feature.version}'>odl-yangtools-models</feature>    
-      <feature version='${yangtools.feature.version}'>odl-yangtools-binding</feature>
-      <feature version='${yangtools.feature.version}'>odl-yangtools-common</feature>    
-      <bundle>mvn:org.opendaylight.sxp/sxp-api/${project.version}</bundle>      
+      <feature version='${mdsal.model.version}'>odl-mdsal-models</feature>
+      <feature version='${mdsal.version}'>odl-mdsal-binding-base</feature>
+      <feature version='${yangtools.feature.version}'>odl-yangtools-common</feature>
+      <bundle>mvn:org.opendaylight.sxp/sxp-api/${project.version}</bundle>
     </feature>
     <feature name='odl-sxp-core' version='${project.version}' description='OpenDaylight :: Sxp :: Core'>
       <feature version='${project.version}'>odl-sxp-api</feature>
@@ -104,21 +104,21 @@
       <bundle>mvn:io.netty/netty-codec-socks/${netty.version}</bundle>
       <bundle>mvn:io.netty/netty-common/${netty.version}</bundle>
       <bundle>mvn:io.netty/netty-handler/${netty.version}</bundle>
-      <bundle>mvn:io.netty/netty-transport/${netty.version}</bundle>      
+      <bundle>mvn:io.netty/netty-transport/${netty.version}</bundle>
       <!--bundle>mvn:junit/junit/${junit.version}</bundle -->
       <!--bundle>mvn:org.hamcrest/hamcrest-all/${hamcrest.version}</bundle-->
     </feature>
     <feature name='odl-sxp-controller' version='${project.version}' description='OpenDaylight :: Sxp :: Controller'>
       <feature version='${project.version}'>odl-sxp-api</feature>
       <feature version='${project.version}'>odl-sxp-core</feature>
-      <feature version='${mdsal.version}'>odl-mdsal-broker</feature>
+      <feature version='${controller.mdsal.version}'>odl-mdsal-broker</feature>
       <!--feature version='${mdsal.version}'>odl-mdsal-apidocs</feature-->
       <feature>odl-restconf</feature>
       <feature>http</feature>
-      <configfile finalname="etc/opendaylight/karaf/${configfilebase}">mvn:org.opendaylight.sxp/sxp-config/${project.version}/xml/${configfilebase}</configfile>    
+      <configfile finalname="etc/opendaylight/karaf/${configfilebase}">mvn:org.opendaylight.sxp/sxp-config/${project.version}/xml/${configfilebase}</configfile>
       <bundle>mvn:org.opendaylight.sxp/sxp-controller/${project.version}</bundle>
     </feature>
-    
+
     <!-- Optional TODO: Remove TODO Comments -->
 
 </features>
