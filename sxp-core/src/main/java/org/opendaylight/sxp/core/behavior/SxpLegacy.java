@@ -43,9 +43,9 @@ import org.opendaylight.yangtools.yang.binding.Notification;
 import java.net.UnknownHostException;
 
 /**
- * Sxpv1 class provides logic for handling connection on Version 1
+ * SxpLegacy class provides logic for handling connection on Version 1/2/3
  */
-public class Sxpv1 implements Strategy {
+public class SxpLegacy implements Strategy {
 
     protected Context context;
 
@@ -54,7 +54,7 @@ public class Sxpv1 implements Strategy {
      *
      * @param context Context to be set
      */
-    public Sxpv1(Context context) {
+    public SxpLegacy(Context context) {
         this.context = context;
     }
 
