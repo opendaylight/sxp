@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.core;
 
+import com.google.common.net.InetAddresses;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -54,6 +55,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayDeque;
@@ -212,8 +214,13 @@ public class SxpConnection {
         if (connection.getTcpPort() != null && connection.getTcpPort().getValue() > 0) {
             port = connection.getTcpPort().getValue();
         }
-        this.destination = IpPrefixConv.parseInetPrefix(connection.getPeerAddress().getValue());
-        this.destination = new InetSocketAddress(destination.getAddress(), port);
+        InetAddress
+                inetAddress =
+                InetAddresses.forString(
+                        connection.getPeerAddress().getIpv4Address() != null ? connection.getPeerAddress()
+                                .getIpv4Address()
+                                .getValue() : connection.getPeerAddress().getIpv6Address().getValue());
+        this.destination = new InetSocketAddress(inetAddress, port);
 
         if (connection.getVersion() != null) {
             setBehaviorContexts(connection.getVersion());

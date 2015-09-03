@@ -28,6 +28,7 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.DatastoreValidator;
 import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
@@ -82,9 +83,8 @@ import static org.mockito.Mockito.*;
                 Connection connection = new Connection();
                 connection.setVersion(version);
                 connection.setMode(mode);
-                connection.setPeerAddress(Ipv4Address.getDefaultInstance("1.1.1.1"));
+                connection.setPeerAddress(new IpAddress("1.1.1.1".toCharArray()));
                 connection.setTcpPort(PortNumber.getDefaultInstance("60000"));
-                connection.setSourceIp(new IpPrefix(Ipv4Prefix.getDefaultInstance("0.0.0.0/32")));
                 connection.setConnectionTimers(new ConnectionTimers());
                 return connection;
         }
@@ -140,7 +140,7 @@ import static org.mockito.Mockito.*;
 
                 node.setConnections(connections);
                 node.setMappingExpanded(10);
-                node.setSourceIp(new IpPrefix(Ipv4Prefix.getDefaultInstance("0.0.0.0/32")));
+                node.setSourceIp(new IpAddress("0.0.0.0".toCharArray()));
 
                 MasterDatabase masterDatabase = new MasterDatabase();
                 List<Binding> bindings = new ArrayList<>();

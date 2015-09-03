@@ -35,6 +35,7 @@ import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.TimeConv;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
@@ -210,7 +211,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         return false;
     }
 
-    private static boolean isConnectionPresent(String nodeId, Ipv4Address peerAddress, PortNumber tcpPort)
+    private static boolean isConnectionPresent(String nodeId, IpAddress peerAddress, PortNumber tcpPort)
             throws Exception {
 
         InstanceIdentifier<Connection> connectionIdentifier = InstanceIdentifier
@@ -277,8 +278,8 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
                 List<Connection> _connections = new ArrayList<Connection>();
                 for (Connection connection : connections.getConnection()) {
-                    Ipv4Address peerAddress = connection.getPeerAddress();
-                    if (peerAddress == null || peerAddress.getValue() == null || peerAddress.getValue().isEmpty()) {
+                    IpAddress peerAddress = connection.getPeerAddress();
+                    if (peerAddress == null || peerAddress.getValue() == null || peerAddress.getValue().length == 0) {
                         LOG.warn("RpcAddConnection exception | Connection parameter 'peer-address' not defined");
                         continue;
                     }

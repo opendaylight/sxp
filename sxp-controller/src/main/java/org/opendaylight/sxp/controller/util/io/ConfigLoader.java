@@ -34,6 +34,7 @@ import org.opendaylight.sxp.util.exception.connection.NoNetworkInterfacesExcepti
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.sxp.util.time.TimeConv;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
@@ -152,7 +153,7 @@ public class ConfigLoader {
 
             connectionBuilder.setVpn(connection.getVpn());
 
-            Ipv4Address peerAddress = connection.getPeerAddress();
+            IpAddress peerAddress = connection.getPeerAddress();
             if (peerAddress == null) {
                 LOG.error("[{}] Connection configuration error | Parameter 'peer-address' not defined",
                         NodeIdConv.toString(nodeId));
@@ -162,7 +163,6 @@ public class ConfigLoader {
             connectionBuilder.setTcpPort(connection.getTcpPort());
             connectionBuilder.setKey(new ConnectionKey(peerAddress, connection.getTcpPort()));
 
-            connectionBuilder.setSourceIp(connection.getSourceIp());
             PasswordType _passwordType = connection.getPassword();
             if (_passwordType == null) {
                 _passwordType = PasswordType.None;
