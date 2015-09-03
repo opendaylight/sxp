@@ -11,6 +11,7 @@ package org.opendaylight.sxp.core;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
+import com.google.common.net.InetAddresses;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -42,6 +43,7 @@ import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
 import org.opendaylight.tcpmd5.api.KeyMapping;
 import org.opendaylight.tcpmd5.jni.NativeSupportUnavailableException;
 import org.opendaylight.tcpmd5.netty.MD5ChannelOption;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
@@ -197,7 +199,11 @@ public final class SxpNode {
             this.sourceIp = Search.getBestLocalDeviceAddress();
             LOG.debug(toString() + " Setting-up the best local device IP address [sourceIp=\"" + sourceIp + "\"]");
         } else {
-            this.sourceIp = IpPrefixConv.parseInetPrefix(IpPrefixConv.toString(nodeBuilder.getSourceIp())).getAddress();
+                this.sourceIp =
+                        InetAddresses.forString(
+                                nodeBuilder.getSourceIp().getIpv4Address() != null ? nodeBuilder.getSourceIp()
+                                        .getIpv4Address()
+                                        .getValue() : nodeBuilder.getSourceIp().getIpv6Address().getValue());
         }
 
         this.nodeBuilder.setSecurity(setPassword(nodeBuilder.getSecurity()));

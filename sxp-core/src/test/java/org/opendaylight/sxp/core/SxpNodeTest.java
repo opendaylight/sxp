@@ -21,11 +21,10 @@ import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.ConnectFacade;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
-import org.opendaylight.sxp.util.exception.node.DatabaseNotFoundException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownSxpConnectionException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
@@ -54,20 +53,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyObject;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({ConnectFacade.class, BindingHandler.class}) public class SxpNodeTest {
 
@@ -109,8 +96,7 @@ import static org.mockito.Mockito.verify;
         private Connection mockConnection(ConnectionMode mode, ConnectionState state) {
                 Connection connection = mock(Connection.class);
                 when(connection.getMode()).thenReturn(mode);
-                when(connection.getPeerAddress()).thenReturn(
-                        Ipv4Address.getDefaultInstance("127.0.0." + (++ip4Adrres)));
+                when(connection.getPeerAddress()).thenReturn(new IpAddress(("127.0.0." + (++ip4Adrres)).toCharArray()));
                 when(connection.getState()).thenReturn(state);
                 return connection;
         }
@@ -170,8 +156,12 @@ import static org.mockito.Mockito.verify;
                 assertEquals(1, node.getAllOnSpeakerConnections().size());
         }
 
-        private InetSocketAddress getInetSocketAddress(String s) throws UnknownHostException {
-                InetAddress inetAddress = InetAddress.getByName(s);
+        private InetSocketAddress getInetSocketAddress(IpAddress s) throws UnknownHostException {
+                InetAddress
+                        inetAddress =
+                        InetAddress.getByName(
+                                s.getIpv4Address() != null ? s.getIpv4Address().getValue() : s.getIpv6Address()
+                                        .getValue());
                 InetSocketAddress inetSocketAddress = new InetSocketAddress(inetAddress, 64999);
                 return inetSocketAddress;
         }
@@ -196,12 +186,12 @@ import static org.mockito.Mockito.verify;
                 Connection connection1 = mockConnection(ConnectionMode.Listener, ConnectionState.On);
 
                 node.addConnection(connection);
-                assertNotNull(node.getByAddress(getInetSocketAddress(connection.getPeerAddress().getValue())));
-                assertNull(node.getByAddress(getInetSocketAddress(connection1.getPeerAddress().getValue())));
+                assertNotNull(node.getByAddress(getInetSocketAddress(connection.getPeerAddress())));
+                assertNull(node.getByAddress(getInetSocketAddress(connection1.getPeerAddress())));
 
                 node.addConnection(connection1);
-                assertNotNull(node.getByAddress(getInetSocketAddress(connection.getPeerAddress().getValue())));
-                assertNotNull(node.getByAddress(getInetSocketAddress(connection1.getPeerAddress().getValue())));
+                assertNotNull(node.getByAddress(getInetSocketAddress(connection.getPeerAddress())));
+                assertNotNull(node.getByAddress(getInetSocketAddress(connection1.getPeerAddress())));
         }
 
         @Test public void testGetByPort() throws Exception {
@@ -314,9 +304,7 @@ import static org.mockito.Mockito.verify;
         @Test public void testRemoveConnection() throws Exception {
                 Connection connection = mockConnection(ConnectionMode.Listener, ConnectionState.On);
                 node.addConnection(connection);
-                SxpConnection
-                        sxpConnection =
-                        node.removeConnection(getInetSocketAddress(connection.getPeerAddress().getValue()));
+                SxpConnection sxpConnection = node.removeConnection(getInetSocketAddress(connection.getPeerAddress()));
                 assertEquals(ConnectionState.Off, sxpConnection.getState());
         }
 
@@ -324,15 +312,13 @@ import static org.mockito.Mockito.verify;
                 Connection connection = mockConnection(ConnectionMode.Listener, ConnectionState.On);
                 node.addConnection(connection);
 
-                SxpConnection
-                        sxpConnection =
-                        node.getConnection(getInetSocketAddress(connection.getPeerAddress().getValue()));
+                SxpConnection sxpConnection = node.getConnection(getInetSocketAddress(connection.getPeerAddress()));
                 assertNotNull(connection);
                 assertEquals(connection.getMode(), sxpConnection.getMode());
                 assertEquals(connection.getState(), sxpConnection.getState());
 
                 exception.expect(UnknownSxpConnectionException.class);
-                node.getConnection(getInetSocketAddress("0.9.9.9"));
+                node.getConnection(getInetSocketAddress(new IpAddress("0.9.9.9".toCharArray())));
         }
 
         @Test public void testProcessUpdateMessage() throws Exception {

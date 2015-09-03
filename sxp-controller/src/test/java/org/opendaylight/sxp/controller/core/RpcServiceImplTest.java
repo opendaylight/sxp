@@ -21,7 +21,7 @@ import org.opendaylight.sxp.controller.util.database.access.MasterDatabaseAccess
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
@@ -212,7 +212,7 @@ public class RpcServiceImplTest {
         private Connection getConnection(String ip, Integer port) {
                 ConnectionBuilder connection = new ConnectionBuilder();
                 connection.setTcpPort(port != null ? new PortNumber(port) : null);
-                connection.setPeerAddress(ip != null ? Ipv4Address.getDefaultInstance(ip) : null);
+                connection.setPeerAddress(ip != null ? new IpAddress(ip.toCharArray()) : null);
                 return connection.build();
         }
 

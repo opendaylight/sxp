@@ -130,7 +130,8 @@ module sxp-node {
             description "SXP protocol enabled/disabled";
         }
 		leaf source-ip {
-			type inet:ip-prefix;
+			type inet:ip-address;
+			default "127.0.0.1";
 			description "Default source IP address";
 		}
 		leaf tcp-port {
@@ -196,18 +197,14 @@ module sxp-node {
 	grouping sxp-peer-fields  {
 		leaf peer-address {
 			mandatory true;
-    		type inet:ipv4-address;
+    		type inet:ip-address;
     		description "Address of the connected peer";
         }
 	 	leaf node-id {
 			type sxppt:node-id;
 			description "SXP node ID";
 		}     
-      	leaf source-ip {
-    		type inet:ip-prefix;
-    		description "Connection source IP address";
-		}
-		leaf tcp-port {
+      	leaf tcp-port {
 			type inet:port-number;
 			description "Port of the connected peer";
 			default "64999";

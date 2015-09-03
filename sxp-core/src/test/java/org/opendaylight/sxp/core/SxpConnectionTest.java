@@ -21,6 +21,7 @@ import org.opendaylight.sxp.core.service.UpdateExportTask;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
@@ -90,7 +91,7 @@ public class SxpConnectionTest {
                 Connection connection = mock(Connection.class);
                 when(connection.getMode()).thenReturn(mode);
                 when(connection.getPeerAddress()).thenReturn(
-                        Ipv4Address.getDefaultInstance("127.0.0." + (++ip4Address)));
+                        new IpAddress(("127.0.0." + (++ip4Address)).toCharArray()));
                 when(connection.getState()).thenReturn(state);
                 when(connection.getVersion()).thenReturn(Version.Version4);
                 ConnectionTimers timers = mock(ConnectionTimers.class);
@@ -264,7 +265,8 @@ public class SxpConnectionTest {
                 sxpConnection = SxpConnection.create(sxpNode, connection1);
                 ChannelHandlerContext context = mock(ChannelHandlerContext.class);
                 when(context.close()).thenReturn(mock(ChannelFuture.class));
-                sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.SpeakerContext);
+                sxpConnection.markChannelHandlerContext(context,
+                        SxpConnection.ChannelHandlerContextType.SpeakerContext);
                 sxpConnection.setTimer(TimerType.KeepAliveTimer, 50);
                 sxpConnection.pushUpdateMessageInbound(mock(Callable.class));
                 UpdateExportTask exportTask = PowerMockito.mock(UpdateExportTask.class);
