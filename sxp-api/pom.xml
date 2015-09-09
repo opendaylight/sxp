@@ -54,13 +54,13 @@
                 </executions>
                 <dependencies>
                     <dependency>
-                        <groupId>org.opendaylight.yangtools</groupId>
+                        <groupId>org.opendaylight.mdsal</groupId>
                         <artifactId>maven-sal-api-gen-plugin</artifactId>
                         <version>${yangtools.version}</version>
                         <type>jar</type>
                     </dependency>
                     <dependency>
-                        <groupId>org.opendaylight.yangtools</groupId>
+                        <groupId>org.opendaylight.mdsal</groupId>
                         <artifactId>yang-binding</artifactId>
                         <version>${yangtools.version}</version>
                         <type>jar</type>
@@ -84,7 +84,7 @@
             <artifactId>sal-common-util</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.opendaylight.yangtools</groupId>
+            <groupId>org.opendaylight.mdsal</groupId>
             <artifactId>yang-binding</artifactId>
         </dependency>
         <dependency>
@@ -92,15 +92,15 @@
             <artifactId>yang-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.opendaylight.yangtools.model</groupId>
+            <groupId>org.opendaylight.mdsal.model</groupId>
             <artifactId>ietf-topology</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.opendaylight.yangtools.model</groupId>
+            <groupId>org.opendaylight.mdsal.model</groupId>
             <artifactId>ietf-inet-types</artifactId>
         </dependency>       
         <dependency>
-            <groupId>org.opendaylight.yangtools.model</groupId>
+            <groupId>org.opendaylight.mdsal.model</groupId>
             <artifactId>yang-ext</artifactId>
         </dependency>
     </dependencies>
