@@ -55,7 +55,7 @@ import java.net.UnknownHostException;
 /**
  * Sxpv4 class provides logic for handling connection on Version 4
  */
-public final class Sxpv4 extends Sxpv3 {
+public final class Sxpv4 extends SxpLegacy {
 
     /**
      * OpenMessageType enum is used to distinguish between messages types

@@ -36,17 +36,17 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class, Context.class}) public class Sxpv1Test {
+@RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class, Context.class}) public class SxpLegacyTest {
 
         @Rule public ExpectedException exception = ExpectedException.none();
 
-        private static Sxpv1 sxpv1;
+        private static SxpLegacy sxpLegacy;
         private static ChannelHandlerContext channelHandlerContext;
         private static SxpConnection connection;
         private static SxpNode sxpNode;
 
         @Before public void init() {
-                sxpv1 = new Sxpv1(PowerMockito.mock(Context.class));
+                sxpLegacy = new SxpLegacy(PowerMockito.mock(Context.class));
                 channelHandlerContext = mock(ChannelHandlerContext.class);
                 connection = mock(SxpConnection.class);
                 when(connection.getVersion()).thenReturn(Version.Version1);
@@ -63,13 +63,13 @@ import static org.mockito.Mockito.when;
                 for (ConnectionMode mode : ConnectionMode.values()) {
                         when(connection.getMode()).thenReturn(mode);
 
-                        sxpv1.onChannelActivation(channelHandlerContext, connection);
+                        sxpLegacy.onChannelActivation(channelHandlerContext, connection);
                         verify(channelHandlerContext, times(i)).writeAndFlush(any(ByteBuf.class));
                         verify(connection, times(i++)).setStatePendingOn();
                 }
 
                 when(connection.isStateDeleteHoldDown()).thenReturn(true);
-                sxpv1.onChannelActivation(channelHandlerContext, connection);
+                sxpLegacy.onChannelActivation(channelHandlerContext, connection);
                 verify(channelHandlerContext, times(i)).writeAndFlush(any(ByteBuf.class));
                 verify(connection, times(i++)).setStatePendingOn();
                 verify(connection).setReconciliationTimer();
@@ -81,16 +81,16 @@ import static org.mockito.Mockito.when;
                         SxpConnection.ChannelHandlerContextType.ListenerContext);
 
                 when(connection.isPurgeAllMessageReceived()).thenReturn(false);
-                sxpv1.onChannelInactivation(channelHandlerContext, connection);
+                sxpLegacy.onChannelInactivation(channelHandlerContext, connection);
                 verify(connection).setDeleteHoldDownTimer();
 
                 when(connection.isPurgeAllMessageReceived()).thenReturn(true);
-                sxpv1.onChannelInactivation(channelHandlerContext, connection);
+                sxpLegacy.onChannelInactivation(channelHandlerContext, connection);
                 verify(connection).setStateOff(any(ChannelHandlerContext.class));
 
                 when(connection.getContextType(any(ChannelHandlerContext.class))).thenReturn(
                         SxpConnection.ChannelHandlerContextType.SpeakerContext);
-                sxpv1.onChannelInactivation(channelHandlerContext, connection);
+                sxpLegacy.onChannelInactivation(channelHandlerContext, connection);
                 verify(channelHandlerContext).writeAndFlush(any(ByteBuf.class));
                 verify(connection, times(2)).setStateOff(any(ChannelHandlerContext.class));
 
@@ -104,7 +104,7 @@ import static org.mockito.Mockito.when;
 
                 when(message.getSxpMode()).thenReturn(ConnectionMode.Listener);
                 when(connection.isModeListener()).thenReturn(true);
-                sxpv1.onInputMessage(channelHandlerContext, connection, message);
+                sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
                 verify(connection).setStateOff(any(ChannelHandlerContext.class));
                 verify(connection, times(0)).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
                 verify(connection, times(0)).setStateOn();
@@ -112,7 +112,7 @@ import static org.mockito.Mockito.when;
 
                 when(connection.isModeListener()).thenReturn(false);
                 when(connection.isModeSpeaker()).thenReturn(true);
-                sxpv1.onInputMessage(channelHandlerContext, connection, message);
+                sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
                 verify(connection, times(2)).setMode(ConnectionMode.Speaker);
                 verify(connection).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
                 verify(connection).setStateOn();
@@ -121,18 +121,18 @@ import static org.mockito.Mockito.when;
                 when(message.getSxpMode()).thenReturn(ConnectionMode.Speaker);
                 when(connection.isModeListener()).thenReturn(true);
                 when(connection.isModeSpeaker()).thenReturn(false);
-                sxpv1.onInputMessage(channelHandlerContext, connection, message);
+                sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
                 verify(connection, times(1)).setMode(ConnectionMode.Listener);
                 verify(connection, times(2)).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
                 verify(connection, times(2)).setStateOn();
                 verify(channelHandlerContext, times(3)).writeAndFlush(any(getClass()));
 
                 when(message.getType()).thenReturn(MessageType.OpenResp);
-                sxpv1.onInputMessage(channelHandlerContext, connection, message);
+                sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
 
                 when(message.getSxpMode()).thenReturn(ConnectionMode.Listener);
                 when(connection.isModeListener()).thenReturn(true);
-                sxpv1.onInputMessage(channelHandlerContext, connection, message);
+                sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
                 verify(connection, times(2)).setStateOff(any(ChannelHandlerContext.class));
                 verify(connection, times(3)).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
                 verify(connection, times(3)).setStateOn();
@@ -140,7 +140,7 @@ import static org.mockito.Mockito.when;
 
                 when(connection.getVersion()).thenReturn(Version.Version4);
                 exception.expect(ErrorMessageException.class);
-                sxpv1.onInputMessage(channelHandlerContext, connection, message);
+                sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
         }
 
         @Test public void testOnInputMessageUpdate() throws Exception {
@@ -149,14 +149,14 @@ import static org.mockito.Mockito.when;
                 when(messageLegacy.getPayload()).thenReturn(new byte[] {});
 
                 when(connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)).thenReturn(true);
-                sxpv1.onInputMessage(channelHandlerContext, connection, messageLegacy);
+                sxpLegacy.onInputMessage(channelHandlerContext, connection, messageLegacy);
                 verify(connection).setUpdateOrKeepaliveMessageTimestamp();
                 verify(sxpNode).processUpdateMessage(any(UpdateMessageLegacy.class), any(SxpConnection.class));
 
                 when(connection.getState()).thenReturn(ConnectionState.Off);
                 when(connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)).thenReturn(false);
                 exception.expect(UpdateMessageConnectionStateException.class);
-                sxpv1.onInputMessage(channelHandlerContext, connection, messageLegacy);
+                sxpLegacy.onInputMessage(channelHandlerContext, connection, messageLegacy);
         }
 
         @Test public void testOnInputMessageError() throws Exception {
@@ -166,7 +166,7 @@ import static org.mockito.Mockito.when;
                 when(message.getPayload()).thenReturn(new byte[] {});
 
                 exception.expect(ErrorMessageReceivedException.class);
-                sxpv1.onInputMessage(channelHandlerContext, connection, message);
+                sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
         }
 
         @Test public void testOnInputMessagePurgeAll() throws Exception {
@@ -175,7 +175,7 @@ import static org.mockito.Mockito.when;
 
                 when(connection.getDestination()).thenReturn(
                         new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 5));
-                sxpv1.onInputMessage(channelHandlerContext, connection, message);
+                sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
                 verify(connection).setPurgeAllMessageReceived();
                 verify(sxpNode).purgeBindings(any(NodeId.class));
                 verify(sxpNode).notifyService();

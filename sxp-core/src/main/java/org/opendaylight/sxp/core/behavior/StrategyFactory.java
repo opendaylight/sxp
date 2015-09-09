@@ -33,11 +33,9 @@ public class StrategyFactory {
     public static Strategy getStrategy(Context context, Version version) throws UnknownVersionException {
         switch (version) {
         case Version1:
-            return new Sxpv1(context);
         case Version2:
-            return new Sxpv2(context);
         case Version3:
-            return new Sxpv3(context);
+            return new SxpLegacy(context);
         case Version4:
             return new Sxpv4(context);
         default:
