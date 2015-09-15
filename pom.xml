@@ -65,14 +65,13 @@
 
     <build>
         <plugins>
-            <!-- TODO Verify if neccesary -->
-            <!--plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>copy-artifact</id>
-                        <phase>package</phase>
+                        <phase>verify</phase>
                         <goals>
                             <goal>copy</goal>
                         </goals>
@@ -90,7 +89,7 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin-->
+            </plugin>
             <!--plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>2.6</version>
