@@ -46,17 +46,17 @@ module sxp-protocol {
         	default "64999";
       	}
 	}
-	
+
 	typedef attribute-type {
         type enumeration {
+	       	enum Unspecified {
+	       		value -1;
+	       	}
 			enum add-ipv4 {
 				value 1;
 			}
 	        enum add-ipv6 {
 	        	value 2;
-	        }
-	        enum capabilities {
-	        	value 6;
 	        }
 	        enum del-ipv4 {
 	        	value 3;
@@ -64,23 +64,23 @@ module sxp-protocol {
 	        enum del-ipv6 {
 	        	value 4;
 	        }
+	        enum sxp-node-id {
+	        	value 5;
+	       	}
+	        enum capabilities {
+	        	value 6;
+	        }
 	        enum hold-time {
 	        	value 7;
 	       	}
 	       	enum ipv4-add-prefix {
 	        	value 11;
 	        }
-	        enum ipv4-add-table {
-	        	value 21;
-	        }
-	        enum ipv4-delete-prefix {
-	        	value 13;
-	       	}
 	       	enum ipv6-add-prefix {
 	        	value 12;
 	        }
-	        enum ipv6-add-table {
-	        	value 22;
+	        enum ipv4-delete-prefix {
+	        	value 13;
 	       	}
 	       	enum ipv6-delete-prefix {
 	        	value 14;
@@ -91,11 +91,11 @@ module sxp-protocol {
 	      	enum source-group-tag {
 	        	value 17;
 	        }
-	        enum sxp-node-id {
-	        	value 5;
-	       	}
-	       	enum Unspecified {
-	       		value -1;
+	        enum ipv4-add-table {
+	        	value 21;
+	        }
+	        enum ipv6-add-table {
+	        	value 22;
 	       	}
 		}
 	}	
@@ -128,11 +128,11 @@ module sxp-protocol {
 		
 	typedef connection-mode {
 		type enumeration {
-			enum listener {
-	        	value 2;
-	      	}
 			enum speaker {
 	        	value 1;
+	      	}
+			enum listener {
+	        	value 2;
 	      	}
 			enum both;
 			enum none;
@@ -179,20 +179,29 @@ module sxp-protocol {
 	
 	typedef error-code-non-extended {
         type enumeration {
-        	enum message-parse-error {
-	        	value 2;
-	      	}
         	enum no-error {
 	        	value 0;
 	      	}
         	enum version-mismatch {
 	        	value 1;
 	      	}
+        	enum message-parse-error {
+	        	value 2;
+	      	}
 		}
 	}
 	
 	typedef error-sub-code {
         type enumeration {
+	        enum malformed-attribute-list {
+	        	value 1;
+	      	}
+	        enum unrecognized-well-known-attribute {
+	        	value 2;
+	      	}
+	        enum missing-well-known-attribute {
+	        	value 3;
+	      	}
         	enum attribute-flags-error {
 	        	value 4;
 	      	}
@@ -202,26 +211,17 @@ module sxp-protocol {
 	        enum malformed-attribute {
 	        	value 6;
 	      	}
-	        enum malformed-attribute-list {
-	        	value 1;
-	      	}
-	        enum missing-well-known-attribute {
-	        	value 3;
-	      	}
 	        enum optional-attribute-error {
 	        	value 7;
 	      	}
-	        enum unacceptable-hold-time {
-	        	value 10;
-	      	}
-	        enum unrecognized-well-known-attribute {
-	        	value 2;
+	        enum unsupported-version-number {
+	        	value 8;
 	      	}
 	        enum unsupported-optional-attribute {
 	        	value 9;
 	      	}
-	        enum unsupported-version-number {
-	        	value 8;
+	        enum unacceptable-hold-time {
+	        	value 10;
 	      	}
 	    }
 	}
@@ -235,23 +235,23 @@ module sxp-protocol {
 		
 	typedef message-type {
         type enumeration {
-        	enum error {
-	        	value 4;
-	      	}
-	        enum keepalive {
-	        	value 6;
-	      	}
 	        enum open {
 	        	value 1;
 	      	}
 	        enum open-resp {
 	        	value 2;
 	      	}
+	        enum update {
+	        	value 3;
+	      	}
+        	enum error {
+	        	value 4;
+	      	}
 	        enum purge-all {
 	        	value 5;
 	      	}
-	        enum update {
-	        	value 3;
+	        enum keepalive {
+	        	value 6;
 	      	}
 	    }
     }
