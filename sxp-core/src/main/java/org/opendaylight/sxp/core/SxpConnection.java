@@ -8,7 +8,6 @@
 
 package org.opendaylight.sxp.core;
 
-import com.google.common.net.InetAddresses;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -27,14 +26,16 @@ import org.opendaylight.sxp.util.exception.unknown.UnknownConnectionModeExceptio
 import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
-import org.opendaylight.sxp.util.inet.IpPrefixConv;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
+import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.sxp.util.time.connection.DeleteHoldDownTimerTask;
 import org.opendaylight.sxp.util.time.connection.HoldTimerTask;
 import org.opendaylight.sxp.util.time.connection.KeepAliveTimerTask;
 import org.opendaylight.sxp.util.time.connection.ReconcilationTimerTask;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimersBuilder;
@@ -55,7 +56,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayDeque;
@@ -113,6 +113,34 @@ public class SxpConnection {
             outboundUpdateMessageQueue =
                     new ArrayDeque<>(10);
     private final AtomicLong inboundMonitor = new AtomicLong(0), outboundMonitor = new AtomicLong(0);
+    private final Map<FilterType, SxpBindingFilter> bindingFilterMap = new HashMap<>();
+
+    public SxpBindingFilter getFilter(FilterType filterType) {
+        synchronized (bindingFilterMap) {
+            return bindingFilterMap.get(filterType);
+        }
+    }
+
+    public void setFilter(SxpBindingFilter filter) {
+        synchronized (bindingFilterMap) {
+            FilterType filterType = filter.getSxpFilter().getFilterType();
+            if (bindingFilterMap.containsKey(filterType)) {
+                throw new IllegalArgumentException("TODO");
+            }
+            bindingFilterMap.put(filterType, filter);
+        }
+    }
+
+    public String getGroupName(FilterType filterType) {
+        synchronized (bindingFilterMap) {
+            return bindingFilterMap.get(filterType) != null ? bindingFilterMap.get(filterType)
+                    .getPeerGroupName() : null;
+        }
+    }
+
+    public SxpBindingFilter removeFilter(FilterType filterType) {
+        return null;
+    }
 
     /**
      * Gets AtomicLong used for notification of incoming messages that will be needed to proceed
@@ -214,13 +242,7 @@ public class SxpConnection {
         if (connection.getTcpPort() != null && connection.getTcpPort().getValue() > 0) {
             port = connection.getTcpPort().getValue();
         }
-        InetAddress
-                inetAddress =
-                InetAddresses.forString(
-                        connection.getPeerAddress().getIpv4Address() != null ? connection.getPeerAddress()
-                                .getIpv4Address()
-                                .getValue() : connection.getPeerAddress().getIpv6Address().getValue());
-        this.destination = new InetSocketAddress(inetAddress, port);
+        this.destination = new InetSocketAddress(Search.getAddress(connection.getPeerAddress()), port);
 
         if (connection.getVersion() != null) {
             setBehaviorContexts(connection.getVersion());

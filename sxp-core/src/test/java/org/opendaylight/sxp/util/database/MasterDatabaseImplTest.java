@@ -222,7 +222,7 @@ import static org.mockito.Mockito.when;
                 sources.add(getSource(getPrefixGroup(1000, "127.0.0.2/32")));
                 sources.add(getSource(getPrefixGroup(20, "2001:0:0:0:0:0:0:0/128")));
                 sources.add(getSource(getPrefixGroup(200, "2001:0:0:0:0:0:0:1/128")));
-                List<MasterDatabase> masterDatabases = database.partition(3, false);
+                List<MasterDatabase> masterDatabases = database.partition(3, false, null);
                 assertEquals(2, masterDatabases.size());
                 assertTrue(hasMasterBindingIdentity(getMasterBindingIdentity(10, "127.0.0.0/32"),
                         masterDatabases.get(0).getSource()));

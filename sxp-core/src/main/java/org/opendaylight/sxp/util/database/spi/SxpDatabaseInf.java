@@ -13,6 +13,7 @@ import java.util.List;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 
@@ -27,10 +28,11 @@ public interface SxpDatabaseInf {
          * Adds Bindings from specified SxpDatabase
          *
          * @param database SxpDatabase containing Bindings
+         * @param filter   Specifies filter used selecting binding that will be exported
          * @return If Bindings were added to database
          * @throws DatabaseAccessException If database isn't accessible
          */
-        boolean addBindings(SxpDatabase database) throws DatabaseAccessException;
+        boolean addBindings(SxpDatabase database,SxpBindingFilter filter) throws DatabaseAccessException;
 
         /**
          * Remove all bindings with Flag CleanUp from specified NodeId
@@ -44,10 +46,11 @@ public interface SxpDatabaseInf {
          * Delete Bindings from specified SxpDatabase
          *
          * @param database SxpDatabase containing Bindings
+         * @param filter   Specifies filter used selecting binding that will be exported
          * @return List of removed SxpBindingIdentities
          * @throws DatabaseAccessException If database isn't accessible
          */
-        List<SxpBindingIdentity> deleteBindings(SxpDatabase database) throws DatabaseAccessException;
+        List<SxpBindingIdentity> deleteBindings(SxpDatabase database,SxpBindingFilter filter) throws DatabaseAccessException;
 
         /**
          * Gets SxpDatabase

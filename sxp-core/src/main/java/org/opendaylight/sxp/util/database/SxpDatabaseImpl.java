@@ -15,6 +15,7 @@ import org.opendaylight.sxp.util.database.spi.SxpDatabaseAccess;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroup;
@@ -146,7 +147,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
     }
 
     @Override
-    public boolean addBindings(SxpDatabase database) throws DatabaseAccessException {
+    public boolean addBindings(SxpDatabase database, SxpBindingFilter filter) throws DatabaseAccessException {
         boolean result = false;
         List<SxpBindingIdentity> removed = new ArrayList<>();
         List<SxpBindingIdentity> added = new ArrayList<>();
@@ -159,6 +160,9 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
                             for (Binding binding : prefixGroup.getBinding()) {
                                 SxpBindingIdentity newBindingIdentity = SxpBindingIdentity.create(binding, prefixGroup,
                                         pathGroup);
+                                if (filter != null && filter.filter(newBindingIdentity)) {
+                                    continue;
+                                }
                                 SxpBindingIdentity oldBindingIdentity = getBindingIdentity(newBindingIdentity, true);
                                 if (oldBindingIdentity != null) {
                                     removed.add(oldBindingIdentity);
@@ -276,7 +280,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
     }
 
     @Override
-    public List<SxpBindingIdentity> deleteBindings(SxpDatabase database) throws DatabaseAccessException {
+    public List<SxpBindingIdentity> deleteBindings(SxpDatabase database, SxpBindingFilter filter) throws DatabaseAccessException {
         List<SxpBindingIdentity> removed = new ArrayList<>();
 
         if (database != null && database.getPathGroup() != null) {
@@ -287,6 +291,9 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
                             for (Binding binding : prefixGroup.getBinding()) {
                                 SxpBindingIdentity newBindingIdentity = SxpBindingIdentity.create(binding, prefixGroup,
                                         pathGroup);
+                                if (filter != null && filter.filter(newBindingIdentity)) {
+                                    continue;
+                                }
                                 SxpBindingIdentity oldBindingIdentity = getBindingIdentity(newBindingIdentity, true);
                                 if (oldBindingIdentity != null) {
                                     removed.add(oldBindingIdentity);

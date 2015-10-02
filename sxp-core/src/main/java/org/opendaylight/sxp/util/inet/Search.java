@@ -266,4 +266,14 @@ public final class Search {
             throws UnknownHostException, UnknownPrefixException {
         return new IpAddress(InetAddress.getByName(inetAddress), prefix).expand(quantity);
     }
+
+    public static String getAddress(
+            org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress address) {
+        if (address.getIpv4Address() != null) {
+            return address.getIpv4Address().getValue();
+        } else if (address.getIpv6Address() != null) {
+            return address.getIpv6Address().getValue();
+        }
+        throw new IllegalArgumentException("Address " + address + " has illegal value.");
+    }
 }
