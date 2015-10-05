@@ -110,17 +110,17 @@ public class SxpDatabaseImplTest {
                 pathGroups.add(getPathGroup(getNodeIds("127.0.0.1", "127.0.0.2"), getPrefixGroup(10, "127.0.0.1/32")));
                 pathGroups.add(getPathGroup(getNodeIds("127.0.0.1", "127.0.0.2"), getPrefixGroup(10, "127.0.0.1/32")));
                 when(sxpDatabase_.getPathGroup()).thenReturn(pathGroups);
-                database.addBindings(sxpDatabase_);
+                database.addBindings(sxpDatabase_, null);
                 pathGroups.remove(0);
                 assertEquals(pathGroups, pathGroupList);
                 bindingsAsCleanUp = true;
                 pathGroups.add(getPathGroup(getNodeIds("127.0.0.5", "127.0.0.10"),
                         getPrefixGroup(10, "2001:0:0:0:0:0:0:1/128")));
                 pathGroups.add(getPathGroup(getNodeIds("127.0.0.1", "127.0.0.2"), getPrefixGroup(10, "127.0.0.1/32")));
-                database.addBindings(sxpDatabase_);
+                database.addBindings(sxpDatabase_, null);
                 pathGroups.remove(2);
                 assertEquals(pathGroups, pathGroupList);
-                database.addBindings(null);
+                database.addBindings(null, null);
                 assertEquals(pathGroups, pathGroupList);
         }
 
@@ -168,7 +168,7 @@ public class SxpDatabaseImplTest {
                 //DB to be removed
                 SxpDatabase sxpDatabase_ = mock(SxpDatabase.class);
                 when(sxpDatabase_.getPathGroup()).thenReturn(pathGroupList);
-                database.deleteBindings(sxpDatabase_);
+                database.deleteBindings(sxpDatabase_, null);
                 assertTrue(pathGroupList.isEmpty());
 
                 List<PathGroup> pathGroups = new ArrayList<>();
@@ -185,7 +185,7 @@ public class SxpDatabaseImplTest {
                 pathGroupList.add(getPathGroup(getNodeIds("0.0.0.50", "0.0.0.100"),
                         getPrefixGroup(300, "2001:1:0:0:0:0:0:1/128")));
 
-                database.deleteBindings(sxpDatabase_);
+                database.deleteBindings(sxpDatabase_, null);
                 assertFalse(containsPrefixGroup(getPrefixGroup(10, "127.0.0.1/32"), pathGroupList));
                 assertTrue(containsPrefixGroup(getPrefixGroup(200, "128.0.0.15/32"), pathGroupList));
                 assertTrue(containsPrefixGroup(getPrefixGroup(300, "2001:1:0:0:0:0:0:1/128"), pathGroupList));

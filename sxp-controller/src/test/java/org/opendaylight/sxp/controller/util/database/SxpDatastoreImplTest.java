@@ -40,13 +40,13 @@ import static org.mockito.Mockito.*;
         }
 
         @Test public void testAddBindings() throws Exception {
-                datastore.addBindings(mock(SxpDatabase.class));
+                datastore.addBindings(mock(SxpDatabase.class), null);
                 verify(access).read();
                 verify(access).put(sxpDatabase);
         }
 
         @Test public void testDeleteBindings() throws Exception {
-                datastore.deleteBindings(mock(SxpDatabase.class));
+                datastore.deleteBindings(mock(SxpDatabase.class), null);
                 verify(access).read();
                 verify(access).put(sxpDatabase);
         }

@@ -14,16 +14,16 @@ import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.ThreadsWorker;
+import org.opendaylight.sxp.util.ExportKey;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.UnknownHostException;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -126,9 +126,9 @@ public final class BindingDispatcher extends Service<Void> {
         // Compose and send new messages bundles.
 
         List<MasterDatabase> partitionsAllBindings = null, partitionsOnlyChangedBindings = null;
-        Map<AbstractMap.SimpleEntry<Version, Boolean>, MasterDatabase[]> dataPool = new HashMap<>(4);
-        Map<AbstractMap.SimpleEntry<Version, Boolean>, ByteBuf[]> messagesPool = new HashMap<>(4);
-        Map<AbstractMap.SimpleEntry<Version, Boolean>, AtomicInteger> releaseCounterPool = new HashMap<>(4);
+        Map<ExportKey, MasterDatabase[]> dataPool = new HashMap<>(4);
+        Map<ExportKey, ByteBuf[]> messagesPool = new HashMap<>(4);
+        Map<ExportKey, AtomicInteger> releaseCounterPool = new HashMap<>(4);
         Map<SxpConnection, Callable> taskPool = new HashMap<>(connections.size());
 
         for (final SxpConnection connection : connections) {
@@ -148,14 +148,15 @@ public final class BindingDispatcher extends Service<Void> {
              * 1 message is exported, delete attributes are written before
              * added attributes.
              */
-            AbstractMap.SimpleEntry<Version, Boolean>
+            ExportKey
                     key =
-                    new AbstractMap.SimpleEntry<>(connection.getVersion(), connection.isUpdateAllExported());
+                    new ExportKey(connection.getVersion(), connection.isUpdateAllExported(), connection.getGroupName(FilterType.Outbound));
             if (connection.isUpdateAllExported()) {
                 if (partitionsAllBindings == null) {
                     synchronized (masterDatabase) {
                         partitionsAllBindings =
-                                masterDatabase.partition(getPartitionSize(), connection.isUpdateAllExported());
+                                masterDatabase.partition(getPartitionSize(), connection.isUpdateAllExported(),
+                                        connection.getFilter(FilterType.Outbound));
                     }
                 }
                 if (partitionsAllBindings.isEmpty()) {
@@ -170,7 +171,8 @@ public final class BindingDispatcher extends Service<Void> {
                 if (partitionsOnlyChangedBindings == null) {
                     synchronized (masterDatabase) {
                         partitionsOnlyChangedBindings =
-                                masterDatabase.partition(getPartitionSize(), connection.isUpdateAllExported());
+                                masterDatabase.partition(getPartitionSize(), connection.isUpdateAllExported(),
+                                        connection.getFilter(FilterType.Outbound));
                     }
                 }
                 if (partitionsOnlyChangedBindings.isEmpty()) {

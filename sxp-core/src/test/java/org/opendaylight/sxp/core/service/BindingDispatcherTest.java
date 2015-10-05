@@ -17,6 +17,7 @@ import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.powermock.api.mockito.PowerMockito;
@@ -59,7 +60,8 @@ import static org.mockito.Mockito.when;
                 databaseProvider = mock(MasterDatabaseProvider.class);
                 List<MasterDatabase> masterDatabases = new ArrayList<>();
                 masterDatabases.add(mock(MasterDatabase.class));
-                when(databaseProvider.partition(anyInt(), anyBoolean())).thenReturn(masterDatabases);
+                when(databaseProvider.partition(anyInt(), anyBoolean(), any(SxpBindingFilter.class))).thenReturn(
+                        masterDatabases);
                 worker = mock(ThreadsWorker.class);
                 sxpNode = PowerMockito.mock(SxpNode.class);
                 PowerMockito.when(sxpNode.getWorker()).thenReturn(worker);

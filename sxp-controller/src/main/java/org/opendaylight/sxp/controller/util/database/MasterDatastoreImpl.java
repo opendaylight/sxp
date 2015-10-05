@@ -18,6 +18,7 @@ import org.opendaylight.sxp.util.database.spi.MasterDatabaseAccess;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -68,10 +69,10 @@ public final class MasterDatastoreImpl extends MasterDatabaseImpl {
     }
 
     @Override
-    public List<MasterDatabase> partition(int quantity, boolean onlyChanged) throws DatabaseAccessException {
+    public List<MasterDatabase> partition(int quantity, boolean onlyChanged, SxpBindingFilter filter) throws DatabaseAccessException {
         synchronized (databaseAccess) {
             database = databaseAccess.read();
-            return super.partition(quantity, onlyChanged);
+            return super.partition(quantity, onlyChanged, filter);
         }
     }
 

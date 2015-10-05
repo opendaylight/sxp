@@ -35,6 +35,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.BindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
@@ -565,7 +566,10 @@ public final class BindingHandler {
             if (!database.getPathGroup().isEmpty()) {
                 List<SxpBindingIdentity> deletedIdentities;
                 synchronized (owner.getBindingSxpDatabase()) {
-                    deletedIdentities = owner.getBindingSxpDatabase().deleteBindings(database);
+                    deletedIdentities =
+                            owner.getBindingSxpDatabase()
+                                    .deleteBindings(database,
+                                            updateLegacyNotification.getConnection().getFilter(FilterType.Inbound));
                 }
                 LOG.info(owner + " Deleted legacy bindings | {}", deletedIdentities);
                 // Notify the manager.
@@ -583,7 +587,9 @@ public final class BindingHandler {
             if (!database.getPathGroup().isEmpty()) {
                 boolean added = false;
                 synchronized (owner.getBindingSxpDatabase()) {
-                    added = owner.getBindingSxpDatabase().addBindings(database);
+                    added = owner.getBindingSxpDatabase()
+                            .addBindings(database,
+                                    updateLegacyNotification.getConnection().getFilter(FilterType.Inbound));
                 }
                 if (added) {
                     LOG.info(owner + " Added legacy bindings | {}", new SxpDatabaseImpl(database).toString());
@@ -670,7 +676,10 @@ public final class BindingHandler {
             if (!database.getPathGroup().isEmpty()) {
                 List<SxpBindingIdentity> deletedIdentities;
                 synchronized (owner.getBindingSxpDatabase()) {
-                    deletedIdentities = owner.getBindingSxpDatabase().deleteBindings(database);
+                    deletedIdentities =
+                            owner.getBindingSxpDatabase()
+                                    .deleteBindings(database,
+                                            updateNotification.getConnection().getFilter(FilterType.Inbound));
                 }
                 LOG.info(owner + " Deleted bindings | {}", deletedIdentities);
                 // Notify the manager.
@@ -697,7 +706,10 @@ public final class BindingHandler {
             if (!database.getPathGroup().isEmpty()) {
                 boolean added = false;
                 synchronized (owner.getBindingSxpDatabase()) {
-                    added = owner.getBindingSxpDatabase().addBindings(database);
+                    added =
+                            owner.getBindingSxpDatabase()
+                                    .addBindings(database,
+                                            updateNotification.getConnection().getFilter(FilterType.Inbound));
                 }
                 if (added) {
                     LOG.info(owner + " Added bindings | {}", new SxpDatabaseImpl(database).toString());

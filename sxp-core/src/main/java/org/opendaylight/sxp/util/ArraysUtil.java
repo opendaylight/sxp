@@ -170,6 +170,20 @@ public final class ArraysUtil {
     }
 
     /**
+     * @param x byte value which is used for reverse
+     * @return byte with reversed order of bits
+     */
+    public static byte reverseBitsByte(byte x) {
+        int intSize = 8;
+        byte y = 0;
+        for (int position = intSize - 1; position >= 0; position--) {
+            y += ((x & 1) << position);
+            x >>= 1;
+        }
+        return y;
+    }
+
+    /**
      * Sets a bit in the byte
      *
      * @param _byte    Byte where the bit will be changed

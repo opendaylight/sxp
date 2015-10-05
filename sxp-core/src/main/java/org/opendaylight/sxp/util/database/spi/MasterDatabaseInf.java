@@ -13,6 +13,7 @@ import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -71,10 +72,11 @@ public interface MasterDatabaseInf {
          *
          * @param quantity    Specifies number of Bindings that one MasterDatabase may contain
          * @param onlyChanged If only Bindings with Flag Changed will be exported
+         * @param filter      Specifies filter used selecting binding that will be exported
          * @return List of MasterDatabases containing Bindings
          * @throws DatabaseAccessException If database isn't accessible
          */
-        List<MasterDatabase> partition(int quantity, boolean onlyChanged) throws DatabaseAccessException;
+        List<MasterDatabase> partition(int quantity, boolean onlyChanged,SxpBindingFilter filter) throws DatabaseAccessException;
 
         /**
          * Remove all Bindings with Flag Delete
