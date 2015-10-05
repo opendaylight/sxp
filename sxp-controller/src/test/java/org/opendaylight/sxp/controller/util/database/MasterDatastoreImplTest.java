@@ -66,7 +66,7 @@ public class MasterDatastoreImplTest {
         }
 
         @Test public void testPartition() throws Exception {
-                datastore.partition(10, false);
+                datastore.partition(10, false, null);
                 verify(access).read();
         }
 

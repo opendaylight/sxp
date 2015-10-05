@@ -9,6 +9,7 @@ module sxp-node {
 	import network-topology {prefix nt; revision-date "2013-10-21";}
 	import sxp-database {prefix sxpdb; revision-date "2014-10-02";}
 	import sxp-protocol {prefix sxppt; revision-date "2014-10-02";}
+	import sxp-filter {prefix sxpfl; revision-date "2015-09-11";}
 	import yang-ext {prefix ext; revision-date "2013-07-09";}
  	 
 	description 
@@ -157,7 +158,7 @@ module sxp-node {
 			uses security-fields;
 		}
 	}
-	
+
 	grouping sxp-databases-fields {	
 		container sxp-database {
 			description "SXP database";
@@ -345,7 +346,8 @@ module sxp-node {
 		uses sxp-node-fields;
 		uses sxp-databases-fields;
 		uses sxp-connections-fields;
-		
+		uses sxpfl:sxp-peer-groups;
+
 		container timers {
 			uses sxp-node-time-settings-fields;
 			container listener-profile {

@@ -1,0 +1,241 @@
+module sxp-filter {
+	yang-version 1;
+
+	namespace "urn:opendaylight:sxp:filter";
+	prefix "sxpfl";
+
+	import ietf-inet-types {prefix inet; revision-date "2010-09-24";}
+	import sxp-database {prefix sxpdb; revision-date "2014-10-02";}
+
+	description "Module defines the base YANG definitions for SXP filtering.";
+
+	revision "2015-09-11" {
+        description "Reviewed revision of SXP filtering model";
+    }
+
+    // ***********************
+    // Common Types Definition
+    // ***********************
+
+	typedef filter-type {
+		description "Type specifying direction of sgt filtering.";
+		type enumeration {
+			enum inbound;
+			enum outbound;
+		}
+	}
+
+	typedef filter-entry-type {
+		description "Filter entry flag";
+		type enumeration {
+			enum permit;
+			enum deny;
+		}
+	}
+
+	typedef mask-range-operator {
+		description "Operators for specifying mask range in prefix list";
+		type enumeration {
+			enum ge;
+			enum le;
+			enum g;
+			enum l;
+			enum e;
+		}
+	}
+
+	typedef wildcard-mask {
+		description "Address mask";
+		type inet:ip-address;
+	}
+
+	typedef prefix-list-mask {
+		description "Address mask";
+		type union {
+		   type uint8 {
+				range "0..32";
+			}
+		   type uint8 {
+				range "0..128";
+			}
+        }
+	}
+
+	// ******************
+    // SXP Filter Groupings
+    // ******************
+
+	grouping sxp-peer-groups {
+	 	list sxp-peer-group {
+	 		uses sxp-peer-group-fields;
+	 	}
+	}
+
+	grouping sxp-peer-group {
+		container sxp-peer-group {
+    		uses sxp-peer-group-fields;
+    	}
+	}
+
+	grouping sxp-peer-group-fields {
+		leaf name {
+			description "Name of peer group";
+			type string;
+			mandatory true;
+		}
+		container sxp-peers {
+			list sxp-peer {
+				key "peer-address";
+				uses sxp-peer-fields;
+			}
+		}
+		list sxp-filter {
+			key "filter-type";
+			uses sxp-filter-fields;
+		}
+	}
+
+	grouping sxp-filter {
+		container sxp-filter {
+			uses sxp-filter-fields;
+		}
+	}
+
+	grouping sxp-peer-fields {
+		leaf peer-address {
+			description "Address of the connected peer";
+			type inet:ip-address;
+			mandatory true;
+		}
+	}
+
+	grouping sxp-filter-fields {
+		leaf filter-type {
+			description "Inbound/Outbound";
+			type filter-type;
+			mandatory true;
+		}
+		choice filter-entries {
+			description "Filter entries specifying filter.";
+			mandatory "true";
+			case acl-filter-entries {
+				list acl-entry {
+					key "entry-seq";
+					uses acl-entry;
+					min-elements 1;
+				}
+			}
+			case prefix-list-filter-entries {
+				list prefix-list-entry {
+					key "entry-seq";
+					uses prefix-list-entry;
+					min-elements 1;
+				}
+			}
+		}
+	}
+
+	grouping sgt-match-fields {
+    	choice sgt-match {
+        	mandatory "true";
+            case sgt-matches {
+				leaf-list matches {
+					description "SGT values";
+					type sxpdb:sgt;
+					min-elements 1;
+				}
+			}
+			case sgt-range {
+				leaf sgt-start {
+					description "Start value of SGT range";
+					type sxpdb:sgt;
+					mandatory true;
+				}
+				leaf sgt-end {
+					description "End value of SGT range";
+					type sxpdb:sgt;
+					mandatory true;
+				}
+			}
+		}
+	}
+
+	grouping acl-match-fields {
+		leaf ip-address {
+			description "Address on which mask will be applied";
+			type inet:ip-address;
+			mandatory true;
+		}
+		leaf wildcard-mask {
+			description "Wildcard mask applied to address";
+			type wildcard-mask;
+			mandatory true;
+		}
+		container mask {
+			leaf address-mask {
+				description "Address Mask";
+				type inet:ip-address;
+				mandatory true;
+			}
+			leaf wildcard-mask {
+				description "Wildcard mask for mask";
+				type wildcard-mask;
+				mandatory true;
+			}
+		}
+	}
+
+	grouping prefix-list-match-fields {
+		leaf ip-prefix {
+			description "Prefix specifying filter";
+			type inet:ip-prefix;
+			mandatory true;
+		}
+		container mask {
+			leaf mask-range {
+				description "Range used on mask";
+				type mask-range-operator;
+				mandatory true;
+			}
+			leaf mask-value {
+				description "Mask used for comparison";
+				type prefix-list-mask;
+				mandatory true;
+			}
+		}
+	}
+
+	grouping acl-entry {
+		leaf entry-type {
+			description "PERMIT/DENY";
+			type filter-entry-type;
+			mandatory true;
+		}
+		leaf entry-seq {
+			description "Specifying order of each entry.";
+			type uint16;
+			mandatory true;
+		}
+		container acl-match {
+			uses acl-match-fields;
+		}
+		uses sgt-match-fields;
+	}
+
+	grouping prefix-list-entry {
+		leaf entry-type {
+			description "PERMIT/DENY";
+			type filter-entry-type;
+			mandatory true;
+		}
+		leaf entry-seq {
+			description "Specifying order of each entry.";
+			type uint16;
+			mandatory true;
+		}
+		container prefix-list-match {
+			uses prefix-list-match-fields;
+		}
+		uses sgt-match-fields;
+	}
+}

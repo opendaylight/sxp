@@ -15,6 +15,7 @@ import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseAccess;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 
@@ -28,11 +29,11 @@ public final class SxpDatastoreImpl extends SxpDatabaseImpl {
     }
 
     @Override
-    public boolean addBindings(SxpDatabase database) throws DatabaseAccessException {
+    public boolean addBindings(SxpDatabase database, SxpBindingFilter filter) throws DatabaseAccessException {
         synchronized (databaseAccess) {
             this.database = databaseAccess.read();
             synchronized (this.database) {
-                boolean result = super.addBindings(database);
+                boolean result = super.addBindings(database,filter);
                 databaseAccess.put(this.database);
                 return result;
             }
@@ -40,11 +41,11 @@ public final class SxpDatastoreImpl extends SxpDatabaseImpl {
     }
 
     @Override
-    public List<SxpBindingIdentity> deleteBindings(SxpDatabase database) throws DatabaseAccessException {
+    public List<SxpBindingIdentity> deleteBindings(SxpDatabase database, SxpBindingFilter filter) throws DatabaseAccessException {
         synchronized (databaseAccess) {
             this.database = databaseAccess.read();
             synchronized (this.database) {
-                List<SxpBindingIdentity> result = super.deleteBindings(database);
+                List<SxpBindingIdentity> result = super.deleteBindings(database, filter);
                 databaseAccess.put(this.database);
                 return result;
             }

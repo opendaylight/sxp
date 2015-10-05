@@ -15,6 +15,7 @@ import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.inet.Search;
@@ -409,7 +410,7 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
     }
 
     @Override
-    public List<MasterDatabase> partition(int quantity, boolean onlyChanged) throws DatabaseAccessException {
+    public List<MasterDatabase> partition(int quantity, boolean onlyChanged, SxpBindingFilter filter) throws DatabaseAccessException {
         synchronized (database) {
             List<MasterDatabase> split = new ArrayList<>();
             MasterDatabaseBuilder databaseBuilder = new MasterDatabaseBuilder(database);
@@ -422,6 +423,9 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
             List<MasterBindingIdentity> bindingIdentities = MasterBindingIdentity.create(database, onlyChanged);
 
             for (MasterBindingIdentity bindingIdentity : bindingIdentities) {
+                if (filter != null && filter.filter(bindingIdentity)) {
+                    continue;
+                }
                 boolean contains = false;
                     SourceBuilder sourceBuilder = new SourceBuilder(bindingIdentity.source);
                     sourceBuilder.setPrefixGroup(new ArrayList<PrefixGroup>());

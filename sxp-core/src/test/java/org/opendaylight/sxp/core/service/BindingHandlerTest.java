@@ -19,6 +19,7 @@ import org.opendaylight.sxp.core.messaging.AttributeFactory;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyAttributeFactory;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
 import org.opendaylight.sxp.util.exception.message.attribute.SecurityGroupTagValueException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.peer.sequence.Peer;
@@ -101,7 +102,7 @@ import static org.mockito.Mockito.when;
                 when(connection.getDestination()).thenReturn(
                         new InetSocketAddress(InetAddress.getByName("1.1.1.1"), 5));
                 databaseProvider = mock(SxpDatabaseProvider.class);
-                when(databaseProvider.addBindings(any(SxpDatabase.class))).thenReturn(true);
+                when(databaseProvider.addBindings(any(SxpDatabase.class), any(SxpBindingFilter.class))).thenReturn(true);
                 PowerMockito.when(sxpNode.getBindingSxpDatabase()).thenReturn(databaseProvider);
         }
 
@@ -423,8 +424,8 @@ import static org.mockito.Mockito.when;
                 verify(worker, atLeastOnce()).executeTask(argument.capture(), any(ThreadsWorker.WorkerType.class));
 
                 argument.getValue().call();
-                verify(databaseProvider).deleteBindings(any(SxpDatabase.class));
-                verify(databaseProvider).addBindings(any(SxpDatabase.class));
+                verify(databaseProvider).deleteBindings(any(SxpDatabase.class),any(SxpBindingFilter.class));
+                verify(databaseProvider).addBindings(any(SxpDatabase.class),any(SxpBindingFilter.class));
                 verify(sxpNode, times(2)).setSvcBindingManagerNotify();
         }
 
@@ -446,8 +447,8 @@ import static org.mockito.Mockito.when;
                 verify(worker, atLeastOnce()).executeTask(argument.capture(), any(ThreadsWorker.WorkerType.class));
 
                 argument.getValue().call();
-                verify(databaseProvider).deleteBindings(any(SxpDatabase.class));
-                verify(databaseProvider).addBindings(any(SxpDatabase.class));
+                verify(databaseProvider).deleteBindings(any(SxpDatabase.class),any(SxpBindingFilter.class));
+                verify(databaseProvider).addBindings(any(SxpDatabase.class),any(SxpBindingFilter.class));
                 verify(sxpNode, times(2)).setSvcBindingManagerNotify();
 
         }
