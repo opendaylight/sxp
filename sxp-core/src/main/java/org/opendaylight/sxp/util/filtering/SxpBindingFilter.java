@@ -31,6 +31,7 @@ import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 public abstract class SxpBindingFilter<T extends FilterEntries> {
 
@@ -42,8 +43,12 @@ public abstract class SxpBindingFilter<T extends FilterEntries> {
      *
      * @param filter        SxpFilter containing rules for filtering
      * @param peerGroupName name of PeerGroup in which filter is assigned
+     * @throws IllegalArgumentException If SxpFilter fields are not set
      */
     public SxpBindingFilter(SxpFilter filter, String peerGroupName) {
+        if (filter.getFilterType() == null || filter.getFilterEntries() == null) {
+            throw new IllegalArgumentException("Filter fields aren't set properly " + filter);
+        }
         sxpFilter = filter;
         this.peerGroupName = peerGroupName;
     }
@@ -67,10 +72,11 @@ public abstract class SxpBindingFilter<T extends FilterEntries> {
      *
      * @param identity SxpBindingIdentity checked
      * @return If SxpBindingIdentity will be propagated
+     * @throws IllegalStateException If filter is set do different type of filtering
      */
     public boolean filter(SxpBindingIdentity identity) {
         if (sxpFilter.getFilterType().equals(FilterType.Outbound)) {
-            return false;
+            throw new IllegalStateException("Outbound filter cannot filter inbound bindings");
         }
         //noinspection unchecked
         return filter((T) sxpFilter.getFilterEntries(), identity.getPrefixGroup().getSgt(),
@@ -82,10 +88,11 @@ public abstract class SxpBindingFilter<T extends FilterEntries> {
      *
      * @param identity MasterBindingIdentity checked
      * @return If MasterBindingIdentity will be propagated
+     * @throws IllegalStateException If filter is set do different type of filtering
      */
     public boolean filter(MasterBindingIdentity identity) {
         if (sxpFilter.getFilterType().equals(FilterType.Inbound)) {
-            return false;
+            throw new IllegalStateException("Inbound filter cannot filter outbound bindings");
         }
         //noinspection unchecked
         return filter((T) sxpFilter.getFilterEntries(), identity.getPrefixGroup().getSgt(),
@@ -124,11 +131,14 @@ public abstract class SxpBindingFilter<T extends FilterEntries> {
      * @param filter        SxpFilter used for filtering
      * @param peerGroupName Name of PeerGroup where filter is assigned
      * @return Logic for binding filtering
-     * @throws IllegalArgumentException If entries of Filter are not supported
+     * @throws IllegalArgumentException If entries of Filter are not supported or PeerGroup name is null
      */
     public static SxpBindingFilter generateFilter(
             org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter filter,
             String peerGroupName) throws IllegalArgumentException {
+        if (peerGroupName == null) {
+            throw new IllegalArgumentException("PeerGroup name cannot be null");
+        }
         if (filter.getFilterEntries() instanceof AclFilterEntries) {
             Collections.sort(((AclFilterEntries) filter.getFilterEntries()).getAclEntry(), new Comparator<AclEntry>() {
 
@@ -148,5 +158,18 @@ public abstract class SxpBindingFilter<T extends FilterEntries> {
             return new PrefixListFilter(new SxpFilterBuilder(filter).build(), peerGroupName);
         }
         throw new IllegalArgumentException("Undefined filter type " + filter);
+    }
+
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        SxpBindingFilter<?> that = (SxpBindingFilter<?>) o;
+        return Objects.equals(sxpFilter.getFilterType(), that.sxpFilter.getFilterType());
+    }
+
+    @Override public int hashCode() {
+        return Objects.hash(sxpFilter.getFilterEntries());
     }
 }

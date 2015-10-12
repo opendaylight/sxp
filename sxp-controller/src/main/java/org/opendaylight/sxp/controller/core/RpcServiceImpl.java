@@ -74,8 +74,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Up
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateEntryOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdatePeerGroupInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdatePeerGroupOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdatePeerGroupOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
@@ -87,8 +89,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.AclFilterEntries;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.PrefixListFilterEntries;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilterBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.Connections;
@@ -215,10 +220,9 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         InstanceIdentifier<Binding> bindingIdentifier = InstanceIdentifier
                 .builder(NetworkTopology.class)
                 .child(Topology.class, new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME)))
-                .child(Node.class,
-                        new NodeKey(
-                                new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
-                                        nodeId))).augmentation(SxpNodeIdentity.class).child(MasterDatabase.class)
+                .child(Node.class, new NodeKey(
+                        new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
+                                nodeId))).augmentation(SxpNodeIdentity.class).child(MasterDatabase.class)
                 .child(Source.class, new SourceKey(DatabaseBindingSource.Local))
                 .child(PrefixGroup.class, new PrefixGroupKey(sgt)).child(Binding.class, new BindingKey(ipPrefix))
                 .build();
@@ -237,10 +241,9 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         InstanceIdentifier<Connection> connectionIdentifier = InstanceIdentifier
                 .builder(NetworkTopology.class)
                 .child(Topology.class, new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME)))
-                .child(Node.class,
-                        new NodeKey(
-                                new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
-                                        nodeId))).augmentation(SxpNodeIdentity.class).child(Connections.class)
+                .child(Node.class, new NodeKey(
+                        new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
+                                nodeId))).augmentation(SxpNodeIdentity.class).child(Connections.class)
                 .child(Connection.class, new ConnectionKey(peerAddress, tcpPort)).build();
 
         CheckedFuture<Optional<Connection>, ReadFailedException> connection = datastoreAccess.read(
@@ -281,13 +284,12 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
     public Future<RpcResult<AddConnectionOutput>> addConnection(final AddConnectionInput input) {
         return executor.submit(new Callable<RpcResult<AddConnectionOutput>>() {
 
-            @SuppressWarnings("unchecked")
-            @Override
-            public RpcResult<AddConnectionOutput> call() throws Exception {
+            @SuppressWarnings("unchecked") @Override public RpcResult<AddConnectionOutput> call() throws Exception {
                 LOG.info("RpcAddConnection event | {}", input.toString());
 
                 Connections connections = input.getConnections();
-                if (connections == null || connections.getConnection() == null || connections.getConnection().isEmpty()) {
+                if (connections == null || connections.getConnection() == null || connections.getConnection()
+                        .isEmpty()) {
                     LOG.warn("RpcAddConnection exception | Parameter 'connections' not defined");
                     AddConnectionOutputBuilder output = new AddConnectionOutputBuilder();
                     output.setResult(false);
@@ -398,22 +400,104 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    //TODO
     @Override public Future<RpcResult<AddFilterOutput>> addFilter(final AddFilterInput input) {
         return executor.submit(new Callable<RpcResult<AddFilterOutput>>() {
 
             @Override public RpcResult<AddFilterOutput> call() throws Exception {
-                return null;
+                LOG.info("RpcAddFilter event | {}", input.toString());
+                AddFilterOutputBuilder output = new AddFilterOutputBuilder();
+                output.setResult(false);
+
+                String nodeId = getNodeId(input.getRequestedNode());
+                if (input.getRequestedNode() == null) {
+                    LOG.warn("RpcGetBindingSgts exception | Parameter 'requested-node' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                SxpNode node = Configuration.getRegisteredNode(nodeId);
+                if (node == null) {
+                    LOG.warn("RpcAddPeerGroup exception | SxpNode '{}' doesn't exists", input.getRequestedNode());
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                if (input.getPeerGroupName() == null) {
+                    LOG.warn("RpcAddFilter exception | Parameter 'group-name' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                if (input.getSxpFilter() == null) {
+                    LOG.warn("RpcAddFilter exception | Parameter 'sxp-filter' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                if (checkFilterFields(new SxpFilterBuilder(input.getSxpFilter()).build())) {
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+
+                node.addFilterToPeerGroup(input.getPeerGroupName(), new SxpFilterBuilder(input.getSxpFilter()).build());
+                output.setResult(true);
+                return RpcResultBuilder.success(output.build()).build();
             }
         });
     }
 
-    //TODO
+    private boolean checkFilterFields(SxpFilter sxpFilter) {
+        if (sxpFilter.getFilterType() == null) {
+            LOG.warn("RpcAddFilter exception | Parameter 'filter-type' not defined");
+            return true;
+        }
+        if (sxpFilter.getFilterEntries() == null) {
+            LOG.warn("RpcAddFilter exception | Parameter 'filter-entries' not defined");
+            return true;
+        }
+        if (sxpFilter.getFilterEntries() instanceof AclFilterEntries && (
+                ((AclFilterEntries) sxpFilter.getFilterEntries()).getAclEntry() == null || ((AclFilterEntries) sxpFilter
+                        .getFilterEntries()).getAclEntry().isEmpty())) {
+            LOG.warn("RpcAddFilter exception | In parameter 'filter-entries' no entries was defined");
+            return true;
+        }
+        if (sxpFilter.getFilterEntries() instanceof PrefixListFilterEntries && (
+                ((PrefixListFilterEntries) sxpFilter.getFilterEntries()).getPrefixListEntry() == null
+                        || ((PrefixListFilterEntries) sxpFilter.getFilterEntries()).getPrefixListEntry().isEmpty())) {
+            LOG.warn("RpcAddFilter exception | In parameter 'filter-entries' no entries was defined");
+            return true;
+        }
+        return false;
+    }
+
     @Override public Future<RpcResult<AddPeerGroupOutput>> addPeerGroup(final AddPeerGroupInput input) {
         return executor.submit(new Callable<RpcResult<AddPeerGroupOutput>>() {
 
             @Override public RpcResult<AddPeerGroupOutput> call() throws Exception {
-                return null;
+                LOG.info("RpcAddPeerGroup event | {}", input.toString());
+                AddPeerGroupOutputBuilder output = new AddPeerGroupOutputBuilder();
+                output.setResult(false);
+
+                String nodeId = getNodeId(input.getRequestedNode());
+                if (input.getRequestedNode() == null) {
+                    LOG.warn("RpcGetBindingSgts exception | Parameter 'requested-node' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                SxpNode node = Configuration.getRegisteredNode(nodeId);
+                if (node == null) {
+                    LOG.warn("RpcAddPeerGroup exception | SxpNode '{}' doesn't exists", input.getRequestedNode());
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                if(input.getSxpPeerGroup().getName()==null){
+                    LOG.warn("RpcAddPeerGroup exception | Parameter 'name' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                if (node.getPeerGroup(input.getSxpPeerGroup().getName()) != null) {
+                    LOG.warn("RpcAddPeerGroup exception | PeerGroup with name '{}' already defined",
+                            input.getSxpPeerGroup().getName());
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter filter : input
+                        .getSxpPeerGroup()
+                        .getSxpFilter()) {
+                    if (checkFilterFields(filter)) {
+                        return RpcResultBuilder.success(output.build()).build();
+                    }
+                }
+                node.addPeerGroup(input.getSxpPeerGroup());
+                output.setResult(node.getPeerGroup(input.getSxpPeerGroup().getName()) != null);
+                return RpcResultBuilder.success(output.build()).build();
             }
         });
     }
@@ -518,22 +602,61 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    //TODO
     @Override public Future<RpcResult<DeleteFilterOutput>> deleteFilter(final DeleteFilterInput input) {
         return executor.submit(new Callable<RpcResult<DeleteFilterOutput>>() {
 
             @Override public RpcResult<DeleteFilterOutput> call() throws Exception {
-                return null;
+                DeleteFilterOutputBuilder output = new DeleteFilterOutputBuilder();
+                output.setResult(false);
+
+                String nodeId = getNodeId(input.getRequestedNode());
+                if (input.getRequestedNode() == null) {
+                    LOG.warn("RpcGetBindingSgts exception | Parameter 'requested-node' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                SxpNode node = Configuration.getRegisteredNode(nodeId);
+                if (node == null) {
+                    LOG.warn("RpcAddPeerGroup exception | SxpNode '{}' doesn't exists", input.getRequestedNode());
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                if (input.getPeerGroupName() == null) {
+                    LOG.warn("RpcAddFilter exception | Parameter 'group-name' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                if (input.getFilterType() == null) {
+                    LOG.warn("RpcAddFilter exception | Parameter 'filter-type' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                output.setResult(node.removeFilterFromPeerGroup(input.getPeerGroupName(), input.getFilterType()) != null);
+                return RpcResultBuilder.success(output.build()).build();
             }
         });
     }
 
-    //TODO
     @Override public Future<RpcResult<DeletePeerGroupOutput>> deletePeerGroup(final DeletePeerGroupInput input) {
         return executor.submit(new Callable<RpcResult<DeletePeerGroupOutput>>() {
 
             @Override public RpcResult<DeletePeerGroupOutput> call() throws Exception {
-                return null;
+                DeletePeerGroupOutputBuilder output = new DeletePeerGroupOutputBuilder();
+                output.setResult(false);
+
+                String nodeId = getNodeId(input.getRequestedNode());
+                if (input.getRequestedNode() == null) {
+                    LOG.warn("RpcGetBindingSgts exception | Parameter 'requested-node' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                SxpNode node = Configuration.getRegisteredNode(nodeId);
+                if (node == null) {
+                    LOG.warn("RpcAddPeerGroup exception | SxpNode '{}' doesn't exists", input.getRequestedNode());
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                if (input.getPeerGroupName() == null) {
+                    LOG.warn("RpcAddFilter exception | Parameter 'group-name' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+
+                output.setResult(node.removePeerGroup(input.getPeerGroupName()) != null);
+                return RpcResultBuilder.success(output.build()).build();
             }
         });
     }
@@ -541,9 +664,8 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
     @Override
     public Future<RpcResult<GetBindingSgtsOutput>> getBindingSgts(final GetBindingSgtsInput input) {
         return executor.submit(new Callable<RpcResult<GetBindingSgtsOutput>>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public RpcResult<GetBindingSgtsOutput> call() throws Exception {
+
+            @SuppressWarnings("unchecked") @Override public RpcResult<GetBindingSgtsOutput> call() throws Exception {
                 LOG.info("RpcGetBindingSgts event | {}", input.toString());
 
                 IpPrefix ipPrefix = input.getIpPrefix();
@@ -604,16 +726,16 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
     @Override
     public Future<RpcResult<GetNodeBindingsOutput>> getNodeBindings(final GetNodeBindingsInput input) {
         return executor.submit(new Callable<RpcResult<GetNodeBindingsOutput>>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public RpcResult<GetNodeBindingsOutput> call() throws Exception {
+
+            @SuppressWarnings("unchecked") @Override public RpcResult<GetNodeBindingsOutput> call() throws Exception {
                 LOG.info("RpcGetNodeBindings event | {}", input.toString());
 
                 NodeId requestedNodeId = input.getRequestedNode();
                 if (requestedNodeId == null) {
                     LOG.warn("RpcGetBindingSgts exception | Parameter 'requested-node' not defined");
                     GetNodeBindingsOutputBuilder output = new GetNodeBindingsOutputBuilder();
-                    output.setBinding(new ArrayList<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.configuration.fields.Binding>());
+                    output.setBinding(
+                            new ArrayList<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.configuration.fields.Binding>());
                     return RpcResultBuilder.success(output.build()).build();
                 }
 
@@ -628,22 +750,60 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    //TODO
     @Override public Future<RpcResult<GetPeerGroupOutput>> getPeerGroup(final GetPeerGroupInput input) {
         return executor.submit(new Callable<RpcResult<GetPeerGroupOutput>>() {
 
             @Override public RpcResult<GetPeerGroupOutput> call() throws Exception {
-                return null;
+                GetPeerGroupOutputBuilder output = new GetPeerGroupOutputBuilder();
+                output.setSxpPeerGroup(null);
+
+                String nodeId = getNodeId(input.getRequestedNode());
+                if (input.getRequestedNode() == null) {
+                    LOG.warn("RpcGetBindingSgts exception | Parameter 'requested-node' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                SxpNode node = Configuration.getRegisteredNode(nodeId);
+                if (node == null) {
+                    LOG.warn("RpcAddPeerGroup exception | SxpNode '{}' doesn't exists", input.getRequestedNode());
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                if (input.getPeerGroupName() == null) {
+                    LOG.warn("RpcAddFilter exception | Parameter 'group-name' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                output.setSxpPeerGroup(node.getPeerGroup(input.getPeerGroupName()));
+                return RpcResultBuilder.success(output.build()).build();
             }
         });
     }
 
-    //TODO
     @Override public Future<RpcResult<GetPeerGroupsOutput>> getPeerGroups(final GetPeerGroupsInput input) {
         return executor.submit(new Callable<RpcResult<GetPeerGroupsOutput>>() {
 
             @Override public RpcResult<GetPeerGroupsOutput> call() throws Exception {
-                return null;
+                GetPeerGroupsOutputBuilder output = new GetPeerGroupsOutputBuilder();
+                output.setSxpPeerGroup(new ArrayList<SxpPeerGroup>());
+
+                String nodeId = getNodeId(input.getRequestedNode());
+                if (input.getRequestedNode() == null) {
+                    LOG.warn("RpcGetBindingSgts exception | Parameter 'requested-node' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                SxpNode node = Configuration.getRegisteredNode(nodeId);
+                if (node == null) {
+                    LOG.warn("RpcAddPeerGroup exception | SxpNode '{}' doesn't exists", input.getRequestedNode());
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                output.setSxpPeerGroup(new ArrayList<>(Collections2.transform(node.getPeerGroups(),
+                        new Function<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup, SxpPeerGroup>() {
+
+                            @Nullable @Override public SxpPeerGroup apply(
+                                    org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup peerGroup) {
+
+                                return new SxpPeerGroupBuilder(peerGroup).build();
+                            }
+                        })));
+                return RpcResultBuilder.success(output.build()).build();
             }
         });
     }
@@ -651,9 +811,8 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
     @Override
     public Future<RpcResult<UpdateEntryOutput>> updateEntry(final UpdateEntryInput input) {
         return executor.submit(new Callable<RpcResult<UpdateEntryOutput>>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public RpcResult<UpdateEntryOutput> call() throws Exception {
+
+            @SuppressWarnings("unchecked") @Override public RpcResult<UpdateEntryOutput> call() throws Exception {
                 LOG.info("RpcUpdateEntry event | {}", input.toString());
 
                 IpPrefix originalIpPrefix = input.getOriginalBinding().getIpPrefix();
@@ -749,22 +908,83 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    //TODO
-    @Override public Future<RpcResult<UpdateFilterOutput>> updateFilter(UpdateFilterInput input) {
+    @Override public Future<RpcResult<UpdateFilterOutput>> updateFilter(final UpdateFilterInput input) {
         return executor.submit(new Callable<RpcResult<UpdateFilterOutput>>() {
 
             @Override public RpcResult<UpdateFilterOutput> call() throws Exception {
-                return null;
+                LOG.info("RpcUpdateFilter event | {}", input.toString());
+                UpdateFilterOutputBuilder output = new UpdateFilterOutputBuilder();
+                output.setResult(false);
+
+                String nodeId = getNodeId(input.getRequestedNode());
+                if (input.getRequestedNode() == null) {
+                    LOG.warn("RpcGetBindingSgts exception | Parameter 'requested-node' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                SxpNode node = Configuration.getRegisteredNode(nodeId);
+                if (node == null) {
+                    LOG.warn("RpcAddPeerGroup exception | SxpNode '{}' doesn't exists", input.getRequestedNode());
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                if (input.getPeerGroupName() == null) {
+                    LOG.warn("RpcAddFilter exception | Parameter 'group-name' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                if (input.getSxpFilter() == null) {
+                    LOG.warn("RpcAddFilter exception | Parameter 'sxp-filter' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                if (checkFilterFields(new SxpFilterBuilder(input.getSxpFilter()).build())) {
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+
+                output.setResult(
+                        node.removeFilterFromPeerGroup(input.getPeerGroupName(), input.getSxpFilter().getFilterType())
+                                != null);
+                node.addFilterToPeerGroup(input.getPeerGroupName(), new SxpFilterBuilder(input.getSxpFilter()).build());
+
+                return RpcResultBuilder.success(output.build()).build();
             }
         });
     }
 
-    //TODO
-    @Override public Future<RpcResult<UpdatePeerGroupOutput>> updatePeerGroup(UpdatePeerGroupInput input) {
+    @Override public Future<RpcResult<UpdatePeerGroupOutput>> updatePeerGroup(final UpdatePeerGroupInput input) {
         return executor.submit(new Callable<RpcResult<UpdatePeerGroupOutput>>() {
 
             @Override public RpcResult<UpdatePeerGroupOutput> call() throws Exception {
-                return null;
+                LOG.info("RpcUpdatePeerGroup event | {}", input.toString());
+                UpdatePeerGroupOutputBuilder output = new UpdatePeerGroupOutputBuilder();
+                output.setResult(false);
+
+                String nodeId = getNodeId(input.getRequestedNode());
+                if (input.getRequestedNode() == null) {
+                    LOG.warn("RpcGetBindingSgts exception | Parameter 'requested-node' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                SxpNode node = Configuration.getRegisteredNode(nodeId);
+                if (node == null) {
+                    LOG.warn("RpcAddPeerGroup exception | SxpNode '{}' doesn't exists", input.getRequestedNode());
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                if (input.getSxpPeerGroup().getName() == null) {
+                    LOG.warn("RpcAddPeerGroup exception | Parameter 'name' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                if (node.getPeerGroup(input.getSxpPeerGroup().getName()) != null) {
+                    LOG.warn("RpcAddPeerGroup exception | PeerGroup with name '{}' already defined",
+                            input.getSxpPeerGroup().getName());
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter filter : input
+                        .getSxpPeerGroup()
+                        .getSxpFilter()) {
+                    if (checkFilterFields(filter)) {
+                        return RpcResultBuilder.success(output.build()).build();
+                    }
+                }
+                output.setResult(node.removePeerGroup(input.getPeerGroupName()) != null);
+                node.addPeerGroup(input.getSxpPeerGroup());
+                return RpcResultBuilder.success(output.build()).build();
             }
         });
     }
