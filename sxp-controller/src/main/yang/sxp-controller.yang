@@ -410,10 +410,6 @@ module sxp-controller {
 				type string;
 				description "Name of PeerGroup where filter will be updated";
 			}
-			leaf filter-type {
-				mandatory true;
-				type sxpfl:filter-type;
-			}
 			uses sxpfl:sxp-filter;
 		}
 		output {

@@ -121,19 +121,36 @@ public class SxpConnection {
         }
     }
 
+    private void updateFlagsForDatabase(FilterType filterType) {
+        if(!isStateOn()){
+            return;
+        }
+        if (filterType.equals(FilterType.Inbound) && (isModeListener() || isModeBoth())) {
+            owner.setSvcBindingManagerNotify();
+        } else if (filterType.equals(FilterType.Outbound) && (isModeSpeaker() || isModeBoth())) {
+            try {
+                getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext).writeAndFlush(
+                        MessageFactory.createPurgeAll());
+            } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+                LOG.error(this + " Cannot send PURGE ALL message to set new filter| {} | ",
+                        e.getClass().getSimpleName());
+            }
+            connectionBuilder.setUpdateAllExported(false);
+            connectionBuilder.setUpdateExported(false);
+            owner.setSvcBindingDispatcherNotify();
+        }
+    }
+
     public void setFilter(SxpBindingFilter filter) {
         synchronized (bindingFilterMap) {
             FilterType filterType = filter.getSxpFilter().getFilterType();
-            if (bindingFilterMap.containsKey(filterType)) {
-                //throw new IllegalArgumentException("TODO");
-            }
             bindingFilterMap.put(filterType, filter);
+            updateFlagsForDatabase(filterType);
         }
     }
 
     public String getGroupName(FilterType filterType) {
         synchronized (bindingFilterMap) {
-            //TODO
             return bindingFilterMap.get(filterType) != null ? bindingFilterMap.get(filterType)
                     .getPeerGroupName() : null;
         }
@@ -141,7 +158,9 @@ public class SxpConnection {
 
     public SxpBindingFilter removeFilter(FilterType filterType) {
         synchronized (bindingFilterMap) {
-            return bindingFilterMap.remove(filterType);
+            SxpBindingFilter filter = bindingFilterMap.remove(filterType);
+            updateFlagsForDatabase(filterType);
+            return filter;
         }
     }
 
