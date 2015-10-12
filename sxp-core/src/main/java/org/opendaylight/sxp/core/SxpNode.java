@@ -35,17 +35,19 @@ import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownSxpConnectionException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
-import org.opendaylight.sxp.util.inet.IpPrefixConv;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
-import org.opendaylight.tcpmd5.api.KeyMapping;
 import org.opendaylight.tcpmd5.jni.NativeSupportUnavailableException;
-import org.opendaylight.tcpmd5.netty.MD5ChannelOption;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeers;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentityBuilder;
@@ -177,6 +179,127 @@ public final class SxpNode {
 
     /** Common timers setup. */
     private HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(6);
+    private final Map<String,SxpPeerGroup> peerGroupMap = new HashMap<>();
+
+    private boolean checkPeerGroupOverlap(SxpPeerGroup group){
+        //TODO
+        return false;
+    }
+
+    private void updateConnectionsFilter(SxpPeers sxpPeers, List<SxpBindingFilter> filters) {
+        //TODO
+    }
+
+    private boolean peerGroupValidation(SxpPeerGroup peerGroup){
+        //TODO
+        return false;
+    }
+
+    /**
+     * Adds new PeerGroup to Node
+     *
+     * @param peerGroup PeerGroup to be added
+     */
+    public void addPeerGroup(SxpPeerGroup peerGroup) {
+        synchronized (peerGroupMap) {
+            //TODO
+            List<SxpBindingFilter> filters = new ArrayList<>();
+            for (SxpFilter filter : peerGroup.getSxpFilter()) {
+                filters.add(SxpBindingFilter.generateFilter(filter, peerGroup.getName()));
+            }
+            updateConnectionsFilter(peerGroup.getSxpPeers(), filters);
+        }
+    }
+
+    /**
+     * Update values of PeerGroup with specified name
+     *
+     * @param peerGroupName Name of PeerGroup that will be updated
+     * @param peerGroup     PeerGroup with neew values
+     */
+    public void updatePeerGroup(String peerGroupName,SxpPeerGroup peerGroup) {
+        synchronized (peerGroupMap) {
+            //TODO
+            List<SxpBindingFilter> filters = new ArrayList<>();
+            for (SxpFilter filter : peerGroup.getSxpFilter()) {
+                filters.add(SxpBindingFilter.generateFilter(filter, peerGroup.getName()));
+            }
+            updateConnectionsFilter(peerGroup.getSxpPeers(), filters);
+        }
+    }
+
+    /**
+     * @param peerGroupName Name of PeerGroup
+     * @return PeerGroup with specified name on this node
+     */
+    public SxpPeerGroup getPeerGroup(String peerGroupName) {
+        synchronized (peerGroupMap) {
+            return peerGroupMap.get(peerGroupName);
+        }
+    }
+
+    /**
+     * Removes PeerGroup from Node
+     *
+     * @param peerGroupName Name of PeerGroup that will be removed
+     * @return Removed PeerGroup
+     */
+    public SxpPeerGroup removePeerGroup(String peerGroupName) {
+        synchronized (peerGroupMap) {
+            SxpPeerGroup peerGroup = peerGroupMap.remove(peerGroupName);
+            //TODO
+            updateConnectionsFilter(peerGroup.getSxpPeers(), new ArrayList<SxpBindingFilter>());
+            return peerGroup;
+        }
+    }
+
+    /**
+     * @return All PeerGroups on this node
+     */
+    public Collection<SxpPeerGroup> getPeerGroups() {
+        synchronized (peerGroupMap) {
+            return Collections.unmodifiableCollection(peerGroupMap.values());
+        }
+    }
+
+    /**
+     * Adds new Filter to specified PeerGroup
+     *
+     * @param peerGroupName Name of PeerGroup where SxpFilter will be added
+     * @param sxpFilter     SxpFilter that will be used
+     */
+    public void addFilterToPeerGroup(String peerGroupName, SxpFilter sxpFilter) {
+        synchronized (peerGroupMap){
+            //TODO
+        }
+    }
+
+    /**
+     * Update Filter in PeerGroup of specific type
+     *
+     * @param peerGroupName Name of PeerGroup that contains filter
+     * @param filterType    Type of Filter that will be updated
+     * @param sxpFilter     SxpFilter with new values that will be used
+     */
+    public void updateFilterInPeerGroup(String peerGroupName, FilterType filterType, SxpFilter sxpFilter) {
+        synchronized (peerGroupMap){
+            //TODO
+        }
+    }
+
+    /**
+     * Removes Filter from specified PeerGroup
+     *
+     * @param peerGroupName Name of PeerGroup that contains filter
+     * @param filterType    Type of Filter that will be removed
+     * @return
+     */
+    public SxpFilter removeFilterFromPeerGroup(String peerGroupName, FilterType filterType) {
+        synchronized (peerGroupMap){
+            //TODO
+            return null;
+        }
+    }
 
     /**
      * Default constructor that creates and start SxpNode using provided values
@@ -199,11 +322,7 @@ public final class SxpNode {
             this.sourceIp = Search.getBestLocalDeviceAddress();
             LOG.debug(toString() + " Setting-up the best local device IP address [sourceIp=\"" + sourceIp + "\"]");
         } else {
-                this.sourceIp =
-                        InetAddresses.forString(
-                                nodeBuilder.getSourceIp().getIpv4Address() != null ? nodeBuilder.getSourceIp()
-                                        .getIpv4Address()
-                                        .getValue() : nodeBuilder.getSourceIp().getIpv6Address().getValue());
+            this.sourceIp = InetAddresses.forString(Search.getAddress(nodeBuilder.getSourceIp()));
         }
 
         this.nodeBuilder.setSecurity(setPassword(nodeBuilder.getSecurity()));
@@ -240,6 +359,7 @@ public final class SxpNode {
             }
             addressToSxpConnection.put(_connection.getDestination(), _connection);
         }
+        //TODO Adding to peer groups
         updateMD5keys(_connection);
         openConnection(_connection);
     }

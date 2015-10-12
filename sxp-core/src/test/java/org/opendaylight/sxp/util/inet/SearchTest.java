@@ -9,6 +9,9 @@
 package org.opendaylight.sxp.util.inet;
 
 import org.junit.Test;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Address;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,4 +36,12 @@ public class SearchTest {
                 assertEquals(254, Search.getExpandedBindings("2001:db8::ff00:42:8329", 120, expansionQuantity).size());
         }
 
+        @Test public void testGetAddress() throws Exception {
+                assertEquals("50.23.21.5", Search.getAddress(new IpAddress(Ipv4Address.getDefaultInstance("50.23.21.5"))));
+                assertNotEquals("50.23.21.5", Search.getAddress(new IpAddress(Ipv4Address.getDefaultInstance("0.0.21.0"))));
+                assertEquals("2001:0:0:0:0:0:0:0",
+                        Search.getAddress(new IpAddress(Ipv6Address.getDefaultInstance("2001:0:0:0:0:0:0:0"))));
+                assertNotEquals("2001:0:0:0:0:0:0:0",
+                        Search.getAddress(new IpAddress(Ipv6Address.getDefaultInstance("2001:0:5:0:0:0:fe:0"))));
+        }
 }

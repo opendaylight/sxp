@@ -14,16 +14,16 @@ import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.ThreadsWorker;
+import org.opendaylight.sxp.util.ExportKey;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.UnknownHostException;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -125,10 +125,9 @@ public final class BindingDispatcher extends Service<Void> {
 
         // Compose and send new messages bundles.
 
-        List<MasterDatabase> partitionsAllBindings = null, partitionsOnlyChangedBindings = null;
-        Map<AbstractMap.SimpleEntry<Version, Boolean>, MasterDatabase[]> dataPool = new HashMap<>(4);
-        Map<AbstractMap.SimpleEntry<Version, Boolean>, ByteBuf[]> messagesPool = new HashMap<>(4);
-        Map<AbstractMap.SimpleEntry<Version, Boolean>, AtomicInteger> releaseCounterPool = new HashMap<>(4);
+        Map<ExportKey, MasterDatabase[]> dataPool = new HashMap<>(4);
+        Map<ExportKey, ByteBuf[]> messagesPool = new HashMap<>(4);
+        Map<ExportKey, AtomicInteger> releaseCounterPool = new HashMap<>(4);
         Map<SxpConnection, Callable> taskPool = new HashMap<>(connections.size());
 
         for (final SxpConnection connection : connections) {
@@ -143,49 +142,28 @@ public final class BindingDispatcher extends Service<Void> {
              * as deleted and the new one as added. Both these changes
              * should be in one message. If 2 messages will be exported, one
              * with the added binding and the second with deleted binding
-             * (delete attribute doen't contain SGT tag), the second update
+             * (delete attribute doesn't contain SGT tag), the second update
              * message will delete previously added binding on a device. If
              * 1 message is exported, delete attributes are written before
              * added attributes.
              */
-            AbstractMap.SimpleEntry<Version, Boolean>
+            ExportKey
                     key =
-                    new AbstractMap.SimpleEntry<>(connection.getVersion(), connection.isUpdateAllExported());
-            if (connection.isUpdateAllExported()) {
-                if (partitionsAllBindings == null) {
-                    synchronized (masterDatabase) {
-                        partitionsAllBindings =
-                                masterDatabase.partition(getPartitionSize(), connection.isUpdateAllExported());
-                    }
+                    new ExportKey(connection.getVersion(), connection.isUpdateAllExported(),
+                            connection.getGroupName(FilterType.Outbound));
+            if (dataPool.get(key) == null) {
+                List<MasterDatabase> partitions;
+                synchronized (masterDatabase) {
+                    partitions =
+                            masterDatabase.partition(getPartitionSize(), connection.isUpdateAllExported(),
+                                    connection.getFilter(FilterType.Outbound));
                 }
-                if (partitionsAllBindings.isEmpty()) {
-                    continue;
-                }
-                if (dataPool.get(key) == null) {
-                    dataPool.put(key, partitionsAllBindings.toArray(new MasterDatabase[partitionsAllBindings.size()]));
-                    messagesPool.put(key, new ByteBuf[partitionsAllBindings.size()]);
-                    releaseCounterPool.put(key, new AtomicInteger(0));
-                }
-            } else {
-                if (partitionsOnlyChangedBindings == null) {
-                    synchronized (masterDatabase) {
-                        partitionsOnlyChangedBindings =
-                                masterDatabase.partition(getPartitionSize(), connection.isUpdateAllExported());
-                    }
-                }
-                if (partitionsOnlyChangedBindings.isEmpty()) {
-                    continue;
-                }
-                if (dataPool.get(key) == null) {
-                    dataPool.put(key, partitionsOnlyChangedBindings.toArray(
-                            new MasterDatabase[partitionsOnlyChangedBindings.size()]));
-                    messagesPool.put(key, new ByteBuf[partitionsOnlyChangedBindings.size()]);
-                    releaseCounterPool.put(key, new AtomicInteger(0));
-                }
+                dataPool.put(key, partitions.toArray(new MasterDatabase[partitions.size()]));
+                messagesPool.put(key, new ByteBuf[partitions.size()]);
+                releaseCounterPool.put(key, new AtomicInteger(0));
             }
 
-            final AtomicInteger releaseCounter = releaseCounterPool.get(key);
-
+            AtomicInteger releaseCounter = releaseCounterPool.get(key);
             releaseCounter.incrementAndGet();
             connection.setUpdateExported();
             Callable task = new UpdateExportTask(connection, messagesPool.get(key), dataPool.get(key), releaseCounter);

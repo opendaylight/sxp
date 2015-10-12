@@ -8,6 +8,9 @@
 
 package org.opendaylight.sxp.core.service;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
+import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
@@ -28,6 +31,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.slf4j.Logger;
@@ -219,6 +223,32 @@ public final class BindingManager extends Service<Void> {
         }
     }
 
+    /**
+     * Filters SxpBindingIdentities by InBound Filter used per Listener/Both connection
+     *
+     * @param bindingIdentities SxpBindingIdentities to be filtered
+     * @return Filtered List of SxpBindingIdentities
+     */
+    private List<SxpBindingIdentity> filter(List<SxpBindingIdentity> bindingIdentities) {
+        final Map<NodeId, SxpConnection> connectionMap = new HashMap<>();
+        for (SxpConnection connection : owner.getAllOnListenerConnections()) {
+            if (connection.getFilter(FilterType.Inbound) != null) {
+                connectionMap.put(connection.getNodeIdRemote(), connection);
+            }
+        }
+        return new ArrayList<>(Collections2.filter(bindingIdentities, new Predicate<SxpBindingIdentity>() {
+
+            @Override public boolean apply(SxpBindingIdentity identity) {
+                //TODO
+                SxpConnection
+                        connection =
+                        connectionMap.get(identity.getPathGroup().getPeerSequence().getPeer().get(0).getNodeId());
+                return connection == null || connection.getFilter(FilterType.Inbound) == null || !connection.getFilter(
+                        FilterType.Inbound).filter(identity);
+            }
+        }));
+    }
+
     @Override
     public Void call() {
         LOG.debug(owner + " Starting {}", BindingManager.class.getSimpleName());
@@ -230,7 +260,9 @@ public final class BindingManager extends Service<Void> {
                     bindingIdentities = sxpDatabase.readBindings();
                 }
                 MasterDatabaseProvider masterDatabase = getBindingMasterDatabase();
-                List<MasterBindingIdentity> masterBindingIdentityContributed = databaseArbitration(bindingIdentities);
+                List<MasterBindingIdentity>
+                        masterBindingIdentityContributed =
+                        databaseArbitration(filter(bindingIdentities));
                 synchronized (masterDatabase) {
                     masterDatabase.addBindings(owner.getNodeId(), masterBindingIdentityContributed);
                     owner.setSvcBindingDispatcherDispatch();

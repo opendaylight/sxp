@@ -7,6 +7,7 @@ module sxp-controller {
 	import ietf-inet-types {prefix inet; revision-date "2010-09-24";}
   	import sxp-database {prefix sxpdb; revision-date "2014-10-02";}
  	import sxp-node {prefix sxpnd; revision-date "2014-10-02";}
+	import sxp-filter {prefix sxpfl; revision-date "2015-09-11";}
  	import sxp-protocol {prefix sxppt; revision-date "2014-10-02";}
  	
 	description 
@@ -30,13 +31,13 @@ module sxp-controller {
 	 	uses sxpnd:sxp-node-fields;
 	 	uses sxpdb:master-database-configuration;
 	 	uses sxpnd:sxp-connections-fields;
-	 	
+
 		container timers {
 			uses sxpnd:sxp-speaker-time-settings-fields;		
 			uses sxpnd:sxp-listener-time-settings-fields;		
 			uses sxpnd:sxp-node-time-settings-fields;
 		}						
-    }    
+    }
     
     // ************************
     // Notifications Definition
@@ -251,8 +252,175 @@ module sxp-controller {
 		        description "Node ID of the dedicated SXP source";
 		    }
         }
-        output {            
-			uses sxpdb:master-database-configuration-fields;					
+        output {
+			uses sxpdb:master-database-configuration-fields;
 		}
     }
+
+    rpc add-peer-group {
+		description "Add new PeerGroup in specified Node";
+		input {
+			leaf requested-node {
+				mandatory true;
+				type sxppt:node-id;
+				description "Node ID of the dedicated SXP source";
+			}
+			uses sxpfl:sxp-peer-group;
+		}
+		output {
+			leaf result {
+				type boolean;
+			}
+		}
+	}
+
+	rpc delete-peer-group {
+		description "Removes PeerGroup in specified node";
+		input {
+			leaf requested-node {
+				mandatory true;
+				type sxppt:node-id;
+				description "Node ID of the dedicated SXP source";
+			}
+			leaf peer-group-name {
+				mandatory true;
+				type string;
+				description "Name of PeerGroup that will be removed";
+			}
+		}
+		output {
+			leaf result {
+				type boolean;
+			}
+		}
+	}
+
+	rpc get-peer-group {
+		description "Gets PerGroup with specified name on node";
+		input {
+			leaf requested-node {
+				mandatory true;
+				type sxppt:node-id;
+				description "Node ID of the dedicated SXP source";
+			}
+			leaf peer-group-name {
+				mandatory true;
+				type string;
+				description "Name of peer group";
+			}
+		}
+		output {
+			uses sxpfl:sxp-peer-group;
+		}
+	}
+
+	rpc get-peer-groups {
+    		description "Gets all PeerGroups on specified node";
+    		input {
+    			leaf requested-node {
+    				mandatory true;
+    				type sxppt:node-id;
+    				description "Node ID of the dedicated SXP source";
+    			}
+    		}
+    		output {
+				uses sxpfl:sxp-peer-groups;
+    		}
+    	}
+
+	rpc update-peer-group {
+		description "Updates value of PeerGroup with specified name";
+		input {
+			leaf requested-node {
+				mandatory true;
+				type sxppt:node-id;
+				description "Node ID of the dedicated SXP source";
+			}
+			leaf peer-group-name {
+				mandatory true;
+				type string;
+				description "Name of PeerGroup that will be updated";
+			}
+			uses sxpfl:sxp-peer-group;
+		}
+		output {
+			leaf result {
+				type boolean;
+			}
+		}
+	}
+
+	rpc add-filter {
+		description "Add new filter to PeerGroup";
+		input {
+			leaf requested-node {
+				mandatory true;
+				type sxppt:node-id;
+				description "Node ID of the dedicated SXP source";
+			}
+			leaf peer-group-name {
+				mandatory true;
+				type string;
+				description "Name of PeerGroup where filter will be placed";
+			}
+			uses sxpfl:sxp-filter;
+		}
+		output {
+			leaf result {
+				type boolean;
+			}
+		}
+	}
+
+	rpc delete-filter {
+		description "Removes filter from PeerGroup";
+		input {
+			leaf requested-node {
+				mandatory true;
+				type sxppt:node-id;
+				description "Node ID of the dedicated SXP source";
+			}
+			leaf peer-group-name {
+				mandatory true;
+				type string;
+				description "Name of PeerGroup from where filter will be removed";
+			}
+			leaf filter-type {
+				mandatory true;
+				type sxpfl:filter-type;
+			}
+		}
+		output {
+			leaf result {
+				type boolean;
+			}
+		}
+	}
+
+	rpc update-filter {
+		description "Updates Filter in specified PeerGroup";
+		input {
+			leaf requested-node {
+				mandatory true;
+				type sxppt:node-id;
+				description "Node ID of the dedicated SXP source";
+			}
+			leaf peer-group-name {
+				mandatory true;
+				type string;
+				description "Name of PeerGroup where filter will be updated";
+			}
+			leaf filter-type {
+				mandatory true;
+				type sxpfl:filter-type;
+			}
+			uses sxpfl:sxp-filter;
+		}
+		output {
+			leaf result {
+				type boolean;
+			}
+		}
+	}
+
 }	

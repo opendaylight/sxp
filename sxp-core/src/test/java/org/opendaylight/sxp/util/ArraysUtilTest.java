@@ -98,4 +98,11 @@ public class ArraysUtilTest {
                 assertArrayEquals(new byte[] {0, 52, 0, 12, 56},
                         ArraysUtil.trimZerosTail(new byte[] {0, 52, 0, 12, 56, 0}));
         }
+
+        @Test public void testReverseBitsByte() throws Exception {
+                assertEquals(0,ArraysUtil.reverseBitsByte((byte) 0));
+                assertEquals(-1,ArraysUtil.reverseBitsByte((byte) 255));
+                assertEquals(12,ArraysUtil.reverseBitsByte((byte) 48));
+                assertEquals(125,ArraysUtil.reverseBitsByte((byte) 190));
+        }
 }
