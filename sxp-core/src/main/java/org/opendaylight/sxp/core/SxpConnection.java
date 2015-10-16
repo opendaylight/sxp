@@ -115,33 +115,80 @@ public class SxpConnection {
     private final AtomicLong inboundMonitor = new AtomicLong(0), outboundMonitor = new AtomicLong(0);
     private final Map<FilterType, SxpBindingFilter> bindingFilterMap = new HashMap<>();
 
+    /**
+     * @param filterType Type of SxpBindingFilter to look for
+     * @return Filter with specified type or null if connection doesnt have one
+     */
     public SxpBindingFilter getFilter(FilterType filterType) {
         synchronized (bindingFilterMap) {
             return bindingFilterMap.get(filterType);
         }
     }
 
-    public void setFilter(SxpBindingFilter filter) {
-        synchronized (bindingFilterMap) {
-            FilterType filterType = filter.getSxpFilter().getFilterType();
-            if (bindingFilterMap.containsKey(filterType)) {
-                //throw new IllegalArgumentException("TODO");
+    /**
+     * Defines how to setup flags after filter of specific type is set in SxpConnection
+     *
+     * @param filterType Type of SxpBindingFilter that was set
+     */
+    private void updateFlagsForDatabase(FilterType filterType) {
+        if(!isStateOn()){
+            return;
+        }
+        if (filterType.equals(FilterType.Inbound) && (isModeListener() || isModeBoth())) {
+            owner.setSvcBindingManagerNotify();
+        } else if (filterType.equals(FilterType.Outbound) && (isModeSpeaker() || isModeBoth())) {
+            try {
+                getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext).writeAndFlush(
+                        MessageFactory.createPurgeAll());
+            } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+                LOG.error(this + " Cannot send PURGE ALL message to set new filter| {} | ",
+                        e.getClass().getSimpleName());
             }
-            bindingFilterMap.put(filterType, filter);
+            connectionBuilder.setUpdateAllExported(false);
+            connectionBuilder.setUpdateExported(false);
+            owner.setSvcBindingDispatcherNotify();
         }
     }
 
+    /**
+     * Puts SxpBindingFilter into SxpConnection and sets appropriate flags
+     *
+     * @param filter SxpBindingFilter to be set
+     */
+    public void putFilter(SxpBindingFilter filter) {
+        if (filter != null) {
+            synchronized (bindingFilterMap) {
+                FilterType filterType = filter.getSxpFilter().getFilterType();
+                bindingFilterMap.put(filterType, filter);
+                updateFlagsForDatabase(filterType);
+            }
+        }
+    }
+
+    /**
+     * @param filterType Type of SxpBindingFilter for which looks for its PeerGroup
+     * @return PeerGroup name associated with filter of specified type
+     */
     public String getGroupName(FilterType filterType) {
         synchronized (bindingFilterMap) {
-            //TODO
             return bindingFilterMap.get(filterType) != null ? bindingFilterMap.get(filterType)
                     .getPeerGroupName() : null;
         }
     }
 
+    /**
+     * Removed SxpBindingFilter from SxpConnection and reset appropriate flags
+     *
+     * @param filterType Type of SxpBindingFilter to be removed
+     * @return Removed SxpBindingFilter
+     */
     public SxpBindingFilter removeFilter(FilterType filterType) {
         synchronized (bindingFilterMap) {
-            return bindingFilterMap.remove(filterType);
+            SxpBindingFilter filter = bindingFilterMap.remove(filterType);
+            if(filter!=null) {
+                updateFlagsForDatabase(filterType);
+            }
+            return filter;
         }
     }
 

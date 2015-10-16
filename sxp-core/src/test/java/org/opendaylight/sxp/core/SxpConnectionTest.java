@@ -21,9 +21,12 @@ import org.opendaylight.sxp.core.service.UpdateExportTask;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
@@ -52,14 +55,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyObject;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class, UpdateExportTask.class})
 public class SxpConnectionTest {
@@ -265,8 +261,7 @@ public class SxpConnectionTest {
                 sxpConnection = SxpConnection.create(sxpNode, connection1);
                 ChannelHandlerContext context = mock(ChannelHandlerContext.class);
                 when(context.close()).thenReturn(mock(ChannelFuture.class));
-                sxpConnection.markChannelHandlerContext(context,
-                        SxpConnection.ChannelHandlerContextType.SpeakerContext);
+                sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.SpeakerContext);
                 sxpConnection.setTimer(TimerType.KeepAliveTimer, 50);
                 sxpConnection.pushUpdateMessageInbound(mock(Callable.class));
                 UpdateExportTask exportTask = PowerMockito.mock(UpdateExportTask.class);
@@ -525,9 +520,75 @@ public class SxpConnectionTest {
                         sxpConnection.getContextType(context));
 
                 context = mock(ChannelHandlerContext.class);
-                sxpConnection.markChannelHandlerContext(context,
-                        SxpConnection.ChannelHandlerContextType.SpeakerContext);
+                sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.SpeakerContext);
                 assertEquals(SxpConnection.ChannelHandlerContextType.SpeakerContext,
                         sxpConnection.getContextType(context));
+        }
+
+        private SxpBindingFilter getFilter(FilterType type, String name) {
+                SxpBindingFilter bindingFilter = mock(SxpBindingFilter.class);
+                when(bindingFilter.getPeerGroupName()).thenReturn(name);
+                SxpFilterBuilder builder = new SxpFilterBuilder();
+                builder.setFilterType(type);
+                when(bindingFilter.getSxpFilter()).thenReturn(builder.build());
+                return bindingFilter;
+        }
+
+        @Test public void testGetFilter() throws Exception {
+                assertNull(sxpConnection.getFilter(FilterType.Inbound));
+                assertNull(sxpConnection.getFilter(FilterType.Outbound));
+
+                sxpConnection.putFilter(getFilter(FilterType.Inbound, "TEST"));
+                assertNotNull(sxpConnection.getFilter(FilterType.Inbound));
+                assertNull(sxpConnection.getFilter(FilterType.Outbound));
+
+                sxpConnection.putFilter(getFilter(FilterType.Outbound, "TEST2"));
+                assertNotNull(sxpConnection.getFilter(FilterType.Inbound));
+                assertNotNull(sxpConnection.getFilter(FilterType.Outbound));
+        }
+
+        @Test public void testPutFilter() throws Exception {
+                sxpConnection = SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On));
+                assertNull(sxpConnection.getFilter(FilterType.Inbound));
+                assertNull(sxpConnection.getFilter(FilterType.Outbound));
+
+                sxpConnection.putFilter(getFilter(FilterType.Inbound, "TEST"));
+                verify(sxpNode,atLeastOnce()).setSvcBindingManagerNotify();
+                sxpConnection.putFilter(getFilter(FilterType.Outbound, "TEST2"));
+                verify(sxpNode,atLeastOnce()).setSvcBindingDispatcherNotify();
+
+                assertNotNull(sxpConnection.getFilter(FilterType.Inbound));
+                assertNotNull(sxpConnection.getFilter(FilterType.Outbound));
+        }
+
+        @Test public void testGetGroupName() throws Exception {
+                assertNull(sxpConnection.getGroupName(FilterType.Inbound));
+                assertNull(sxpConnection.getGroupName(FilterType.Outbound));
+
+                sxpConnection.putFilter(getFilter(FilterType.Inbound, "TEST"));
+                sxpConnection.putFilter(getFilter(FilterType.Outbound, "TEST2"));
+
+                assertEquals("TEST", sxpConnection.getGroupName(FilterType.Inbound));
+                assertEquals("TEST2",sxpConnection.getGroupName(FilterType.Outbound));
+        }
+
+        @Test public void testRemoveFilter() throws Exception {
+                sxpConnection = SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On));
+                assertNull(sxpConnection.getFilter(FilterType.Inbound));
+                assertNull(sxpConnection.getFilter(FilterType.Outbound));
+
+                sxpConnection.putFilter(getFilter(FilterType.Inbound, "TEST"));
+                sxpConnection.putFilter(getFilter(FilterType.Outbound, "TEST2"));
+
+                assertNotNull(sxpConnection.getFilter(FilterType.Inbound));
+                assertNotNull(sxpConnection.getFilter(FilterType.Outbound));
+
+                sxpConnection.removeFilter(FilterType.Inbound);
+                assertNull(sxpConnection.getFilter(FilterType.Inbound));
+                verify(sxpNode,atLeastOnce()).setSvcBindingManagerNotify();
+
+                sxpConnection.removeFilter(FilterType.Outbound);
+                assertNull(sxpConnection.getFilter(FilterType.Outbound));
+                verify(sxpNode,atLeastOnce()).setSvcBindingDispatcherNotify();
         }
 }
