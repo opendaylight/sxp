@@ -26,8 +26,22 @@ import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.sgt.match.SgtMatchesBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.AclFilterEntriesBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.acl.filter.entries.AclEntry;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.acl.filter.entries.AclEntryBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilterBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeers;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeersBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.network.topology.topology.node.Timers;
@@ -359,5 +373,139 @@ import static org.mockito.Mockito.*;
                 node.addConnections(connections);
                 assertEquals(1, node.getAllConnections().size());
                 PowerMockito.verifyStatic();
+        }
+
+        private ArrayList<SxpFilter> getFilters(FilterType... types) {
+                ArrayList<SxpFilter> sxpFilters = new ArrayList<>();
+                for (FilterType filterType : types) {
+                        sxpFilters.add(getFilter(filterType));
+                }
+                return sxpFilters;
+        }
+
+        private SxpFilter getFilter(FilterType type) {
+                SxpFilterBuilder builder = new SxpFilterBuilder();
+                builder.setFilterType(type);
+                AclFilterEntriesBuilder aclFilterEntriesBuilder = new AclFilterEntriesBuilder();
+                ArrayList<AclEntry> aclEntries = new ArrayList<>();
+                AclEntryBuilder aclEntryBuilder = new AclEntryBuilder();
+                aclEntryBuilder.setEntrySeq(1);
+                aclEntryBuilder.setEntryType(FilterEntryType.Permit);
+                SgtMatchesBuilder matchesBuilder = new SgtMatchesBuilder();
+                ArrayList<Sgt> sgts = new ArrayList<>();
+                sgts.add(new Sgt(5));
+                matchesBuilder.setMatches(sgts);
+                aclEntryBuilder.setSgtMatch( matchesBuilder.build());
+                aclEntries.add(aclEntryBuilder.build());
+                aclFilterEntriesBuilder.setAclEntry(aclEntries);
+                builder.setFilterEntries(aclFilterEntriesBuilder.build());
+                return builder.build();
+        }
+
+        private SxpPeerGroup getGroup(String name, ArrayList<SxpFilter> filters, ArrayList<SxpPeer> sxpPeers) {
+                SxpPeerGroupBuilder builder = new SxpPeerGroupBuilder();
+                builder.setName(name);
+                builder.setSxpFilter(filters);
+                SxpPeersBuilder sxpPeersBuilder = new SxpPeersBuilder();
+                sxpPeersBuilder.setSxpPeer(sxpPeers);
+                builder.setSxpPeers(sxpPeersBuilder.build());
+                return builder.build();
+        }
+
+        @Test public void testAddPeerGroup() throws Exception {
+                assertFalse(node.addPeerGroup(null));
+                assertTrue(node.getPeerGroups().isEmpty());
+                node.addPeerGroup(getGroup("TEST", null, null));
+                assertEquals(1, node.getPeerGroups().size());
+                node.addPeerGroup(getGroup("TEST1", null, null));
+                assertEquals(2, node.getPeerGroups().size());
+                node.addPeerGroup(getGroup("TEST", null, null));
+                assertEquals(2, node.getPeerGroups().size());
+
+                node.addPeerGroup(getGroup("TEST3", getFilters(FilterType.Inbound, FilterType.Inbound), null));
+                node.addPeerGroup(getGroup("TEST3", getFilters(FilterType.Outbound, FilterType.Outbound), null));
+                assertEquals(2, node.getPeerGroups().size());
+                node.addPeerGroup(getGroup("TEST2", getFilters(FilterType.Inbound), null));
+                assertEquals(3, node.getPeerGroups().size());
+                exception.expect(IllegalArgumentException.class);
+                node.addPeerGroup(getGroup("TEST3", getFilters(FilterType.Inbound, FilterType.Outbound), null));
+        }
+
+        @Test public void testGetPeerGroup() throws Exception {
+                assertNull(node.getPeerGroup("TEST"));
+                SxpPeerGroup peerGroup = getGroup("TEST", new ArrayList<SxpFilter>(), null);
+                node.addPeerGroup(peerGroup);
+                assertEquals(peerGroup, node.getPeerGroup("TEST"));
+                peerGroup = getGroup("TEST3", getFilters(FilterType.Inbound, FilterType.Outbound), null);
+                node.addPeerGroup(peerGroup);
+                assertEquals(peerGroup, node.getPeerGroup("TEST3"));
+                assertNotEquals(peerGroup, node.getPeerGroup("TEST"));
+        }
+
+        @Test public void testRemovePeerGroup() throws Exception {
+                assertTrue(node.getPeerGroups().isEmpty());
+                node.addPeerGroup(getGroup("TEST", null, null));
+                node.addPeerGroup(getGroup("TEST1", new ArrayList<SxpFilter>(), null));
+                node.addPeerGroup(getGroup("TEST3", null, null));
+                assertEquals(3, node.getPeerGroups().size());
+
+                node.removePeerGroup("TEST");
+                assertEquals(2, node.getPeerGroups().size());
+                node.removePeerGroup("TEST3");
+                assertEquals(1, node.getPeerGroups().size());
+                assertEquals(getGroup("TEST1", new ArrayList<SxpFilter>(), null), node.getPeerGroup("TEST1"));
+                node.removePeerGroup("TEST1");
+                assertEquals(0, node.getPeerGroups().size());
+        }
+
+        @Test public void testGetPeerGroups() throws Exception {
+                assertTrue(node.getPeerGroups().isEmpty());
+                SxpPeerGroup peerGroup = getGroup("TEST", new ArrayList<SxpFilter>(), null);
+                node.addPeerGroup(peerGroup);
+                assertTrue(node.getPeerGroups().contains(peerGroup));
+                peerGroup = getGroup("TEST3", getFilters(FilterType.Inbound, FilterType.Outbound), null);
+                node.addPeerGroup(peerGroup);
+                assertTrue(node.getPeerGroups().contains(peerGroup));
+                assertEquals(2, node.getPeerGroups().size());
+        }
+
+        @Test public void testAddFilterToPeerGroup() throws Exception {
+                assertFalse(node.addPeerGroup(null));
+                assertTrue(node.getPeerGroups().isEmpty());
+                node.addPeerGroup(getGroup("TEST", null, null));
+                node.addPeerGroup(getGroup("TEST1", null, null));
+                assertEquals(2, node.getPeerGroups().size());
+
+                node.addFilterToPeerGroup(null, getFilter(FilterType.Inbound));
+                node.addFilterToPeerGroup("TEST", null);
+                assertTrue(node.getPeerGroup("TEST").getSxpFilter().isEmpty());
+
+                node.addFilterToPeerGroup("TEST", getFilter(FilterType.Inbound));
+                node.addFilterToPeerGroup("TEST", getFilter(FilterType.Inbound));
+                assertEquals(1, node.getPeerGroup("TEST").getSxpFilter().size());
+
+                node.addFilterToPeerGroup("TEST1", getFilter(FilterType.Outbound));
+                assertEquals(1, node.getPeerGroup("TEST1").getSxpFilter().size());
+
+                node.addFilterToPeerGroup("TEST", getFilter(FilterType.Outbound));
+                node.addFilterToPeerGroup("TEST1", getFilter(FilterType.Inbound));
+                assertEquals(1, node.getPeerGroup("TEST").getSxpFilter().size());
+                assertEquals(1, node.getPeerGroup("TEST1").getSxpFilter().size());
+        }
+
+        @Test public void testRemoveFilterFromPeerGroup() throws Exception {
+                assertTrue(node.getPeerGroups().isEmpty());
+                node.addPeerGroup(getGroup("TEST", null, null));
+                node.addFilterToPeerGroup("TEST", getFilter(FilterType.Outbound));
+                node.removeFilterFromPeerGroup("TEST", FilterType.Inbound);
+                assertEquals(1, node.getPeerGroup("TEST").getSxpFilter().size());
+                node.removeFilterFromPeerGroup("TEST", FilterType.Outbound);
+                assertEquals(0, node.getPeerGroup("TEST").getSxpFilter().size());
+
+                node.addPeerGroup(getGroup("TEST2", getFilters(FilterType.Inbound, FilterType.Outbound), null));
+                assertEquals(2, node.getPeerGroup("TEST2").getSxpFilter().size());
+                node.removeFilterFromPeerGroup("TEST2", FilterType.Outbound);
+                node.removeFilterFromPeerGroup("TEST2", FilterType.Inbound);
+                assertEquals(0, node.getPeerGroup("TEST2").getSxpFilter().size());
         }
 }

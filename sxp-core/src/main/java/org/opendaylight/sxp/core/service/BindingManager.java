@@ -90,9 +90,8 @@ public final class BindingManager extends Service<Void> {
      */
     public void cleanUpBindings(NodeId nodeID) {
         try {
-            SxpDatabaseProvider database = getBindingSxpDatabase();
-            synchronized (database) {
-                database.cleanUpBindings(nodeID);
+            synchronized (getBindingSxpDatabase()) {
+                getBindingSxpDatabase().cleanUpBindings(nodeID);
                 LOG.info(owner + " cleanUpBindings {}", getBindingSxpDatabase());
             }
         } catch (NodeIdNotDefinedException e) {
@@ -214,9 +213,8 @@ public final class BindingManager extends Service<Void> {
      */
     public void purgeBindings(NodeId nodeID) {
         try {
-            SxpDatabaseProvider database = getBindingSxpDatabase();
-            synchronized (database) {
-                database.purgeBindings(nodeID);
+            synchronized (getBindingSxpDatabase()) {
+                getBindingSxpDatabase().purgeBindings(nodeID);
             }
         } catch (NodeIdNotDefinedException | DatabaseAccessException e) {
             LOG.error("{} Error purging bindings ", this, e);
@@ -254,17 +252,15 @@ public final class BindingManager extends Service<Void> {
         LOG.debug(owner + " Starting {}", BindingManager.class.getSimpleName());
         if (owner.isEnabled()) {
             try {
-                SxpDatabaseInf sxpDatabase = getBindingSxpDatabase();
                 List<SxpBindingIdentity> bindingIdentities;
-                synchronized (sxpDatabase) {
-                    bindingIdentities = sxpDatabase.readBindings();
+                synchronized (getBindingSxpDatabase()) {
+                    bindingIdentities = getBindingSxpDatabase().readBindings();
                 }
-                MasterDatabaseProvider masterDatabase = getBindingMasterDatabase();
                 List<MasterBindingIdentity>
                         masterBindingIdentityContributed =
                         databaseArbitration(filter(bindingIdentities));
-                synchronized (masterDatabase) {
-                    masterDatabase.addBindings(owner.getNodeId(), masterBindingIdentityContributed);
+                synchronized (getBindingMasterDatabase()) {
+                    getBindingMasterDatabase().addBindings(owner.getNodeId(), masterBindingIdentityContributed);
                     owner.setSvcBindingDispatcherDispatch();
                 }
             } catch (NodeIdNotDefinedException | DatabaseAccessException e) {
@@ -281,10 +277,9 @@ public final class BindingManager extends Service<Void> {
      */
     public void setAsCleanUp(NodeId nodeID) {
         try {
-            SxpDatabaseProvider database = getBindingSxpDatabase();
-            synchronized (database) {
-                database.setAsCleanUp(nodeID);
-                LOG.info(owner + " setAsCleanUp {}", database);
+            synchronized (getBindingSxpDatabase()) {
+                getBindingSxpDatabase().setAsCleanUp(nodeID);
+                LOG.info(owner + " setAsCleanUp {}", getBindingSxpDatabase());
             }
         } catch (NodeIdNotDefinedException e) {
             LOG.error("{} Error setting to clean up bindings ", this, e);

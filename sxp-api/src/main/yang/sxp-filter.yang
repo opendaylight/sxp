@@ -83,6 +83,7 @@ module sxp-filter {
 				key "peer-address";
 				uses sxp-peer-fields;
 			}
+			mandatory true;
 		}
 		list sxp-filter {
 			key "filter-type";
@@ -150,6 +151,9 @@ module sxp-filter {
 					description "End value of SGT range";
 					type sxpdb:sgt;
 					mandatory true;
+				}
+				must "sgt-start <= sgt-end" {
+					error-message "sgt-start > sgt-end";
 				}
 			}
 		}
