@@ -29,12 +29,20 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddEntryInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddFilterInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddPeerGroupInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteEntryInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteFilterInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeletePeerGroupInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetBindingSgtsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetConnectionsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetNodeBindingsInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateEntryInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdatePeerGroupInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.NewBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.NewBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBinding;
@@ -50,6 +58,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sources.fields.SourcesBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.acl.entry.AclMatch;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilter;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.AclFilterEntries;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.acl.filter.entries.AclEntry;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.ConnectionsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.ConnectionBuilder;
@@ -69,6 +85,7 @@ import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -83,6 +100,21 @@ public class RpcServiceImplTest {
         @BeforeClass public static void initClass() throws Exception {
                 node = PowerMockito.mock(SxpNode.class);
                 when(node.getNodeId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
+                ArrayList<SxpPeerGroup> sxpPeerGroups = new ArrayList<>();
+                sxpPeerGroups.add(mock(SxpPeerGroup.class));
+                when(node.getPeerGroups()).thenReturn(sxpPeerGroups);
+                when(node.getPeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
+                when(node.removePeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
+                when(node.removeFilterFromPeerGroup(anyString(), any(FilterType.class))).thenReturn(
+                        mock(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class));
+                when(node.addPeerGroup(any(SxpPeerGroup.class))).thenReturn(true);
+                when(node.addFilterToPeerGroup(anyString(),
+                        any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class)))
+                        .thenReturn(true);
+                when(node.updateFilterInPeerGroup(anyString(),
+                        any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class)))
+                        .thenReturn(
+                                mock(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class));
                 Configuration.register(node);
         }
 
@@ -419,5 +451,195 @@ public class RpcServiceImplTest {
                 builder.setSgt(i == null ? null : new Sgt(i));
                 builder.setIpPrefix(s == null ? null : new IpPrefix(Ipv4Prefix.getDefaultInstance(s)));
                 return builder.build();
+        }
+
+        @Test public void testAddFilter() throws Exception {
+                AddFilterInputBuilder inputBuilder = new AddFilterInputBuilder();
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.10"));
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setPeerGroupName("TEST");
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                SxpFilter filter = mock(SxpFilter.class);
+                inputBuilder.setSxpFilter(filter);
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(filter.getFilterType()).thenReturn(FilterType.Inbound);
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(filter.getFilterEntries()).thenReturn(mock(AclFilterEntries.class));
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                AclFilterEntries entries = mock(AclFilterEntries.class);
+                when(filter.getFilterEntries()).thenReturn(entries);
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                ArrayList<AclEntry> aclEntries = new ArrayList<>();
+                when(entries.getAclEntry()).thenReturn(aclEntries);
+                AclEntry entry = mock(AclEntry.class);
+                aclEntries.add(entry);
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(entry.getEntryType()).thenReturn(FilterEntryType.Deny);
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(entry.getEntrySeq()).thenReturn(1);
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(entry.getAclMatch()).thenReturn(mock(AclMatch.class));
+                assertTrue(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+        }
+
+        @Test public void testAddPeerGroup() throws Exception {
+                AddPeerGroupInputBuilder inputBuilder = new AddPeerGroupInputBuilder();
+                assertFalse(service.addPeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.10"));
+                assertFalse(service.addPeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+                assertFalse(service.addPeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                SxpPeerGroup peerGroup = mock(SxpPeerGroup.class);
+                inputBuilder.setSxpPeerGroup(peerGroup);
+                assertFalse(service.addPeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                when(peerGroup.getSxpPeers()).thenReturn(mock(SxpPeers.class));
+                assertFalse(service.addPeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                when(peerGroup.getName()).thenReturn("TEST");
+                assertFalse(service.addPeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                when(peerGroup.getName()).thenReturn("TEST2");
+                assertTrue(service.addPeerGroup(inputBuilder.build()).get().getResult().isResult());
+        }
+
+        @Test public void testDeleteFilter() throws Exception {
+                DeleteFilterInputBuilder inputBuilder = new DeleteFilterInputBuilder();
+                assertFalse(service.deleteFilter(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.10"));
+                assertFalse(service.deleteFilter(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+                assertFalse(service.deleteFilter(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setPeerGroupName("TEST");
+                assertFalse(service.deleteFilter(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setFilterType(FilterType.Outbound);
+                assertTrue(service.deleteFilter(inputBuilder.build()).get().getResult().isResult());
+        }
+
+        @Test public void testDeletePeerGroup() throws Exception {
+                DeletePeerGroupInputBuilder inputBuilder = new DeletePeerGroupInputBuilder();
+                assertFalse(service.deletePeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.10"));
+                assertFalse(service.deletePeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+                assertFalse(service.deletePeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setPeerGroupName("TEST");
+                assertTrue(service.deletePeerGroup(inputBuilder.build()).get().getResult().isResult());
+        }
+
+        @Test public void testGetPeerGroup() throws Exception {
+                GetPeerGroupInputBuilder inputBuilder = new GetPeerGroupInputBuilder();
+                assertNull(service.getPeerGroup(inputBuilder.build()).get().getResult().getSxpPeerGroup());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.10"));
+                assertNull(service.getPeerGroup(inputBuilder.build()).get().getResult().getSxpPeerGroup());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+                assertNull(service.getPeerGroup(inputBuilder.build()).get().getResult().getSxpPeerGroup());
+
+                inputBuilder.setPeerGroupName("TEST");
+                assertNotNull(service.getPeerGroup(inputBuilder.build()).get().getResult().getSxpPeerGroup());
+        }
+
+        @Test public void testGetPeerGroups() throws Exception {
+                GetPeerGroupsInputBuilder inputBuilder = new GetPeerGroupsInputBuilder();
+                assertTrue(service.getPeerGroups(inputBuilder.build()).get().getResult().getSxpPeerGroup().isEmpty());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.10"));
+                assertTrue(service.getPeerGroups(inputBuilder.build()).get().getResult().getSxpPeerGroup().isEmpty());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+                assertFalse(service.getPeerGroups(inputBuilder.build()).get().getResult().getSxpPeerGroup().isEmpty());
+        }
+
+        @Test public void testUpdateFilter() throws Exception {
+                UpdateFilterInputBuilder inputBuilder = new UpdateFilterInputBuilder();
+                assertFalse(service.updateFilter(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.10"));
+                assertFalse(service.updateFilter(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+                assertFalse(service.updateFilter(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setPeerGroupName("TEST");
+                assertFalse(service.updateFilter(inputBuilder.build()).get().getResult().isResult());
+
+                SxpFilter filter = mock(SxpFilter.class);
+                inputBuilder.setSxpFilter(filter);
+                assertFalse(service.updateFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(filter.getFilterType()).thenReturn(FilterType.Inbound);
+                assertFalse(service.updateFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(filter.getFilterEntries()).thenReturn(mock(AclFilterEntries.class));
+                assertFalse(service.updateFilter(inputBuilder.build()).get().getResult().isResult());
+
+                AclFilterEntries entries = mock(AclFilterEntries.class);
+                when(filter.getFilterEntries()).thenReturn(entries);
+                assertFalse(service.updateFilter(inputBuilder.build()).get().getResult().isResult());
+
+                ArrayList<AclEntry> aclEntries = new ArrayList<>();
+                when(entries.getAclEntry()).thenReturn(aclEntries);
+                AclEntry entry = mock(AclEntry.class);
+                aclEntries.add(entry);
+                assertFalse(service.updateFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(entry.getEntryType()).thenReturn(FilterEntryType.Deny);
+                assertFalse(service.updateFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(entry.getEntrySeq()).thenReturn(1);
+                assertFalse(service.updateFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(entry.getAclMatch()).thenReturn(mock(AclMatch.class));
+                assertTrue(service.updateFilter(inputBuilder.build()).get().getResult().isResult());
+        }
+
+        @Test public void testUpdatePeerGroup() throws Exception {
+                UpdatePeerGroupInputBuilder inputBuilder = new UpdatePeerGroupInputBuilder();
+                assertFalse(service.updatePeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.10"));
+                assertFalse(service.updatePeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+                assertFalse(service.updatePeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                SxpPeerGroup peerGroup = mock(SxpPeerGroup.class);
+                inputBuilder.setSxpPeerGroup(peerGroup);
+                assertFalse(service.updatePeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                when(peerGroup.getSxpPeers()).thenReturn(mock(SxpPeers.class));
+                assertFalse(service.updatePeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                when(peerGroup.getName()).thenReturn("TEST2");
+                assertFalse(service.updatePeerGroup(inputBuilder.build()).get().getResult().isResult());
+
+                when(peerGroup.getName()).thenReturn("TEST");
+                assertTrue(service.updatePeerGroup(inputBuilder.build()).get().getResult().isResult());
         }
 }

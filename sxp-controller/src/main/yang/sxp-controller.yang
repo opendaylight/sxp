@@ -336,11 +336,6 @@ module sxp-controller {
 				type sxppt:node-id;
 				description "Node ID of the dedicated SXP source";
 			}
-			leaf peer-group-name {
-				mandatory true;
-				type string;
-				description "Name of PeerGroup that will be updated";
-			}
 			uses sxpfl:sxp-peer-group;
 		}
 		output {
@@ -409,10 +404,6 @@ module sxp-controller {
 				mandatory true;
 				type string;
 				description "Name of PeerGroup where filter will be updated";
-			}
-			leaf filter-type {
-				mandatory true;
-				type sxpfl:filter-type;
 			}
 			uses sxpfl:sxp-filter;
 		}

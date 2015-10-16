@@ -8,9 +8,11 @@
 
 package org.opendaylight.sxp.core;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.Sets;
 import com.google.common.net.InetAddresses;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
@@ -46,8 +48,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentityBuilder;
@@ -64,6 +66,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -72,8 +75,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -179,52 +184,127 @@ public final class SxpNode {
 
     /** Common timers setup. */
     private HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(6);
-    private final Map<String,SxpPeerGroup> peerGroupMap = new HashMap<>();
+    private final Map<String,SxpPeerGroupBuilder> peerGroupMap = new HashMap<>();
 
-    private boolean checkPeerGroupOverlap(SxpPeerGroup group){
-        //TODO
-        return false;
-    }
-
-    private void updateConnectionsFilter(SxpPeers sxpPeers, List<SxpBindingFilter> filters) {
-        //TODO
-    }
-
-    private boolean peerGroupValidation(SxpPeerGroup peerGroup){
-        //TODO
-        return false;
+    /**
+     * Checks if there is another PeerGroup with at least one same peer and Filter with same type
+     *
+     * @param group SxpPeerGroup to be checked on overlap
+     * @return SxpPeerGroup that overlaps the specified one or null if there is no overlap
+     */
+    private SxpPeerGroup checkPeerGroupOverlap(SxpPeerGroupBuilder group){
+        Set<SxpPeer> peerSet1 = new HashSet<>();
+        if (group.getSxpPeers() != null && group.getSxpPeers().getSxpPeer() != null) {
+            peerSet1.addAll(group.getSxpPeers().getSxpPeer());
+        }
+        for (SxpPeerGroup peerGroup : getPeerGroups()) {
+            Set<SxpPeer> peerSet2 = new HashSet<>();
+            if (peerGroup.getSxpPeers() != null && peerGroup.getSxpPeers().getSxpPeer() != null) {
+                peerSet2.addAll(peerGroup.getSxpPeers().getSxpPeer());
+            }
+            if (peerGroup.getName().equals(group.getName()) || (!peerSet1.isEmpty() && !peerSet2.isEmpty()
+                    && Sets.intersection(peerSet1, peerSet2).isEmpty())) {
+                continue;
+            }
+            if (group.getSxpFilter() != null) {
+                for (SxpFilter filter1 : group.getSxpFilter()) {
+                    for (SxpFilter filter2 : peerGroup.getSxpFilter()) {
+                        if (filter1.getFilterType().equals(filter2.getFilterType())) {
+                            return peerGroup;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /**
-     * Adds new PeerGroup to Node
+     * Gets all SxpConnections in node contained in SxpPeerGroup,
+     * or All connection on node if none peers are specified in SxpPeerGroup
+     *
+     * @param peerGroup PeerGroup containing peers
+     * @return List of Connections
+     */
+    private List<SxpConnection> getConnections(SxpPeerGroupBuilder peerGroup) {
+        if (peerGroup.getSxpPeers() == null || peerGroup.getSxpPeers().getSxpPeer() == null || peerGroup.getSxpPeers()
+                .getSxpPeer()
+                .isEmpty()) {
+            return getAllConnections();
+        }
+        List<SxpConnection> sxpConnections = new ArrayList<>();
+        for (SxpPeer sxpPeer : peerGroup.getSxpPeers().getSxpPeer()) {
+            SxpConnection
+                    connection =
+                    getByAddress(new InetSocketAddress(Search.getAddress(sxpPeer.getPeerAddress()), 64999));
+            if (connection != null) {
+                sxpConnections.add(connection);
+            }
+        }
+        return sxpConnections;
+    }
+
+    /**
+     * Gets SxpPeerGroups in which specified connection is
+     *
+     * @param connection SxpConnections to look for in PeerGroups
+     * @return List of PeerGroups that contain SxpConnection
+     */
+    private List<SxpPeerGroup> getPeerGroup(SxpConnection connection) {
+        List<SxpPeerGroup> sxpPeerGroups = new ArrayList<>();
+        synchronized (peerGroupMap) {
+            for (SxpPeerGroupBuilder peerGroup : peerGroupMap.values()) {
+                if (peerGroup.getSxpPeers().getSxpPeer() == null || peerGroup.getSxpPeers().getSxpPeer().isEmpty()) {
+                    sxpPeerGroups.add(peerGroup.build());
+                    continue;
+                }
+                for (SxpPeer peer : peerGroup.getSxpPeers().getSxpPeer()) {
+                    InetAddress address = InetAddresses.forString(Search.getAddress(peer.getPeerAddress()));
+                    if (address.equals(connection.getDestination().getAddress())) {
+                        sxpPeerGroups.add(peerGroup.build());
+                    }
+                }
+            }
+        }
+        return sxpPeerGroups;
+    }
+
+    /**
+     * Adds new PeerGroup to Node and add filters to connections if any
      *
      * @param peerGroup PeerGroup to be added
      */
-    public void addPeerGroup(SxpPeerGroup peerGroup) {
+    public boolean addPeerGroup(SxpPeerGroup peerGroup) {
         synchronized (peerGroupMap) {
-            //TODO
-            List<SxpBindingFilter> filters = new ArrayList<>();
-            for (SxpFilter filter : peerGroup.getSxpFilter()) {
-                filters.add(SxpBindingFilter.generateFilter(filter, peerGroup.getName()));
+            if (peerGroup == null || peerGroup.getName() == null || peerGroup.getSxpPeers() == null) {
+                LOG.warn("{} Cannot add PeerGroup {} due to missing fields", this, peerGroup);
+                return false;
             }
-            updateConnectionsFilter(peerGroup.getSxpPeers(), filters);
-        }
-    }
-
-    /**
-     * Update values of PeerGroup with specified name
-     *
-     * @param peerGroupName Name of PeerGroup that will be updated
-     * @param peerGroup     PeerGroup with neew values
-     */
-    public void updatePeerGroup(String peerGroupName,SxpPeerGroup peerGroup) {
-        synchronized (peerGroupMap) {
-            //TODO
-            List<SxpBindingFilter> filters = new ArrayList<>();
-            for (SxpFilter filter : peerGroup.getSxpFilter()) {
-                filters.add(SxpBindingFilter.generateFilter(filter, peerGroup.getName()));
+            SxpPeerGroupBuilder groupBuilder = new SxpPeerGroupBuilder(peerGroup);
+            if (checkPeerGroupOverlap(groupBuilder) != null) {
+                throw new IllegalArgumentException("PeerGroup filter overlaps with filter on other PeerGroup");
             }
-            updateConnectionsFilter(peerGroup.getSxpPeers(), filters);
+            if (groupBuilder.getSxpFilter() == null) {
+                groupBuilder.setSxpFilter(new ArrayList<SxpFilter>());
+            } else {
+                Set<SxpBindingFilter> filters = new HashSet<>();
+                for (SxpFilter filter : peerGroup.getSxpFilter()) {
+                    filters.add(SxpBindingFilter.generateFilter(filter, peerGroup.getName()));
+                }
+                if (filters.size() != peerGroup.getSxpFilter().size()) {
+                    LOG.warn("{} Cannot add PeerGroup {} due to multiple declarations of filter with same type", this,
+                            peerGroup);
+                    return false;
+                }
+                List<SxpConnection> connections = getConnections(groupBuilder);
+                for (SxpConnection connection : connections) {
+                    for (SxpBindingFilter filter : filters) {
+                        connection.putFilter(filter);
+                    }
+                }
+            }
+            peerGroupMap.put(peerGroup.getName(), groupBuilder);
+            return true;
         }
     }
 
@@ -234,22 +314,29 @@ public final class SxpNode {
      */
     public SxpPeerGroup getPeerGroup(String peerGroupName) {
         synchronized (peerGroupMap) {
-            return peerGroupMap.get(peerGroupName);
+            return peerGroupMap.get(peerGroupName) != null ? peerGroupMap.get(peerGroupName).build() : null;
         }
     }
 
     /**
-     * Removes PeerGroup from Node
+     * Removes PeerGroup from Node and removes filters from connections if any
      *
      * @param peerGroupName Name of PeerGroup that will be removed
      * @return Removed PeerGroup
      */
     public SxpPeerGroup removePeerGroup(String peerGroupName) {
         synchronized (peerGroupMap) {
-            SxpPeerGroup peerGroup = peerGroupMap.remove(peerGroupName);
-            //TODO
-            updateConnectionsFilter(peerGroup.getSxpPeers(), new ArrayList<SxpBindingFilter>());
-            return peerGroup;
+            SxpPeerGroupBuilder peerGroup = peerGroupMap.remove(peerGroupName);
+            if (peerGroup == null) {
+                return null;
+            }
+            List<SxpConnection> connections = getConnections(peerGroup);
+            for (SxpConnection connection : connections) {
+                for (SxpFilter filter : peerGroup.getSxpFilter()) {
+                    connection.removeFilter(filter.getFilterType());
+                }
+            }
+            return peerGroup.build();
         }
     }
 
@@ -258,7 +345,12 @@ public final class SxpNode {
      */
     public Collection<SxpPeerGroup> getPeerGroups() {
         synchronized (peerGroupMap) {
-            return Collections.unmodifiableCollection(peerGroupMap.values());
+            return Collections2.transform(peerGroupMap.values(), new Function<SxpPeerGroupBuilder, SxpPeerGroup>() {
+
+                @Nullable @Override public SxpPeerGroup apply(SxpPeerGroupBuilder input) {
+                    return input != null ? input.build() : null;
+                }
+            });
         }
     }
 
@@ -268,9 +360,32 @@ public final class SxpNode {
      * @param peerGroupName Name of PeerGroup where SxpFilter will be added
      * @param sxpFilter     SxpFilter that will be used
      */
-    public void addFilterToPeerGroup(String peerGroupName, SxpFilter sxpFilter) {
-        synchronized (peerGroupMap){
-            //TODO
+    public boolean addFilterToPeerGroup(String peerGroupName, SxpFilter sxpFilter) {
+        synchronized (peerGroupMap) {
+            SxpPeerGroupBuilder peerGroup = peerGroupMap.get(peerGroupName);
+            if (peerGroup == null || sxpFilter == null) {
+                LOG.warn("{} Cannot add Filter | Due to null parameters", this);
+                return false;
+            }
+            SxpBindingFilter bindingFilter = SxpBindingFilter.generateFilter(sxpFilter, peerGroupName);
+            List<SxpFilter> sxpFilters = peerGroup.getSxpFilter();
+            for (SxpFilter filter : sxpFilters) {
+                if (sxpFilter.getFilterType().equals(filter.getFilterType())) {
+                    LOG.warn("{} Filter of type {} already defined", this, sxpFilter.getFilterType());
+                    return false;
+                }
+            }
+            sxpFilters.add(sxpFilter);
+            if (checkPeerGroupOverlap(peerGroup) != null) {
+                sxpFilters.remove(sxpFilter);
+                LOG.warn("{} Filter cannot be added due to overlap of Peer Groups", this, sxpFilter);
+                return false;
+            }
+            List<SxpConnection> connections = getConnections(peerGroup);
+            for (SxpConnection connection : connections) {
+                connection.putFilter(bindingFilter);
+            }
+            return true;
         }
     }
 
@@ -278,12 +393,37 @@ public final class SxpNode {
      * Update Filter in PeerGroup of specific type
      *
      * @param peerGroupName Name of PeerGroup that contains filter
-     * @param filterType    Type of Filter that will be updated
-     * @param sxpFilter     SxpFilter with new values that will be used
+     * @param newFilter     SxpFilter with new values that will be used
+     * @return Old SxpFilter
      */
-    public void updateFilterInPeerGroup(String peerGroupName, FilterType filterType, SxpFilter sxpFilter) {
-        synchronized (peerGroupMap){
-            //TODO
+    public SxpFilter updateFilterInPeerGroup(String peerGroupName, SxpFilter newFilter) {
+        synchronized (peerGroupMap) {
+            SxpPeerGroupBuilder peerGroup = peerGroupMap.get(peerGroupName);
+            if (peerGroup == null || newFilter == null) {
+                LOG.warn("{} Cannot update Filter | Due to null parameters", this);
+                return null;
+            }
+            List<SxpFilter> sxpFilters = peerGroup.getSxpFilter();
+            SxpFilter oldFilter = null;
+            for (SxpFilter filter : sxpFilters) {
+                if (newFilter.getFilterType().equals(filter.getFilterType())) {
+                    oldFilter = filter;
+                    break;
+                }
+            }
+            if (oldFilter == null) {
+                LOG.warn("{} Cannot update Filter | No previous filter with type {} found", this,
+                        newFilter.getFilterType());
+                return null;
+            }
+            sxpFilters.remove(oldFilter);
+            sxpFilters.add(newFilter);
+            SxpBindingFilter bindingFilter = SxpBindingFilter.generateFilter(newFilter, peerGroupName);
+            List<SxpConnection> connections = getConnections(peerGroup);
+            for (SxpConnection connection : connections) {
+                connection.putFilter(bindingFilter);
+            }
+            return oldFilter;
         }
     }
 
@@ -292,12 +432,30 @@ public final class SxpNode {
      *
      * @param peerGroupName Name of PeerGroup that contains filter
      * @param filterType    Type of Filter that will be removed
-     * @return
+     * @return Removed SxpFilter
      */
     public SxpFilter removeFilterFromPeerGroup(String peerGroupName, FilterType filterType) {
         synchronized (peerGroupMap){
-            //TODO
-            return null;
+            SxpPeerGroupBuilder peerGroup = peerGroupMap.get(peerGroupName);
+            if (peerGroup == null || filterType == null) {
+                return null;
+            }
+            SxpFilter filter = null;
+            List<SxpFilter> sxpFilters = peerGroup.getSxpFilter();
+            for (SxpFilter sxpFilter : sxpFilters) {
+                if (sxpFilter.getFilterType().equals(filterType)) {
+                    filter = sxpFilter;
+                    break;
+                }
+            }
+            if (filter != null) {
+                List<SxpConnection> connections = getConnections(peerGroup);
+                for (SxpConnection connection : connections) {
+                    connection.removeFilter(filterType);
+                }
+                sxpFilters.remove(filter);
+            }
+            return filter;
         }
     }
 
@@ -352,6 +510,13 @@ public final class SxpNode {
         }
 
         SxpConnection _connection = SxpConnection.create(this, connection);
+        synchronized (peerGroupMap) {
+            for (SxpPeerGroup peerGroup : getPeerGroup(_connection)) {
+                for (SxpFilter filter : peerGroup.getSxpFilter()) {
+                    _connection.putFilter(SxpBindingFilter.generateFilter(filter, peerGroup.getName()));
+                }
+            }
+        }
         synchronized (addressToSxpConnection) {
             if (addressToSxpConnection.containsKey(_connection.getDestination())) {
                 throw new IllegalArgumentException(
@@ -359,7 +524,6 @@ public final class SxpNode {
             }
             addressToSxpConnection.put(_connection.getDestination(), _connection);
         }
-        //TODO Adding to peer groups
         updateMD5keys(_connection);
         openConnection(_connection);
     }
@@ -390,12 +554,12 @@ public final class SxpNode {
         }
     }
 
-    private List<SxpConnection> filterConnections(Predicate predicate) {
+    private List<SxpConnection> filterConnections(Predicate<SxpConnection> predicate) {
         Collection<SxpConnection> connections;
         synchronized (addressToSxpConnection) {
             connections = Collections2.filter(addressToSxpConnection.values(), predicate);
         }
-        return Collections.unmodifiableList(new ArrayList<SxpConnection>(connections));
+        return Collections.unmodifiableList(new ArrayList<>(connections));
     }
 
     /**
@@ -403,7 +567,7 @@ public final class SxpNode {
      */
     public List<SxpConnection> getAllConnections() {
         synchronized (addressToSxpConnection) {
-            return Collections.unmodifiableList(new ArrayList<SxpConnection>(addressToSxpConnection.values()));
+            return Collections.unmodifiableList(new ArrayList<>(addressToSxpConnection.values()));
         }
     }
 
@@ -557,7 +721,7 @@ public final class SxpNode {
             if (connection == null) {
                 connection = getByAddress(inetSocketAddress);
             }
-            if (connection == null || !(connection instanceof SxpConnection)) {
+            if (connection == null) {
                 throw new UnknownSxpConnectionException("InetSocketAddress: " + inetSocketAddress);
             }
             return connection;
