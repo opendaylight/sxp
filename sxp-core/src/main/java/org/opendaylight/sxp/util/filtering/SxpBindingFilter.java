@@ -13,7 +13,6 @@ import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.SgtMatch;
@@ -24,6 +23,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.fi
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.FilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.AclFilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.PrefixListFilterEntries;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
 
 import java.util.BitSet;
 import java.util.List;

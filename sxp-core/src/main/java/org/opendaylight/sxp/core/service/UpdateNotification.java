@@ -9,7 +9,7 @@
 package org.opendaylight.sxp.core.service;
 
 import org.opendaylight.sxp.core.SxpConnection;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.UpdateMessage;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
 
 public final class UpdateNotification {
 

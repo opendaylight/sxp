@@ -26,13 +26,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.network.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Constants;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConstantsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 
 public final class Configuration {
 
-    private static final Constants CONSTANTS;
+    private static final Constants CONSTANTS = new Constants();
 
     public static final String CONTROLLER_NAME = "controller";
 
@@ -56,33 +54,7 @@ public final class Configuration {
     
     static {
         _initializeLogger();
-
-        CONSTANTS = _initializeConstants();
-
         TIMER_DEFAULT_VALUES = _initializeTimerDefaultValues();
-    }
-
-    private static Constants _initializeConstants() {
-        ConstantsBuilder constantsBuilder = new ConstantsBuilder();
-        if (constantsBuilder.getMessageHeaderLengthLength() == null) {
-            constantsBuilder.setMessageHeaderLengthLength(4);
-        }
-        if (constantsBuilder.getMessageHeaderTypeLength() == null) {
-            constantsBuilder.setMessageHeaderTypeLength(4);
-        }
-        if (constantsBuilder.getMessageLengthMax() == null) {
-            constantsBuilder.setMessageLengthMax(4096);
-        }
-        if (constantsBuilder.getMessagesExportQuantity() == null) {
-            constantsBuilder.setMessagesExportQuantity(5);
-        }
-        if (constantsBuilder.getNodeConnectionsInitialSize() == null) {
-            constantsBuilder.setNodeConnectionsInitialSize(20);
-        }
-        if (constantsBuilder.getPort() == null) {
-            constantsBuilder.setPort(64999);
-        }
-        return constantsBuilder.build();
     }
 
     private static final void _initializeLogger() {
