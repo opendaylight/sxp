@@ -26,7 +26,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.sxp.database.Vpn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +49,6 @@ public class SxpDatabaseImplTest {
                 pathGroupList = new ArrayList<>();
                 sxpDatabase = mock(SxpDatabase.class);
                 when(sxpDatabase.getVpn()).thenReturn(new ArrayList<Vpn>());
-                when(sxpDatabase.getAttribute()).thenReturn(new ArrayList<Attribute>());
                 when(sxpDatabase.getPathGroup()).thenReturn(pathGroupList);
                 database = new SxpDatabaseImpl(sxpDatabase);
                 bindingsAsCleanUp = false;

@@ -36,7 +36,6 @@ import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.DateAndTime;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
@@ -64,7 +63,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.node.fields.SecurityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
@@ -241,7 +239,6 @@ public class ConfigLoader {
         }
 
         SourceBuilder _sourceBuilder = new SourceBuilder();
-        _sourceBuilder.setAttribute(new ArrayList<Attribute>());
         _sourceBuilder.setBindingSource(DatabaseBindingSource.Local);
         _sourceBuilder.setPrefixGroup(_prefixGroups);
         return _sourceBuilder.build();
@@ -267,13 +264,11 @@ public class ConfigLoader {
                     _sourcesVpn.add(parseMasterBindings(nodeId, vpn.getBinding()));
 
                     VpnBuilder vpnBuilder = new VpnBuilder();
-                    vpnBuilder.setAttribute(new ArrayList<Attribute>());
                     vpnBuilder.setName(vpn.getName());
                     vpnBuilder.setSource(_sourcesVpn);
                     _vpns.add(vpnBuilder.build());
                 }
             }
-            masterDatabaseBuilder.setAttribute(new ArrayList<Attribute>());
             masterDatabaseBuilder.setSource(_sources);
             masterDatabaseBuilder.setVpn(_vpns);
         }
