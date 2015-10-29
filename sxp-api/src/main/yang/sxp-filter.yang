@@ -82,8 +82,8 @@ module sxp-filter {
 			list sxp-peer {
 				key "peer-address";
 				uses sxp-peer-fields;
+				min-elements 1;
 			}
-			mandatory true;
 		}
 		list sxp-filter {
 			key "filter-type";
@@ -170,6 +170,7 @@ module sxp-filter {
 			type wildcard-mask;
 			mandatory true;
 		}
+		// msunal why acl match has this container mask?
 		container mask {
 			leaf address-mask {
 				description "Address Mask";

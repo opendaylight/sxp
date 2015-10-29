@@ -15,16 +15,15 @@ module sxp-database {
         description 
         	"Reviewed revision of SXP database model";
     }
+
+    typedef sgt {
+        type uint16;
+        description "Source group tag";
+    }
         
     // ***********************
     // Common Types Definition
     // ***********************
-    
-    typedef sgt {
-    	type uint16;
-    	description "Source group tag";
-    }
-        
     typedef database-action {
 		type enumeration {
 			enum add;

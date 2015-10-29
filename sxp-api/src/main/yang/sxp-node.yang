@@ -50,6 +50,7 @@ module sxp-node {
 	
 	// Enumeration now works with Hashmap and enum value is the unique key. 
     // Default leaf type not work, still null (Configuration.java conversion is used).
+	// msunal what is the comment above? how is this used?
 	container timer-default-values {
 		description "Timer types with their default values";
 		
