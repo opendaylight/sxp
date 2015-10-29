@@ -1,0 +1,165 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "dad5f5cf_5a2b8430",
+        "filename": "sxp-api/src/main/yang/sxp-filter.yang",
+        "patchSetId": 1
+      },
+      "lineNbr": 173,
+      "author": {
+        "id": 3920
+      },
+      "writtenOn": "2015-10-29T13:00:30Z",
+      "side": 1,
+      "message": "To be abble to support EACL",
+      "range": {
+        "startLine": 173,
+        "startChar": 2,
+        "endLine": 173,
+        "endChar": 50
+      },
+      "revId": "ad69570df6f6102cbc47fde1b9433a43298b9bed",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dad5f5cf_1a1dfc0f",
+        "filename": "sxp-api/src/main/yang/sxp-node.yang",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 3920
+      },
+      "writtenOn": "2015-10-29T13:00:30Z",
+      "side": 1,
+      "message": "Hardcoded values are used so i suppose that it was used when default statement in yang wasnt working",
+      "range": {
+        "startLine": 53,
+        "startChar": 23,
+        "endLine": 53,
+        "endChar": 30
+      },
+      "revId": "ad69570df6f6102cbc47fde1b9433a43298b9bed",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dad5f5cf_da1694f1",
+        "filename": "sxp-api/src/main/yang/sxp-protocol.yang",
+        "patchSetId": 1
+      },
+      "lineNbr": 227,
+      "author": {
+        "id": 3920
+      },
+      "writtenOn": "2015-10-29T13:00:30Z",
+      "side": 1,
+      "message": "Node-id is restricted only by ist 32bit length and thus ipv4 was only used but it can be replaced by something else that accomplish this constrain",
+      "range": {
+        "startLine": 227,
+        "startChar": 2,
+        "endLine": 227,
+        "endChar": 34
+      },
+      "revId": "ad69570df6f6102cbc47fde1b9433a43298b9bed",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dad5f5cf_baf070ca",
+        "filename": "sxp-api/src/main/yang/sxp-protocol.yang",
+        "patchSetId": 1
+      },
+      "lineNbr": 367,
+      "author": {
+        "id": 3920
+      },
+      "writtenOn": "2015-10-29T13:00:30Z",
+      "side": 1,
+      "message": "yes i agree and i thing that somewhere in yang it is as type",
+      "range": {
+        "startLine": 367,
+        "startChar": 0,
+        "endLine": 367,
+        "endChar": 68
+      },
+      "revId": "ad69570df6f6102cbc47fde1b9433a43298b9bed",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dad5f5cf_fa25980a",
+        "filename": "sxp-api/src/main/yang/sxp-protocol.yang",
+        "patchSetId": 1
+      },
+      "lineNbr": 384,
+      "author": {
+        "id": 3920
+      },
+      "writtenOn": "2015-10-29T13:00:30Z",
+      "side": 1,
+      "message": "it states for table of IpPrafixes and theirs Attributes this is not currently implemented",
+      "range": {
+        "startLine": 379,
+        "startChar": 8,
+        "endLine": 384,
+        "endChar": 9
+      },
+      "revId": "ad69570df6f6102cbc47fde1b9433a43298b9bed",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dad5f5cf_daed34f1",
+        "filename": "sxp-api/src/main/yang/sxp-protocol.yang",
+        "patchSetId": 1
+      },
+      "lineNbr": 390,
+      "author": {
+        "id": 3920
+      },
+      "writtenOn": "2015-10-29T13:00:30Z",
+      "side": 1,
+      "message": "These are all attributes used in mesages it can be diveded into groups for open messages update mesage etc to mage it more clear",
+      "range": {
+        "startLine": 390,
+        "startChar": 0,
+        "endLine": 390,
+        "endChar": 60
+      },
+      "revId": "ad69570df6f6102cbc47fde1b9433a43298b9bed",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dad5f5cf_1a23bc06",
+        "filename": "sxp-api/src/main/yang/sxp-protocol.yang",
+        "patchSetId": 1
+      },
+      "lineNbr": 517,
+      "author": {
+        "id": 3920
+      },
+      "writtenOn": "2015-10-29T13:00:30Z",
+      "side": 1,
+      "message": "this can be changed to grouping",
+      "range": {
+        "startLine": 517,
+        "startChar": 0,
+        "endLine": 517,
+        "endChar": 101
+      },
+      "revId": "ad69570df6f6102cbc47fde1b9433a43298b9bed",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
