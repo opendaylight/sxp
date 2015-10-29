@@ -1,692 +1,661 @@
 module sxp-protocol {
-	yang-version 1;
+    yang-version 1;
 
-	namespace "urn:opendaylight:sxp:protocol";
-	prefix "sxppt";
+    namespace "urn:opendaylight:sxp:protocol";
+    prefix "sxppt";
 
-	import ietf-inet-types {prefix inet; revision-date "2010-09-24";}
-   
-	description 
-        "Module defines the SXP protocol according to its IETF I-D specification 
+    import ietf-inet-types { prefix inet; revision-date "2010-09-24"; }
+
+    description
+        "Module defines the SXP protocol according to its IETF I-D specification
         http://tools.ietf.org/html/draft-smith-kandula-sxp-00";
 
-	revision "2014-10-02" {
-        description 
-        	"Initial revision of SXP protocol model";
-    }
-        
-    // ***********************
-    // Common Types Definition
-    // ***********************
-    // Enumeration now works with Hashmap and enum value is the unique key. 
-    // Default leaf type not work, still null (Configuration.java conversion is used). 
-	container constants {
-		leaf message-header-length-length {
-		 	type int32;
-        	default "4";
-      	}
-      	leaf message-header-type-length {
-        	type int32;
-        	default "4";
-      	}	
-      	leaf message-length-max {
-        	type int32;
-        	default "4096";
-      	}
-      	leaf messages-export-quantity {
-        	type int32;
-        	default "5";
-      	}
-      	leaf node-connections-initial-size {
-        	type int32;
-        	default "20";
-      	}
-      	leaf port {
-        	type int32;
-        	default "64999";
-      	}
-	}
-
-	typedef attribute-type {
-        type enumeration {
-	       	enum Unspecified {
-	       		value -1;
-	       	}
-			enum add-ipv4 {
-				value 1;
-			}
-	        enum add-ipv6 {
-	        	value 2;
-	        }
-	        enum del-ipv4 {
-	        	value 3;
-	        }
-	        enum del-ipv6 {
-	        	value 4;
-	        }
-	        enum sxp-node-id {
-	        	value 5;
-	       	}
-	        enum capabilities {
-	        	value 6;
-	        }
-	        enum hold-time {
-	        	value 7;
-	       	}
-	       	enum ipv4-add-prefix {
-	        	value 11;
-	        }
-	       	enum ipv6-add-prefix {
-	        	value 12;
-	        }
-	        enum ipv4-delete-prefix {
-	        	value 13;
-	       	}
-	       	enum ipv6-delete-prefix {
-	        	value 14;
-	        }
-	        enum peer-sequence {
-	        	value 16;
-	      	}
-	      	enum source-group-tag {
-	        	value 17;
-	        }
-	        enum ipv4-add-table {
-	        	value 21;
-	        }
-	        enum ipv6-add-table {
-	        	value 22;
-	       	}
-		}
-	}	
-	
-	typedef attribute-variant {
-		type enumeration {
-			enum compact;	
-			enum compact-extended-length;
-			enum non-compact;
-			enum none;
-		}
-	}
-		
-	typedef capability-type {
-		type enumeration {
-			enum none;
-			enum ipv4-unicast  {
-	        	value 1;
-	      	}
-			enum ipv6-unicast  {
-	        	value 2;
-	      	}
-			enum subnet-bindings  {
-	        	value 3;
-	      	}
-			enum loop-detection;
-			enum sxp-capability-exchange;
-		}
-	}
-		
-	typedef connection-mode {
-		type enumeration {
-			enum speaker {
-	        	value 1;
-	      	}
-			enum listener {
-	        	value 2;
-	      	}
-			enum both;
-			enum none;
-		}
-	}
-		
-	typedef connection-state {
-        type enumeration {
-        	enum administratively-down;
-	        enum delete-hold-down {
-	        	description "In this state, a connection that was previously in	ON state 
-	        		has been terminated. Only a listener can be in this state";
-	        }
-	        enum off {
-	        	description "In this state, a connection initiation has not been started.
-	         		This is the only state that an SXP connection will retry establishing
-	         		the TCP connection";
-	        }
-	        enum on {
-	         	description "SXP is in ON state when SXP OPEN or SXP OPEN RESP message has
-	         		been received. SXP connection has been setup successfully. An SXP
-	         		connection will only propagates bindings in the ON state";
-	    	}	
-	        enum pending-on {
-	        	description "In this state, an SXP OPEN message has been sent to the
-	        		peer and a response from the peer SXP is expected";
-	        }	 
-		}
-    }
-	
-	typedef error-code {
-        type enumeration {
-        	enum message-header-error {
-	        	value 1;
-	      	}
-        	enum open-message-error {
-	        	value 2;
-	      	}
-        	enum update-message-error {
-	        	value 3;
-	      	}
-		}
-	}
-	
-	typedef error-code-non-extended {
-        type enumeration {
-        	enum no-error {
-	        	value 0;
-	      	}
-        	enum version-mismatch {
-	        	value 1;
-	      	}
-        	enum message-parse-error {
-	        	value 2;
-	      	}
-		}
-	}
-	
-	typedef error-sub-code {
-        type enumeration {
-	        enum malformed-attribute-list {
-	        	value 1;
-	      	}
-	        enum unrecognized-well-known-attribute {
-	        	value 2;
-	      	}
-	        enum missing-well-known-attribute {
-	        	value 3;
-	      	}
-        	enum attribute-flags-error {
-	        	value 4;
-	      	}
-	        enum attribute-length-error {
-	        	value 5;
-	      	}
-	        enum malformed-attribute {
-	        	value 6;
-	      	}
-	        enum optional-attribute-error {
-	        	value 7;
-	      	}
-	        enum unsupported-version-number {
-	        	value 8;
-	      	}
-	        enum unsupported-optional-attribute {
-	        	value 9;
-	      	}
-	        enum unacceptable-hold-time {
-	        	value 10;
-	      	}
-	    }
-	}
-	
-	typedef error-type {
-		type enumeration {
-			enum extended;
-			enum legacy;
-		}
-	}
-		
-	typedef message-type {
-        type enumeration {
-	        enum open {
-	        	value 1;
-	      	}
-	        enum open-resp {
-	        	value 2;
-	      	}
-	        enum update {
-	        	value 3;
-	      	}
-        	enum error {
-	        	value 4;
-	      	}
-	        enum purge-all {
-	        	value 5;
-	      	}
-	        enum keepalive {
-	        	value 6;
-	      	}
-	    }
+    revision "2014-10-02" {
+        description
+                "Initial revision of SXP protocol model";
     }
 
-	typedef node-id {
-		type inet:ipv4-address;
-		description "SXP node ID";
-	} 
-	
-	typedef version {
+    typedef attribute-type {
         type enumeration {
-        	enum version1 {
-	        	value 1;
-	      	}
-	        enum version2 {
-	        	value 2;
-	      	}
-	        enum version3 {
-	        	value 3;
-	      	}
-	        enum version4 {
-	        	value 4;
-	      	}
-	    }
+            enum Unspecified {
+                value -1;
+            }
+            enum add-ipv4 {
+                value 1;
+            }
+            enum add-ipv6 {
+                value 2;
+            }
+            enum del-ipv4 {
+                value 3;
+            }
+            enum del-ipv6 {
+                value 4;
+            }
+            enum sxp-node-id {
+                value 5;
+            }
+            enum capabilities {
+                value 6;
+            }
+            enum hold-time {
+                value 7;
+            }
+            enum ipv4-add-prefix {
+                value 11;
+            }
+            enum ipv6-add-prefix {
+                value 12;
+            }
+            enum ipv4-delete-prefix {
+                value 13;
+            }
+            enum ipv6-delete-prefix {
+                value 14;
+            }
+            enum peer-sequence {
+                value 16;
+            }
+            enum source-group-tag {
+                value 17;
+            }
+            enum ipv4-add-table {
+                value 21;
+            }
+            enum ipv6-add-table {
+                value 22;
+            }
+        }
     }
-	
+
+    typedef attribute-variant {
+        type enumeration {
+            enum compact;
+            enum compact-extended-length;
+            enum non-compact;
+            enum none;
+        }
+    }
+
+    typedef capability-type {
+        type enumeration {
+            enum none;
+            enum ipv4-unicast {
+                value 1;
+            }
+            enum ipv6-unicast {
+                value 2;
+            }
+            enum subnet-bindings {
+                value 3;
+            }
+            enum loop-detection;
+            enum sxp-capability-exchange;
+        }
+    }
+
+    typedef connection-mode {
+        type enumeration {
+            enum speaker {
+                value 1;
+            }
+            enum listener {
+                value 2;
+            }
+            enum both;
+            enum none;
+        }
+    }
+
+    typedef connection-state {
+        type enumeration {
+            enum administratively-down;
+            enum delete-hold-down {
+                description "In this state, a connection that was previously in ON state has
+                                been terminated. Only a listener can be in this state";
+            }
+            enum off {
+                description "In this state, a connection initiation has not been started.
+                                This is the only state that an SXP connection will retry establishing
+                                the TCP connection";
+            }
+            enum on {
+                description "SXP is in ON state when SXP OPEN or SXP OPEN RESP message has
+                                been received. SXP connection has been setup successfully. An
+                                SXP connection will only propagates bindings in the ON state";
+            }
+            enum pending-on {
+                description "In this state, an SXP OPEN message has been sent to the peer
+                                and a response from the peer SXP is expected";
+            }
+        }
+    }
+
+    typedef error-code {
+        type enumeration {
+            enum message-header-error {
+                value 1;
+            }
+            enum open-message-error {
+                value 2;
+            }
+            enum update-message-error {
+                value 3;
+            }
+        }
+    }
+
+    typedef error-code-non-extended {
+        type enumeration {
+            enum no-error {
+                value 0;
+            }
+            enum version-mismatch {
+                value 1;
+            }
+            enum message-parse-error {
+                value 2;
+            }
+        }
+    }
+
+    typedef error-sub-code {
+        type enumeration {
+            enum malformed-attribute-list {
+                value 1;
+            }
+            enum unrecognized-well-known-attribute {
+                value 2;
+            }
+            enum missing-well-known-attribute {
+                value 3;
+            }
+            enum attribute-flags-error {
+                value 4;
+            }
+            enum attribute-length-error {
+                value 5;
+            }
+            enum malformed-attribute {
+                value 6;
+            }
+            enum optional-attribute-error {
+                value 7;
+            }
+            enum unsupported-version-number {
+                value 8;
+            }
+            enum unsupported-optional-attribute {
+                value 9;
+            }
+            enum unacceptable-hold-time {
+                value 10;
+            }
+        }
+    }
+
+    typedef error-type {
+        type enumeration {
+            enum extended;
+            enum legacy;
+        }
+    }
+
+    typedef message-type {
+        type enumeration {
+            enum open {
+                value 1;
+            }
+            enum open-resp {
+                value 2;
+            }
+            enum update {
+                value 3;
+            }
+            enum error {
+                value 4;
+            }
+            enum purge-all {
+                value 5;
+            }
+            enum keepalive {
+                value 6;
+            }
+        }
+    }
+
+    typedef node-id {
+        type inet:ipv4-address;
+        description "SXP node ID";
+    }
+
+    typedef version {
+        type enumeration {
+            enum version1 {
+                value 1;
+            }
+            enum version2 {
+                value 2;
+            }
+            enum version3 {
+                value 3;
+            }
+            enum version4 {
+                value 4;
+            }
+        }
+    }
+
     // ***********************
     // SXP Protocol Attributes
-    // ***********************  
-    
-    grouping flags-fields {		
-		leaf flags {
-		 	type bits {
-			 	bit optional {
-	            	position 0;
-	            }
-	            bit non-transitive {
-	            	position 1;
-	            }
-	            bit partial {
-	            	position 2;
-	            }
-	            bit compact {
-	            	position 3;
-	            }
-	            bit extended-length {
-	            	position 4;
-	            }
+    // ***********************
+
+    grouping flags-fields {
+        leaf flags {
+            type bits {
+                bit optional {
+                    position 0;
+                }
+                bit non-transitive {
+                    position 1;
+                }
+                bit partial {
+                    position 2;
+                }
+                bit compact {
+                    position 3;
+                }
+                bit extended-length {
+                    position 4;
+                }
             }
             description "Assigned IP address";
-        }	        
-	} 
- 
- 	grouping attribute-fields {
- 		uses flags-fields;
-	
-		leaf attribute-variant {
-           	type attribute-variant;
-			description "";
-		}		
-		leaf type {
-        	type attribute-type;
-			description "1 or 4 bytes";
-		}
-		leaf length {
-		 	type int32;
-            description "1, 2 or 4 bytes.
-      			Length (in octets) of the TLV Value field (i.e. not including the 3, 4,
-      			or 8-octets attribute header. Unsigned integer in the following range:
-      			[0..255] - For Compact non- Extended Length attribute
-      			[256..4084] - For Compact Extended Length attribute
-      			[0..4080] - For non-Compact attribute";
-        }		
-		leaf value {
-           	type binary;
-			description "";
-		}	
-	}	
-	
-	// ***************************
+        }
+    }
+
+    grouping attribute-fields {
+        uses flags-fields;
+
+        leaf attribute-variant {
+            type attribute-variant;
+            description "TODO";
+        }
+        leaf type {
+            type attribute-type;
+            description "1 or 4 bytes";
+        }
+        leaf length {
+            type int32;
+            description "1, 2 or 4 bytes. Length (in octets) of the TLV Value field (i.e.
+                        not including the 3, 4, or 8-octets attribute header. Unsigned
+                        integer in the following range: [0..255] - For Compact non- Extended
+                        Length attribute [256..4084] - For Compact Extended Length attribute
+                        [0..4080] - For non-Compact attribute";
+        }
+        leaf value {
+            type binary;
+            description "TODO";
+        }
+    }
+
+    // ***************************
     // SXP Open Message Attributes
- 	// ***************************  
- 	
- 	grouping sxp-node-id-attribute-fields {	
- 		leaf node-id {
-			type node-id;
-		}
- 	}
- 	
-	grouping capability-fields {	
-		leaf bytes-length {
-           	type uint8;
-			description "Capability length in bytes";
-		}		
-		leaf code {
-           	type capability-type;
-			description "";
-		}	
-		leaf length {
-           	type uint8;
-			description "";
-		}	
-		leaf value {
-           	type binary;
-			description "";
-		}	
-	}	
-	
-	grouping capabilities-attribute-fields {		
-		list capabilities {
-			uses capability-fields;
-		}
-	}
-	
-	grouping hold-time-attribute-fields {		
-		leaf hold-time-min-value {
-           	type uint16;
-			description "";
-		}
-		leaf hold-time-max-value {
-           	type uint16;
-			description "";
-		}	
-	}
-	
-	// *****************************
+    // ***************************
+
+    grouping sxp-node-id-attribute-fields { 
+        leaf node-id {
+            type node-id;
+        }
+    }
+
+    grouping capability-attribute-fields {
+        leaf bytes-length {
+            type uint8;
+            description "Capability length in bytes";
+        }
+        leaf code {
+            type capability-type;
+            description "";
+        }
+        leaf length {
+            type uint8;
+            description "TODO";
+        }
+        leaf value {
+            type binary;
+            description "TODO";
+        }
+    }
+
+    grouping hold-time-attribute-fields {
+        leaf hold-time-min-value {
+            type uint16;
+            description "TODO";
+        }
+        leaf hold-time-max-value {
+            type uint16;
+            description "TODO";
+        }
+    }
+
+    // *****************************
     // SXP Update Message Attributes
- 	// *****************************  
- 		
- 	grouping ip-prefix-attribute-fields {		
-		leaf ip-prefix {
-			type inet:ip-prefix;
-			description "IP prefix: IPv4 | IPv6";	
-		}
-	}
-		
-    grouping ip-prefixes-attribute-fields {		
-		leaf-list ip-prefix {
-			type inet:ip-prefix;
-			description "IP prefix: IPv4 | IPv6";	
-		}
-	}
-	
-	grouping peer-sequence-attribute-fields {		
-		leaf-list node-id {
-			type node-id;
-		}		
-	}
-	
-	grouping source-group-tag-attribute-fields {	
-		leaf sgt {
-           	type uint16;
-			description "";
-		}		
-	}
-	
-	grouping ip-table-attribute-fields {		
-		leaf ncolumns {
-           	type uint8;
-			description "";
-		}
-		
-		container columns {
-           	
-		}
-		container rows {
-           	
-		}
-	}
-	
-	// *************************
+    // *****************************
+
+    grouping ip-prefix-attribute-fields {
+        leaf ip-prefix {
+            type inet:ip-prefix;
+            description "IP prefix: IPv4 | IPv6";
+        }
+    }
+
+    grouping ip-prefixes-attribute-fields {
+        leaf-list ip-prefix {
+            type inet:ip-prefix;
+            description "IP prefix: IPv4 | IPv6";
+        }
+    }
+
+    grouping peer-sequence-attribute-fields {
+        leaf-list node-id {
+            type node-id;
+        }
+    }
+
+    grouping source-group-tag-attribute-fields {
+        leaf sgt {
+            type uint16;
+            description "TODO";
+        }
+    }
+
+    grouping ip-table-attribute-fields {
+        leaf ncolumns {
+            type uint8;
+            description "TODO";
+        }
+        container columns {
+        }
+        container rows {
+        }
+    }
+
+    // *************************
     // SXP Attributes Definition
- 	// *************************
- 
- 	grouping attributes-fields {	
- 		list attribute {
- 			uses attribute-fields;	
-		
-			choice attribute-optional-fields {				
-				case capabilities-attribute {
-					container capabilities-attributes {
-						uses capabilities-attribute-fields;
-					}					
-				}
-				case hold-time-attribute {
-					container hold-time-attributes {
-						uses hold-time-attribute-fields;
-					}					
-				}
-				case sxp-node-id-attribute {
-					container sxp-node-id-attributes {
-						uses sxp-node-id-attribute-fields;
-					}										
-				}	
-				// Legacy
-			 	case add-ipv4-attribute {
-			    	container add-ipv4-attributes {
-			    		uses ip-prefix-attribute-fields;	
-			    		uses source-group-tag-attribute-fields;
-			    	}		    	
-			    }	
-			    case add-ipv6-attribute {
-			    	container add-ipv6-attributes {	
-			    		uses ip-prefix-attribute-fields;
-			    		uses source-group-tag-attribute-fields;
-			    	}					    	
-			    }
-			    case delete-ipv4-attribute {
-			   		container delete-ipv4-attributes {
-						uses ip-prefix-attribute-fields;
-					}	    	
-			    }	
-			    case delete-ipv6-attribute {
-			    	container delete-ipv6-attributes {
-			    		uses ip-prefix-attribute-fields;
-			    	}	    	
-			    }
-			    // ------					
-			    case ipv4-add-prefix-attribute {
-			    	container ipv4-add-prefix-attributes {
-			    		uses ip-prefixes-attribute-fields;
-			    	}			    	
-			    }
-			    case ipv4-add-table-attribute {
-			    	container ipv4-add-table-attributes {
-			    		uses ip-table-attribute-fields;
-			    	}			    	
-			    }	
-			    case ipv4-delete-prefix-attribute {
-			    	container ipv4-delete-prefix-attributes {
-						uses ip-prefixes-attribute-fields;
-					}			    	
-			    }			   
-			    case ipv6-add-prefix-attribute {
-			    	container ipv6-add-prefix-attributes {
-			    		uses ip-prefixes-attribute-fields;
-			    	}			    	
-			    }			    
-			    case ipv6-add-table-attribute {
-			    	container ipv6-add-table-attributes {
-			    		uses ip-table-attribute-fields;
-			    	}			    	
-			    }	
-			    case ipv6-delete-prefix-attribute {
-			    	container ipv6-delete-prefix-attributes {
-			    		uses ip-prefixes-attribute-fields;
-			    	}			    	
-			    }	
-			    case peer-sequence-attribute {
-			    	container peer-sequence-attributes {
-			    		uses peer-sequence-attribute-fields;
-			    	}			    	
-			    }
-			    case source-group-tag-attribute {
-			    	container source-group-tag-attributes {
-			    		uses source-group-tag-attribute-fields;
-			    	}
-			    }		 
-			    
-			    case unrecognized-attribute {
-			    	container unrecognized-attributes {
-			    		description "Default/Unrecognized attribute";
-				    	uses attribute-fields;
-				    }
-			    }
-			}
-		}
-	}
-    
-   	// *********************
+    // *************************
+
+    grouping attributes-fields {
+        list attribute {
+            uses attribute-fields;
+
+            choice attribute-optional-fields {
+                case capabilities-attribute {
+                    container capabilities-attributes {
+                        list capabilities {
+                            uses capability-attribute-fields;
+                        }
+                    }
+                }
+                case hold-time-attribute {
+                    container hold-time-attributes {
+                        uses hold-time-attribute-fields;
+                    }
+                }
+                case sxp-node-id-attribute {
+                    container sxp-node-id-attributes {
+                        uses sxp-node-id-attribute-fields;
+                    }
+                }
+                // Legacy
+                case add-ipv4-attribute {
+                    container add-ipv4-attributes {
+                        uses ip-prefix-attribute-fields;
+                        uses source-group-tag-attribute-fields;
+                    }
+                }
+                case add-ipv6-attribute {
+                    container add-ipv6-attributes {
+                        uses ip-prefix-attribute-fields;
+                        uses source-group-tag-attribute-fields;
+                    }
+                }
+                case delete-ipv4-attribute {
+                    container delete-ipv4-attributes {
+                        uses ip-prefix-attribute-fields;
+                    }
+                }
+                case delete-ipv6-attribute {
+                    container delete-ipv6-attributes {
+                        uses ip-prefix-attribute-fields;
+                    }
+                }
+                case ipv4-add-prefix-attribute {
+                    container ipv4-add-prefix-attributes {
+                        uses ip-prefixes-attribute-fields;
+                    }
+                }
+                case ipv4-add-table-attribute {
+                    container ipv4-add-table-attributes {
+                        uses ip-table-attribute-fields;
+                    }
+                }
+                case ipv4-delete-prefix-attribute {
+                    container ipv4-delete-prefix-attributes {
+                        uses ip-prefixes-attribute-fields;
+                    }
+                }
+                case ipv6-add-prefix-attribute {
+                    container ipv6-add-prefix-attributes {
+                        uses ip-prefixes-attribute-fields;
+                    }
+                }
+                case ipv6-add-table-attribute {
+                    container ipv6-add-table-attributes {
+                        uses ip-table-attribute-fields;
+                    }
+                }
+                case ipv6-delete-prefix-attribute {
+                    container ipv6-delete-prefix-attributes {
+                        uses ip-prefixes-attribute-fields;
+                    }
+                }
+                case peer-sequence-attribute {
+                    container peer-sequence-attributes {
+                        uses peer-sequence-attribute-fields;
+                    }
+                }
+                case source-group-tag-attribute {
+                    container source-group-tag-attributes {
+                        uses source-group-tag-attribute-fields;
+                    }
+                }
+                case unrecognized-attribute {
+                    container unrecognized-attributes {
+                        description "Default/Unrecognized attribute";
+                        uses attribute-fields;
+                    }
+                }
+            }
+        }
+    }
+
+    // *********************
     // SXP Protocol Messages
     // *********************
-       
-	grouping sxp-header {	
-		leaf length   {
-			type int32;
-		}				
-		leaf type   {
-			type message-type;
-		}
-	}	
-	
-	grouping sxp-payload {	
-		leaf payload {
-			type binary;
-		}		
-	}	
-	
-	grouping open-message-fields {
-		uses sxp-header;
-		uses sxp-payload;
-		
-		leaf version   {
-			type version;
-		}				
-		leaf sxp-mode   {
-			type connection-mode;
-		}
-	}
-	
-	// OPEN and OPEN_RESP message
-	notification open-message {
-		uses open-message-fields;
-				
-		uses attributes-fields;
-	}	
-		
-	// UPDATE message
- 	notification update-message {
- 		uses sxp-header;
- 		uses sxp-payload;
-		
- 		uses attributes-fields;
-	}
-	
-	// ERROR message
- 	notification error-message {
-		uses sxp-header;
-		uses sxp-payload;
-		
-		leaf error-type   {
-			type error-type;
-		}				
-		leaf error-code   {
-			type error-code;
-		}
-		leaf error-sub-code    {
-			type error-sub-code;
-		}	
-		leaf error-code-non-extended   {
-			type error-code-non-extended;
-		}
-		leaf data {
-			type binary;
-		}
-		leaf information {
-			type string;
-		}
-	}
-		
-	// PURGE-ALL message
- 	notification purge-all-message {
-		uses sxp-header;
-	}	
-	
-	// KEEPALIVE message
- 	notification keepalive-message {
-		uses sxp-header;
-	}	
-		
-	// ********************************
+
+    grouping sxp-header {
+        leaf length {
+            type int32;
+        }
+        leaf type {
+            type message-type;
+        }
+    }
+
+    grouping sxp-payload {
+        leaf payload {
+            type binary;
+        }
+    }
+
+    grouping open-message-fields {
+        uses sxp-header;
+        uses sxp-payload;
+
+        leaf version {
+            type version;
+        }
+        leaf sxp-mode {
+            type connection-mode;
+        }
+    }
+
+    // ********************************
     // Legacy Additions - Version 1 2 3
-    // ********************************  
-	typedef tlv-type {
+    // ********************************
+    typedef tlv-type {
         type enumeration {
-			enum sgt {
-				description "Type = 1, Length = 2, Value = SGT";
-				value 1;
-			}
-	        enum prefix-length {
-	        	description "Type = 2, Length = 1, Value = Prefix length of the IP address";
-	        	value 2;
-	        }
-      	}
-	}
-	
-	grouping tlv-fields {	
- 		leaf type {
-        	type tlv-type ;
-			description "4 bytes";
-		}
-		leaf length {
-		 	type int32;
+            enum sgt {
+                description "Type = 1, Length = 2, Value = SGT";
+                value 1;
+            }
+            enum prefix-length {
+                description "Type = 2, Length = 1, Value = Prefix length of the IP address";
+                value 2;
+            }
+        }
+    }
+
+    grouping tlv-fields {
+        leaf type {
+            type tlv-type ;
+            description "4 bytes";
+        }
+        leaf length {
+            type int32;
             description "4 bytes";
         }
         leaf value {
-           	type binary;
-			description "";
-		}	
-		
-		choice tlv-optional-fields {				
-			case source-group-tag-tlv-attribute {
-				container source-group-tag-tlv-attributes {
-		    		uses source-group-tag-attribute-fields;
-		    	}		    	
-	    	}	
-		    case prefix-length-tlv-attribute {
-		    	container prefix-length-tlv-attributes {
-		    		leaf prefix-length {
-						type uint16;							
-					}
-				}		    	
-		    }
-		}	       
- 	}
+            type binary;
+            description "";
+        }
 
-	grouping tlvs-fields {	
- 		list tlv {
- 			uses tlv-fields;	
- 		}
- 	}
-	
- 	grouping mapping-record-fields {
- 		leaf operation-code {
-        	type attribute-type;
-			description "4 bytes";
-		}
-		leaf length {
-		 	type int32;
+        choice tlv-optional-fields {
+            case source-group-tag-tlv-attribute {
+                container source-group-tag-tlv-attributes {
+                    uses source-group-tag-attribute-fields;
+                }
+            }
+            case prefix-length-tlv-attribute {
+                container prefix-length-tlv-attributes {
+                    leaf prefix-length {
+                        type uint16;
+                    }
+                }
+            }
+        }
+    }
+
+    grouping tlvs-fields {
+        list tlv {
+            uses tlv-fields;
+        }
+    }
+
+    grouping mapping-record-fields {
+        leaf operation-code {
+            type attribute-type;
             description "4 bytes";
-        }	        
+        }
+        leaf length {
+            type int32;
+            description "4 bytes";
+        }
         leaf address {
-			type inet:ip-prefix;
-			description "IPv4/IPv6 address (4/16 bytes)";	
-		}
-		
-		uses tlvs-fields;
- 	}
- 	 	
- 	grouping mapping-records-fields {	
- 		list mapping-record {
- 			uses mapping-record-fields;	
-		}
-	}	
- 	
-    // OPEN and OPEN_RESP message
-	notification open-message-legacy {
-		uses open-message-fields;
-	}	
-		
-	// UPDATE message
- 	notification update-message-legacy {
- 		uses sxp-header;
- 		uses sxp-payload;
-		
- 		uses mapping-records-fields;
-	}	
+            type inet:ip-prefix;
+            description "IPv4/IPv6 address (4/16 bytes)";
+        }
+
+        uses tlvs-fields;
+    }
+
+    grouping mapping-records-fields {
+        list mapping-record {
+            uses mapping-record-fields;
+        }
+    }
+
+    // ********************************
+    // SXP Messages
+    // ********************************
+
+    grouping sxp-messages {
+        description "This is not intent to be public usable.
+            These message structures are created only for usage in implementation.";
+        grouping notification {
+            description "Marker interface for all SXP messages.";
+        }
+        container open-message {
+            description "OPEN and OPEN_RESP message";
+            uses notification;
+            uses open-message-fields;
+            uses attributes-fields;
+        }
+        container update-message {
+            description "UPDATE message";
+            uses notification;
+            uses sxp-header;
+            uses sxp-payload;
+            uses attributes-fields;
+        }
+        container error-message {
+            description "ERROR message";
+            uses notification;
+            uses sxp-header;
+            uses sxp-payload;
+
+            leaf error-type {
+                type error-type;
+            }
+            leaf error-code {
+                type error-code;
+            }
+            leaf error-sub-code {
+                type error-sub-code;
+            }
+            leaf error-code-non-extended {
+                type error-code-non-extended;
+            }
+            leaf data {
+                type binary;
+            }
+            leaf information {
+                type string;
+            }
+        }
+        container purge-all-message {
+            description "PURGE-ALL message";
+            uses notification;
+            uses sxp-header;
+        }
+        container keepalive-message {
+            description "KEEPALIVE message";
+            uses notification;
+            uses sxp-header;
+        }
+        container open-message-legacy {
+            description "OPEN and OPEN_RESP message legacy";
+            uses notification;
+            uses open-message-fields;
+        }
+        container update-message-legacy {
+            description "UPDATE message legacy";
+            uses notification;
+            uses sxp-header;
+            uses sxp-payload;
+            uses mapping-records-fields;
+        }
+    }
+
+
 }

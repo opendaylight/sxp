@@ -14,7 +14,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.capabili
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.network.topology.topology.node.Timers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Constants;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.osgi.resource.Capability;
 
