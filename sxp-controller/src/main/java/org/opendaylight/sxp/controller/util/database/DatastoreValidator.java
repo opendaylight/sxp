@@ -25,7 +25,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.sxp.database.Vpn;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopologyBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
@@ -80,7 +79,6 @@ public final class DatastoreValidator {
         if (!sxpDatabase.get().isPresent()) {
             try {
                 SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
-                databaseBuilder.setAttribute(new ArrayList<Attribute>());
                 databaseBuilder.setPathGroup(new ArrayList<PathGroup>());
                 databaseBuilder.setVpn(new ArrayList<Vpn>());
                 datastoreAccess.put(sxpDatabaseIdentifier, databaseBuilder.build(), logicalDatastoreType).get();
@@ -102,7 +100,6 @@ public final class DatastoreValidator {
         if (!masterDatabase.get().isPresent()) {
             try {
                 MasterDatabaseBuilder databaseBuilder = new MasterDatabaseBuilder();
-                databaseBuilder.setAttribute(new ArrayList<Attribute>());
                 databaseBuilder.setSource(new ArrayList<Source>());
                 databaseBuilder
                         .setVpn(new ArrayList<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.master.database.Vpn>());

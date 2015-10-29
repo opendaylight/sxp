@@ -18,7 +18,6 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.BindingAwareBroker.RpcRegistration;
 import org.opendaylight.sxp.controller.core.DataChangeConfigurationListenerImpl;
 import org.opendaylight.sxp.controller.core.DataChangeOperationalListenerImpl;
-import org.opendaylight.sxp.controller.core.NotificationListenerImpl;
 import org.opendaylight.sxp.controller.core.RpcServiceImpl;
 import org.opendaylight.sxp.controller.util.database.DatastoreValidator;
 import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
@@ -26,17 +25,13 @@ import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
 import org.opendaylight.sxp.controller.util.database.access.SxpDatabaseAccessImpl;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
 import org.opendaylight.sxp.core.Configuration;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.ExportedBindingsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.SxpControllerService;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
-import org.opendaylight.yangtools.yang.binding.NotificationListener;
 
 public class SxpControllerModule extends
         org.opendaylight.controller.config.yang.sxp.controller.conf.AbstractSxpControllerModule {
 
     private List<ListenerRegistration<DataChangeListener>> dataChangeListenerRegistrations = new ArrayList<ListenerRegistration<DataChangeListener>>();
-
-    private ListenerRegistration<NotificationListener> notificationListenerRegistration;
 
     private RpcRegistration<SxpControllerService> rpcRegistration;
 
@@ -83,14 +78,6 @@ public class SxpControllerModule extends
         rpcRegistration = getRpcRegistryDependency().addRpcImplementation(SxpControllerService.class,
                 new RpcServiceImpl(datastoreAccess));
 
-        // Register notification listener.
-        notificationListenerRegistration = getNotificationServiceDependency().registerNotificationListener(
-                new NotificationListenerImpl());
-
-        // Publish notifications.
-        ExportedBindingsBuilder exportedBindingsNotification = new ExportedBindingsBuilder();
-        getNotificationServiceDependency().publish(exportedBindingsNotification.build());
-
         return new AutoCloseable() {
             @Override
             public void close() throws Exception {
@@ -100,7 +87,6 @@ public class SxpControllerModule extends
 
                 rpcRegistration.close();
 
-                notificationListenerRegistration.close();
             }
         };
     }

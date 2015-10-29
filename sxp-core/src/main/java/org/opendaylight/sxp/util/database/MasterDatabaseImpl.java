@@ -32,7 +32,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.master.database.Vpn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -53,7 +52,6 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
     public MasterDatabaseImpl() {
         super(null);
         MasterDatabaseBuilder databaseBuilder = new MasterDatabaseBuilder();
-        databaseBuilder.setAttribute(new ArrayList<Attribute>());
         databaseBuilder.setSource(new ArrayList<Source>());
         databaseBuilder.setVpn(new ArrayList<Vpn>());
         database = databaseBuilder.build();

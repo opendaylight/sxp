@@ -213,7 +213,6 @@ public final class BindingHandler {
         }
 
         if (prefixGroups.isEmpty()) {
-            databaseBuilder.setAttribute(new ArrayList<Attribute>());
             databaseBuilder.setPathGroup(new ArrayList<PathGroup>());
             return databaseBuilder.build();
         }
@@ -221,7 +220,6 @@ public final class BindingHandler {
         List<NodeId> peerSequence = new ArrayList<NodeId>();
         peerSequence.add(nodeId);
 
-        databaseBuilder.setAttribute(new ArrayList<Attribute>());
         databaseBuilder.setPathGroup(getPathGroups(updateMessage, new ArrayList<PathGroup>(), peerSequence,
                 prefixGroups));
         return databaseBuilder.build();
@@ -343,7 +341,6 @@ public final class BindingHandler {
 
                 // The last attribute.
                 if (message.getAttribute().indexOf(attribute) == message.getAttribute().size() - 1) {
-                    databaseBuilder.setAttribute(attGlobalOptional);
                     // Prefix groups.
                     prefixGroups.add(getPrefixGroups(updateMessage, sgt, prefixes));
                     // Path groups.
@@ -363,7 +360,6 @@ public final class BindingHandler {
                 }
             }
         }
-        databaseBuilder.setAttribute(attGlobalOptional);
         databaseBuilder.setPathGroup(pathGroups);
         return databaseBuilder.build();
     }
@@ -424,7 +420,6 @@ public final class BindingHandler {
             }
         }
         if (prefixes.isEmpty()) {
-            databaseBuilder.setAttribute(attGlobalOptional);
             databaseBuilder.setPathGroup(new ArrayList<PathGroup>());
             return databaseBuilder.build();
         }
@@ -435,7 +430,6 @@ public final class BindingHandler {
         List<NodeId> peerSequence = new ArrayList<NodeId>();
         peerSequence.add(nodeId);
 
-        databaseBuilder.setAttribute(attGlobalOptional);
         databaseBuilder.setPathGroup(getPathGroups(updateMessage, new ArrayList<PathGroup>(), peerSequence,
                 prefixGroups));
         return databaseBuilder.build();
@@ -468,7 +462,6 @@ public final class BindingHandler {
         }
 
         if (prefixes.isEmpty()) {
-            databaseBuilder.setAttribute(new ArrayList<Attribute>());
             databaseBuilder.setPathGroup(new ArrayList<PathGroup>());
             return databaseBuilder.build();
         }
@@ -479,7 +472,6 @@ public final class BindingHandler {
         List<NodeId> peerSequence = new ArrayList<NodeId>();
         peerSequence.add(nodeId);
 
-        databaseBuilder.setAttribute(new ArrayList<Attribute>());
         databaseBuilder.setPathGroup(getPathGroups(updateMessage, new ArrayList<PathGroup>(), peerSequence,
                 prefixGroups));
         return databaseBuilder.build();

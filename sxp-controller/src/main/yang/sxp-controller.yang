@@ -38,30 +38,7 @@ module sxp-controller {
 			uses sxpnd:sxp-node-time-settings-fields;
 		}						
     }
-    
-    // ************************
-    // Notifications Definition
-    // ************************
 
-	notification exported-bindings {
-		description "Bindings currently sent to peer";
-		
-		list bindings {
-			leaf sgt {
-		    	mandatory true;
-		        type sxpdb:sgt;
-		        description "Assigned source group tag";
-		    }
-		    
-			uses sxpdb:master-database-binding-fields;
-        	
-        	leaf vpn-label {
-				type string;
-				description "Assigned VPN label";
-			}
-        }
-    }
-		    
     // **************
     // RPC Definition
     // **************

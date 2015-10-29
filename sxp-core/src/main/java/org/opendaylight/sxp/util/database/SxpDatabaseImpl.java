@@ -25,7 +25,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.sxp.database.Vpn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 
 /**
  * SxpDatabaseImpl class contains logic to operate with Database,
@@ -41,7 +40,6 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
     public SxpDatabaseImpl() {
         super(null);
         SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
-        databaseBuilder.setAttribute(new ArrayList<Attribute>());
         databaseBuilder.setPathGroup(new ArrayList<PathGroup>());
         databaseBuilder.setVpn(new ArrayList<Vpn>());
         database = databaseBuilder.build();

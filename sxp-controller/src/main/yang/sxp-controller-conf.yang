@@ -1,6 +1,6 @@
 module sxp-controller-conf {
     yang-version 1;
-    
+
     namespace "urn:opendaylight:params:xml:ns:yang:controller:sxp:controller:conf";
     prefix "sxpctrl-conf";
 
@@ -18,7 +18,7 @@ module sxp-controller-conf {
 
     // This is the definition of a service implementation
     identity sxp-controller {
-    	base config:module-type;
+        base config:module-type;
         config:java-name-prefix SxpController;
     }
 
@@ -38,8 +38,8 @@ module sxp-controller-conf {
                     }
                 }
             }
-           	
-           	container rpc-registry {
+
+            container rpc-registry {
                 uses config:service-ref {
                     refine type {
                         mandatory true;
@@ -48,15 +48,6 @@ module sxp-controller-conf {
                 }
             }
 
-            container notification-service {
-                uses config:service-ref {
-                    refine type {
-                        mandatory true;
-                        config:required-identity mdsal:binding-notification-service;
-                    }
-                }
-            }
-            
             container data-broker {
                 uses config:service-ref {
                     refine type {
@@ -65,12 +56,12 @@ module sxp-controller-conf {
                     }
                 }
             }
-                			
-		    container sxp-controller {
-				list sxp-node { 
-    		    	uses sxpctrl:sxp-node-configuration;
-	        	}
-            }		    
+
+            container sxp-controller {
+                list sxp-node { 
+                    uses sxpctrl:sxp-node-configuration;
+                }
+            }
         }
     }
 }

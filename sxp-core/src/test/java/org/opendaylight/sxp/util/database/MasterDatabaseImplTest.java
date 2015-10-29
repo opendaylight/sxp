@@ -34,7 +34,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.master.database.Vpn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -94,7 +93,6 @@ import static org.mockito.Mockito.when;
                 }
                 prefixGroupBuilder.setBinding(bindings);
                 prefixGroupBuilder.setSgt(new Sgt(sgt));
-                prefixGroupBuilder.setAttribute(new ArrayList<Attribute>());
                 return prefixGroupBuilder.build();
         }
 
@@ -105,7 +103,6 @@ import static org.mockito.Mockito.when;
                 for (PrefixGroup group : prefixGroups_) {
                         prefixGroups.add(group);
                 }
-                sourceBuilder.setAttribute(new ArrayList<Attribute>());
                 sourceBuilder.setBindingSource(databaseBindingSource);
                 sourceBuilder.setKey(new SourceKey(sourceBuilder.getBindingSource()));
                 return sourceBuilder.build();

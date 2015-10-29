@@ -310,15 +310,8 @@ public class MessageFactory {
     public static ByteBuf createUpdate(MasterDatabase masterDatabase, NodeId nodeId, boolean changed)
             throws UpdateMessageBindingSourceException, SecurityGroupTagValueException, AttributeVariantException {
         AttributeList attributes = new AttributeList();
-        // 2. Processing of global optional attributes.
-        for (Attribute attribute : masterDatabase.getAttribute()) {
-            if (attribute.getFlags().isOptional()
-                    && (attribute.getFlags().isPartial() || !attribute.getFlags().isNonTransitive())) {
-                attributes.add(attribute);
-            }
-        }
 
-        // 3. Processing of binding delete attributes.
+        // Processing of binding delete attributes.
         List<IpPrefix> removeIpv4 = new ArrayList<>();
         List<IpPrefix> removeIpv6 = new ArrayList<>();
         for (Source source : masterDatabase.getSource()) {
@@ -350,18 +343,12 @@ public class MessageFactory {
             attributes.add(AttributeFactory.createIpv6DeletePrefix(removeIpv6));
         }
 
-        // 4. Processing path-groups.
+        // Processing Source.
         for (Source source : masterDatabase.getSource()) {
-
             AttributeList _attributes = new AttributeList();
-            // A. Process per-path common optional attributes
-            if (source.getAttribute() != null) {
-                _attributes.addAll(source.getAttribute());
-            }
 
-            // B. Add-Prefix groups. Each Add-Prefix group starts with a
+            // Add-Prefix groups. Each Add-Prefix group starts with a
             // Source-Group-Tag attribute.
-
             boolean oneShot = false;
             boolean added = false;
 
@@ -413,10 +400,6 @@ public class MessageFactory {
 
                     _attributes.add(AttributeFactory.createSourceGroupTag(prefixGroup.getSgt().getValue()));
 
-                    // i. Process per <path, SGT> optional attributed.
-                    if (prefixGroup.getAttribute() != null) {
-                        _attributes.addAll(prefixGroup.getAttribute());
-                    }
                     if (!addIpv4.isEmpty()) {
                         _attributes.add(AttributeFactory.createIpv4AddPrefix(addIpv4));
                         added = true;
@@ -438,13 +421,6 @@ public class MessageFactory {
 
             if (added) {
                 attributes.addAll(_attributes);
-            }
-        }
-
-        // 5. Processing trailing optional non-transitive attributes
-        for (Attribute attribute : masterDatabase.getAttribute()) {
-            if (attribute.getFlags().isOptional() && attribute.getFlags().isNonTransitive()) {
-                attributes.add(attribute);
             }
         }
 

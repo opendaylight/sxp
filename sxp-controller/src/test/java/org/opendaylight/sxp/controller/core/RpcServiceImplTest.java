@@ -57,7 +57,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sources.fields.SourcesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.acl.entry.AclMatch;
@@ -142,9 +141,6 @@ public class RpcServiceImplTest {
                         nodeIds.add(NodeId.getDefaultInstance(prefix.split("/")[0]));
                 }
                 bindingBuilder.setKey(new BindingKey(bindingBuilder.getIpPrefix()));
-                SourcesBuilder sourcesBuilder = new SourcesBuilder();
-                sourcesBuilder.setSource(nodeIds);
-                bindingBuilder.setSources(sourcesBuilder.build());
                 return bindingBuilder.build();
         }
 
