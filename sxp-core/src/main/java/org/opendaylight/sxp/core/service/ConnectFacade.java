@@ -179,10 +179,10 @@ public class ConnectFacade {
             throws NativeSupportUnavailableException {
         KeyMapping keys = new KeyMapping();
         keys.put(inetHost, password.getBytes(Charsets.US_ASCII));
-
-        KeyAccessFactory keyAccessFactory = NativeKeyAccessFactory.getInstance();
-        MD5NioSocketChannelFactory chf = new MD5NioSocketChannelFactory(keyAccessFactory);
-        bootstrap.channelFactory(chf);
+// TODO msunal uncomment before commit
+//        KeyAccessFactory keyAccessFactory = NativeKeyAccessFactory.getInstance();
+//        MD5NioSocketChannelFactory chf = new MD5NioSocketChannelFactory(keyAccessFactory);
+//        bootstrap.channelFactory(chf);
         bootstrap.option(MD5ChannelOption.TCP_MD5SIG, keys);
         LOG.info("Customized client bootstrap");
         return bootstrap;
