@@ -48,6 +48,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
@@ -185,6 +186,44 @@ public final class SxpNode {
     /** Common timers setup. */
     private HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(6);
     private final Map<String,SxpPeerGroupBuilder> peerGroupMap = new HashMap<>();
+
+    /**
+     * Default constructor that creates and start SxpNode using provided values
+     *
+     * @param nodeId         ID of newly created Node
+     * @param node           Node setup data
+     * @param masterDatabase Data which will be added to Master-DB
+     * @param sxpDatabase    Data which will be added to SXP-DB
+     * @param worker         Thread workers which will be executing task inside SxpNode
+     * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
+     * @throws SocketException              If IO error occurs
+     */
+    private SxpNode(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
+            SxpDatabaseProvider sxpDatabase,ThreadsWorker worker) throws NoNetworkInterfacesException, SocketException {
+        this.worker = worker;
+        this.nodeId = nodeId;
+        this.nodeBuilder = new SxpNodeIdentityBuilder(node);
+
+        if (nodeBuilder.getSourceIp() == null) {
+            this.sourceIp = Search.getBestLocalDeviceAddress();
+            LOG.debug(toString() + " Setting-up the best local device IP address [sourceIp=\"" + sourceIp + "\"]");
+        } else {
+            this.sourceIp = InetAddresses.forString(Search.getAddress(nodeBuilder.getSourceIp()));
+        }
+
+        this.nodeBuilder.setSecurity(setPassword(nodeBuilder.getSecurity()));
+        this._masterDatabase = Preconditions.checkNotNull(masterDatabase);
+        this._sxpDatabase = Preconditions.checkNotNull(sxpDatabase);
+
+        addConnections(nodeBuilder.getConnections());
+        svcBindingManager = new BindingManager(this);
+        svcBindingDispatcher = new BindingDispatcher(this);
+
+        // Start services.
+        if (nodeBuilder.isEnabled()) {
+            start();
+        }
+    }
 
     /**
      * Checks if there is another PeerGroup with at least one same peer and Filter with same type
@@ -456,45 +495,6 @@ public final class SxpNode {
                 sxpFilters.remove(filter);
             }
             return filter;
-        }
-    }
-
-    /**
-     * Default constructor that creates and start SxpNode using provided values
-     *
-     * @param nodeId         ID of newly created Node
-     * @param node           Node setup data
-     * @param masterDatabase Data which will be added to Master-DB
-     * @param sxpDatabase    Data which will be added to SXP-DB
-     * @param worker         Thread workers which will be executing task inside SxpNode
-     * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
-     * @throws SocketException              If IO error occurs
-     */
-    private SxpNode(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
-            SxpDatabaseProvider sxpDatabase,ThreadsWorker worker) throws NoNetworkInterfacesException, SocketException {
-        this.worker = worker;
-        this.nodeId = nodeId;
-        this.nodeBuilder = new SxpNodeIdentityBuilder(node);
-
-        if (nodeBuilder.getSourceIp() == null) {
-            this.sourceIp = Search.getBestLocalDeviceAddress();
-            LOG.debug(toString() + " Setting-up the best local device IP address [sourceIp=\"" + sourceIp + "\"]");
-        } else {
-            this.sourceIp = InetAddresses.forString(Search.getAddress(nodeBuilder.getSourceIp()));
-        }
-
-        this.nodeBuilder.setSecurity(setPassword(nodeBuilder.getSecurity()));
-        this._masterDatabase = Preconditions.checkNotNull(masterDatabase);
-        this._sxpDatabase = Preconditions.checkNotNull(sxpDatabase);
-
-        addConnections(nodeBuilder.getConnections());
-
-        svcBindingManager = new BindingManager(this);
-        svcBindingDispatcher = new BindingDispatcher(this);
-
-        // Start services.
-        if (nodeBuilder.isEnabled()) {
-            start();
         }
     }
 
