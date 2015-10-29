@@ -15,8 +15,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.opendaylight.sxp.util.inet.NodeIdConv;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerDefaultValues;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerDefaultValuesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.capabilities.fields.CapabilitiesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.network.topology.topology.node.Timers;
@@ -48,13 +46,12 @@ public final class Configuration {
 
     public static final boolean SET_COMPOSITION_UPDATE_MESSAGE_PEER_SEQUENCE_WITH_EACH_SGT = true;
 
-    private static final TimerDefaultValues TIMER_DEFAULT_VALUES;
+    private static final TimerDefaultValues TIMER_DEFAULT_VALUES = new TimerDefaultValues();
 
     public static final String TOPOLOGY_NAME = "sxp";
     
     static {
         _initializeLogger();
-        TIMER_DEFAULT_VALUES = _initializeTimerDefaultValues();
     }
 
     private static final void _initializeLogger() {
@@ -69,35 +66,6 @@ public final class Configuration {
         System.setProperty("org.slf4j.simpleLogger.logFile", "System.out");// "logs/sxp.log");
         System.setProperty("org.slf4j.simpleLogger.levelInBrackets", "false");
         // System.setProperty("org.slf4j.simpleLogger.warnLevelString", "WARN");
-    }
-
-    private static TimerDefaultValues _initializeTimerDefaultValues() {
-        TimerDefaultValuesBuilder timerDefaultValuesBuilder = new TimerDefaultValuesBuilder();
-        if (timerDefaultValuesBuilder.getDeleteHoldDownTimer() == null) {
-            timerDefaultValuesBuilder.setDeleteHoldDownTimer(120);
-        }
-        if (timerDefaultValuesBuilder.getHoldTimer() == null) {
-            timerDefaultValuesBuilder.setHoldTimer(90);
-        }
-        if (timerDefaultValuesBuilder.getHoldTimerMax() == null) {
-            timerDefaultValuesBuilder.setHoldTimerMax(180);
-        }
-        if (timerDefaultValuesBuilder.getHoldTimerMin() == null) {
-            timerDefaultValuesBuilder.setHoldTimerMin(90);
-        }
-        if (timerDefaultValuesBuilder.getHoldTimerMinAcceptable() == null) {
-            timerDefaultValuesBuilder.setHoldTimerMinAcceptable(120);
-        }
-        if (timerDefaultValuesBuilder.getKeepAliveTimer() == null) {
-            timerDefaultValuesBuilder.setKeepAliveTimer(30);
-        }
-        if (timerDefaultValuesBuilder.getReconciliationTimer() == null) {
-            timerDefaultValuesBuilder.setReconciliationTimer(120);
-        }
-        if (timerDefaultValuesBuilder.getRetryOpenTimer() == null) {
-            timerDefaultValuesBuilder.setRetryOpenTimer(120);
-        }
-        return timerDefaultValuesBuilder.build();
     }
 
     public static Capabilities getCapabilities(Version version) {

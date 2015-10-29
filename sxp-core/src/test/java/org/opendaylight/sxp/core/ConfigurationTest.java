@@ -8,18 +8,15 @@
 
 package org.opendaylight.sxp.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Test;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerDefaultValues;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.network.topology.topology.node.Timers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-import org.osgi.resource.Capability;
-
-import java.util.List;
-
-import static org.junit.Assert.*;
 
 public class ConfigurationTest {
 
