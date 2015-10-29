@@ -232,7 +232,6 @@ public final class BindingHandler {
      *
      * @param message UpdateMessage containing data to be proceed
      * @return SxpDatabase containing added Bindings
-     * @throws TlvNotFoundException               If Tlv isn't present in message
      * @throws UpdateMessagePrefixGroupsException If PrefixGroup isn't correct in message
      * @throws UpdateMessagePeerSequenceException If PeerSequence isn't correct in message
      */
