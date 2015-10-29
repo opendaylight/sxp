@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "dad5f5cf_dad774ec",
+        "filename": "sxp-api/src/main/yang/sxp-protocol.yang",
+        "patchSetId": 3
+      },
+      "lineNbr": 227,
+      "author": {
+        "id": 3920
+      },
+      "writtenOn": "2015-10-29T12:45:00Z",
+      "side": 1,
+      "message": "only restriction for this is that has to be 32 bit value and ipv4 was uses for this to be more readable but it may be confusing can be changed",
+      "range": {
+        "startLine": 227,
+        "startChar": 0,
+        "endLine": 227,
+        "endChar": 34
+      },
+      "revId": "0f97d83f417529de8bfa96843999555fcd173b1d",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dad5f5cf_9a09ec97",
+        "filename": "sxp-api/src/main/yang/sxp-protocol.yang",
+        "patchSetId": 3
+      },
+      "lineNbr": 367,
+      "author": {
+        "id": 3920
+      },
+      "writtenOn": "2015-10-29T12:45:00Z",
+      "side": 1,
+      "message": "yes this should be typedef used accros others yangs",
+      "range": {
+        "startLine": 367,
+        "startChar": 11,
+        "endLine": 367,
+        "endChar": 17
+      },
+      "revId": "0f97d83f417529de8bfa96843999555fcd173b1d",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
