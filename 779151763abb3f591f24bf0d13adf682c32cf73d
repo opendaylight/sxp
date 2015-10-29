@@ -1,0 +1,8 @@
+Code-Review+2: Martin Mihálek <mamihale@cisco.com>
+Verified+1: Martin Mihálek <mamihale@cisco.com>
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Submitted-by: Martin Mihálek <mamihale@cisco.com>
+Submitted-at: Thu, 29 Oct 2015 15:55:56 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/28930
+Project: sxp
+Branch: refs/heads/master
