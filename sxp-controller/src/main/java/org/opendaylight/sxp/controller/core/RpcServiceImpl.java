@@ -75,9 +75,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Up
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdatePeerGroupInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdatePeerGroupOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdatePeerGroupOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
@@ -1005,49 +1002,4 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<UpdatePeerGroupOutput>> updatePeerGroup(final UpdatePeerGroupInput input) {
-        return executor.submit(new Callable<RpcResult<UpdatePeerGroupOutput>>() {
-
-            @Override public RpcResult<UpdatePeerGroupOutput> call() throws Exception {
-                String msg = "RpcUpdatePeerGroup";
-                LOG.info("{} event | {}", msg, input.toString());
-                UpdatePeerGroupOutputBuilder output = new UpdatePeerGroupOutputBuilder();
-                output.setResult(false);
-
-                String nodeId = getNodeId(input.getRequestedNode());
-                if (input.getRequestedNode() == null) {
-                    LOG.warn("{} exception | Parameter 'requested-node' not defined", msg);
-                    return RpcResultBuilder.success(output.build()).build();
-                }
-                SxpNode node = Configuration.getRegisteredNode(nodeId);
-                if (node == null) {
-                    LOG.warn("{} exception | SxpNode '{}' doesn't exists", msg, input.getRequestedNode());
-                    return RpcResultBuilder.success(output.build()).build();
-                }
-                if (input.getSxpPeerGroup() == null) {
-                    LOG.warn("{} exception | Parameter 'sxp-peer-group' not defined", msg);
-                    return RpcResultBuilder.success(output.build()).build();
-                }
-                if (input.getSxpPeerGroup().getName() == null) {
-                    LOG.warn("{} exception | Parameter 'name' not defined", msg);
-                    return RpcResultBuilder.success(output.build()).build();
-                }
-                if (node.getPeerGroup(input.getSxpPeerGroup().getName()) == null) {
-                    LOG.warn("{} exception | PeerGroup with name '{}' not defined", msg, input.getSxpPeerGroup().getName());
-                    return RpcResultBuilder.success(output.build()).build();
-                }
-                for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter filter : input
-                        .getSxpPeerGroup()
-                        .getSxpFilter()) {
-                    if (checkFilterFields(filter, msg + " exception |")) {
-                        return RpcResultBuilder.success(output.build()).build();
-                    }
-                }
-                output.setResult(node.removePeerGroup(input.getSxpPeerGroup().getName()) != null);
-                node.addPeerGroup(input.getSxpPeerGroup());
-                output.setResult(output.isResult() && node.getPeerGroup(input.getSxpPeerGroup().getName()) != null);
-                return RpcResultBuilder.success(output.build()).build();
-            }
-        });
-    }
 }

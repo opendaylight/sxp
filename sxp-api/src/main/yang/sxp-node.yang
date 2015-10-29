@@ -346,7 +346,6 @@ module sxp-node {
 		uses sxp-node-fields;
 		uses sxp-databases-fields;
 		uses sxp-connections-fields;
-		uses sxpfl:sxp-peer-groups;
 
 		container timers {
 			uses sxp-node-time-settings-fields;
