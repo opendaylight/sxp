@@ -131,22 +131,23 @@ public class AclFilterTest {
     }
 
     @Test public void testFilterSgtOnly() throws Exception {
-        aclEntryList.add(getAclEntry(FilterEntryType.Permit, getSgtRange(5, 150)));
-        aclEntryList.add(getAclEntry(FilterEntryType.Deny, getSgtRange(25, 50)));
         aclEntryList.add(getAclEntry(FilterEntryType.Permit, getSgtMatches(1, 2, 10, 20, 100, 200)));
+        aclEntryList.add(getAclEntry(FilterEntryType.Deny, getSgtRange(25, 50)));
+        aclEntryList.add(getAclEntry(FilterEntryType.Permit, getSgtRange(5, 150)));
         aclEntryList.add(getAclEntry(FilterEntryType.Deny, getSgtRange(10, 20)));
 
         assertTrue(filterOutbound("127.0.0.1/24", 50));
         assertFalse(filterOutbound("127.0.0.1/24", 150));
         assertTrue(filterOutbound("127.0.0.1/24", 25));
-        assertTrue(filterOutbound("127.0.0.1/24", 10));
+        assertFalse(filterOutbound("127.0.0.1/24", 10));
         assertFalse(filterOutbound("127.0.0.1/24", 200));
-        assertFalse(filterOutbound("127.0.0.1/24", 86));
+        assertTrue(filterOutbound("127.0.0.1/24", 186));
     }
 
     @Test public void testFilterAclOnly() throws Exception {
-        aclEntryList.add(getAclEntry(FilterEntryType.Permit, getAclMatch("52.12.0.5", "255.255.0.0")));
+        aclEntryList.add(getAclEntry(FilterEntryType.Permit, getAclMatch("52.12.0.5", "0.255.0.0")));
         aclEntryList.add(getAclEntry(FilterEntryType.Deny, getAclMatch("53.12.0.5", "0.254.0.0")));
+        aclEntryList.add(getAclEntry(FilterEntryType.Permit, getAclMatch("53.1.0.5", "0.254.0.0")));
         aclEntryList.add(getAclEntry(FilterEntryType.Permit, getAclMatch("127.10.0.0", "0.0.0.0")));
 
         assertTrue(filterOutbound("127.0.0.1/32", 10));
@@ -160,12 +161,13 @@ public class AclFilterTest {
         assertFalse(filterOutbound("53.1.0.5/24", 10));
 
         aclEntryList.add(
-                getAclEntry(FilterEntryType.Permit, getAclMatch("2001:0:8:0:6:205:0:1", "0:FFFF:0:0:0:0:FFFF:0")));
+                getAclEntry(FilterEntryType.Permit, getAclMatch("2001:0:8:0:6:205:0:1", "0:0:0:0:0:0:FFFF:0")));
         aclEntryList.add(getAclEntry(FilterEntryType.Deny, getAclMatch("2001:0:8:0:6:205:0:1", "0:FFFE:0:0:0:0:0:0")));
+        aclEntryList.add(getAclEntry(FilterEntryType.Permit, getAclMatch("2001:1:8:0:6:205:0:1", "0:FFFE:0:0:0:0:0:0")));
         aclEntryList.add(getAclEntry(FilterEntryType.Permit, getAclMatch("56:0:B:0:0:0:0:1", "0:0:0:0:0:0:0:0")));
 
         assertTrue(filterOutbound("2001:0:8:0:6:25:0:1/128", 10));
-        assertFalse(filterOutbound("2001:E:8:0:6:205:F:1/32", 10));
+        assertFalse(filterOutbound("2001:0:8:0:6:205:F:1/32", 10));
         assertTrue(filterOutbound("2001:158:8:0:6:205:0:1/128", 10));
         assertFalse(filterOutbound("2001:33:8:0:6:205:0:1/128", 10));
         assertFalse(filterOutbound("56:0:B:0:0:0:0:1/128", 10));
@@ -173,11 +175,11 @@ public class AclFilterTest {
     }
 
     @Test public void testFilterAclSgt() throws Exception {
-        aclEntryList.add(getAclEntry(FilterEntryType.Permit, getSgtRange(5, 150)));
-        aclEntryList.add(
-                getAclEntry(FilterEntryType.Permit, getSgtRange(130, 200), getAclMatch("52.12.0.5", "255.255.0.0")));
         aclEntryList.add(getAclEntry(FilterEntryType.Deny, getSgtMatches(20, 25, 30, 40),
                 getAclMatch("53.12.0.5", "255.254.0.0")));
+        aclEntryList.add(getAclEntry(FilterEntryType.Permit, getSgtRange(5, 100)));
+        aclEntryList.add(
+                getAclEntry(FilterEntryType.Permit, getSgtRange(130, 200), getAclMatch("52.12.0.5", "255.254.0.0")));
         aclEntryList.add(getAclEntry(FilterEntryType.Permit, getAclMatch("16.24.0.36", "0.0.0.250")));
 
         assertFalse(filterOutbound("16.24.0.166/24", 2));
@@ -185,31 +187,33 @@ public class AclFilterTest {
         assertFalse(filterOutbound("19.3.0.0/24", 15));
         assertTrue(filterOutbound("19.3.0.0/24", 915));
 
-        assertFalse(filterOutbound("2.9.0.5/24", 160));
-        assertTrue(filterOutbound("2.9.0.5/24", 260));
-        assertTrue(filterOutbound("5.9.1.5/24", 160));
+        assertFalse(filterOutbound("52.8.0.5/24", 160));
+        assertTrue(filterOutbound("52.8.0.5/24", 260));
+        assertTrue(filterOutbound("52.9.0.5/24", 160));
 
         assertTrue(filterOutbound("53.24.0.5/24", 20));
         assertFalse(filterOutbound("53.24.0.5/24", 200));
         assertFalse(filterOutbound("53.23.0.5/24", 20));
 
-        assertTrue(filterOutbound("63.34.0.5/24", 25));
-        assertFalse(filterOutbound("63.34.0.5/24", 175));
-        assertFalse(filterOutbound("63.33.0.5/24", 25));
+        assertTrue(filterOutbound("180.34.0.5/24", 250));
+        assertFalse(filterOutbound("180.34.0.5/24", 175));
+        assertFalse(filterOutbound("180.33.0.5/24", 25));
 
-        assertTrue(filterOutbound("3.0.0.5/24", 40));
+        assertTrue(filterOutbound("3.0.0.5/24", 4));
         assertFalse(filterOutbound("3.0.0.5/24", 140));
         assertFalse(filterOutbound("3.1.0.5/24", 40));
     }
 
     @Test public void testFilterExtendedAcl() throws Exception {
-        aclEntryList.add(getAclEntry(FilterEntryType.Permit,
-                getAclMatch("52.12.0.5", "255.255.0.0", "255.255.255.0", "0.0.1.255")));
         aclEntryList.add(
                 getAclEntry(FilterEntryType.Deny, getAclMatch("53.12.0.5", "0.254.0.0", "255.255.255.0", "0.0.0.243")));
         aclEntryList.add(getAclEntry(FilterEntryType.Permit,
+                getAclMatch("52.12.0.5", "255.255.0.0", "255.255.255.0", "0.0.1.255")));
+        aclEntryList.add(getAclEntry(FilterEntryType.Permit,
                 getAclMatch("127.150.0.0", "0.0.0.0", "255.255.255.255", "0.254.0.0")));
 
+        assertTrue(filterOutbound("127.150.0.0/7", 10));
+        assertFalse(filterOutbound("127.150.0.0/8", 10));
         assertFalse(filterOutbound("127.150.0.0/14", 10));
         assertTrue(filterOutbound("127.150.0.0/15", 10));
         assertTrue(filterOutbound("127.150.0.0/16", 10));
@@ -217,6 +221,7 @@ public class AclFilterTest {
         assertTrue(filterOutbound("52.12.3.5/24", 10));
         assertTrue(filterOutbound("52.0.0.5/12", 10));
 
+        assertFalse(filterOutbound("53.128.0.5/32", 10));
         assertTrue(filterOutbound("53.128.0.5/24", 10));
         assertFalse(filterOutbound("53.127.0.5/24", 10));
 

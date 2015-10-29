@@ -113,25 +113,19 @@ public abstract class SxpBindingFilter<T extends FilterEntries> {
     /**
      * Filters Sgt according to provided SgtMatch
      *
-     * @param sgtMatch  Match against Sgt value will be compared
-     * @param sgt       Sgt that will be compared
-     * @param entryType If Denying or Allowing is procced
-     * @param lastState State after previous filtering
+     * @param sgtMatch Match against Sgt value will be compared
+     * @param sgt      Sgt that will be compared
      * @return If Sgt will be filtered out
      */
-    protected boolean filterSgtMatch(SgtMatch sgtMatch, Sgt sgt, FilterEntryType entryType, boolean lastState) {
-        if (sgtMatch == null) {
-            return lastState;
-        }
-        boolean result = false;
+    protected boolean filterSgtMatch(SgtMatch sgtMatch, Sgt sgt) {
         if (sgtMatch instanceof SgtMatches) {
             List<Sgt> matches = ((SgtMatches) sgtMatch).getMatches();
-            result = matches.contains(sgt);
+            return matches.contains(sgt);
         } else if (sgtMatch instanceof SgtRange) {
             SgtRange range = (SgtRange) sgtMatch;
-            result = sgt.getValue() >= range.getSgtStart().getValue() && sgt.getValue() <= range.getSgtEnd().getValue();
+            return sgt.getValue() >= range.getSgtStart().getValue() && sgt.getValue() <= range.getSgtEnd().getValue();
         }
-        return entryType.equals(FilterEntryType.Deny) ? (result || lastState) : (!result && lastState);
+        return false;
     }
 
     /**
