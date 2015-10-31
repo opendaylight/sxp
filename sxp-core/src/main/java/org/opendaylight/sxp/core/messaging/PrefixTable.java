@@ -31,7 +31,7 @@ public class PrefixTable extends HashMap<IpPrefix, List<Attribute>> {
      * Constructor creating empty PrefixTable with custom number of columns
      *
      * @param columns Number of columns to be created
-     * @throws PrefixTableColumnsSizeException If columns aren't in range <1,255>
+     * @throws PrefixTableColumnsSizeException If columns aren't in range [1, 255]
      */
     public PrefixTable(int columns) throws PrefixTableColumnsSizeException {
         if (columns < 1 || 255 < columns) {
