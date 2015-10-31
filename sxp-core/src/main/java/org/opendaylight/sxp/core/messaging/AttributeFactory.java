@@ -140,7 +140,7 @@ public final class AttributeFactory {
      *
      * @param holdTimeMin Value used in attribute
      * @return New HoldTime attribute
-     * @throws HoldTimeMinException If Hold time value isn't <0,65535>.
+     * @throws HoldTimeMinException If Hold time value isn't [0, 65535].
      */
     public static Attribute createHoldTime(int holdTimeMin) throws HoldTimeMinException {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
@@ -419,7 +419,7 @@ public final class AttributeFactory {
      *
      * @param sgt Value of Sgt to be used in attribute
      * @return Attribute containing Sgt
-     * @throws SecurityGroupTagValueException If Sgt isn't in rage <2,65519>
+     * @throws SecurityGroupTagValueException If Sgt isn't in rage [2,65519]
      */
     public static Attribute createSourceGroupTag(int sgt) throws SecurityGroupTagValueException {
         AttributeBuilder attributeBuilder = new AttributeBuilder();

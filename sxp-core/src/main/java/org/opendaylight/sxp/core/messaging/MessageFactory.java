@@ -153,7 +153,7 @@ public class MessageFactory {
      * @param nodeID                NodeId included in message
      * @param holdTimeMinAcceptable Minimal acceptable Hold time included in message
      * @return ByteBuf representation of created OpenMessage
-     * @throws HoldTimeMinException      If Min hold time isn't in range of <0,65535>
+     * @throws HoldTimeMinException      If Min hold time isn't in range of [0, 65535]
      * @throws AttributeVariantException If attribute variant isn't supported
      * @throws UnknownVersionException   If version isn't supported
      * @throws CapabilityLengthException If some Attributes has incorrect length
@@ -173,7 +173,7 @@ public class MessageFactory {
      * @param holdTimeMax Maximal Hold time included in message
      * @return ByteBuf representation of created OpenMessage
      * @throws HoldTimeMaxException      If Max hold time is greater than minimal
-     * @throws HoldTimeMinException      If Min hold time isn't in range of <0,65535>
+     * @throws HoldTimeMinException      If Min hold time isn't in range of [0, 65535]
      * @throws AttributeVariantException If attribute variant isn't supported
      * @throws UnknownVersionException   If version isn't supported
      * @throws CapabilityLengthException If some Attributes has incorrect length
@@ -256,7 +256,7 @@ public class MessageFactory {
      * @param nodeID                NodeId included in message
      * @param holdTimeMinAcceptable Minimal acceptable Hold time included in message
      * @return ByteBuff representation of OpenRespMessage
-     * @throws HoldTimeMinException      If Min hold time isn't in range of <0,65535>
+     * @throws HoldTimeMinException      If Min hold time isn't in range of [0, 65535]
      * @throws UnknownVersionException   If version isn't supported
      * @throws CapabilityLengthException If some Attributes has incorrect length
      * @throws AttributeVariantException If attribute variant isn't supported
@@ -277,7 +277,7 @@ public class MessageFactory {
      * @param holdTimeMax Maximal Hold time included in message
      * @return ByteBuff representation of OpenRespMessage
      * @throws HoldTimeMaxException      If Max hold time is greater than minimal
-     * @throws HoldTimeMinException      If Min hold time isn't in range of <0,65535>
+     * @throws HoldTimeMinException      If Min hold time isn't in range of [0, 65535]
      * @throws UnknownVersionException   If version isn't supported
      * @throws CapabilityLengthException If some Attributes has incorrect length
      * @throws AttributeVariantException If attribute variant isn't supported
@@ -304,7 +304,7 @@ public class MessageFactory {
      * @param changed        If only changed Binding are exported
      * @return ByteBuf representation of UpdateMessage
      * @throws UpdateMessageBindingSourceException If some binding source isn't Local or Sxp
-     * @throws SecurityGroupTagValueException      If some Sgt isn't in rage <2,65519>
+     * @throws SecurityGroupTagValueException      If some Sgt isn't in rage [2, 65519]
      * @throws AttributeVariantException           If some attribute variant isn't supported
      */
     public static ByteBuf createUpdate(MasterDatabase masterDatabase, NodeId nodeId, boolean changed)
@@ -504,7 +504,7 @@ public class MessageFactory {
      * @param prefixGroups PrefixGroups to be used
      * @return ByteBuf representation of AddTablePrefixes
      * @throws PrefixTableColumnsSizeException           If some column size isn't correct
-     * @throws SecurityGroupTagValueException            If some Sgt isn't in rage <2,65519>
+     * @throws SecurityGroupTagValueException            If some Sgt isn't in rage [2, 65519]
      * @throws PrefixTableAttributeIsNotCompactException If some Attribute isn't compact
      * @throws AttributeVariantException                 If some attribute variant isn't supported
      */
