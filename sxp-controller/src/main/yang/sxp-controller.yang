@@ -308,23 +308,6 @@ module sxp-controller {
         }
     }
 
-    rpc update-peer-group {
-        description "Updates value of PeerGroup with specified name";
-        input {
-            leaf requested-node {
-                mandatory true;
-                type sxppt:node-id;
-                description "Node ID of the dedicated SXP source";
-            }
-            uses sxpfl:sxp-peer-group;
-        }
-        output {
-            leaf result {
-                type boolean;
-            }
-        }
-    }
-
     rpc add-filter {
         description "Add new filter to PeerGroup";
         input {

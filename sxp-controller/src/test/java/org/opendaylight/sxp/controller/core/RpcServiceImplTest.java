@@ -55,7 +55,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ge
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateEntryInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterInputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdatePeerGroupInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.NewBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.NewBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBinding;
@@ -622,29 +621,5 @@ public class RpcServiceImplTest {
 
                 when(entry.getAclMatch()).thenReturn(mock(AclMatch.class));
                 assertTrue(service.updateFilter(inputBuilder.build()).get().getResult().isResult());
-        }
-
-        @Test public void testUpdatePeerGroup() throws Exception {
-                UpdatePeerGroupInputBuilder inputBuilder = new UpdatePeerGroupInputBuilder();
-                assertFalse(service.updatePeerGroup(inputBuilder.build()).get().getResult().isResult());
-
-                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.10"));
-                assertFalse(service.updatePeerGroup(inputBuilder.build()).get().getResult().isResult());
-
-                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-                assertFalse(service.updatePeerGroup(inputBuilder.build()).get().getResult().isResult());
-
-                SxpPeerGroup peerGroup = mock(SxpPeerGroup.class);
-                inputBuilder.setSxpPeerGroup(peerGroup);
-                assertFalse(service.updatePeerGroup(inputBuilder.build()).get().getResult().isResult());
-
-                when(peerGroup.getSxpPeers()).thenReturn(mock(SxpPeers.class));
-                assertFalse(service.updatePeerGroup(inputBuilder.build()).get().getResult().isResult());
-
-                when(peerGroup.getName()).thenReturn("TEST2");
-                assertFalse(service.updatePeerGroup(inputBuilder.build()).get().getResult().isResult());
-
-                when(peerGroup.getName()).thenReturn("TEST");
-                assertTrue(service.updatePeerGroup(inputBuilder.build()).get().getResult().isResult());
         }
 }

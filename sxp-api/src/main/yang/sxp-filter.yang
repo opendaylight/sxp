@@ -38,9 +38,7 @@ module sxp-filter {
 		type enumeration {
 			enum ge;
 			enum le;
-			enum g;
-			enum l;
-			enum e;
+			enum eq;
 		}
 	}
 
@@ -62,6 +60,7 @@ module sxp-filter {
 
 	grouping sxp-peer-groups {
 	 	list sxp-peer-group {
+	 		key "name";
 	 		uses sxp-peer-group-fields;
 	 	}
 	}
