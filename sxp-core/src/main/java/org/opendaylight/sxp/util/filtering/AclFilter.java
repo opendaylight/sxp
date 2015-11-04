@@ -23,48 +23,64 @@ import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 
+/**
+ * AclFilter logic based on First Match that support SGT matching
+ */
 public final class AclFilter extends SxpBindingFilter<AclFilterEntries> {
 
+    /**
+     * Creates AclFilter that filters Bindings according to specified ACL
+     *
+     * @param filter        SxpFilter containing ACL entries
+     * @param peerGroupName PeerGroupName of Group containing specified filter
+     * @throws IllegalArgumentException If no filter entries are defined or type of entries is not supported by this implementation
+     */
     public AclFilter(SxpFilter filter, String peerGroupName) {
         super(filter, peerGroupName);
-        if (filter.getFilterType() == null) {
-            throw new IllegalArgumentException("Unknown Filter Type");
-        }
         if (filter.getFilterEntries() == null) {
             throw new IllegalArgumentException("Filter Entries not defined");
         }
         if (!(filter.getFilterEntries() instanceof AclFilterEntries)) {
             throw new IllegalArgumentException("Filter entries of unsupported type");
         }
-        Collections.sort(((AclFilterEntries) filter.getFilterEntries()).getAclEntry(), new Comparator<AclEntry>() {
+        AclFilterEntries entries = ((AclFilterEntries) filter.getFilterEntries());
+        if (entries.getAclEntry() != null && !entries.getAclEntry().isEmpty()) {
+            Collections.sort(entries.getAclEntry(), new Comparator<AclEntry>() {
 
-            @Override public int compare(AclEntry t1, AclEntry t2) {
-                return t1.getEntrySeq().compareTo(t2.getEntrySeq());
-            }
-        });
+                @Override public int compare(AclEntry t1, AclEntry t2) {
+                    return t1.getEntrySeq().compareTo(t2.getEntrySeq());
+                }
+            });
+        }
     }
 
     @Override public boolean filter(AclFilterEntries aclFilterEntries, Sgt sgt, IpPrefix prefix) {
-        boolean totalResult = true;
+        if (aclFilterEntries.getAclEntry() == null || aclFilterEntries.getAclEntry().isEmpty()) {
+            return true;
+        }
+        FilterEntryType entryType = FilterEntryType.Deny;
         for (AclEntry aclEntry : aclFilterEntries.getAclEntry()) {
-            if (aclEntry.getSgtMatch() != null && aclEntry.getAclMatch() != null) {
-                boolean sgtTest = filterSgtMatch(aclEntry.getSgtMatch(), sgt, aclEntry.getEntryType(), totalResult),
-                        aclTest = filterAclMatch(aclEntry.getAclMatch(), prefix, aclEntry.getEntryType(), totalResult);
-                if (aclEntry.getEntryType().equals(FilterEntryType.Permit)) {
-                    totalResult = sgtTest || aclTest;
-                } else {
-                    totalResult = sgtTest && aclTest;
-                }
-            } else {
-                totalResult =
-                        filterSgtMatch(aclEntry.getSgtMatch(), sgt, aclEntry.getEntryType(),
-                                filterAclMatch(aclEntry.getAclMatch(), prefix, aclEntry.getEntryType(), totalResult));
+            boolean sgtTest = filterSgtMatch(aclEntry.getSgtMatch(), sgt),
+                    aclTest = filterAclMatch(aclEntry.getAclMatch(), prefix);
+            if (aclEntry.getSgtMatch() != null && aclEntry.getAclMatch() != null && sgtTest && aclTest) {
+                entryType = aclEntry.getEntryType();
+                break;
+            } else if ((aclEntry.getSgtMatch() == null || aclEntry.getAclMatch() == null) && (sgtTest || aclTest)) {
+                entryType = aclEntry.getEntryType();
+                break;
             }
         }
-        return totalResult;
+        return entryType.equals(FilterEntryType.Deny);
     }
 
-    private boolean filterAclMatch(AclMatch aclMatch, IpPrefix prefix, FilterEntryType entryType, boolean lastState) {
+    /**
+     * Filters out ipPrefix according to specified ACE
+     *
+     * @param aclMatch Match according to which value is filtered
+     * @param prefix   IpPrefix tested
+     * @return If IpPrefix will be filtered out
+     */
+    private boolean filterAclMatch(AclMatch aclMatch, IpPrefix prefix) {
         if (aclMatch != null && (
                 (aclMatch.getIpAddress().getIpv4Address() != null && aclMatch.getWildcardMask().getIpv4Address() != null
                         && prefix.getIpv4Prefix() != null) || (aclMatch.getIpAddress().getIpv6Address() != null
@@ -81,14 +97,23 @@ public final class AclFilter extends SxpBindingFilter<AclFilterEntries> {
                     break;
                 }
             }
-            result = filterAclMask(aclMatch.getMask(), prefix, result);
-            return entryType.equals(FilterEntryType.Deny) ? (result || lastState) : (!result && lastState);
+            if (aclMatch.getMask() != null) {
+                return result && filterAclMask(aclMatch.getMask(), prefix);
+            }
+            return result;
         } else {
-            return lastState;
+            return false;
         }
     }
 
-    private boolean filterAclMask(Mask mask, IpPrefix prefix, boolean lastState) {
+    /**
+     * Filter out IpPrefix according to specified ACE mask
+     *
+     * @param mask   Mask Mask match according to which value is filtered
+     * @param prefix IpPrefix tested
+     * @return If IpPrefix will be filtered
+     */
+    private boolean filterAclMask(Mask mask, IpPrefix prefix) {
         if (mask != null && mask.getAddressMask() != null && mask.getWildcardMask() != null) {
             BitSet bitMask = getBitAddress(Search.getAddress(mask.getAddressMask()));
             BitSet bitWildcardMask = getBitAddress(Search.getAddress(mask.getWildcardMask()));
@@ -99,12 +124,9 @@ public final class AclFilter extends SxpBindingFilter<AclFilterEntries> {
                         return false;
                     }
                 }
-            } else {
-                return false;
+                return true;
             }
-            return lastState;
-
         }
-        return lastState;
+        return false;
     }
 }
