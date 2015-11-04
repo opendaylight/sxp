@@ -19,6 +19,7 @@ import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.TimeConv;
@@ -237,12 +238,18 @@ public final class BindingManager extends Service<Void> {
         return new ArrayList<>(Collections2.filter(bindingIdentities, new Predicate<SxpBindingIdentity>() {
 
             @Override public boolean apply(SxpBindingIdentity identity) {
-                //TODO
-                SxpConnection
-                        connection =
-                        connectionMap.get(identity.getPathGroup().getPeerSequence().getPeer().get(0).getNodeId());
-                return connection == null || connection.getFilter(FilterType.Inbound) == null || !connection.getFilter(
-                        FilterType.Inbound).filter(identity);
+                SxpConnection connection = null;
+                SxpBindingFilter bindingFilter;
+                if (!identity.getPathGroup().getPeerSequence().getPeer().isEmpty()) {
+                    connection =
+                            connectionMap.get(identity.getPathGroup().getPeerSequence().getPeer().get(0).getNodeId());
+                }
+                if (connection != null) {
+                    bindingFilter = connection.getFilter(FilterType.Inbound);
+                } else {
+                    return true;
+                }
+                return bindingFilter == null || !bindingFilter.filter(identity);
             }
         }));
     }
@@ -261,8 +268,8 @@ public final class BindingManager extends Service<Void> {
                         databaseArbitration(filter(bindingIdentities));
                 synchronized (getBindingMasterDatabase()) {
                     getBindingMasterDatabase().addBindings(owner.getNodeId(), masterBindingIdentityContributed);
-                    owner.setSvcBindingDispatcherDispatch();
                 }
+                owner.setSvcBindingDispatcherDispatch();
             } catch (NodeIdNotDefinedException | DatabaseAccessException e) {
                 LOG.warn("{} {} ", owner, BindingManager.class.getSimpleName(), e);
             }
