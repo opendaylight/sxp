@@ -9,12 +9,14 @@
 package org.opendaylight.sxp.util.database;
 
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.SourceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 
 import java.util.ArrayList;
@@ -114,8 +116,14 @@ public class MasterBindingIdentity {
      */
     private MasterBindingIdentity(Binding binding, PrefixGroup prefixGroup, Source source, boolean deleteReplace) {
         super();
-        this.binding = new BindingBuilder(binding).build();
-
+        if (binding.getIpPrefix().getIpv6Prefix() != null) {
+            this.binding =
+                    new BindingBuilder(binding).setKey(new BindingKey(
+                            new IpPrefix(binding.getIpPrefix().getIpv6Prefix().getValue().toLowerCase().toCharArray())))
+                            .build();
+        } else {
+            this.binding = new BindingBuilder(binding).build();
+        }
         PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder(prefixGroup);
         prefixGroupBuilder.setBinding(new ArrayList<Binding>());
         prefixGroupBuilder.getBinding().add(this.binding);
