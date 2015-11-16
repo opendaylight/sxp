@@ -19,6 +19,7 @@ import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.inet.Search;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
@@ -28,6 +29,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.master.database.Vpn;
@@ -275,12 +277,11 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
             if (source == null) {
                 SourceBuilder sourceBuilder = new SourceBuilder();
                 sourceBuilder.setBindingSource(DatabaseBindingSource.Local);
-                sourceBuilder.setPrefixGroup(prefixGroups);
+                sourceBuilder.setPrefixGroup(new ArrayList<PrefixGroup>());
                 source = sourceBuilder.build();
                 database.getSource().add(source);
-            } else {
-                addPrefixGroups(prefixGroups, source);
             }
+            addPrefixGroups(prefixGroups, source);
             owner.setSvcBindingManagerNotify();
         }
     }
@@ -305,8 +306,8 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
                     }
                 }
                 if (_prefixGroup == null) {
-                    source.getPrefixGroup().add(prefixGroup);
-                    continue;
+                    _prefixGroup = new PrefixGroupBuilder(prefixGroup).setBinding(new ArrayList<Binding>()).build();
+                    source.getPrefixGroup().add(_prefixGroup);
                 }
 
                 if (prefixGroup.getBinding() != null) {
@@ -321,7 +322,18 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
                                 }
                             }
                             if (_binding == null) {
-                                _prefixGroup.getBinding().add(binding);
+                                if (binding.getIpPrefix().getIpv6Prefix() != null) {
+                                    _binding =
+                                            new BindingBuilder(binding).setKey(new BindingKey(new IpPrefix(
+                                                    binding.getIpPrefix()
+                                                            .getIpv6Prefix()
+                                                            .getValue()
+                                                            .toLowerCase()
+                                                            .toCharArray()))).build();
+                                    _prefixGroup.getBinding().add(_binding);
+                                } else {
+                                    _prefixGroup.getBinding().add(binding);
+                                }
                                 continue;
                             }
                         }

@@ -12,12 +12,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.opendaylight.sxp.util.inet.NodeIdConv;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.BindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.BindingKey;
 
 /**
  * SxpBindingIdentity class represent entity stored in SxpDatabase
@@ -65,7 +67,14 @@ public class SxpBindingIdentity {
      */
     private SxpBindingIdentity(Binding binding, PrefixGroup prefixGroup, PathGroup pathGroup) {
         super();
-        this.binding = new BindingBuilder(binding).build();
+        if (binding.getIpPrefix().getIpv6Prefix() != null) {
+            this.binding =
+                    new BindingBuilder(binding).setKey(new BindingKey(
+                            new IpPrefix(binding.getIpPrefix().getIpv6Prefix().getValue().toLowerCase().toCharArray())))
+                            .build();
+        } else {
+            this.binding = new BindingBuilder(binding).build();
+        }
 
         PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder(prefixGroup);
         prefixGroupBuilder.setBinding(new ArrayList<Binding>());
