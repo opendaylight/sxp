@@ -17,6 +17,8 @@ import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.PeerSequence;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.peer.sequence.Peer;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
@@ -285,7 +287,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
                             for (Binding binding : prefixGroup.getBinding()) {
                                 SxpBindingIdentity newBindingIdentity = SxpBindingIdentity.create(binding, prefixGroup,
                                         pathGroup);
-                                SxpBindingIdentity oldBindingIdentity = getBindingIdentity(newBindingIdentity, true);
+                                SxpBindingIdentity oldBindingIdentity = getBindingIdentity(newBindingIdentity, false);
                                 if (oldBindingIdentity != null) {
                                     removed.add(oldBindingIdentity);
                                 }
@@ -311,36 +313,54 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
      * Gets copy of BindingIdentity if it's contained in SxpDatabase
      *
      * @param bindingIdentity a tree item identification
-     * @param ipsgtCoupled    if a binding is coupled, i.e. one IP address can exist only in
-     *                        one group (Cisco devices impl.)
+     * @param hashCheck    if whole Peer sequence is checked or only source Peer
      * @return Copy of BindingIdentity from SxpDatabase
      */
-    private SxpBindingIdentity getBindingIdentity(SxpBindingIdentity bindingIdentity, boolean ipsgtCoupled) {
+    private SxpBindingIdentity getBindingIdentity(SxpBindingIdentity bindingIdentity, boolean hashCheck) {
         synchronized (database) {
             if (database.getPathGroup() != null) {
                 for (PathGroup pathGroup : database.getPathGroup()) {
-                    if (bindingIdentity.pathGroup.getPathHash().equals(pathGroup.getPathHash())) {
-                        if (pathGroup.getPrefixGroup() != null) {
-                            for (PrefixGroup prefixGroup : pathGroup.getPrefixGroup()) {
-                                if (bindingIdentity.prefixGroup.getSgt().getValue()
-                                        .equals(prefixGroup.getSgt().getValue())
-                                        || ipsgtCoupled) {
-                                    if (prefixGroup.getBinding() != null) {
-                                        for (Binding _binding : prefixGroup.getBinding()) {
-                                            if (IpPrefixConv.equalTo(_binding.getIpPrefix(),
-                                                    bindingIdentity.binding.getIpPrefix())) {
-                                                return SxpBindingIdentity.create(_binding, prefixGroup, pathGroup);
-                                            }
-                                        }
+
+                    if (!bindingIdentity.pathGroup.getPeerSequence()
+                            .getPeer()
+                            .get(0)
+                            .equals(getLastPeer(pathGroup.getPeerSequence())) || (hashCheck
+                            && !bindingIdentity.pathGroup.getPathHash().equals(pathGroup.getPathHash()))) {
+                        continue;
+                    }
+                    if (pathGroup.getPrefixGroup() != null) {
+                        for (PrefixGroup prefixGroup : pathGroup.getPrefixGroup()) {
+                            if (prefixGroup.getBinding() != null) {
+                                for (Binding _binding : prefixGroup.getBinding()) {
+                                    if (IpPrefixConv.equalTo(_binding.getIpPrefix(),
+                                            bindingIdentity.binding.getIpPrefix())) {
+                                        return SxpBindingIdentity.create(_binding, prefixGroup, pathGroup);
                                     }
                                 }
                             }
                         }
                     }
+
                 }
             }
             return null;
         }
+    }
+
+    /**
+     * @param peerSequence PeerSequence to be checked
+     * @return Peer from which was binding received
+     */
+    private Peer getLastPeer(PeerSequence peerSequence){
+        if (peerSequence == null || peerSequence.getPeer() ==null) {
+            return null;
+        }
+        for(Peer peer:peerSequence.getPeer()){
+            if(peer.getSeq().equals(0)){
+                return peer;
+            }
+        }
+        return null;
     }
 
     @Override
