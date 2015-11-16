@@ -57,19 +57,16 @@ public class SxpControllerModule extends
         ConfigLoader.create(datastoreValidator).load(getSxpController());
 
         for (String controllerName : Configuration.getRegisteredNodesIds()) {
-            dataChangeListenerRegistrations.add(dataBroker.registerDataChangeListener(
-                    LogicalDatastoreType.CONFIGURATION, DataChangeConfigurationListenerImpl.SUBSCRIBED_PATH,
-                    new DataChangeConfigurationListenerImpl(
-                            new SxpDatastoreImpl(controllerName, new SxpDatabaseAccessImpl(controllerName,
-                                    datastoreAccess, LogicalDatastoreType.OPERATIONAL))), DataChangeScope.SUBTREE));
-        }
+            dataChangeListenerRegistrations.add(
+                    dataBroker.registerDataChangeListener(LogicalDatastoreType.CONFIGURATION,
+                            DataChangeConfigurationListenerImpl.SUBSCRIBED_PATH,
+                            new DataChangeConfigurationListenerImpl(new SxpDatastoreImpl(controllerName,
+                                    new SxpDatabaseAccessImpl(controllerName, datastoreAccess,
+                                            LogicalDatastoreType.OPERATIONAL))), DataChangeScope.SUBTREE));
 
-        // If only one controller is created, enable SXP topology model service
-        // to model available bindings sources databases configuration from
-        // received protocol data.
-        if (Configuration.isNodesRegistered()) {
-            DataChangeOperationalListenerImpl dataChangeOperationalListenerImpl = new DataChangeOperationalListenerImpl(
-                    Configuration.getNextNodeName(), datastoreValidator);
+            DataChangeOperationalListenerImpl
+                    dataChangeOperationalListenerImpl =
+                    new DataChangeOperationalListenerImpl(Configuration.getNextNodeName());
             dataChangeListenerRegistrations.add(dataBroker.registerDataChangeListener(LogicalDatastoreType.OPERATIONAL,
                     dataChangeOperationalListenerImpl.getSubscribedPath(), dataChangeOperationalListenerImpl,
                     DataChangeScope.SUBTREE));
