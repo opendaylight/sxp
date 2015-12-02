@@ -82,7 +82,6 @@ module sxp-filter {
 				key "peer-address";
 				uses sxp-peer-fields;
 			}
-			mandatory true;
 		}
 		list sxp-filter {
 			key "filter-type";
