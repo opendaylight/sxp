@@ -425,7 +425,7 @@ import static org.mockito.Mockito.when;
                 argument.getValue().call();
                 verify(databaseProvider).deleteBindings(any(SxpDatabase.class));
                 verify(databaseProvider).addBindings(any(SxpDatabase.class));
-                verify(sxpNode, times(2)).setSvcBindingManagerNotify();
+                verify(sxpNode).setSvcBindingManagerNotify();
         }
 
         @Test public void testProcessUpdateMessageLegacy() throws Exception {
@@ -448,7 +448,7 @@ import static org.mockito.Mockito.when;
                 argument.getValue().call();
                 verify(databaseProvider).deleteBindings(any(SxpDatabase.class));
                 verify(databaseProvider).addBindings(any(SxpDatabase.class));
-                verify(sxpNode, times(2)).setSvcBindingManagerNotify();
+                verify(sxpNode).setSvcBindingManagerNotify();
 
         }
 }
