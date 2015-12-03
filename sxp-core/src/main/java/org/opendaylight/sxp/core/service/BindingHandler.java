@@ -537,7 +537,6 @@ public final class BindingHandler {
         SxpNode owner = updateLegacyNotification.getConnection().getOwner();
         // Validate message.
         validateLegacyMessage(updateLegacyNotification.getMessage());
-
         // Get message relevant peer node ID.
         NodeId peerId;
         try {
@@ -547,43 +546,12 @@ public final class BindingHandler {
                     e.getMessage());
             return;
         }
-
-        // Prefixes deletion.
-        SxpDatabase database;
         try {
-            database = processMessageDeletion(peerId, updateLegacyNotification.getMessage());
-
-            if (!database.getPathGroup().isEmpty()) {
-                List<SxpBindingIdentity> deletedIdentities;
-                synchronized (owner.getBindingSxpDatabase()) {
-                    deletedIdentities = owner.getBindingSxpDatabase().deleteBindings(database);
-                }
-                LOG.info(owner + " Deleted legacy bindings | {}", deletedIdentities);
-                // Notify the manager.
-                owner.setSvcBindingManagerNotify();
-            }
-        } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixGroupsException | UpdateMessagePrefixException | UpdateMessageSgtException e) {
-            LOG.warn("{} Process legacy message deletion ", owner, e);
-            return;
-        }
-
-        // Prefixes addition.
-        try {
-            database = processMessageAddition(peerId, updateLegacyNotification.getMessage());
-
-            if (!database.getPathGroup().isEmpty()) {
-                boolean added = false;
-                synchronized (owner.getBindingSxpDatabase()) {
-                    added = owner.getBindingSxpDatabase().addBindings(database);
-                }
-                if (added) {
-                    LOG.info(owner + " Added legacy bindings | {}", new SxpDatabaseImpl(database).toString());
-                    // Notify the manager.
-                    owner.setSvcBindingManagerNotify();
-                }
-            }
-        } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixGroupsException | TlvNotFoundException e) {
-            LOG.warn(" Process legacy message addition ", owner, e);
+            SxpDatabase databaseDelete = processMessageDeletion(peerId, updateLegacyNotification.getMessage()),
+                    databaseAdd = processMessageAddition(peerId, updateLegacyNotification.getMessage());
+            processUpdate(databaseDelete, databaseAdd, owner, updateLegacyNotification.getConnection());
+        } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixGroupsException | TlvNotFoundException | UpdateMessageSgtException | UpdateMessagePrefixException e) {
+            LOG.warn(" Process legacy message addition/deletion ", owner, e);
         }
     }
 
@@ -645,59 +613,46 @@ public final class BindingHandler {
         SxpNode owner = updateNotification.getConnection().getOwner();
         // Validate message.
         validateMessage(updateNotification.getMessage());
-
         // Get message relevant peer node ID.
         NodeId peerId = updateNotification.getConnection().getNodeIdRemote();
         if (peerId == null) {
             LOG.warn(owner + " Unknown message relevant peer node ID");
             return;
         }
-
-        // Prefixes deletion.
-        SxpDatabase database;
         try {
-            database = processMessageDeletion(peerId, updateNotification.getMessage());
-
-            if (!database.getPathGroup().isEmpty()) {
-                List<SxpBindingIdentity> deletedIdentities;
-                synchronized (owner.getBindingSxpDatabase()) {
-                    deletedIdentities = owner.getBindingSxpDatabase().deleteBindings(database);
-                }
-                LOG.info(owner + " Deleted bindings | {}", deletedIdentities);
-                // Notify the manager.
-                owner.setSvcBindingManagerNotify();
-            }
-        } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixException | UpdateMessagePrefixGroupsException | UpdateMessageSgtException e) {
-            LOG.warn(" Process message deletion ", owner, e);
-            return;
+            SxpDatabase databaseDelete = processMessageDeletion(peerId, updateNotification.getMessage()),
+                    databaseAdd = processMessageAddition(updateNotification.getMessage());
+            processUpdate(databaseDelete, databaseAdd, owner, updateNotification.getConnection());
+        } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixException |
+                UpdateMessagePrefixGroupsException | UpdateMessageSgtException e) {
+            LOG.warn(" Process message addition/deletion ", owner, e);
         }
+    }
 
-        // Prefixes addition.
-        try {
-            database = processMessageAddition(updateNotification.getMessage());
-        } catch (UpdateMessagePrefixException | UpdateMessageSgtException | UpdateMessagePeerSequenceException e) {
-            LOG.warn(" Process message addition ", owner, e);
-            return;
-        }
+    private static void processUpdate(SxpDatabase databaseDelete, SxpDatabase databaseAdd, SxpNode owner,
+            SxpConnection connection) throws DatabaseAccessException {
         // Loop detection.
-        if (updateNotification.getConnection().getCapabilities().contains(CapabilityType.LoopDetection)) {
-            database = loopDetection(owner.getNodeId(), database);
+        if (connection != null && connection.getCapabilities().contains(CapabilityType.LoopDetection)) {
+            databaseAdd = loopDetection(owner.getNodeId(), databaseAdd);
         }
-        // Prefixes addition.
-        try {
-            if (!database.getPathGroup().isEmpty()) {
-                boolean added = false;
-                synchronized (owner.getBindingSxpDatabase()) {
-                    added = owner.getBindingSxpDatabase().addBindings(database);
-                }
-                if (added) {
-                    LOG.info(owner + " Added bindings | {}", new SxpDatabaseImpl(database).toString());
-                    // Notify the manager.
-                    owner.setSvcBindingManagerNotify();
-                }
+        List<SxpBindingIdentity> deletedIdentities = null;
+        boolean added = false;
+        synchronized (owner.getBindingSxpDatabase()) {
+            if (!databaseDelete.getPathGroup().isEmpty()) {
+                deletedIdentities = owner.getBindingSxpDatabase().deleteBindings(databaseDelete);
             }
-        } catch (DatabaseAccessException e) {
-            LOG.warn(" Process message addition | {} | {}", owner, e);
+            if (!databaseAdd.getPathGroup().isEmpty()) {
+                added = owner.getBindingSxpDatabase().addBindings(databaseAdd);
+            }
+        }
+        if ((deletedIdentities != null && !deletedIdentities.isEmpty()) || added) {
+            owner.setSvcBindingManagerNotify();
+        }
+        if (deletedIdentities != null && !deletedIdentities.isEmpty()) {
+            LOG.info(owner + " Deleted bindings | {}", deletedIdentities);
+        }
+        if (added) {
+            LOG.info(owner + " Added bindings | {}", new SxpDatabaseImpl(databaseAdd).toString());
         }
     }
 }
