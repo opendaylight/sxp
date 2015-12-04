@@ -10,87 +10,84 @@ package org.opendaylight.sxp.controller.util.database;
 
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseAccess;
+import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class SxpDatastoreImpl extends SxpDatabaseImpl {
 
-    private String controllerName;
+    private final SxpDatabaseAccess databaseAccess;
 
-    public SxpDatastoreImpl(String controllerName, SxpDatabaseAccess databaseAccess) {
-        super(databaseAccess);
-        this.controllerName = controllerName;
+    public SxpDatastoreImpl(SxpDatabaseAccess databaseAccess) {
+        this.databaseAccess = Preconditions.checkNotNull(databaseAccess);
     }
 
     @Override
-    public boolean addBindings(SxpDatabase database) throws DatabaseAccessException {
-        synchronized (databaseAccess) {
-            this.database = databaseAccess.read();
-            synchronized (this.database) {
-                boolean result = super.addBindings(database);
-                databaseAccess.put(this.database);
-                return result;
-            }
-        }
+    public synchronized boolean addBindings(SxpDatabase database) throws DatabaseAccessException {
+        this.database = databaseAccess.read();
+        boolean result = super.addBindings(database);
+        databaseAccess.put(this.database);
+        return result;
     }
 
     @Override
-    public List<SxpBindingIdentity> deleteBindings(SxpDatabase database) throws DatabaseAccessException {
-        synchronized (databaseAccess) {
-            this.database = databaseAccess.read();
-            synchronized (this.database) {
-                List<SxpBindingIdentity> result = super.deleteBindings(database);
-                databaseAccess.put(this.database);
-                return result;
-            }
-        }
+    public synchronized void cleanUpBindings(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException {
+        this.database = databaseAccess.read();
+        super.cleanUpBindings(nodeId);
+        databaseAccess.put(this.database);
     }
 
     @Override
-    public SxpDatabase get() throws DatabaseAccessException {
-        synchronized (databaseAccess) {
-            return databaseAccess.read();
-        }
+    public synchronized List<SxpBindingIdentity> deleteBindings(SxpDatabase database) throws DatabaseAccessException {
+        this.database = databaseAccess.read();
+        List<SxpBindingIdentity> result = super.deleteBindings(database);
+        databaseAccess.put(this.database);
+        return result;
     }
 
     @Override
-    public void purgeBindings(NodeId nodeId) throws DatabaseAccessException, NodeIdNotDefinedException {
-        synchronized (databaseAccess) {
-            this.database = databaseAccess.read();
-            synchronized (this.database) {
-                super.purgeBindings(nodeId);
-                databaseAccess.put(this.database);
-            }
-        }
+    public synchronized SxpDatabase get() throws DatabaseAccessException {
+        return databaseAccess.read();
+    }
+
+    private static final Logger LOG = LoggerFactory.getLogger(SxpDatastoreImpl.class.getName());
+
+
+    @Override
+    public synchronized void purgeBindings(NodeId nodeId) throws DatabaseAccessException, NodeIdNotDefinedException {
+        this.database = databaseAccess.read();
+        super.purgeBindings(nodeId);
+        databaseAccess.put(this.database);
     }
 
     @Override
-    public List<SxpBindingIdentity> readBindings() throws DatabaseAccessException {
-        synchronized (databaseAccess) {
+    public synchronized List<SxpBindingIdentity> readBindings() throws DatabaseAccessException {
+        database = databaseAccess.read();
+        return super.readBindings();
+    }
+
+    @Override
+    public synchronized void setAsCleanUp(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException {
+        database = databaseAccess.read();
+        super.setAsCleanUp(nodeId);
+        databaseAccess.put(this.database);
+    }
+
+    @Override
+    public synchronized String toString() {
+        try {
             database = databaseAccess.read();
-            synchronized (this.database) {
-                return super.readBindings();
-            }
-        }
-    }
-
-    @Override
-    public String toString() {
-        synchronized (databaseAccess) {
-            try {
-                database = databaseAccess.read();
-            } catch (Exception e) {
-                LOG.warn(controllerName + " {} | {}", e.getClass().getSimpleName(), e.getMessage());
-                return "[error]";
-            }
-            synchronized (this.database) {
-                return super.toString();
-            }
+            return super.toString();
+        } catch (DatabaseAccessException e) {
+            return "[error]";
         }
     }
 }

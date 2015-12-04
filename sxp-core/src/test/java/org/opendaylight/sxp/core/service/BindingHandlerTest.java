@@ -17,7 +17,7 @@ import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.ThreadsWorker;
 import org.opendaylight.sxp.core.messaging.AttributeFactory;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyAttributeFactory;
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
+import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.message.attribute.SecurityGroupTagValueException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.PeerSequenceBuilder;
@@ -83,7 +83,7 @@ import static org.mockito.Mockito.when;
         private static SxpNode sxpNode;
         private static SxpConnection connection;
         private static ThreadsWorker worker;
-        private static SxpDatabaseProvider databaseProvider;
+        private static SxpDatabaseInf databaseProvider;
 
         @Before public void init() throws Exception {
                 sxpNode = PowerMockito.mock(SxpNode.class);
@@ -100,7 +100,7 @@ import static org.mockito.Mockito.when;
                 when(connection.getCapabilities()).thenReturn(capabilities);
                 when(connection.getDestination()).thenReturn(
                         new InetSocketAddress(InetAddress.getByName("1.1.1.1"), 5));
-                databaseProvider = mock(SxpDatabaseProvider.class);
+                databaseProvider = mock(SxpDatabaseInf.class);
                 when(databaseProvider.addBindings(any(SxpDatabase.class))).thenReturn(true);
                 PowerMockito.when(sxpNode.getBindingSxpDatabase()).thenReturn(databaseProvider);
         }

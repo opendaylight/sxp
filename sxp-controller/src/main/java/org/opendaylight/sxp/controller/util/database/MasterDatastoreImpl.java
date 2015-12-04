@@ -11,6 +11,7 @@ package org.opendaylight.sxp.controller.util.database;
 import java.net.UnknownHostException;
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
@@ -25,120 +26,94 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Node
 
 public final class MasterDatastoreImpl extends MasterDatabaseImpl {
 
-    private String controllerName;
+    private final MasterDatabaseAccess databaseAccess;
 
-    public MasterDatastoreImpl(String controllerName, MasterDatabaseAccess databaseAccess) {
-        super(databaseAccess);
-        this.controllerName = controllerName;
+    public MasterDatastoreImpl(MasterDatabaseAccess databaseAccess) {
+        this.databaseAccess = Preconditions.checkNotNull(databaseAccess);
     }
 
     @Override
-    public void addBindings(NodeId owner, List<MasterBindingIdentity> contributedBindingIdentities)
+    public synchronized void addBindings(NodeId owner, List<MasterBindingIdentity> contributedBindingIdentities)
             throws DatabaseAccessException, NodeIdNotDefinedException {
-        synchronized (databaseAccess) {
-            database = databaseAccess.read();
-            super.addBindings(owner, contributedBindingIdentities);
-            databaseAccess.put(database);
-        }
+        database = databaseAccess.read();
+        super.addBindings(owner, contributedBindingIdentities);
+        databaseAccess.put(database);
     }
 
     @Override
-    public void addBindingsLocal(SxpNode sxpNode, List<PrefixGroup> prefixGroups) throws DatabaseAccessException {
-        synchronized (databaseAccess) {
-            database = databaseAccess.read();
-            super.addBindingsLocal(sxpNode, prefixGroups);
-            databaseAccess.put(database);
-        }
+    public synchronized void addBindingsLocal(SxpNode sxpNode, List<PrefixGroup> prefixGroups) throws DatabaseAccessException {
+        database = databaseAccess.read();
+        super.addBindingsLocal(sxpNode, prefixGroups);
+        databaseAccess.put(database);
     }
 
     @Override
-    public void expandBindings(int quantity)
+    public synchronized void expandBindings(int quantity)
             throws DatabaseAccessException, UnknownPrefixException, UnknownHostException {
-        synchronized (databaseAccess) {
+        database = databaseAccess.read();
+        super.expandBindings(quantity);
+        databaseAccess.put(database);
+    }
+
+    @Override
+    public synchronized MasterDatabase get() throws DatabaseAccessException {
+        return databaseAccess.read();
+    }
+
+    @Override
+    public synchronized List<MasterDatabase> partition(int quantity, boolean onlyChanged, SxpBindingFilter filter) throws DatabaseAccessException {
+        database = databaseAccess.read();
+        return super.partition(quantity, onlyChanged, filter);
+    }
+
+    @Override
+    public synchronized void purgeAllDeletedBindings() throws DatabaseAccessException {
+        database = databaseAccess.read();
+        super.purgeAllDeletedBindings();
+        databaseAccess.put(database);
+    }
+
+    @Override
+    public synchronized void purgeBindings(NodeId nodeId) throws DatabaseAccessException, NodeIdNotDefinedException {
+        database = databaseAccess.read();
+        super.purgeBindings(nodeId);
+        databaseAccess.put(database);
+    }
+
+    @Override
+    public synchronized List<MasterBindingIdentity> readBindings() throws DatabaseAccessException {
+        database = databaseAccess.read();
+        return super.readBindings();
+    }
+
+    @Override
+    public synchronized List<PrefixGroup> readBindingsLocal() throws DatabaseAccessException {
+        database = databaseAccess.read();
+        return super.readBindingsLocal();
+    }
+
+    @Override
+    public synchronized void resetModified() throws DatabaseAccessException {
+        database = databaseAccess.read();
+        super.resetModified();
+        databaseAccess.put(database);
+    }
+
+    @Override
+    public synchronized boolean setAsDeleted(SxpNode sxpNode, List<PrefixGroup> prefixGroups) throws DatabaseAccessException {
+        database = databaseAccess.read();
+        boolean result = super.setAsDeleted(sxpNode, prefixGroups);
+        databaseAccess.put(database);
+        return result;
+    }
+
+    @Override
+    public synchronized String toString() {
+        try {
             database = databaseAccess.read();
-            super.expandBindings(quantity);
-            databaseAccess.put(database);
-        }
-    }
-
-    @Override
-    public MasterDatabase get() throws DatabaseAccessException {
-        synchronized (databaseAccess) {
-            return databaseAccess.read();
-        }
-    }
-
-    @Override
-    public List<MasterDatabase> partition(int quantity, boolean onlyChanged, SxpBindingFilter filter) throws DatabaseAccessException {
-        synchronized (databaseAccess) {
-            database = databaseAccess.read();
-            return super.partition(quantity, onlyChanged, filter);
-        }
-    }
-
-    @Override
-    public void purgeAllDeletedBindings() throws DatabaseAccessException {
-        synchronized (databaseAccess) {
-            database = databaseAccess.read();
-            super.purgeAllDeletedBindings();
-            databaseAccess.put(database);
-        }
-    }
-
-    @Override
-    public void purgeBindings(NodeId nodeId) throws DatabaseAccessException, NodeIdNotDefinedException {
-        synchronized (databaseAccess) {
-            database = databaseAccess.read();
-            super.purgeBindings(nodeId);
-            databaseAccess.put(database);
-        }
-    }
-
-    @Override
-    public List<MasterBindingIdentity> readBindings() throws DatabaseAccessException {
-        synchronized (databaseAccess) {
-            database = databaseAccess.read();
-            return super.readBindings();
-        }
-    }
-
-    @Override
-    public List<PrefixGroup> readBindingsLocal() throws DatabaseAccessException {
-        synchronized (databaseAccess) {
-            database = databaseAccess.read();
-            return super.readBindingsLocal();
-        }
-    }
-
-    @Override
-    public void resetModified() throws DatabaseAccessException {
-        synchronized (databaseAccess) {
-            database = databaseAccess.read();
-            super.resetModified();
-            databaseAccess.put(database);
-        }
-    }
-
-    @Override
-    public boolean setAsDeleted(SxpNode sxpNode, List<PrefixGroup> prefixGroups) throws DatabaseAccessException {
-        synchronized (databaseAccess) {
-            database = databaseAccess.read();
-            boolean result = super.setAsDeleted(sxpNode, prefixGroups);
-            databaseAccess.put(database);
-            return result;
-        }
-    }
-
-    @Override
-    public String toString() {
-        synchronized (databaseAccess) {
-            try {
-                database = databaseAccess.read();
-                return super.toString();
-            } catch (Exception e) {
-                LOG.warn(controllerName + " {} | {}", e.getClass().getSimpleName(), e.getMessage());
-                return "[error]";
-            }
+            return super.toString();
+        } catch (DatabaseAccessException e) {
+            return "[error]";
         }
     }
 }

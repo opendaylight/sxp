@@ -8,11 +8,7 @@
 
 package org.opendaylight.sxp.util.database;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseAccess;
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
+import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
@@ -28,11 +24,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.sxp.database.Vpn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * SxpDatabaseImpl class contains logic to operate with Database,
  * used for handling Bindings learned from other Nodes
  */
-public class SxpDatabaseImpl extends SxpDatabaseProvider {
+public class SxpDatabaseImpl implements SxpDatabaseInf {
 
     protected SxpDatabase database = new SxpDatabaseBuilder().build();
 
@@ -40,7 +39,6 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
      * Default constructor that sets empty Database
      */
     public SxpDatabaseImpl() {
-        super(null);
         SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
         databaseBuilder.setPathGroup(new ArrayList<PathGroup>());
         databaseBuilder.setVpn(new ArrayList<Vpn>());
@@ -53,17 +51,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
      * @param database SxpDatabase to be used
      */
     public SxpDatabaseImpl(SxpDatabase database) {
-        super(null);
         this.database = database;
-    }
-
-    /**
-     * Constructor that sets predefined access checked Database
-     *
-     * @param databaseAccess SxpDatabaseAccess to be used
-     */
-    public SxpDatabaseImpl(SxpDatabaseAccess databaseAccess) {
-        super(databaseAccess);
     }
 
     /**
@@ -157,11 +145,14 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
                     for (PrefixGroup prefixGroup : pathGroup.getPrefixGroup()) {
                         if (prefixGroup.getBinding() != null) {
                             for (Binding binding : prefixGroup.getBinding()) {
-                                SxpBindingIdentity newBindingIdentity = SxpBindingIdentity.create(binding, prefixGroup,
-                                        pathGroup);
-                                SxpBindingIdentity oldBindingIdentity = getBindingIdentity(newBindingIdentity, true);
-                                if (oldBindingIdentity != null) {
-                                    removed.add(oldBindingIdentity);
+                                SxpBindingIdentity
+                                        newBindingIdentity =
+                                        SxpBindingIdentity.create(binding, prefixGroup, pathGroup);
+                                List<SxpBindingIdentity>
+                                        oldBindingIdentity =
+                                        getBindingIdentity(newBindingIdentity, true);
+                                if (!oldBindingIdentity.isEmpty()) {
+                                    removed.add(oldBindingIdentity.get(0));
                                 }
                                 added.add(newBindingIdentity);
                             }
@@ -183,7 +174,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
     }
 
     @Override
-    public void cleanUpBindings(NodeId nodeId) throws NodeIdNotDefinedException {
+    public void cleanUpBindings(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException {
         if (nodeId == null) {
             throw new NodeIdNotDefinedException();
         }
@@ -285,12 +276,10 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
                     for (PrefixGroup prefixGroup : pathGroup.getPrefixGroup()) {
                         if (prefixGroup.getBinding() != null) {
                             for (Binding binding : prefixGroup.getBinding()) {
-                                SxpBindingIdentity newBindingIdentity = SxpBindingIdentity.create(binding, prefixGroup,
-                                        pathGroup);
-                                SxpBindingIdentity oldBindingIdentity = getBindingIdentity(newBindingIdentity, false);
-                                if (oldBindingIdentity != null) {
-                                    removed.add(oldBindingIdentity);
-                                }
+                                SxpBindingIdentity
+                                        newBindingIdentity =
+                                        SxpBindingIdentity.create(binding, prefixGroup, pathGroup);
+                                removed.addAll(getBindingIdentity(newBindingIdentity, false));
                             }
                         }
                     }
@@ -306,17 +295,20 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
 
     @Override
     public SxpDatabase get() throws DatabaseAccessException {
-        return database;
+        synchronized (database) {
+            return database;
+        }
     }
 
     /**
      * Gets copy of BindingIdentity if it's contained in SxpDatabase
      *
      * @param bindingIdentity a tree item identification
-     * @param hashCheck    if whole Peer sequence is checked or only source Peer
+     * @param forAdding    if is true complete PeerSequence is checked and only fist match is returned
      * @return Copy of BindingIdentity from SxpDatabase
      */
-    private SxpBindingIdentity getBindingIdentity(SxpBindingIdentity bindingIdentity, boolean hashCheck) {
+    private List<SxpBindingIdentity> getBindingIdentity(SxpBindingIdentity bindingIdentity, boolean forAdding) {
+        List<SxpBindingIdentity> identities = new ArrayList<>();
         synchronized (database) {
             if (database.getPathGroup() != null) {
                 for (PathGroup pathGroup : database.getPathGroup()) {
@@ -324,7 +316,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
                     if (!bindingIdentity.pathGroup.getPeerSequence()
                             .getPeer()
                             .get(0)
-                            .equals(getLastPeer(pathGroup.getPeerSequence())) || (hashCheck
+                            .equals(getLastPeer(pathGroup.getPeerSequence())) || (forAdding
                             && !bindingIdentity.pathGroup.getPathHash().equals(pathGroup.getPathHash()))) {
                         continue;
                     }
@@ -334,7 +326,10 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
                                 for (Binding _binding : prefixGroup.getBinding()) {
                                     if (IpPrefixConv.equalTo(_binding.getIpPrefix(),
                                             bindingIdentity.binding.getIpPrefix())) {
-                                        return SxpBindingIdentity.create(_binding, prefixGroup, pathGroup);
+                                        identities.add(SxpBindingIdentity.create(_binding, prefixGroup, pathGroup));
+                                        if (forAdding) {
+                                            return identities;
+                                        }
                                     }
                                 }
                             }
@@ -343,7 +338,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
 
                 }
             }
-            return null;
+            return identities;
         }
     }
 
@@ -409,7 +404,7 @@ public class SxpDatabaseImpl extends SxpDatabaseProvider {
     }
 
     @Override
-    public void setAsCleanUp(NodeId nodeId) throws NodeIdNotDefinedException {
+    public void setAsCleanUp(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException {
         if (nodeId == null) {
             throw new NodeIdNotDefinedException();
         }
