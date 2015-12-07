@@ -344,13 +344,15 @@ public class ConfigLoader {
                     + "\" identity in configuration datastore");
         }
 
-        SxpDatastoreImpl sxpDatabaseProvider = new SxpDatastoreImpl(NodeIdConv.toString(nodeId),
-                new SxpDatabaseAccessImpl(NodeIdConv.toString(nodeId), datastoreAccess,
+        SxpDatastoreImpl
+                sxpDatabaseProvider =
+                new SxpDatastoreImpl(new SxpDatabaseAccessImpl(NodeIdConv.toString(nodeId), datastoreAccess,
                         LogicalDatastoreType.OPERATIONAL));
         sxpDatabaseProviders.put(NodeIdConv.toString(nodeId), sxpDatabaseProvider);
 
-        MasterDatastoreImpl ipSgtMasterDatabaseProvider = new MasterDatastoreImpl(NodeIdConv.toString(nodeId),
-                new MasterDatabaseAccessImpl(NodeIdConv.toString(nodeId), datastoreAccess,
+        MasterDatastoreImpl
+                ipSgtMasterDatabaseProvider =
+                new MasterDatastoreImpl(new MasterDatabaseAccessImpl(NodeIdConv.toString(nodeId), datastoreAccess,
                         LogicalDatastoreType.OPERATIONAL));
         masterDatabaseProviders.put(NodeIdConv.toString(nodeId), ipSgtMasterDatabaseProvider);
 

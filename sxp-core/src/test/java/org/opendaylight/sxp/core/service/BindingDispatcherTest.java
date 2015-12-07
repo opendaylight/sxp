@@ -16,7 +16,7 @@ import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.ThreadsWorker;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
+import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
         private static SxpNode sxpNode;
         private static BindingDispatcher dispatcher;
         private static ThreadsWorker worker;
-        private static MasterDatabaseProvider databaseProvider;
+        private static MasterDatabaseInf databaseProvider;
         private static List<SxpConnection> sxpConnections;
 
         private SxpConnection mockConnection(boolean updateExported, boolean updateAll) {
@@ -57,7 +57,7 @@ import static org.mockito.Mockito.when;
         }
 
         @Before public void init() throws Exception {
-                databaseProvider = mock(MasterDatabaseProvider.class);
+                databaseProvider = mock(MasterDatabaseInf.class);
                 List<MasterDatabase> masterDatabases = new ArrayList<>();
                 masterDatabases.add(mock(MasterDatabase.class));
                 when(databaseProvider.partition(anyInt(), anyBoolean(), any(SxpBindingFilter.class))).thenReturn(
