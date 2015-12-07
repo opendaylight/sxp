@@ -11,8 +11,8 @@ package org.opendaylight.sxp.core.service;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.ThreadsWorker;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
+import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
+import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,14 +51,14 @@ public abstract class Service<T> implements Callable<T> {
     /**
      * @return Gets MasterDatabaseProvider used by owner Node
      */
-    public synchronized MasterDatabaseProvider getBindingMasterDatabase() {
+    public MasterDatabaseInf getBindingMasterDatabase() {
         return owner.getBindingMasterDatabase();
     }
 
     /**
      * @return Gets SxpDatabaseProvider used by owner Node
      */
-    public synchronized SxpDatabaseProvider getBindingSxpDatabase() {
+    public SxpDatabaseInf getBindingSxpDatabase() {
         return owner.getBindingSxpDatabase();
     }
 

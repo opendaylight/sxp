@@ -874,7 +874,6 @@ public class SxpConnection {
             setStateOff();
             return;
         }
-
         context.getOwner().purgeBindings(peerId);
         context.getOwner().notifyService();
         try {
@@ -1482,11 +1481,10 @@ public class SxpConnection {
      * or purge learned Bindings if Listener mode
      */
     public void shutdown() {
-        if (isModeListener() && isStateOn()){
+        if (isModeListener()) {
             LOG.info("{} PURGE bindings ", this);
             purgeBindings();
-        }
-        if (isModeSpeaker() && isStateOn()) {
+        } else if (isModeSpeaker() && isStateOn()) {
             ByteBuf message = MessageFactory.createPurgeAll();
             LOG.info("{} Sending PURGEALL {}", this, MessageFactory.toString(message));
             try {

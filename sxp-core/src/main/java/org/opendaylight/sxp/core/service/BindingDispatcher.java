@@ -15,7 +15,7 @@ import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.ThreadsWorker;
 import org.opendaylight.sxp.util.ExportKey;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
+import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
@@ -69,35 +69,29 @@ public final class BindingDispatcher extends Service<Void> {
      * Exports change from MasterDatabase to all On SxpConnections
      */
     public void dispatch() {
-        LOG.debug(owner + " Starting {}", getClass().getSimpleName());
-
-        List<SxpConnection> connections;
-        MasterDatabaseProvider masterDatabase = null;
-        if (owner.isEnabled()) {
-            connections = owner.getAllOnSpeakerConnections();
-            try {
-                masterDatabase = getBindingMasterDatabase();
-                synchronized (masterDatabase) {
-                    if (!connections.isEmpty()) {
-                        // Expand bindings.
-                        if (owner.getExpansionQuantity() > 0) {
-                            masterDatabase.expandBindings(owner.getExpansionQuantity());
-                        }
-                        LOG.info("Export on dispatch {}", connections.size());
-                        for (SxpConnection connection : connections) {
-                            connection.resetUpdateExported();
-                        }
-                        processUpdateSequence(masterDatabase, connections);
-                        masterDatabase.purgeAllDeletedBindings();
-                        masterDatabase.resetModified();
-                    } else if (owner.getAllConnections().isEmpty()) {
-                        masterDatabase.purgeAllDeletedBindings();
-                        masterDatabase.resetModified();
+        if (!owner.isEnabled()) {
+            return;
+        }
+        List<SxpConnection> connections = owner.getAllOnSpeakerConnections();
+        try {
+            synchronized (getBindingMasterDatabase()) {
+                if (!connections.isEmpty()) {
+                    LOG.debug(owner + " Starting {}", getClass().getSimpleName());
+                    // Expand bindings.
+                    if (owner.getExpansionQuantity() > 0) {
+                        getBindingMasterDatabase().expandBindings(owner.getExpansionQuantity());
                     }
+                    LOG.info("Export on dispatch {}", connections.size());
+                    for (SxpConnection connection : connections) {
+                        connection.resetUpdateExported();
+                    }
+                    processUpdateSequence(getBindingMasterDatabase(), connections);
                 }
-            } catch (UnknownPrefixException | UnknownHostException | DatabaseAccessException e) {
-                LOG.warn(owner + " Processing export {}", e.getClass().getSimpleName(), e);
+                getBindingMasterDatabase().purgeAllDeletedBindings();
+                getBindingMasterDatabase().resetModified();
             }
+        } catch (UnknownPrefixException | UnknownHostException | DatabaseAccessException e) {
+            LOG.warn(owner + " Processing export {}", e.getClass().getSimpleName(), e);
         }
     }
 
@@ -120,7 +114,7 @@ public final class BindingDispatcher extends Service<Void> {
      * @param masterDatabase MasterDatabaseProvider containing Bindings to be exported
      * @param connections    SxpConnections on which the export will be performed
      */
-    private void processUpdateSequence(MasterDatabaseProvider masterDatabase, List<SxpConnection> connections)
+    private void processUpdateSequence(MasterDatabaseInf masterDatabase, List<SxpConnection> connections)
             throws DatabaseAccessException {
 
         // Compose and send new messages bundles.
@@ -153,11 +147,9 @@ public final class BindingDispatcher extends Service<Void> {
                             connection.getGroupName(FilterType.Outbound));
             if (dataPool.get(key) == null) {
                 List<MasterDatabase> partitions;
-                synchronized (masterDatabase) {
-                    partitions =
-                            masterDatabase.partition(getPartitionSize(), connection.isUpdateAllExported(),
-                                    connection.getFilter(FilterType.Outbound));
-                }
+                partitions =
+                        masterDatabase.partition(getPartitionSize(), connection.isUpdateAllExported(),
+                                connection.getFilter(FilterType.Outbound));
                 dataPool.put(key, partitions.toArray(new MasterDatabase[partitions.size()]));
                 messagesPool.put(key, new ByteBuf[partitions.size()]);
                 releaseCounterPool.put(key, new AtomicInteger(0));
@@ -206,30 +198,24 @@ public final class BindingDispatcher extends Service<Void> {
 
     @Override
     public Void call() {
+        List<SxpConnection> connections = owner.getAllOnSpeakerConnections();
+        if (!owner.isEnabled() || connections.isEmpty()) {
+            return null;
+        }
         LOG.debug(owner + " Starting {}", getClass().getSimpleName());
-
-        List<SxpConnection> connections;
-        MasterDatabaseProvider masterDatabase = null;
-
-        if (owner.isEnabled()) {
-            connections = owner.getAllOnSpeakerConnections();
-            if (!connections.isEmpty()) {
+        // At least one connection wasn't exported (a connection was
+        // down and it's up again).
+        synchronized (getBindingMasterDatabase()) {
+            List<SxpConnection> resumedConnections = new ArrayList<>();
+            for (SxpConnection connection : connections) {
+                if (!connection.isUpdateAllExported() && connection.getOutboundMonitor().get() == 0) {
+                    resumedConnections.add(connection);
+                }
+            }
+            if (!resumedConnections.isEmpty()) {
+                LOG.info("Export on demand {}/{} ", resumedConnections.size(), connections.size());
                 try {
-                    masterDatabase = getBindingMasterDatabase();
-                    // At least one connection wasn't exported (a connection was
-                    // down and it's up again).
-                    synchronized (masterDatabase) {
-                        List<SxpConnection> resumedConnections = new ArrayList<SxpConnection>();
-                        for (SxpConnection connection : connections) {
-                            if (!connection.isUpdateAllExported() && connection.getOutboundMonitor().get() == 0) {
-                                resumedConnections.add(connection);
-                            }
-                        }
-                        if (!resumedConnections.isEmpty()) {
-                            LOG.info("Export on demand {}/{} ", resumedConnections.size(), connections.size());
-                            processUpdateSequence(masterDatabase, resumedConnections);
-                        }
-                    }
+                    processUpdateSequence(getBindingMasterDatabase(), resumedConnections);
                 } catch (DatabaseAccessException e) {
                     LOG.warn("{} Processing export ", owner, e);
                 }

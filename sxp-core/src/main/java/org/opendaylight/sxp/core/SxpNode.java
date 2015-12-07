@@ -29,8 +29,8 @@ import org.opendaylight.sxp.util.Security;
 import org.opendaylight.sxp.util.database.Database;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
+import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
+import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.connection.NoNetworkInterfacesException;
 import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
@@ -48,7 +48,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
@@ -133,8 +132,8 @@ public final class SxpNode {
      * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
      * @throws SocketException              If IO error occurs
      */
-    public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
-            SxpDatabaseProvider sxpDatabase) throws NoNetworkInterfacesException, SocketException {
+    public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseInf masterDatabase,
+            SxpDatabaseInf sxpDatabase) throws NoNetworkInterfacesException, SocketException {
         return createInstance(nodeId, node, masterDatabase, sxpDatabase, new ThreadsWorker());
     }
 
@@ -154,8 +153,8 @@ public final class SxpNode {
      * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
      * @throws SocketException              If IO error occurs
      */
-    public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
-            SxpDatabaseProvider sxpDatabase, ThreadsWorker worker)
+    public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseInf masterDatabase,
+            SxpDatabaseInf sxpDatabase, ThreadsWorker worker)
             throws NoNetworkInterfacesException, SocketException {
         return new SxpNode(nodeId, node, masterDatabase, sxpDatabase, worker);
     }
@@ -164,9 +163,9 @@ public final class SxpNode {
             addressToSxpConnection =
             new HashMap<>(Configuration.getConstants().getNodeConnectionsInitialSize());
 
-    protected volatile MasterDatabaseProvider _masterDatabase = null;
+    protected volatile MasterDatabaseInf _masterDatabase = null;
 
-    protected volatile SxpDatabaseProvider _sxpDatabase = null;
+    protected volatile SxpDatabaseInf _sxpDatabase = null;
 
     private final HandlerFactory handlerFactoryClient = new HandlerFactory(MessageDecoder.createClientProfile(this));
 
@@ -198,8 +197,8 @@ public final class SxpNode {
      * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
      * @throws SocketException              If IO error occurs
      */
-    private SxpNode(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseProvider masterDatabase,
-            SxpDatabaseProvider sxpDatabase,ThreadsWorker worker) throws NoNetworkInterfacesException, SocketException {
+    private SxpNode(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseInf masterDatabase,
+            SxpDatabaseInf sxpDatabase,ThreadsWorker worker) throws NoNetworkInterfacesException, SocketException {
         this.worker = worker;
         this.nodeId = nodeId;
         this.nodeBuilder = new SxpNodeIdentityBuilder(node);
@@ -643,14 +642,14 @@ public final class SxpNode {
     /**
      * @return Gets MasterDatabase that is used in Node
      */
-    public synchronized MasterDatabaseProvider getBindingMasterDatabase() {
+    public synchronized MasterDatabaseInf getBindingMasterDatabase() {
         return _masterDatabase;
     }
 
     /**
      * @return Gets SxpDatabase that is used in Node
      */
-    public synchronized SxpDatabaseProvider getBindingSxpDatabase() {
+    public synchronized SxpDatabaseInf getBindingSxpDatabase() {
         return _sxpDatabase;
     }
 
@@ -960,8 +959,12 @@ public final class SxpNode {
      * @param nodeID NodeId used to filter deletion
      */
     public void purgeBindings(NodeId nodeID) {
-        if (svcBindingManager instanceof BindingManager) {
-            ((BindingManager) svcBindingManager).purgeBindings(nodeID);
+        try {
+            synchronized (getBindingSxpDatabase()) {
+                getBindingSxpDatabase().purgeBindings(nodeID);
+            }
+        } catch (NodeIdNotDefinedException | DatabaseAccessException e) {
+            LOG.error("{} Error purging bindings ", this, e);
         }
     }
 
@@ -983,8 +986,10 @@ public final class SxpNode {
 
         if (source != null && source.getPrefixGroup() != null && !source.getPrefixGroup().isEmpty()) {
             try {
-                getBindingMasterDatabase().addBindingsLocal(this,
-                        Database.assignPrefixGroups(nodeId, source.getPrefixGroup()));
+                synchronized (getBindingMasterDatabase()) {
+                    getBindingMasterDatabase().addBindingsLocal(this,
+                            Database.assignPrefixGroups(nodeId, source.getPrefixGroup()));
+                }
             } catch (DatabaseAccessException  |NodeIdNotDefinedException e) {
                 LOG.error("{} Error puting Bindings to DB {} ", this, masterDatabaseConfiguration, e);
                 return;

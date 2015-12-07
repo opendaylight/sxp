@@ -33,13 +33,13 @@ public final class SxpDatabaseAccessImpl implements SxpDatabaseAccess {
 
     protected static final Logger LOG = LoggerFactory.getLogger(SxpDatabaseAccessImpl.class.getName());
 
-    protected String controllerName;
+    private final String controllerName;
 
-    protected InstanceIdentifier<SxpDatabase> databaseIdentifier;
+    private final InstanceIdentifier<SxpDatabase> databaseIdentifier;
 
-    protected DatastoreAccess datastoreAccess;
+    private final DatastoreAccess datastoreAccess;
 
-    protected LogicalDatastoreType logicalDatastoreType;
+    private final LogicalDatastoreType logicalDatastoreType;
 
     public SxpDatabaseAccessImpl(String controllerName, DatastoreAccess datastoreAccess,
             LogicalDatastoreType logicalDatastoreType) {

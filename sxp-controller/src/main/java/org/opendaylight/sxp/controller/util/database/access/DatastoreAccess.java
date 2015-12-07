@@ -11,6 +11,7 @@ package org.opendaylight.sxp.controller.util.database.access;
 import org.opendaylight.controller.md.sal.binding.api.BindingTransactionChain;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
+import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
@@ -26,9 +27,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 public final class DatastoreAccess {
 
-    private static BindingTransactionChain bindingTransactionChain;
+    private final BindingTransactionChain bindingTransactionChain;
 
-    protected static DatastoreAccess instance = null;
+    private static DatastoreAccess instance = null;
 
     public static synchronized DatastoreAccess getInstance(DataBroker dataBroker) {
         if (instance == null) {
@@ -39,7 +40,7 @@ public final class DatastoreAccess {
 
     private DatastoreAccess(DataBroker dataBroker) {
         Preconditions.checkNotNull(dataBroker);
-        DatastoreAccess.bindingTransactionChain = dataBroker.createTransactionChain(new TransactionChainListenerImpl());
+        bindingTransactionChain = dataBroker.createTransactionChain(new TransactionChainListenerImpl());
     }
 
     public <T extends DataObject> ListenableFuture<Void> delete(InstanceIdentifier<T> path,

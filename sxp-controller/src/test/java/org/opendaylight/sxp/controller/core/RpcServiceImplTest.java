@@ -132,7 +132,7 @@ public class RpcServiceImplTest {
                 when(datastoreAccess.put(any(InstanceIdentifier.class), any(DataObject.class),
                         any(LogicalDatastoreType.class))).thenReturn(checkedFuture);
                 service = new RpcServiceImpl(datastoreAccess);
-                when(node.getBindingMasterDatabase()).thenReturn(new MasterDatastoreImpl("0.0.0.0",
+                when(node.getBindingMasterDatabase()).thenReturn(new MasterDatastoreImpl(
                         new MasterDatabaseAccessImpl("0.0.0.0", datastoreAccess, LogicalDatastoreType.OPERATIONAL)));
         }
 
@@ -387,7 +387,7 @@ public class RpcServiceImplTest {
                         NodeId.getDefaultInstance("0.0.0.0"));
                 when(checkedFuture.get()).thenReturn(optional);
                 GetNodeBindingsInputBuilder input = new GetNodeBindingsInputBuilder();
-                input.setLocalRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+                input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
 
                 input.setRequestedNode(null);
                 assertTrue(service.getNodeBindings(input.build()).get().getResult().getBinding().isEmpty());
