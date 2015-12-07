@@ -103,6 +103,7 @@
       <bundle>mvn:io.netty/netty-common/${netty.version}</bundle>
       <bundle>mvn:io.netty/netty-handler/${netty.version}</bundle>
       <bundle>mvn:io.netty/netty-transport/${netty.version}</bundle>
+      <bundle>mvn:io.netty/netty-transport-native-epoll/${netty.version}</bundle>
       <!--bundle>mvn:junit/junit/${junit.version}</bundle -->
       <!--bundle>mvn:org.hamcrest/hamcrest-all/${hamcrest.version}</bundle-->
     </feature>

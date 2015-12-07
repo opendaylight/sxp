@@ -43,7 +43,7 @@
       <type>xml</type>
       <scope>runtime</scope>
     </dependency>
-    
+
     <dependency>
     	<groupId>org.eclipse.equinox</groupId>
     	<artifactId>org.eclipse.equinox.region</artifactId>
@@ -262,6 +262,14 @@
             <phase>generate-resources</phase>
             <configuration>
               <artifactItems>
+                <artifactitem>
+                  <groupId>io.netty</groupId>
+                  <artifactId>netty-transport-native-epoll</artifactId>
+                  <version>${netty.version}</version>
+                  <classifier>${os.detected.classifier}</classifier>
+                  <outputDirectory>target/assembly/lib</outputDirectory>
+                  <destFileName>netty-transport-native-epoll.jar</destFileName>
+                </artifactitem>
                 <artifactItem>
                   <groupId>org.opendaylight.controller</groupId>
                   <artifactId>karaf.branding</artifactId>
