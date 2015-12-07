@@ -19,8 +19,6 @@
     <module>sxp-api</module>
     <module>sxp-controller</module>
     <module>sxp-core</module>
-    <!-- module>sxp-runtime</module -->
-    <!-- Karaf -->
     <module>sxp-config</module>
     <module>features</module>
     <module>sxp-karaf</module>
@@ -58,12 +56,19 @@
 
     <!-- Utils Versions -->
     <powermock.version>1.5.4</powermock.version>
-    <tcpmd5.version>1.2.0-SNAPSHOT</tcpmd5.version>
     <swt.version>4.4</swt.version>
+    <kr.mod.maven.version>1.2.3.Final</kr.mod.maven.version>
 
   </properties>
 
     <build>
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>${kr.mod.maven.version}</version>
+            </extension>
+        </extensions>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -90,29 +95,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <!--plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>2.6</version>
-                <executions>
-                    <execution>
-                        <id>copy-resources</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>../target/configuration-initial</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>src/main/resources/configuration/initial</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin-->
-
         </plugins>
         <pluginManagement>
             <plugins>
@@ -274,18 +256,6 @@
                 <version>${yangtools.version}</version>
             </dependency>
 
-            <!-- tcpmd5 dependencies -->
-            <dependency>
-                <groupId>org.opendaylight.tcpmd5</groupId>
-                <artifactId>tcpmd5-jni</artifactId>
-                <version>${tcpmd5.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opendaylight.tcpmd5</groupId>
-                <artifactId>tcpmd5-netty</artifactId>
-                <version>${tcpmd5.version}</version>
-            </dependency>
-
             <!-- md-sal dependecies -->
             <dependency>
                 <groupId>org.opendaylight.controller</groupId>
@@ -299,6 +269,12 @@
             </dependency>
 
             <!-- utils dependencies -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-transport-native-epoll</artifactId>
+                <classifier>${os.detected.classifier}</classifier>
+                <scope>compile</scope>
+            </dependency>
             <dependency>
                 <groupId>org.eclipse.swt</groupId>
                 <artifactId>org.eclipse.swt.win32.win32.x86_64</artifactId>
