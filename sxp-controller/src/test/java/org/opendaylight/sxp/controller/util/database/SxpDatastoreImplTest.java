@@ -36,7 +36,7 @@ import static org.mockito.Mockito.*;
                 when(access.read()).thenReturn(sxpDatabase);
                 database = mock(SxpDatabaseImpl.class);
                 PowerMockito.whenNew(SxpDatabaseImpl.class).withAnyArguments().thenReturn(database);
-                datastore = new SxpDatastoreImpl("TEST", access);
+                datastore = new SxpDatastoreImpl(access);
         }
 
         @Test public void testAddBindings() throws Exception {

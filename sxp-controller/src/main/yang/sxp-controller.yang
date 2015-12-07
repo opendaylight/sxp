@@ -221,11 +221,6 @@ module sxp-controller {
         description "RPC returns local IP-SGT bindings configuration of a specified
                 node";
         input {
-            leaf local-requested-node {
-                mandatory false;
-                type sxppt:node-id;
-                description "Optional: SXP node ID";
-            }
             leaf requested-node {
                 mandatory true;
                 type sxppt:node-id;

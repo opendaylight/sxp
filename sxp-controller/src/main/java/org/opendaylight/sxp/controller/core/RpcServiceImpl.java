@@ -14,7 +14,11 @@ import com.google.common.collect.Collections2;
 import com.google.common.util.concurrent.CheckedFuture;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
+import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
+import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
+import org.opendaylight.sxp.controller.util.database.access.MasterDatabaseAccessImpl;
+import org.opendaylight.sxp.controller.util.database.access.SxpDatabaseAccessImpl;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
@@ -159,12 +163,8 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         return bindingsSources;
     }
 
-    protected static MasterDatabaseInf getDatastoreProviderMaster(String nodeId) {
+    protected synchronized static MasterDatabaseInf getDatastoreProviderMaster(String nodeId) {
         return Configuration.getRegisteredNode(nodeId).getBindingMasterDatabase();
-    }
-
-    protected static SxpDatabaseInf getDatastoreProviderSxp(String nodeId) {
-        return Configuration.getRegisteredNode(nodeId).getBindingSxpDatabase();
     }
 
     public static List<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.configuration.fields.Binding> getNodeBindings(
@@ -273,7 +273,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         return false;
     }
 
-    private final ExecutorService executor = Executors.newCachedThreadPool();
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public RpcServiceImpl(DatastoreAccess datastoreAccess) {
         RpcServiceImpl.datastoreAccess = datastoreAccess;
@@ -550,7 +550,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         executor.shutdown();
     }
 
@@ -641,7 +641,6 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 prefixGroups.add(prefixGroupBuilder.build());
 
                 getDatastoreProviderMaster(nodeId).setAsDeleted(Configuration.getRegisteredNode(nodeId), prefixGroups);
-
                 DeleteEntryOutputBuilder output = new DeleteEntryOutputBuilder();
                 output.setResult(true);
                 return RpcResultBuilder.success(output.build()).build();
@@ -791,7 +790,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     return RpcResultBuilder.success(output.build()).build();
                 }
 
-                String nodeId = getNodeId(input.getLocalRequestedNode());
+                String nodeId = getNodeId(input.getRequestedNode());
 
                 MasterDatabase database = getDatastoreProviderMaster(nodeId).get();
                 GetNodeBindingsOutputBuilder output = new GetNodeBindingsOutputBuilder();

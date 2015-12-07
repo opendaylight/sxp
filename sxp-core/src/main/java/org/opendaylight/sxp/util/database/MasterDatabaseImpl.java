@@ -10,8 +10,7 @@ package org.opendaylight.sxp.util.database;
 
 import com.google.common.base.Preconditions;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseAccess;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
+import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
@@ -44,7 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * MasterDatabaseImpl class contains logic to operate with Database,
  * used for storing all Bindings and their propagation
  */
-public class MasterDatabaseImpl extends MasterDatabaseProvider {
+public class MasterDatabaseImpl implements MasterDatabaseInf {
 
     protected MasterDatabase database;
 
@@ -52,7 +51,6 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
      * Default constructor that sets empty Database
      */
     public MasterDatabaseImpl() {
-        super(null);
         MasterDatabaseBuilder databaseBuilder = new MasterDatabaseBuilder();
         databaseBuilder.setSource(new ArrayList<Source>());
         databaseBuilder.setVpn(new ArrayList<Vpn>());
@@ -65,17 +63,7 @@ public class MasterDatabaseImpl extends MasterDatabaseProvider {
      * @param database MasterDatabase to be used
      */
     public MasterDatabaseImpl(MasterDatabase database) {
-        super(null);
-        this.database = database;
-    }
-
-    /**
-     * Constructor that sets predefined access checked Database
-     *
-     * @param databaseAccess MasterDatabaseAccess to be used
-     */
-    public MasterDatabaseImpl(MasterDatabaseAccess databaseAccess) {
-        super(databaseAccess);
+        this.database = Preconditions.checkNotNull(database);
     }
 
     /**

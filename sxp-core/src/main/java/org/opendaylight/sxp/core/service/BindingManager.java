@@ -14,26 +14,20 @@ import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.SourceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +89,7 @@ public final class BindingManager extends Service<Void> {
                 getBindingSxpDatabase().cleanUpBindings(nodeID);
                 LOG.info(owner + " cleanUpBindings {}", getBindingSxpDatabase());
             }
-        } catch (NodeIdNotDefinedException e) {
+        } catch (DatabaseAccessException | NodeIdNotDefinedException e) {
             LOG.error("{} Error cleaning bindings ", this, e);
         }
     }
@@ -208,21 +202,6 @@ public final class BindingManager extends Service<Void> {
     }
 
     /**
-     * Delete all Bindings from specified NodeId
-     *
-     * @param nodeID NodeId used to filter Bindings that will be deleted
-     */
-    public void purgeBindings(NodeId nodeID) {
-        try {
-            synchronized (getBindingSxpDatabase()) {
-                getBindingSxpDatabase().purgeBindings(nodeID);
-            }
-        } catch (NodeIdNotDefinedException | DatabaseAccessException e) {
-            LOG.error("{} Error purging bindings ", this, e);
-        }
-    }
-
-    /**
      * Filters SxpBindingIdentities by InBound Filter used per Listener/Both connection
      *
      * @param bindingIdentities SxpBindingIdentities to be filtered
@@ -256,8 +235,8 @@ public final class BindingManager extends Service<Void> {
 
     @Override
     public Void call() {
-        LOG.debug(owner + " Starting {}", BindingManager.class.getSimpleName());
         if (owner.isEnabled()) {
+            LOG.debug(owner + " Starting {}", BindingManager.class.getSimpleName());
             try {
                 List<SxpBindingIdentity> bindingIdentities;
                 synchronized (getBindingSxpDatabase()) {
@@ -288,7 +267,7 @@ public final class BindingManager extends Service<Void> {
                 getBindingSxpDatabase().setAsCleanUp(nodeID);
                 LOG.info(owner + " setAsCleanUp {}", getBindingSxpDatabase());
             }
-        } catch (NodeIdNotDefinedException e) {
+        } catch (NodeIdNotDefinedException | DatabaseAccessException e) {
             LOG.error("{} Error setting to clean up bindings ", this, e);
         }
     }
