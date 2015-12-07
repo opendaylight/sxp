@@ -214,7 +214,7 @@ public final class SxpNode {
         this._masterDatabase = Preconditions.checkNotNull(masterDatabase);
         this._sxpDatabase = Preconditions.checkNotNull(sxpDatabase);
 
-        addConnections(nodeBuilder.getConnections());
+        //addConnections(nodeBuilder.getConnections());
         svcBindingManager = new BindingManager(this);
         svcBindingDispatcher = new BindingDispatcher(this);
 
@@ -922,12 +922,8 @@ public final class SxpNode {
      * @param connection Connection containing necessary information for connecting to peer
      */
     public synchronized void openConnection(final SxpConnection connection){
-        if (connection.isStateOff()) {
-            try {
-                ConnectFacade.createClient(this, Preconditions.checkNotNull(connection), handlerFactoryClient);
-            } catch (NativeSupportUnavailableException e) {
-                LOG.warn(connection + " {}", e.getMessage());
-            }
+        if (Preconditions.checkNotNull(connection).isStateOff()) {
+            ConnectFacade.createClient(this, connection, handlerFactoryClient);
         }
     }
 
@@ -1210,21 +1206,22 @@ public final class SxpNode {
         worker.executeTask(new Runnable() {
 
             @Override public void run() {
-                ConnectFacade.createServer(node, handlerFactoryServer).addListener(new ChannelFutureListener() {
+                Preconditions.checkNotNull(ConnectFacade.createServer(node, handlerFactoryServer))
+                        .addListener(new ChannelFutureListener() {
 
-                    @Override public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                        if (channelFuture.isSuccess()) {
-                            node.setServerChannel(channelFuture.channel());
-                            LOG.info(node + " Server created [" + getSourceIp().getHostAddress() + ":" + getServerPort()
-                                    + "]");
-                            node.setTimer(TimerType.RetryOpenTimer, node.getRetryOpenTime());
-                        } else {
-                            LOG.info(node + " Server [" + node.getSourceIp().getHostAddress() + ":" + getServerPort()
-                                    + "] Could not be created " + channelFuture.cause());
-                        }
-                        serverChannelInit.set(false);
-                    }
-                });
+                            @Override public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                                if (channelFuture.isSuccess()) {
+                                    node.setServerChannel(channelFuture.channel());
+                                    LOG.info(node + " Server created [" + getSourceIp().getHostAddress() + ":"
+                                            + getServerPort() + "]");
+                                    node.setTimer(TimerType.RetryOpenTimer, node.getRetryOpenTime());
+                                } else {
+                                    LOG.info(node + " Server [" + node.getSourceIp().getHostAddress() + ":"
+                                            + getServerPort() + "] Could not be created " + channelFuture.cause());
+                                }
+                                serverChannelInit.set(false);
+                            }
+                        });
             }
         }, ThreadsWorker.WorkerType.DEFAULT);
     }
@@ -1248,16 +1245,17 @@ public final class SxpNode {
         return new ChannelFutureListener() {
 
             @Override public void operationComplete(ChannelFuture future) throws Exception {
-                ConnectFacade.createServer(sxpNode, handlerFactoryServer).addListener(new ChannelFutureListener() {
+                Preconditions.checkNotNull(ConnectFacade.createServer(sxpNode, handlerFactoryServer))
+                        .addListener(new ChannelFutureListener() {
 
-                    @Override public void operationComplete(ChannelFuture future) throws Exception {
-                        setServerChannel(future.channel());
-                        serverChannelInit.set(false);
-                        if (updateMD5counter.decrementAndGet() > 0) {
-                            serverChannel.close().addListener(createMD5updateListener(sxpNode));
-                        }
-                    }
-                });
+                            @Override public void operationComplete(ChannelFuture future) throws Exception {
+                                setServerChannel(future.channel());
+                                serverChannelInit.set(false);
+                                if (updateMD5counter.decrementAndGet() > 0) {
+                                    serverChannel.close().addListener(createMD5updateListener(sxpNode));
+                                }
+                            }
+                        });
             }
         };
     }

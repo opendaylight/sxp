@@ -42,7 +42,12 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-all</artifactId>
-    	</dependency>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport-native-epoll</artifactId>
+        <classifier>${os.detected.classifier}</classifier>
+      </dependency>
       <dependency>
         <groupId>org.opendaylight.tcpmd5</groupId>
         <artifactId>tcpmd5-jni</artifactId>
