@@ -8,10 +8,10 @@
 
 package org.opendaylight.sxp.core.messaging.legacy;
 
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 
+import com.google.common.net.InetAddresses;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
@@ -36,7 +36,7 @@ public class MappingRecordList extends ArrayList<MappingRecord> {
         return mappingRecordList;
     }
 
-    private static byte[] toBytes(MappingRecord mappingRecord) throws UnknownHostException {
+    private static byte[] toBytes(MappingRecord mappingRecord) {
         String _prefix = new String(mappingRecord.getAddress().getValue());
         if (_prefix.startsWith("/")) {
             _prefix = _prefix.substring(1);
@@ -46,7 +46,7 @@ public class MappingRecordList extends ArrayList<MappingRecord> {
             _prefix = _prefix.substring(0, i);
         }
 
-        byte[] bprefix = InetAddress.getByName(_prefix).getAddress();
+        byte[] bprefix = InetAddresses.forString(_prefix).getAddress();
         byte[] _mappingRecord = ArraysUtil.combine(
                 ArraysUtil.int2bytes(mappingRecord.getOperationCode().getIntValue()),
                 ArraysUtil.int2bytes(mappingRecord.getLength()), bprefix);
@@ -62,7 +62,7 @@ public class MappingRecordList extends ArrayList<MappingRecord> {
         super(INITIAL_CAPACITY);
     }
 
-    public byte[] toBytes() throws UnknownHostException {
+    public byte[] toBytes() {
         byte[] mappingRecords = new byte[0];
         for (MappingRecord mappingRecord : this) {
             mappingRecords = ArraysUtil.combine(mappingRecords, toBytes(mappingRecord));

@@ -119,7 +119,7 @@ public class LegacyMessageFactory extends MessageFactory {
      * as host address.
      */
     public static ByteBuf createUpdate(MasterDatabase masterDatabase, boolean changed, Version version)
-            throws UnknownVersionException, UnknownHostException {
+            throws UnknownVersionException {
         MappingRecordList mappingRecords = new MappingRecordList();
 
         // Processing of added and deleted bindings.

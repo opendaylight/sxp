@@ -413,8 +413,8 @@ public class MessageFactoryTest {
                 assertTrue(notification instanceof UpdateMessage);
                 assertEquals(MessageType.Update, ((UpdateMessage) notification).getType());
                 msg =
-                        new byte[] {0, 0, 0, 42, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 14, -64, -88, 0, 1, 0, 0, 0, 1, 0, 0,
-                                0, 2, 39, 16, 0, 0, 0, 3, 0, 0, 0, 4, -64, -88, 0, 2};
+                        new byte[] {0, 0, 0, 51, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 14, -64, -88, 0, 1, 0, 0, 0, 1, 0, 0,
+                                0, 2, 39, 16, 0, 0, 0, 3, 0, 0, 0, 13, -64, -88, 0, 2, 0, 0, 0, 2, 0, 0, 0, 1, 32};
                 message = PooledByteBufAllocator.DEFAULT.buffer(msg.length);
                 message.writeBytes(msg);
                 notification = MessageFactory.parse(Version.Version3, message);

@@ -212,7 +212,7 @@ public class SxpLegacy implements Strategy {
     @Override
     public Notification onParseInput(ByteBuf request) throws ErrorMessageException {
         try {
-            return MessageFactory.parse(Version.Version1, request);
+            return MessageFactory.parse(context.getVersion(), request);
         } catch (UnknownNodeIdException | UnknownSxpMessageTypeException | AddressLengthException | AttributeLengthException | UnknownHostException | TlvNotFoundException | UnknownPrefixException e) {
             throw new ErrorMessageException(ErrorCodeNonExtended.MessageParseError, e);
         }
@@ -223,11 +223,7 @@ public class SxpLegacy implements Strategy {
             throws UpdateMessageCompositionException {
         // Supports: IPv4 Bindings
         // Compose new messages according to all|changed bindings and version.
-        try {
-            return LegacyMessageFactory.createUpdate(masterDatabase, connection.isUpdateAllExported(),
-                    connection.getVersion());
-        } catch (UnknownHostException e) {
-            throw new UpdateMessageCompositionException(connection.getVersion(), connection.isUpdateAllExported(), e);
-        }
+        return LegacyMessageFactory.createUpdate(masterDatabase, connection.isUpdateAllExported(),
+                connection.getVersion());
     }
 }

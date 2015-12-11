@@ -56,6 +56,9 @@ public class MappingRecord extends ArrayList<Tlv> {
         int length = ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 4, 4));
         tlvBuilder.setValue(ArraysUtil.readBytes(array, 8, length));
 
+        if (tlvBuilder.getType() == null) {
+            tlvBuilder.build();
+        }
         TlvOptionalFields tlvOptionalFields = null;
         switch (tlvBuilder.getType()) {
         case PrefixLength:
@@ -170,34 +173,29 @@ public class MappingRecord extends ArrayList<Tlv> {
     public static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord decodeAddress(
             AttributeType operationCode, int length, byte[] array) throws AddressLengthException, UnknownPrefixException, UnknownHostException {
         int addressLength;
-        boolean add = false;
         switch (operationCode) {
-        case AddIpv4:
-            add = true;
-        case DelIpv4:
-            addressLength = 4;
-            break;
-        case AddIpv6:
-            add = true;
-        case DelIpv6:
-            addressLength = 16;
-            break;
-        default:
-            throw new AddressLengthException();
+            case AddIpv4:
+            case DelIpv4:
+                addressLength = 4;
+                break;
+            case AddIpv6:
+            case DelIpv6:
+                addressLength = 16;
+                break;
+            default:
+                throw new AddressLengthException();
         }
         byte[] address = ArraysUtil.readBytes(array, 8, addressLength);
 
         MappingRecord mappingRecord = new MappingRecord();
-        if (add) {
-            array = ArraysUtil.readBytes(array, 8 + addressLength);
+        array = ArraysUtil.readBytes(array, 8 + addressLength);
 
-            int tlvsLength = 0;
-            do {
-                Tlv tlv = _decode(array);
-                mappingRecord.add(tlv);
-                array = ArraysUtil.readBytes(array, tlv.getLength());
-                tlvsLength += tlv.getLength();
-            } while (addressLength + tlvsLength < length);
+        int tlvsLength = 0;
+        while (addressLength + tlvsLength < length) {
+            Tlv tlv = _decode(array);
+            mappingRecord.add(tlv);
+            array = ArraysUtil.readBytes(array, tlv.getLength());
+            tlvsLength += tlv.getLength();
         }
         MappingRecordBuilder recordBuilder = new MappingRecordBuilder();
         recordBuilder.setOperationCode(operationCode);
@@ -296,7 +294,7 @@ public class MappingRecord extends ArrayList<Tlv> {
 
     public TlvOptionalFields get(TlvType type) throws TlvNotFoundException {
         for (Tlv tlv : this) {
-            if (tlv.getType().equals(type) && tlv instanceof Tlv) {
+            if (tlv.getType().equals(type)) {
                 return tlv.getTlvOptionalFields();
             }
         }

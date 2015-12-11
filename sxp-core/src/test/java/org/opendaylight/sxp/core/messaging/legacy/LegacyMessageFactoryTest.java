@@ -257,7 +257,7 @@ public class LegacyMessageFactoryTest {
                         message =
                         (UpdateMessageLegacy) LegacyMessageFactory.decodeUpdate(
                                 new byte[] {0, 0, 0, 1, 0, 0, 0, 14, -64, -88, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 39, 16, 0,
-                                        0, 0, 3, 0, 0, 0, 4, -64, -88, 0, 2});
+                                        0, 0, 3, 0, 0, 0, 13, -64, -88, 0, 2, 0, 0, 0, 2, 0, 0, 0, 1, 32});
                 assertEquals(2, message.getMappingRecord().size());
                 org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord
                         record =
