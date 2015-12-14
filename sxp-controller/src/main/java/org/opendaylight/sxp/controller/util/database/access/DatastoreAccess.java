@@ -99,8 +99,9 @@ public final class DatastoreAccess {
         Preconditions.checkNotNull(logicalDatastoreType);
         Preconditions.checkNotNull(path);
         synchronized (bindingTransactionChain) {
-            ReadOnlyTransaction transaction = bindingTransactionChain.newReadOnlyTransaction();
-            return transaction.read(logicalDatastoreType, path);
+            try (ReadOnlyTransaction transaction = bindingTransactionChain.newReadOnlyTransaction()) {
+                return transaction.read(logicalDatastoreType, path);
+            }
         }
     }
 }
