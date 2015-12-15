@@ -16,7 +16,7 @@ import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
+import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.DateAndTime;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.when;
 
         private static SxpNode sxpNode;
         private static SxpDatabaseImpl sxpDatabase;
-        private static MasterDatabaseProvider databaseProvider;
+        private static MasterDatabaseInf databaseProvider;
         private static int time;
 
         @Before public void init() throws Exception {
@@ -60,7 +60,7 @@ import static org.mockito.Mockito.when;
                 sxpNode = PowerMockito.mock(SxpNode.class);
                 PowerMockito.when(sxpNode.isEnabled()).thenReturn(true);
                 sxpDatabase = mock(SxpDatabaseImpl.class);
-                databaseProvider = mock(MasterDatabaseProvider.class);
+                databaseProvider = mock(MasterDatabaseInf.class);
                 PowerMockito.when(sxpNode.getBindingSxpDatabase()).thenReturn(sxpDatabase);
                 PowerMockito.when(sxpNode.getBindingMasterDatabase()).thenReturn(databaseProvider);
         }
@@ -183,12 +183,6 @@ import static org.mockito.Mockito.when;
                 BindingManager manager = new BindingManager(sxpNode);
                 manager.cleanUpBindings(NodeId.getDefaultInstance("0.0.0.0"));
                 verify(sxpDatabase).cleanUpBindings(NodeId.getDefaultInstance("0.0.0.0"));
-        }
-
-        @Test public void testPurgeBindings() throws Exception {
-                BindingManager manager = new BindingManager(sxpNode);
-                manager.purgeBindings(NodeId.getDefaultInstance("0.0.0.0"));
-                verify(sxpDatabase).purgeBindings(NodeId.getDefaultInstance("0.0.0.0"));
         }
 
         @Test public void testSetAsCleanUp() throws Exception {

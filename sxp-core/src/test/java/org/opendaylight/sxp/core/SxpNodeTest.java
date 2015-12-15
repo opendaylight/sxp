@@ -19,8 +19,8 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.ConnectFacade;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseProvider;
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseProvider;
+import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
+import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.unknown.UnknownSxpConnectionException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
@@ -38,7 +38,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilterBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
@@ -76,8 +75,8 @@ import static org.mockito.Mockito.*;
 
         private static SxpNode node;
         private static SxpNodeIdentity nodeIdentity;
-        private static MasterDatabaseProvider databaseProvider;
-        private static SxpDatabaseProvider sxpDatabaseProvider;
+        private static MasterDatabaseInf databaseProvider;
+        private static SxpDatabaseInf sxpDatabaseProvider;
         private static ThreadsWorker worker;
         private static Timers timers;
         private static int ip4Adrres = 0;
@@ -100,8 +99,8 @@ import static org.mockito.Mockito.*;
                 when(nodeIdentity.getSecurity()).thenReturn(security);
                 when(nodeIdentity.getMappingExpanded()).thenReturn(150);
 
-                databaseProvider = mock(MasterDatabaseProvider.class);
-                sxpDatabaseProvider = mock(SxpDatabaseProvider.class);
+                databaseProvider = mock(MasterDatabaseInf.class);
+                sxpDatabaseProvider = mock(SxpDatabaseInf.class);
                 node =
                         SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), nodeIdentity, databaseProvider,
                                 sxpDatabaseProvider, worker);
