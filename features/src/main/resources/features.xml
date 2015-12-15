@@ -103,8 +103,6 @@
       <bundle>mvn:io.netty/netty-common/${netty.version}</bundle>
       <bundle>mvn:io.netty/netty-handler/${netty.version}</bundle>
       <bundle>mvn:io.netty/netty-transport/${netty.version}</bundle>
-      <!--bundle>mvn:junit/junit/${junit.version}</bundle -->
-      <!--bundle>mvn:org.hamcrest/hamcrest-all/${hamcrest.version}</bundle-->
     </feature>
     <feature name='odl-sxp-controller' version='${project.version}' description='OpenDaylight :: Sxp :: Controller'>
       <feature version='${project.version}'>odl-sxp-api</feature>

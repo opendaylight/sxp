@@ -81,20 +81,6 @@
       <type>xml</type>
       <scope>runtime</scope>
     </dependency>
-    <!--dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-      <type>jar</type>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-core</artifactId>
-        <version>${logback.version}</version>
-        <type>jar</type>
-        <scope>compile</scope>
-    </dependency-->          
 
     <!-- Project local feautures -->
     <!--
