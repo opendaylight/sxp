@@ -38,7 +38,7 @@ public interface SxpDatabaseInf {
          * @param nodeId NodeId used to filter Binding that will be removed
          * @throws NodeIdNotDefinedException If NodeId is null
          */
-        void cleanUpBindings(NodeId nodeId) throws NodeIdNotDefinedException;
+        void cleanUpBindings(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException;
 
         /**
          * Delete Bindings from specified SxpDatabase
@@ -80,5 +80,5 @@ public interface SxpDatabaseInf {
          * @param nodeId NodeId used to filter Bindings that will be set for CleanUp
          * @throws NodeIdNotDefinedException If NodeId is null
          */
-        void setAsCleanUp(NodeId nodeId) throws NodeIdNotDefinedException;
+        void setAsCleanUp(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException;
 }
