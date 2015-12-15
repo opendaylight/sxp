@@ -21,7 +21,6 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.CheckedFuture;
-import com.google.common.util.concurrent.JdkFutureAdapters;
 import com.google.common.util.concurrent.ListenableFuture;
 
 public final class DatastoreAccess {
@@ -50,7 +49,7 @@ public final class DatastoreAccess {
         synchronized (bindingTransactionChain) {
             WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
             transaction.delete(logicalDatastoreType, path);
-            return JdkFutureAdapters.listenInPoolThread(transaction.submit());
+            return transaction.submit();
         }
     }
 
@@ -89,7 +88,7 @@ public final class DatastoreAccess {
         synchronized (bindingTransactionChain) {
             WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
             transaction.put(logicalDatastoreType, path, data);
-            return JdkFutureAdapters.listenInPoolThread(transaction.submit());
+            return transaction.submit();
         }
     }
 
