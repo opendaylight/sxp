@@ -9,6 +9,7 @@
 package org.opendaylight.sxp.controller.util.database.access;
 
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseAccess;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
@@ -33,13 +34,13 @@ public final class MasterDatabaseAccessImpl implements MasterDatabaseAccess {
 
     protected static final Logger LOG = LoggerFactory.getLogger(MasterDatabaseAccessImpl.class.getName());
 
-    protected String controllerName;
+    private final String controllerName;
 
-    protected InstanceIdentifier<MasterDatabase> databaseIdentifier;
+    private final InstanceIdentifier<MasterDatabase> databaseIdentifier;
 
-    protected DatastoreAccess datastoreAccess;
+    private final DatastoreAccess datastoreAccess;
 
-    protected LogicalDatastoreType logicalDatastoreType;
+    private final LogicalDatastoreType logicalDatastoreType;
 
     public MasterDatabaseAccessImpl(String controllerName, DatastoreAccess datastoreAccess,
             LogicalDatastoreType logicalDatastoreType) {

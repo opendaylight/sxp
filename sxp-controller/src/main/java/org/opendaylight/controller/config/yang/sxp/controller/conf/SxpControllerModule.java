@@ -60,7 +60,7 @@ public class SxpControllerModule extends
             dataChangeListenerRegistrations.add(
                     dataBroker.registerDataChangeListener(LogicalDatastoreType.CONFIGURATION,
                             DataChangeConfigurationListenerImpl.SUBSCRIBED_PATH,
-                            new DataChangeConfigurationListenerImpl(new SxpDatastoreImpl(controllerName,
+                            new DataChangeConfigurationListenerImpl(new SxpDatastoreImpl(
                                     new SxpDatabaseAccessImpl(controllerName, datastoreAccess,
                                             LogicalDatastoreType.OPERATIONAL))), DataChangeScope.SUBTREE));
 

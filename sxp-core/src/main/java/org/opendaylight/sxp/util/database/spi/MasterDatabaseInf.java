@@ -125,5 +125,5 @@ public interface MasterDatabaseInf {
          * @return If operation was successful
          * @throws DatabaseAccessException If database isn't accessible
          */
-        boolean setAsDeleted(SxpNode owner, List<PrefixGroup> prefixGroups) throws Exception;
+        boolean setAsDeleted(SxpNode owner, List<PrefixGroup> prefixGroups) throws DatabaseAccessException;
 }

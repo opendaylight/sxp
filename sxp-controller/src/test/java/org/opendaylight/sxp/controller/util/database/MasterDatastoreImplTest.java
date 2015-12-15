@@ -39,7 +39,7 @@ public class MasterDatastoreImplTest {
                 access = mock(MasterDatabaseAccess.class);
                 masterDatabase = mock(MasterDatabase.class);
                 when(access.read()).thenReturn(masterDatabase);
-                datastore = new MasterDatastoreImpl("TEST", access);
+                datastore = new MasterDatastoreImpl(access);
         }
 
         @Test public void testAddBindings() throws Exception {
