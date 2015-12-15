@@ -399,8 +399,8 @@ public final class Sxpv4 extends SxpLegacy {
             NodeId peerId;
             peerId = connection.getNodeIdRemote();
             connection.setPurgeAllMessageReceived();
-            connection.getContext().getOwner().purgeBindings(peerId);
-            connection.getContext().getOwner().notifyService();
+            connection.getOwner().purgeBindings(peerId);
+            connection.getOwner().notifyService();
             return;
 
         } else if (message instanceof KeepaliveMessage) {
