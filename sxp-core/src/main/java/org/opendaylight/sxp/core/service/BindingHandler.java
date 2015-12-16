@@ -15,6 +15,7 @@ import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.ThreadsWorker;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.messaging.legacy.MappingRecord;
+import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.exception.message.UpdateMessagePeerSequenceException;
@@ -24,6 +25,7 @@ import org.opendaylight.sxp.util.exception.message.UpdateMessageSgtException;
 import org.opendaylight.sxp.util.exception.message.attribute.TlvNotFoundException;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
@@ -34,6 +36,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.BindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
@@ -59,7 +63,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**
@@ -97,7 +103,6 @@ public final class BindingHandler {
         pathGroupBuilder.setPrefixGroup(new ArrayList<>(prefixGroups));
         pathGroups.add(pathGroupBuilder.build());
 
-        peerSequence = null;
         prefixGroups.clear();
         return pathGroups;
     }
@@ -112,7 +117,8 @@ public final class BindingHandler {
      * @throws UpdateMessageSgtException    If is Sgt value isn't correct
      * @throws UpdateMessagePrefixException If Prefixes are empty or null
      */
-    private static PrefixGroup getPrefixGroups(String updateMessage, int sgt, List<IpPrefix> prefixes)
+    private static PrefixGroup getPrefixGroups(String updateMessage, int sgt, List<IpPrefix> prefixes,
+            SxpBindingFilter filter)
             throws UpdateMessageSgtException, UpdateMessagePrefixException {
         if (sgt == -1) {
             throw new UpdateMessageSgtException(updateMessage);
@@ -120,24 +126,20 @@ public final class BindingHandler {
             throw new UpdateMessagePrefixException(updateMessage);
         }
 
-        PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder();
-        // TODO: prefixGroupBuilder.setAttribute(value);
-        prefixGroupBuilder.setSgt(new Sgt(sgt));
-        List<Binding> bindings = new ArrayList<Binding>();
-
+        List<Binding> bindings = new ArrayList<>();
+        PrefixGroup prefixGroup = new PrefixGroupBuilder().setSgt(new Sgt(sgt)).setBinding(bindings).build();
         DateAndTime timestamp = TimeConv.toDt(System.currentTimeMillis());
 
         for (IpPrefix ipPrefix : prefixes) {
-            BindingBuilder bindingBuilder = new BindingBuilder();
-            bindingBuilder.setIpPrefix(ipPrefix);
-            bindingBuilder.setTimestamp(timestamp);
-            bindings.add(bindingBuilder.build());
+            Binding binding = new BindingBuilder().setIpPrefix(ipPrefix).setTimestamp(timestamp).build();
+            if (filter != null && filter.filter(
+                    SxpBindingIdentity.create(binding, prefixGroup, new PathGroupBuilder().build()))) {
+                continue;
+            }
+            bindings.add(binding);
         }
-        prefixGroupBuilder.setBinding(bindings);
-
-        sgt = -1;
         prefixes.clear();
-        return prefixGroupBuilder.build();
+        return prefixGroup;
     }
 
     /**
@@ -171,57 +173,50 @@ public final class BindingHandler {
      * @throws UpdateMessagePrefixGroupsException If PrefixGroup isn't correct in message
      * @throws UpdateMessagePeerSequenceException If PeerSequence isn't correct in message
      */
-    public static SxpDatabase processMessageAddition(NodeId nodeId, UpdateMessageLegacy message)
+    public static SxpDatabase processMessageAddition(NodeId nodeId, UpdateMessageLegacy message, SxpBindingFilter filter)
             throws TlvNotFoundException, UpdateMessagePrefixGroupsException, UpdateMessagePeerSequenceException {
-        SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
-
         DateAndTime timestamp = TimeConv.toDt(System.currentTimeMillis());
-        List<PrefixGroup> prefixGroups = new ArrayList<>();
+        List<PathGroup> pathGroups = new ArrayList<>();
+        List<NodeId> peerSequence = new ArrayList<>();
+        Map<Sgt,PrefixGroup> prefixGroupMap = new HashMap<>();
 
+        SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder().setPathGroup(pathGroups);
         for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord mappingRecord : message
                 .getMappingRecord()) {
-            if (mappingRecord.getOperationCode().equals(AttributeType.AddIpv4)
-                    || mappingRecord.getOperationCode().equals(AttributeType.AddIpv6)) {
-                int sgt = ((SourceGroupTagTlvAttribute) MappingRecord.create(mappingRecord.getTlv()).get(TlvType.Sgt))
-                        .getSourceGroupTagTlvAttributes().getSgt();
-
-                boolean contains = false;
-                for (PrefixGroup prefixGroup : prefixGroups) {
-                    if (prefixGroup.getSgt().getValue() == sgt) {
-                        BindingBuilder bindingBuilder = new BindingBuilder();
-                        bindingBuilder.setIpPrefix(mappingRecord.getAddress());
-                        bindingBuilder.setTimestamp(timestamp);
-                        prefixGroup.getBinding().add(bindingBuilder.build());
-                        contains = true;
-                        break;
+            switch (mappingRecord.getOperationCode()) {
+                case AddIpv4:
+                case AddIpv6:
+                    Sgt
+                            sgt =
+                            new Sgt(((SourceGroupTagTlvAttribute) MappingRecord.create(mappingRecord.getTlv())
+                                    .get(TlvType.Sgt)).getSourceGroupTagTlvAttributes().getSgt());
+                    Binding
+                            binding =
+                            new BindingBuilder().setIpPrefix(mappingRecord.getAddress())
+                                    .setTimestamp(new DateAndTime(timestamp))
+                                    .build();
+                    PrefixGroup prefixGroup = prefixGroupMap.get(sgt);
+                    if (prefixGroup == null) {
+                        PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder();
+                        prefixGroupBuilder.setSgt(new Sgt(sgt));
+                        prefixGroupBuilder.setBinding(new ArrayList<Binding>());
+                        prefixGroup = prefixGroupBuilder.build();
+                        prefixGroupMap.put(sgt, prefixGroup);
                     }
-                }
-                if (!contains) {
-                    PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder();
-                    prefixGroupBuilder.setSgt(new Sgt(sgt));
-
-                    List<Binding> bindings = new ArrayList<Binding>();
-                    BindingBuilder bindingBuilder = new BindingBuilder();
-                    bindingBuilder.setIpPrefix(mappingRecord.getAddress());
-                    bindingBuilder.setTimestamp(new DateAndTime(timestamp));
-                    bindings.add(bindingBuilder.build());
-                    prefixGroupBuilder.setBinding(bindings);
-
-                    prefixGroups.add(prefixGroupBuilder.build());
-                }
+                    if (filter != null && filter.filter(
+                            SxpBindingIdentity.create(binding, prefixGroup, new PathGroupBuilder().build()))) {
+                        continue;
+                    }
+                    prefixGroup.getBinding().add(binding);
+                    break;
             }
         }
 
-        if (prefixGroups.isEmpty()) {
-            databaseBuilder.setPathGroup(new ArrayList<PathGroup>());
-            return databaseBuilder.build();
-        }
-        String updateMessage = MessageFactory.toString(message);
-        List<NodeId> peerSequence = new ArrayList<NodeId>();
         peerSequence.add(nodeId);
-
-        databaseBuilder.setPathGroup(getPathGroups(updateMessage, new ArrayList<PathGroup>(), peerSequence,
-                prefixGroups));
+        if (!prefixGroupMap.isEmpty()) {
+            databaseBuilder.setPathGroup(getPathGroups(MessageFactory.toString(message), pathGroups, peerSequence,
+                    new ArrayList<PrefixGroup>(prefixGroupMap.values())));
+        }
         return databaseBuilder.build();
     }
 
@@ -233,131 +228,67 @@ public final class BindingHandler {
      * @throws UpdateMessagePrefixGroupsException If PrefixGroup isn't correct in message
      * @throws UpdateMessagePeerSequenceException If PeerSequence isn't correct in message
      */
-    public static SxpDatabase processMessageAddition(UpdateMessage message)
+    public static SxpDatabase processMessageAddition(UpdateMessage message, SxpBindingFilter filter)
             throws UpdateMessageSgtException, UpdateMessagePrefixException, UpdateMessagePrefixGroupsException,
             UpdateMessagePeerSequenceException {
         String updateMessage = MessageFactory.toString(message);
-
         SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
 
-        List<Attribute> attGlobalOptional = new ArrayList<>();
         List<PathGroup> pathGroups = new ArrayList<>();
         List<PrefixGroup> prefixGroups = new ArrayList<>();
-        List<IpPrefix> prefixes = new ArrayList<IpPrefix>();
-
+        List<IpPrefix> prefixes = new ArrayList<>();
         List<NodeId> peerSequence = null;
         int sgt = -1;
-        int seq = 0, sseq = 0;
         for (Attribute attribute : message.getAttribute()) {
-            if (seq == 0 && attribute.getType() == AttributeType.PeerSequence) {
-                seq++;
+            if (attribute.getFlags().isOptional() && attribute.getFlags().isNonTransitive()) {
+                continue;
             }
-
-            // 4. Path-groups processing.
-            // 4.1 Per-path common optional attributes.
-            // 4.2 Add-Prefix groups.
-            // 4.1.1 Per <path, SGT> optional attribute.
-            if (seq == 1) {
-                while (true) {
-                    if (sseq == 0) {
-                        if (attribute.getType() == AttributeType.PeerSequence) {
-                            peerSequence = ((PeerSequenceAttribute) attribute.getAttributeOptionalFields())
-                                    .getPeerSequenceAttributes().getNodeId();
-                            break;
-                        } else {
-                            sseq++;
-                        }
+            switch (attribute.getType()) {
+                case AddIpv4:
+                    prefixes.add(((AddIpv4Attribute) attribute.getAttributeOptionalFields()).getAddIpv4Attributes()
+                            .getIpPrefix());
+                    break;
+                case AddIpv6:
+                    prefixes.add(((AddIpv6Attribute) attribute.getAttributeOptionalFields()).getAddIpv6Attributes()
+                            .getIpPrefix());
+                    break;
+                case Ipv4AddPrefix:
+                    prefixes.addAll(
+                            ((Ipv4AddPrefixAttribute) attribute.getAttributeOptionalFields()).getIpv4AddPrefixAttributes()
+                                    .getIpPrefix());
+                    break;
+                case Ipv6AddPrefix:
+                    prefixes.addAll(
+                            ((Ipv6AddPrefixAttribute) attribute.getAttributeOptionalFields()).getIpv6AddPrefixAttributes()
+                                    .getIpPrefix());
+                    break;
+                case PeerSequence:
+                    if (peerSequence != null && !prefixes.isEmpty() && prefixGroups.isEmpty()) {
+                        prefixGroups.add(getPrefixGroups(updateMessage, sgt, prefixes, filter));
+                        pathGroups = getPathGroups(updateMessage, pathGroups, peerSequence, prefixGroups);
                     }
-                    if (sseq == 1) {
-                        if (attribute.getType() == AttributeType.SourceGroupTag) {
-                            sgt = ((SourceGroupTagAttribute) attribute.getAttributeOptionalFields())
-                                    .getSourceGroupTagAttributes().getSgt();
-                            break;
-                        } else {
-                            sseq++;
-                        }
+                    peerSequence =
+                            ((PeerSequenceAttribute) attribute.getAttributeOptionalFields()).getPeerSequenceAttributes()
+                                    .getNodeId();
+                    break;
+                case SourceGroupTag:
+                    if (sgt != -1 && !prefixGroups.isEmpty()){
+                        prefixGroups.add(getPrefixGroups(updateMessage, sgt, prefixes, filter));
                     }
-                    if (sseq == 2) {
-                        // 4.1.2 IPv4-Add-Prefix attribute.
-                        if (attribute.getType() == AttributeType.Ipv4AddPrefix) {
-                            prefixes.addAll(((Ipv4AddPrefixAttribute) attribute.getAttributeOptionalFields())
-                                    .getIpv4AddPrefixAttributes().getIpPrefix());
-                            break;
-                        }
-                        // 4.1.3 IPv6-Add-Prefix attribute.
-                        else if (attribute.getType() == AttributeType.Ipv6AddPrefix) {
-                            prefixes.addAll(((Ipv6AddPrefixAttribute) attribute.getAttributeOptionalFields())
-                                    .getIpv6AddPrefixAttributes().getIpPrefix());
-                            break;
-                        }
-                        // 4.3 TODO: IPv4-Add-Table attribute.
-                        else if (attribute.getType() == AttributeType.Ipv4AddTable) {
-                            // prefixes.addAll(((Ipv4AddTableAttribute)
-                            // attribute.getAttributeOptionalFields()).getIpPrefix());
-                            break;
-                        }
-                        // 4.4 TODO: IPv6-Add-Table attribute.
-                        else if (attribute.getType() == AttributeType.Ipv6AddTable) {
-                            // prefixes.addAll(((Ipv6AddTableAttribute)
-                            // attribute.getAttributeOptionalFields()).getIpPrefix());
-                            break;
-                        }
-                        // 4.5 Add-IPv4 attributes.
-                        else if (attribute.getType() == AttributeType.AddIpv4) {
-                            prefixes.add(((AddIpv4Attribute) attribute.getAttributeOptionalFields())
-                                    .getAddIpv4Attributes().getIpPrefix());
-                            break;
-                        }
-                        // 4.6 Add-IPv6 attributes.
-                        else if (attribute.getType() == AttributeType.AddIpv6) {
-                            prefixes.add(((AddIpv6Attribute) attribute.getAttributeOptionalFields())
-                                    .getAddIpv6Attributes().getIpPrefix());
-                            break;
-
-                        } else if (attribute.getType() == AttributeType.SourceGroupTag) {
-                            sseq = 1;
-                            // Prefix groups.
-                            prefixGroups.add(getPrefixGroups(updateMessage, sgt, prefixes));
-                            continue;
-
-                        } else if (attribute.getType() == AttributeType.PeerSequence) {
-                            // If an each prefix group is introduced by its own
-                            // PEER_SEQUENCE attribute.
-                            if (!prefixes.isEmpty() && prefixGroups.isEmpty()) {
-                                prefixGroups.add(getPrefixGroups(updateMessage, sgt, prefixes));
-                            }
-                            sseq = 0;
-                            // Path groups.
-                            pathGroups = getPathGroups(updateMessage, pathGroups, peerSequence, prefixGroups);
-                            continue;
-
-                        } else {
-                            seq++;
-                            break;
-                        }
-                    }
-                }
-
-                // The last attribute.
-                if (message.getAttribute().indexOf(attribute) == message.getAttribute().size() - 1) {
-                    // Prefix groups.
-                    prefixGroups.add(getPrefixGroups(updateMessage, sgt, prefixes));
-                    // Path groups.
-                    databaseBuilder.setPathGroup(getPathGroups(updateMessage, pathGroups, peerSequence, prefixGroups));
-                    return databaseBuilder.build();
-                }
-
+                    sgt =
+                            ((SourceGroupTagAttribute) attribute.getAttributeOptionalFields()).getSourceGroupTagAttributes()
+                                    .getSgt();
+                    break;
+                case Ipv4AddTable:
+                case Ipv6AddTable:
+                    // TODO prefixes.addAll(((IpvAddTableAttribute)
+                    // TODO attribute.getAttributeOptionalFields()).getIpPrefix());
+                    break;
             }
-            // 5. Trailing optional non-transitive attributes
-            // processing.
-            if (seq == 2) {
-                if (attribute.getFlags().isOptional() && attribute.getFlags().isNonTransitive()) {
-                    attGlobalOptional.add(attribute);
-                    continue;
-                } else {
-                    seq++;
-                }
-            }
+        }
+        if (peerSequence != null && !prefixes.isEmpty() && prefixGroups.isEmpty()) {
+            prefixGroups.add(getPrefixGroups(updateMessage, sgt, prefixes, filter));
+            pathGroups = getPathGroups(updateMessage, pathGroups, peerSequence, prefixGroups);
         }
         databaseBuilder.setPathGroup(pathGroups);
         return databaseBuilder.build();
@@ -377,60 +308,47 @@ public final class BindingHandler {
     public static SxpDatabase processMessageDeletion(NodeId nodeId, UpdateMessage message)
             throws UpdateMessageSgtException, UpdateMessagePrefixException, UpdateMessagePrefixGroupsException,
             UpdateMessagePeerSequenceException {
+        SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder().setPathGroup(new ArrayList<PathGroup>());
 
-        SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
-
-        List<Attribute> attGlobalOptional = new ArrayList<Attribute>();
-        List<IpPrefix> prefixes = new ArrayList<IpPrefix>();
-
-        int seq = 0;
-        for (Attribute attribute : message.getAttribute()) {
-            // 2. Global optional attributes processing.
-            if (seq == 0) {
-                if (attribute.getFlags().isOptional()
-                        && (attribute.getFlags().isPartial() || !attribute.getFlags().isNonTransitive())) {
-                    attGlobalOptional.add(attribute);
-                    continue;
-                } else {
-                    seq++;
-                }
-            }
-            // 3. Delete attributes processing.
-            if (seq == 1) {
-                if (attribute.getType() == AttributeType.DelIpv4) {
-                    prefixes.add(((DeleteIpv4Attribute) attribute.getAttributeOptionalFields())
-                            .getDeleteIpv4Attributes().getIpPrefix());
-                    continue;
-                } else if (attribute.getType() == AttributeType.DelIpv6) {
-                    prefixes.add(((DeleteIpv6Attribute) attribute.getAttributeOptionalFields())
-                            .getDeleteIpv6Attributes().getIpPrefix());
-                    continue;
-                } else if (attribute.getType() == AttributeType.Ipv4DeletePrefix) {
-                    prefixes.addAll(((Ipv4DeletePrefixAttribute) attribute.getAttributeOptionalFields())
-                            .getIpv4DeletePrefixAttributes().getIpPrefix());
-                    continue;
-                } else if (attribute.getType() == AttributeType.Ipv6DeletePrefix) {
-                    prefixes.addAll(((Ipv6DeletePrefixAttribute) attribute.getAttributeOptionalFields())
-                            .getIpv6DeletePrefixAttributes().getIpPrefix());
-                    continue;
-                } else {
-                    break;
-                }
-            }
-        }
-        if (prefixes.isEmpty()) {
-            databaseBuilder.setPathGroup(new ArrayList<PathGroup>());
-            return databaseBuilder.build();
-        }
-        String updateMessage = MessageFactory.toString(message);
-
+        List<IpPrefix> prefixes = new ArrayList<>();
         List<PrefixGroup> prefixGroups = new ArrayList<>();
-        prefixGroups.add(getPrefixGroups(updateMessage, Configuration.DEFAULT_PREFIX_GROUP, prefixes));
-        List<NodeId> peerSequence = new ArrayList<NodeId>();
+        List<NodeId> peerSequence = new ArrayList<>();
         peerSequence.add(nodeId);
 
-        databaseBuilder.setPathGroup(getPathGroups(updateMessage, new ArrayList<PathGroup>(), peerSequence,
-                prefixGroups));
+        for (Attribute attribute : message.getAttribute()) {
+            if (attribute.getFlags().isOptional() && (attribute.getFlags().isPartial() || !attribute.getFlags()
+                    .isNonTransitive())) {
+                continue;
+            }
+            switch (attribute.getType()) {
+                case DelIpv4:
+                    prefixes.add(
+                            ((DeleteIpv4Attribute) attribute.getAttributeOptionalFields()).getDeleteIpv4Attributes()
+                                    .getIpPrefix());
+                    break;
+                case DelIpv6:
+                    prefixes.add(
+                            ((DeleteIpv6Attribute) attribute.getAttributeOptionalFields()).getDeleteIpv6Attributes()
+                                    .getIpPrefix());
+                    break;
+                case Ipv4DeletePrefix:
+                    prefixes.addAll(
+                            ((Ipv4DeletePrefixAttribute) attribute.getAttributeOptionalFields()).getIpv4DeletePrefixAttributes()
+                                    .getIpPrefix());
+                    break;
+                case Ipv6DeletePrefix:
+                    prefixes.addAll(
+                            ((Ipv6DeletePrefixAttribute) attribute.getAttributeOptionalFields()).getIpv6DeletePrefixAttributes()
+                                    .getIpPrefix());
+                    break;
+            }
+        }
+        if (!prefixes.isEmpty()) {
+            String updateMessage = MessageFactory.toString(message);
+            prefixGroups.add(getPrefixGroups(updateMessage, Configuration.DEFAULT_PREFIX_GROUP, prefixes, null));
+            databaseBuilder.setPathGroup(
+                    getPathGroups(updateMessage, databaseBuilder.getPathGroup(), peerSequence, prefixGroups));
+        }
         return databaseBuilder.build();
     }
 
@@ -448,31 +366,27 @@ public final class BindingHandler {
     public static SxpDatabase processMessageDeletion(NodeId nodeId, UpdateMessageLegacy message)
             throws UpdateMessagePrefixGroupsException, UpdateMessagePeerSequenceException, UpdateMessageSgtException,
             UpdateMessagePrefixException {
-        SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
+        SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder().setPathGroup(new ArrayList<PathGroup>());
+        List<PrefixGroup> prefixGroups = new ArrayList<>();
+        List<NodeId> peerSequence = new ArrayList<>();
 
-        List<IpPrefix> prefixes = new ArrayList<IpPrefix>();
+        List<IpPrefix> prefixes = new ArrayList<>();
         for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord mappingRecord : message
                 .getMappingRecord()) {
-            if (mappingRecord.getOperationCode().equals(AttributeType.DelIpv4)) {
-                prefixes.add(mappingRecord.getAddress());
-            } else if (mappingRecord.getOperationCode().equals(AttributeType.DelIpv6)) {
-                prefixes.add(mappingRecord.getAddress());
+            switch (mappingRecord.getOperationCode()) {
+                case DelIpv4:
+                case DelIpv6:
+                    prefixes.add(mappingRecord.getAddress());
+                    break;
             }
         }
-
-        if (prefixes.isEmpty()) {
-            databaseBuilder.setPathGroup(new ArrayList<PathGroup>());
-            return databaseBuilder.build();
+        if (!prefixes.isEmpty()) {
+            String updateMessage = MessageFactory.toString(message);
+            prefixGroups.add(getPrefixGroups(updateMessage, Configuration.DEFAULT_PREFIX_GROUP, prefixes, null));
+            peerSequence.add(nodeId);
+            databaseBuilder.setPathGroup(
+                    getPathGroups(updateMessage, databaseBuilder.getPathGroup(), peerSequence, prefixGroups));
         }
-        String updateMessage = MessageFactory.toString(message);
-
-        List<PrefixGroup> prefixGroups = new ArrayList<>();
-        prefixGroups.add(getPrefixGroups(updateMessage, Configuration.DEFAULT_PREFIX_GROUP, prefixes));
-        List<NodeId> peerSequence = new ArrayList<NodeId>();
-        peerSequence.add(nodeId);
-
-        databaseBuilder.setPathGroup(getPathGroups(updateMessage, new ArrayList<PathGroup>(), peerSequence,
-                prefixGroups));
         return databaseBuilder.build();
     }
 
@@ -509,7 +423,7 @@ public final class BindingHandler {
      * @param task       Task containing logic for exporting changes to SXP-DB
      * @param connection Connection on which Update Messages was received
      */
-    private static void startBindingHandle(Callable<?> task, final SxpConnection connection) {
+    public static void startBindingHandle(Callable<?> task, final SxpConnection connection) {
         if (task == null) {
             return;
         }
@@ -538,17 +452,16 @@ public final class BindingHandler {
         // Validate message.
         validateLegacyMessage(updateLegacyNotification.getMessage());
         // Get message relevant peer node ID.
-        NodeId peerId;
-        try {
-            peerId = NodeIdConv.createNodeId(updateLegacyNotification.getConnection().getDestination().getAddress());
-        } catch (UnknownNodeIdException e) {
-            LOG.warn(owner + " Unknown message relevant peer node ID | {} | {}", e.getClass().getSimpleName(),
-                    e.getMessage());
+        NodeId peerId = updateLegacyNotification.getConnection().getNodeIdRemote();
+        if (peerId == null) {
+            LOG.warn(owner + " Unknown message relevant peer node ID");
             return;
         }
         try {
             SxpDatabase databaseDelete = processMessageDeletion(peerId, updateLegacyNotification.getMessage()),
-                    databaseAdd = processMessageAddition(peerId, updateLegacyNotification.getMessage());
+                    databaseAdd =
+                            processMessageAddition(peerId, updateLegacyNotification.getMessage(),
+                                    updateLegacyNotification.getConnection().getFilter(FilterType.InboundDiscarding));
             processUpdate(databaseDelete, databaseAdd, owner, updateLegacyNotification.getConnection());
         } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixGroupsException | TlvNotFoundException | UpdateMessageSgtException | UpdateMessagePrefixException e) {
             LOG.warn(" Process legacy message addition/deletion ", owner, e);
@@ -621,7 +534,9 @@ public final class BindingHandler {
         }
         try {
             SxpDatabase databaseDelete = processMessageDeletion(peerId, updateNotification.getMessage()),
-                    databaseAdd = processMessageAddition(updateNotification.getMessage());
+                    databaseAdd =
+                            processMessageAddition(updateNotification.getMessage(),
+                                    updateNotification.getConnection().getFilter(FilterType.InboundDiscarding));
             processUpdate(databaseDelete, databaseAdd, owner, updateNotification.getConnection());
         } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixException |
                 UpdateMessagePrefixGroupsException | UpdateMessageSgtException e) {

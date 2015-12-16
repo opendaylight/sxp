@@ -31,6 +31,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.FlagsFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.TlvType;
@@ -169,6 +170,7 @@ import static org.mockito.Mockito.when;
                 AttributeBuilder builder = new AttributeBuilder();
                 builder.setAttributeOptionalFields(deleteIpv4AttributeBuilder.build());
                 builder.setType(AttributeType.DelIpv4);
+                builder.setFlags(new FlagsFields.Flags(true, false, true, false, false));
                 return builder.build();
         }
 
@@ -180,6 +182,7 @@ import static org.mockito.Mockito.when;
                 AttributeBuilder builder = new AttributeBuilder();
                 builder.setAttributeOptionalFields(deleteIpv6AttributeBuilder.build());
                 builder.setType(AttributeType.DelIpv6);
+                builder.setFlags(new FlagsFields.Flags(true, false, true, false, false));
                 return builder.build();
         }
 
@@ -191,6 +194,7 @@ import static org.mockito.Mockito.when;
                 AttributeBuilder builder = new AttributeBuilder();
                 builder.setAttributeOptionalFields(addIpv4AttributeBuilder.build());
                 builder.setType(AttributeType.AddIpv4);
+                builder.setFlags(new FlagsFields.Flags(true, false, true, false, false));
                 return builder.build();
         }
 
@@ -224,6 +228,7 @@ import static org.mockito.Mockito.when;
                 AttributeBuilder builder = new AttributeBuilder();
                 builder.setAttributeOptionalFields(addIpv6AttributeBuilder.build());
                 builder.setType(AttributeType.AddIpv6);
+                builder.setFlags(new FlagsFields.Flags(true, false, true, false, false));
                 return builder.build();
         }
 
@@ -354,7 +359,7 @@ import static org.mockito.Mockito.when;
                 ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
                 ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
 
-                SxpDatabase database = BindingHandler.processMessageAddition(getMessage(getAddition()));
+                SxpDatabase database = BindingHandler.processMessageAddition(getMessage(getAddition()), null);
                 assertDatabase(database, ipPrefixes);
                 assertDatabase(database, new int[] {25, 45});
         }
@@ -368,8 +373,8 @@ import static org.mockito.Mockito.when;
 
                 SxpDatabase
                         database =
-                        BindingHandler.processMessageAddition(new NodeId("0.0.0.0"),
-                                getMessageLegacy(getLegacyAddition()));
+                        BindingHandler.processMessageAddition(new NodeId("0.0.0.0"), getMessageLegacy(getLegacyAddition()),
+                                null);
                 assertDatabase(database, ipPrefixes);
                 assertDatabase(database, new int[] {10});
         }

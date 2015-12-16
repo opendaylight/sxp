@@ -107,6 +107,12 @@ public class SxpLegacy implements Strategy {
         LOG.warn(connection + " onException");
     }
 
+    /**
+     * @param connection
+     * @param _message
+     * @param ctx
+     * @return
+     */
     private boolean checkModeMismatch(SxpConnection connection, OpenMessageLegacy _message, ChannelHandlerContext ctx) {
         if (!(connection.isModeListener() && _message.getSxpMode().equals(ConnectionMode.Speaker)) && !(
                 connection.isModeSpeaker() && _message.getSxpMode().equals(ConnectionMode.Listener)) && !(
@@ -117,6 +123,28 @@ public class SxpLegacy implements Strategy {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Sets connection mode and NodeId of SxpConnection according to received message
+     *
+     * @param connection SxpConnection that will be updated
+     * @param mode       Mode received in message
+     */
+    private void setConnectionMode(SxpConnection connection,ConnectionMode mode){
+        try {
+            connection.setNodeIdRemote(NodeIdConv.createNodeId(connection.getDestination().getAddress()));
+        } catch (UnknownNodeIdException e) {
+            LOG.error("{} Unknown message relevant peer node ID", connection);
+        }
+        connection.setModeRemote(mode);
+        if (connection.getMode() == null || connection.getMode().equals(ConnectionMode.None)) {
+            if (mode.equals(ConnectionMode.Speaker)) {
+                connection.setMode(ConnectionMode.Listener);
+            } else {
+                connection.setMode(ConnectionMode.Speaker);
+            }
+        }
     }
 
     @Override
@@ -130,15 +158,7 @@ public class SxpLegacy implements Strategy {
                 // The SXP-mode, if not configured explicitly within the device,
                 // is set to the opposite value of the one received in the OPEN
                 // message.
-                if (connection.getMode() == null || connection.getMode().equals(ConnectionMode.None)) {
-                    if (_message.getSxpMode().equals(ConnectionMode.Speaker)) {
-                        connection.setMode(ConnectionMode.Listener);
-                    } else if (_message.getSxpMode().equals(ConnectionMode.Listener)) {
-                        connection.setMode(ConnectionMode.Speaker);
-                    } else {
-                        connection.setMode(ConnectionMode.Speaker);
-                    }
-                }
+                setConnectionMode(connection, _message.getSxpMode());
                 if (!checkModeMismatch(connection, _message, ctx)) {
                     // Close the dual channels.
                     connection.closeChannelHandlerContextComplements(ctx);
@@ -162,6 +182,7 @@ public class SxpLegacy implements Strategy {
                     throw new ErrorMessageException(ErrorCodeNonExtended.VersionMismatch,
                             new IncompatiblePeerVersionException(connection.getVersion(), _message.getVersion()));
                 }
+                setConnectionMode(connection, _message.getSxpMode());
                 if (!checkModeMismatch(connection, _message, ctx)) {
                     // Close the dual channels.
                     connection.closeChannelHandlerContextComplements(ctx);
@@ -192,17 +213,12 @@ public class SxpLegacy implements Strategy {
             LOG.info("{} PURGEALL processing", connection);
 
             // Get message relevant peer node ID.
-            NodeId peerId;
-            try {
-                peerId = NodeIdConv.createNodeId(connection.getDestination().getAddress());
-            } catch (UnknownNodeIdException e) {
-                LOG.warn(connection + " Unknown message relevant peer node ID | {} | {}", e.getClass().getSimpleName(),
-                        e.getMessage());
+            if (connection.getNodeIdRemote() == null) {
+                LOG.warn("{} Unknown message relevant peer node ID", connection);
                 return;
             }
-
             connection.setPurgeAllMessageReceived();
-            connection.getContext().getOwner().purgeBindings(peerId);
+            connection.getContext().getOwner().purgeBindings(connection.getNodeIdRemote());
             connection.getContext().getOwner().notifyService();
             return;
         }
@@ -221,7 +237,6 @@ public class SxpLegacy implements Strategy {
     @Override
     public ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
             throws UpdateMessageCompositionException {
-        // Supports: IPv4 Bindings
         // Compose new messages according to all|changed bindings and version.
         return LegacyMessageFactory.createUpdate(masterDatabase, connection.isUpdateAllExported(),
                 connection.getVersion());

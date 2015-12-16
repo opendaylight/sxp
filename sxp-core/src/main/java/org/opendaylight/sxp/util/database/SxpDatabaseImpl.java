@@ -12,12 +12,15 @@ import com.google.common.base.Preconditions;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.PeerSequence;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.peer.sequence.Peer;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroup;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroup;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
@@ -348,7 +351,7 @@ public class SxpDatabaseImpl implements SxpDatabaseInf {
      * @return Peer from which was binding received
      */
     private Peer getLastPeer(PeerSequence peerSequence){
-        if (peerSequence == null || peerSequence.getPeer() ==null) {
+        if (peerSequence == null || peerSequence.getPeer() == null || peerSequence.getPeer().isEmpty()) {
             return null;
         }
         for(Peer peer:peerSequence.getPeer()){
@@ -483,5 +486,52 @@ public class SxpDatabaseImpl implements SxpDatabaseInf {
             }
             return result;
         }
+    }
+
+    /**
+     * Filter out all Bindings that pass the filter criteria,
+     * only used to cleanUp SXP db for discarding inbound filter
+     *
+     * @param sxpDatabase SxpDatabase that will be filtered
+     * @param filter      SxpBindingFilter used for filtering
+     * @param remotePeer  NodeId of peer whose bindings will be filtered
+     * @return Copy of SxpDatabase containing only Bindings that wont pass Filter criteria
+     */
+    public static SxpDatabase filterDatabase(SxpDatabase sxpDatabase, SxpBindingFilter filter, NodeId remotePeer) {
+        SxpDatabaseBuilder sxpDatabaseBuilder = new SxpDatabaseBuilder();
+        sxpDatabaseBuilder.setPathGroup(new ArrayList<PathGroup>());
+        if (filter != null && sxpDatabase != null) {
+            for (PathGroup pathGroup : sxpDatabase.getPathGroup()) {
+                if (!pathGroup.getPeerSequence().getPeer().isEmpty() && !pathGroup.getPeerSequence()
+                        .getPeer()
+                        .get(0)
+                        .getNodeId()
+                        .equals(remotePeer)) {
+                    continue;
+                }
+                PathGroupBuilder pathGroupBuilder = new PathGroupBuilder(pathGroup);
+                pathGroupBuilder.setPrefixGroup(new ArrayList<PrefixGroup>());
+                List<PrefixGroup> prefixGroups = new ArrayList<>();
+                for (PrefixGroup prefixGroup : pathGroup.getPrefixGroup()) {
+                    PrefixGroup
+                            prefixGroupNew =
+                            new PrefixGroupBuilder(prefixGroup).setBinding(new ArrayList<Binding>()).build();
+                    for (Binding binding : prefixGroup.getBinding()) {
+                        if (filter.filter(
+                                SxpBindingIdentity.create(binding, prefixGroup, new PathGroupBuilder().build()))) {
+                            prefixGroupNew.getBinding().add(binding);
+                        }
+                    }
+                    if (!prefixGroupNew.getBinding().isEmpty()) {
+                        prefixGroups.add(prefixGroupNew);
+                    }
+                }
+                if (!prefixGroups.isEmpty()) {
+                    pathGroupBuilder.setPrefixGroup(prefixGroups);
+                    sxpDatabaseBuilder.getPathGroup().add(pathGroupBuilder.build());
+                }
+            }
+        }
+        return sxpDatabaseBuilder.build();
     }
 }

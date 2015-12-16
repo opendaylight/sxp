@@ -15,7 +15,10 @@ import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.messaging.AttributeList;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
+import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.UpdateExportTask;
+import org.opendaylight.sxp.util.database.SxpBindingIdentity;
+import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.exception.connection.IncompatiblePeerModeException;
@@ -35,12 +38,19 @@ import org.opendaylight.sxp.util.time.connection.DeleteHoldDownTimerTask;
 import org.opendaylight.sxp.util.time.connection.HoldTimerTask;
 import org.opendaylight.sxp.util.time.connection.KeepAliveTimerTask;
 import org.opendaylight.sxp.util.time.connection.ReconcilationTimerTask;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroup;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroupBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroup;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroupBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.ConnectionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
@@ -130,12 +140,28 @@ public class SxpConnection {
      *
      * @param filterType Type of SxpBindingFilter that was set
      */
-    private void updateFlagsForDatabase(FilterType filterType) {
+    private void updateFlagsForDatabase(final FilterType filterType) {
         if(!isStateOn()){
             return;
         }
         if (filterType.equals(FilterType.Inbound) && (isModeListener() || isModeBoth())) {
             owner.setSvcBindingManagerNotify();
+        } else if (filterType.equals(FilterType.InboundDiscarding) && (isModeListener() || isModeBoth())) {
+            Callable task = new Callable() {
+
+                @Override public Object call() throws Exception {
+                    owner.getBindingSxpDatabase()
+                            .deleteBindings(SxpDatabaseImpl.filterDatabase(owner.getBindingSxpDatabase().get(), getFilter(filterType),
+                                    getNodeIdRemote()));
+                    owner.setSvcBindingManagerNotify();
+                    return null;
+                }
+            };
+            if (getInboundMonitor().getAndIncrement() == 0) {
+                BindingHandler.startBindingHandle(task, this);
+            } else {
+                pushUpdateMessageInbound(task);
+            }
         } else if (filterType.equals(FilterType.Outbound) && (isModeSpeaker() || isModeBoth())) {
             try {
                 getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext).writeAndFlush(
@@ -322,26 +348,7 @@ public class SxpConnection {
         // before the delete hold down timer expiration, a reconcile timer is
         // started to clean up old mappings that didn’t get informed to be
         // removed because of the loss of connectivity.
-
-        // Get message relevant peer node ID.
-        NodeId peerId;
-        try {
-            if (isVersion123()) {
-                peerId = NodeIdConv.createNodeId(getDestination().getAddress());
-            } else if (isVersion4()) {
-                peerId = getNodeIdRemote();
-            } else {
-                LOG.warn(this + " Unknown message relevant peer node ID | Version not recognized [\""
-                        + connectionBuilder.getVersion() + "\"]");
-                return;
-            }
-        } catch (UnknownNodeIdException e) {
-            LOG.warn(this + " Unknown message relevant peer node ID | {} | {}", e.getClass().getSimpleName(),
-                    e.getMessage());
-            return;
-        }
-
-        context.getOwner().cleanUpBindings(peerId);
+        context.getOwner().cleanUpBindings(getNodeIdRemote());
         context.getOwner().notifyService();
     }
 
@@ -847,7 +854,7 @@ public class SxpConnection {
      */
     public void markChannelHandlerContext(ChannelHandlerContext ctx) {
         if (isModeBoth()) {
-            LOG.error("{} Cannot automatically mark ChannelHandlerContext {}", this, ctx);
+            LOG.warn("{} Cannot automatically mark ChannelHandlerContext {}", this, ctx);
         } else if (isModeListener()) {
             markChannelHandlerContext(ctx, ChannelHandlerContextType.ListenerContext);
         } else if (isModeSpeaker()) {
@@ -857,24 +864,7 @@ public class SxpConnection {
 
     public void purgeBindings() {
         // Get message relevant peer node ID.
-        NodeId peerId;
-        try {
-            if (isVersion123()) {
-                peerId = NodeIdConv.createNodeId(getDestination().getAddress());
-            } else if (isVersion4()) {
-                peerId = getNodeIdRemote();
-            } else {
-                LOG.warn(this + " Unknown message relevant peer node ID | Version not recognized [\"" + getVersion()
-                        + "\"]");
-                return;
-            }
-        } catch (UnknownNodeIdException e) {
-            LOG.warn(this + " Unknown message relevant peer node ID | {} | {}", e.getClass().getSimpleName(),
-                    e.getMessage());
-            setStateOff();
-            return;
-        }
-        context.getOwner().purgeBindings(peerId);
+        context.getOwner().purgeBindings(getNodeIdRemote());
         context.getOwner().notifyService();
         try {
             setStateOff(getChannelHandlerContext(ChannelHandlerContextType.ListenerContext));
@@ -1269,24 +1259,7 @@ public class SxpConnection {
         connectionBuilder.setUpdateExported(false);
         connectionBuilder.setPurgeAllMessageReceived(false);
         connectionBuilder.setState(ConnectionState.DeleteHoldDown);
-
-        NodeId peerId;
-        try {
-            if (isVersion123()) {
-                peerId = NodeIdConv.createNodeId(getDestination().getAddress());
-            } else if (isVersion4()) {
-                peerId = getNodeIdRemote();
-            } else {
-                LOG.warn(this + " Unknown message relevant peer node ID | Version not recognized [\"" + getVersion()
-                        + "\"]");
-                return;
-            }
-        } catch (UnknownNodeIdException e) {
-            LOG.warn(this + " Unknown message relevant peer node ID | {} | {}", e.getClass().getSimpleName(),
-                    e.getMessage());
-            return;
-        }
-        context.getOwner().setAsCleanUp(peerId);
+        context.getOwner().setAsCleanUp(getNodeIdRemote());
     }
 
     /**
@@ -1511,12 +1484,18 @@ public class SxpConnection {
 
         result += "[" + (getState().equals(ConnectionState.Off) ? "X" : getState().toString().charAt(0)) + "|"
                 + getMode().toString().charAt(0) + "v" + getVersion().getIntValue();
-        if (getNodeIdRemote() != null) {
-            result += "/" + getModeRemote().toString().charAt(0) + "v" + getVersionRemote().getIntValue() + " "
-                    + NodeIdConv.toString(getNodeIdRemote()) + "]";
-        } else {
-            result += "]";
+        if (getModeRemote() != null) {
+            result += "/" + getModeRemote().toString().charAt(0);
         }
+
+        if (getVersionRemote() != null) {
+            result += "v" + getVersionRemote().getIntValue();
+        }
+
+        if (getNodeIdRemote() != null) {
+            result += " " + NodeIdConv.toString(getNodeIdRemote());
+        }
+        result += "]";
         return result;
     }
 }

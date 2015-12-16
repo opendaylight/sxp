@@ -81,7 +81,7 @@ public final class BindingDispatcher extends Service<Void> {
                     if (owner.getExpansionQuantity() > 0) {
                         getBindingMasterDatabase().expandBindings(owner.getExpansionQuantity());
                     }
-                    LOG.info("Export on dispatch {}", connections.size());
+                    LOG.info("Export on dispatch {} {}", owner.getNodeId(), connections.size());
                     for (SxpConnection connection : connections) {
                         connection.resetUpdateExported();
                     }
@@ -213,7 +213,8 @@ public final class BindingDispatcher extends Service<Void> {
                 }
             }
             if (!resumedConnections.isEmpty()) {
-                LOG.info("Export on demand {}/{} ", resumedConnections.size(), connections.size());
+                LOG.info("Export on demand {} {}/{} ", owner.getNodeId(), resumedConnections.size(),
+                        connections.size());
                 try {
                     processUpdateSequence(getBindingMasterDatabase(), resumedConnections);
                 } catch (DatabaseAccessException e) {

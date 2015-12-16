@@ -18,9 +18,12 @@ module sxp-filter {
     // ***********************
 
 	typedef filter-type {
-		description "Type specifying direction of sgt filtering.";
+		description "Type specifying direction of sgt/prefix filtering, while using inbound-discarding
+		 SXP-DB may get to inconsistent state after Filter update so reconnecting peer is needed or use
+		  of inbound filter that handles this situation.";
 		type enumeration {
 			enum inbound;
+			enum inbound-discarding;
 			enum outbound;
 		}
 	}

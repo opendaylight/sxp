@@ -11,6 +11,7 @@ package org.opendaylight.sxp.util.database;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroup;
@@ -66,8 +67,7 @@ public class SxpBindingIdentity {
      * @param pathGroup   PathGroup to be used
      */
     private SxpBindingIdentity(Binding binding, PrefixGroup prefixGroup, PathGroup pathGroup) {
-        super();
-        if (binding.getIpPrefix().getIpv6Prefix() != null) {
+        if (Preconditions.checkNotNull(binding).getIpPrefix().getIpv6Prefix() != null) {
             this.binding =
                     new BindingBuilder(binding).setKey(new BindingKey(
                             new IpPrefix(binding.getIpPrefix().getIpv6Prefix().getValue().toLowerCase().toCharArray())))
@@ -76,12 +76,12 @@ public class SxpBindingIdentity {
             this.binding = new BindingBuilder(binding).build();
         }
 
-        PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder(prefixGroup);
+        PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder(Preconditions.checkNotNull(prefixGroup));
         prefixGroupBuilder.setBinding(new ArrayList<Binding>());
         prefixGroupBuilder.getBinding().add(this.binding);
         this.prefixGroup = prefixGroupBuilder.build();
 
-        PathGroupBuilder pathGroupBuilder = new PathGroupBuilder(pathGroup);
+        PathGroupBuilder pathGroupBuilder = new PathGroupBuilder(Preconditions.checkNotNull(pathGroup));
         pathGroupBuilder.setPrefixGroup(new ArrayList<PrefixGroup>());
         pathGroupBuilder.getPrefixGroup().add(this.prefixGroup);
         this.pathGroup = pathGroupBuilder.build();

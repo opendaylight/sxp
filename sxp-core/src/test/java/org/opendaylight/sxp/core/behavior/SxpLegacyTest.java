@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -54,12 +55,15 @@ import io.netty.channel.ChannelHandlerContext;
         private static SxpConnection connection;
         private static SxpNode sxpNode;
 
-        @Before public void init() {
+        @Before public void init() throws UnknownHostException {
                 sxpLegacy = new SxpLegacy(PowerMockito.mock(Context.class));
                 channelHandlerContext = mock(ChannelHandlerContext.class);
                 connection = mock(SxpConnection.class);
                 when(connection.getVersion()).thenReturn(Version.Version1);
                 when(connection.getMode()).thenReturn(ConnectionMode.None);
+                when(connection.getNodeIdRemote()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
+                when(connection.getDestination()).thenReturn(
+                        new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 5));
                 PowerMockito.mockStatic(LegacyMessageFactory.class);
                 sxpNode = PowerMockito.mock(SxpNode.class);
                 Context context = PowerMockito.mock(Context.class);
@@ -182,8 +186,6 @@ import io.netty.channel.ChannelHandlerContext;
                 PurgeAllMessage message = mock(PurgeAllMessage.class);
                 when(message.getType()).thenReturn(MessageType.PurgeAll);
 
-                when(connection.getDestination()).thenReturn(
-                        new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 5));
                 sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
                 verify(connection).setPurgeAllMessageReceived();
                 verify(sxpNode).purgeBindings(any(NodeId.class));

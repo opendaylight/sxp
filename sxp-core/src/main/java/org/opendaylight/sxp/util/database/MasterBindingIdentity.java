@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.util.database;
 
+import com.google.common.base.Preconditions;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
@@ -115,8 +116,7 @@ public class MasterBindingIdentity {
      *                      for MasterBindingIdentity with Flag Delete
      */
     private MasterBindingIdentity(Binding binding, PrefixGroup prefixGroup, Source source, boolean deleteReplace) {
-        super();
-        if (binding.getIpPrefix().getIpv6Prefix() != null) {
+        if (Preconditions.checkNotNull(binding).getIpPrefix().getIpv6Prefix() != null) {
             this.binding =
                     new BindingBuilder(binding).setKey(new BindingKey(
                             new IpPrefix(binding.getIpPrefix().getIpv6Prefix().getValue().toLowerCase().toCharArray())))
@@ -124,12 +124,12 @@ public class MasterBindingIdentity {
         } else {
             this.binding = new BindingBuilder(binding).build();
         }
-        PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder(prefixGroup);
+        PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder(Preconditions.checkNotNull(prefixGroup));
         prefixGroupBuilder.setBinding(new ArrayList<Binding>());
         prefixGroupBuilder.getBinding().add(this.binding);
         this.prefixGroup = prefixGroupBuilder.build();
 
-        SourceBuilder sourceBuilder = new SourceBuilder(source);
+        SourceBuilder sourceBuilder = new SourceBuilder(Preconditions.checkNotNull(source));
         sourceBuilder.setPrefixGroup(new ArrayList<PrefixGroup>());
         sourceBuilder.getPrefixGroup().add(this.prefixGroup);
         this.source = sourceBuilder.build();
