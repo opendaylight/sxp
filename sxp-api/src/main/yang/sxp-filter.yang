@@ -153,9 +153,6 @@ module sxp-filter {
 					type sxpdb:sgt;
 					mandatory true;
 				}
-				must "sgt-start <= sgt-end" {
-					error-message "sgt-start > sgt-end";
-				}
 			}
 		}
 	}
