@@ -162,6 +162,7 @@ import static org.mockito.Mockito.*;
                 controller.setSxpNode(sxpNodes);
 
                 configLoader.load(controller);
+
                 ArgumentCaptor<SxpNodeIdentity> argumentCaptor = ArgumentCaptor.forClass(SxpNodeIdentity.class);
 
                 verify(access).put(any(InstanceIdentifier.class), argumentCaptor.capture(),
@@ -172,62 +173,20 @@ import static org.mockito.Mockito.*;
                 SxpNodeIdentity sxpNode = argumentCaptor.getValue();
                 assertEquals(64999, (long) sxpNode.getTcpPort().getValue());
                 assertEquals(10, (long) sxpNode.getMappingExpanded());
-                assertEquals(Configuration.getCapabilities(Version.Version4), sxpNode.getCapabilities());
+                //Capabilities are config False
+                assertEquals(null, sxpNode.getCapabilities());
                 org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection
                         connection =
                         sxpNode.getConnections().getConnection().get(0);
                 assertEquals(Version.Version3, connection.getVersion());
                 assertEquals(ConnectionMode.Both, connection.getMode());
 
-                assertEquals("VPN", sxpNode.getMasterDatabase().getVpn().get(0).getName());
-                assertTrue(containsSgt(30, sxpNode.getMasterDatabase().getVpn().get(0).getSource()));
-                assertTrue(containsBinding("3.3.3.3/32", sxpNode.getMasterDatabase().getVpn().get(0).getSource()));
-
-                assertEquals(DatabaseBindingSource.Local,
-                        sxpNode.getMasterDatabase().getSource().get(0).getBindingSource());
-                assertTrue(containsBinding("1.1.1.1/32", sxpNode.getMasterDatabase().getSource()));
-                assertTrue(containsSgt(10, sxpNode.getMasterDatabase().getSource()));
-
-                assertTrue(containsBinding("2000:0:0:0:0:0:0:1/128", sxpNode.getMasterDatabase().getSource()));
-                assertTrue(containsSgt(20, sxpNode.getMasterDatabase().getSource()));
-
-                assertFalse(containsBinding("2000:0:0:0:0:0:0:2/128", sxpNode.getMasterDatabase().getSource()));
-                assertFalse(containsSgt(200, sxpNode.getMasterDatabase().getSource()));
+                //Master-DB is config False
+                assertEquals(null, sxpNode.getMasterDatabase());
 
                 node.setNodeId(null);
                 configLoader.load(controller);
                 verify(access).put(any(InstanceIdentifier.class), argumentCaptor.capture(),
                         any(LogicalDatastoreType.class));
-        }
-
-        private boolean containsSgt(int sgt, List<Source> sources) {
-                for (Source source : sources) {
-                        for (PrefixGroup prefixGroup : source.getPrefixGroup()) {
-                                if (prefixGroup.getSgt().getValue().equals(sgt)) {
-                                        return true;
-                                }
-                        }
-                }
-                return false;
-        }
-
-        private boolean containsBinding(String s, List<Source> sources) {
-                for (Source source : sources) {
-                        for (PrefixGroup prefixGroup : source.getPrefixGroup()) {
-                                for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding binding : prefixGroup
-                                        .getBinding()) {
-                                        if (binding.getIpPrefix().getIpv4Prefix() != null && binding.getIpPrefix()
-                                                .getIpv4Prefix()
-                                                .getValue()
-                                                .equals(s)) {
-                                                return true;
-                                        } else if (binding.getIpPrefix().getIpv6Prefix() != null
-                                                && binding.getIpPrefix().getIpv6Prefix().getValue().equals(s)) {
-                                                return true;
-                                        }
-                                }
-                        }
-                }
-                return false;
         }
 }

@@ -314,12 +314,6 @@ public class ConfigLoader {
         nodeBuilder.setMappingExpanded(expansionQuantity);
         nodeBuilder.setDescription(configuration.getDescription());
 
-        // Capabilities.
-        nodeBuilder.setCapabilities(Configuration.getCapabilities(configuration.getVersion()));
-
-        // Local bindings.
-        nodeBuilder.setMasterDatabase(parseMasterDatabase(nodeId, configuration));
-
         // Connections.
         nodeBuilder.setConnections(parseConnections(nodeId, configuration));
 
@@ -343,6 +337,12 @@ public class ConfigLoader {
             throw new ConfigurationException("Failed to create node \"" + nodeId
                     + "\" identity in configuration datastore");
         }
+
+        // Capabilities.
+        nodeBuilder.setCapabilities(Configuration.getCapabilities(configuration.getVersion()));
+
+        // Local bindings.
+        nodeBuilder.setMasterDatabase(parseMasterDatabase(nodeId, configuration));
 
         SxpDatastoreImpl
                 sxpDatabaseProvider =
