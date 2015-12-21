@@ -21,7 +21,12 @@
                 <configuration>
                     <instructions>
                         <Bundle-Name>${project.groupId}.${project.artifactId}</Bundle-Name>
-                        <Import-Package>org.opendaylight.yangtools.yang.binding.annotations,
+                        <Import-Package>
+                            org.opendaylight.yangtools.yang.binding.annotations,
+                            <!-- io.netty.buffer is pulled in indirectly via io.netty.codec -->
+                            !io.netty.buffer,
+                            <!-- io.netty.channel is pulled in indirectly via io.netty.transport -->
+                            !io.netty.channel,
                             *
                         </Import-Package>
                     </instructions>
@@ -41,8 +46,8 @@
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
-        <artifactId>netty-all</artifactId>
-    	</dependency>
+        <artifactId>netty-handler</artifactId>
+      </dependency>
       <dependency>
         <groupId>org.opendaylight.tcpmd5</groupId>
         <artifactId>tcpmd5-jni</artifactId>
