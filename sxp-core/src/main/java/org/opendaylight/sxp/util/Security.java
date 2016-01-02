@@ -11,11 +11,9 @@ package org.opendaylight.sxp.util;
 import com.google.common.hash.Hashing;
 
 import java.math.BigInteger;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 public final class Security {
-
-    private static final String CHARSET_NAME = "US-ASCII";
 
     /**
      * Encrypt String value by MD5 message-digest algorithm
@@ -24,7 +22,7 @@ public final class Security {
      * @return Encrypted data saved in Byte Array
      */
     public static byte[] getMD5b(String str) {
-        return Hashing.md5().hashString(str, Charset.forName(CHARSET_NAME)).asBytes();
+        return Hashing.md5().hashString(str, StandardCharsets.US_ASCII).asBytes();
     }
 
     /**
