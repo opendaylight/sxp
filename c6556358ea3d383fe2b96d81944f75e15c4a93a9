@@ -22,6 +22,30 @@
       "revId": "c6556358ea3d383fe2b96d81944f75e15c4a93a9",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_66021971",
+        "filename": "features/src/main/features/features.xml",
+        "patchSetId": 5
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 4540
+      },
+      "writtenOn": "2016-01-07T16:09:41Z",
+      "side": 1,
+      "message": "Yes, eventually; I pushed that in initially but it broke because another feature pulled in the individual bundles. I forgot to remove the repository when I switched back to bundles.",
+      "parentUuid": "1aa4ed85_c6dbcd19",
+      "range": {
+        "startLine": 18,
+        "startChar": 47,
+        "endLine": 18,
+        "endChar": 65
+      },
+      "revId": "c6556358ea3d383fe2b96d81944f75e15c4a93a9",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
     }
   ]
 }
