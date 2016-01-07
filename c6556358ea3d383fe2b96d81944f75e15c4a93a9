@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1aa4ed85_c6dbcd19",
+        "filename": "features/src/main/features/features.xml",
+        "patchSetId": 5
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 2046
+      },
+      "writtenOn": "2016-01-07T16:00:10Z",
+      "side": 1,
+      "message": "Why have you included this? Do you plan to use odl-netty feature instead of bundles at line 35?",
+      "range": {
+        "startLine": 18,
+        "startChar": 47,
+        "endLine": 18,
+        "endChar": 65
+      },
+      "revId": "c6556358ea3d383fe2b96d81944f75e15c4a93a9",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
