@@ -555,7 +555,8 @@ public class MessageFactory {
      */
     private static Notification decode(Version version, byte[] headerType, byte[] payload)
             throws ErrorMessageException, UnknownPrefixException, AddressLengthException, AttributeLengthException,
-            UnknownHostException, UnknownNodeIdException, TlvNotFoundException, UnknownSxpMessageTypeException {
+            UnknownHostException, UnknownNodeIdException, TlvNotFoundException, UnknownSxpMessageTypeException,
+            AttributeVariantException {
         MessageType messageType = MessageType.forValue(ArraysUtil.bytes2int(headerType));
 
         // Remote can send OpenResp with different version
@@ -659,7 +660,7 @@ public class MessageFactory {
      */
     public static Notification decodeOpen(byte[] payload)
             throws AttributeLengthException, AddressLengthException, UnknownNodeIdException, UnknownPrefixException,
-            TlvNotFoundException, UnknownHostException {
+            TlvNotFoundException, UnknownHostException, AttributeVariantException {
         OpenMessageBuilder messageBuilder = new OpenMessageBuilder();
         messageBuilder.setType(MessageType.Open);
         messageBuilder.setLength(MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH + payload.length);
@@ -689,7 +690,7 @@ public class MessageFactory {
      */
     public static Notification decodeOpenResp(byte[] payload)
             throws AttributeLengthException, AddressLengthException, UnknownNodeIdException, UnknownPrefixException,
-            TlvNotFoundException, UnknownHostException, ErrorMessageException {
+            TlvNotFoundException, UnknownHostException, ErrorMessageException, AttributeVariantException {
         OpenMessageBuilder messageBuilder = new OpenMessageBuilder();
         messageBuilder.setType(MessageType.OpenResp);
         messageBuilder.setLength(MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH + payload.length);
@@ -740,7 +741,7 @@ public class MessageFactory {
      */
     public static Notification decodeUpdate(byte[] payload)
             throws AttributeLengthException, AddressLengthException, UnknownNodeIdException, UnknownPrefixException,
-            TlvNotFoundException, UnknownHostException {
+            TlvNotFoundException, UnknownHostException, AttributeVariantException {
         UpdateMessageBuilder messageBuilder = new UpdateMessageBuilder();
         messageBuilder.setType(MessageType.Update);
         messageBuilder.setLength(MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH + payload.length);
@@ -821,7 +822,8 @@ public class MessageFactory {
      */
     public static Notification parse(Version version, ByteBuf request)
             throws ErrorMessageException, UnknownSxpMessageTypeException, AddressLengthException, UnknownHostException,
-            AttributeLengthException, TlvNotFoundException, UnknownPrefixException, UnknownNodeIdException {
+            AttributeLengthException, TlvNotFoundException, UnknownPrefixException, UnknownNodeIdException,
+            AttributeVariantException {
         request.resetReaderIndex();
         byte[] headerLength, headerType, payload;
         int messageLength;

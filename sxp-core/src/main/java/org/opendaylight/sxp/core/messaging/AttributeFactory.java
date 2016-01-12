@@ -17,6 +17,7 @@ import org.opendaylight.sxp.core.messaging.legacy.LegacyAttributeFactory;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
+import org.opendaylight.sxp.util.exception.message.attribute.AttributeVariantException;
 import org.opendaylight.sxp.util.exception.message.attribute.CapabilityLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.HoldTimeMaxException;
 import org.opendaylight.sxp.util.exception.message.attribute.HoldTimeMinException;
@@ -33,6 +34,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.FlagsFields.Flags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.TlvType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.AttributeBuilder;
@@ -471,7 +473,7 @@ public final class AttributeFactory {
 
     protected static Attribute decode(byte[] array)
             throws AttributeLengthException, AddressLengthException, UnknownNodeIdException, UnknownPrefixException,
-            TlvNotFoundException, UnknownHostException {
+            TlvNotFoundException, UnknownHostException, AttributeVariantException {
         // 1 or 0 byte: O N P C E 0 0 0
         Flags flags = getFlags(array[0]);
 
@@ -544,7 +546,7 @@ public final class AttributeFactory {
      */
     private static Attribute decode(Flags flags, AttributeVariant variant, AttributeType type, int length, byte[] value)
             throws AddressLengthException, TlvNotFoundException, UnknownPrefixException, UnknownHostException,
-            UnknownNodeIdException {
+            UnknownNodeIdException, AttributeVariantException {
 
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setFlags(flags);
@@ -571,6 +573,9 @@ public final class AttributeFactory {
             attributeOptionalFields = LegacyAttributeFactory.decodeDeleteIPv6(type, 16, value);
             break;
         case HoldTime:
+            if (!flags.isNonTransitive()) {
+                throw new AttributeVariantException();
+            }
             attributeOptionalFields = decodeHoldTime(value);
             break;
         case Ipv4AddPrefix:

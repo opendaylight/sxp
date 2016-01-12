@@ -415,7 +415,7 @@ public final class Sxpv4 extends SxpLegacy {
     public Notification onParseInput(ByteBuf request) throws ErrorMessageException {
         try {
             return MessageFactory.parse(Version.Version4, request);
-        } catch (UnknownSxpMessageTypeException | AddressLengthException | UnknownHostException | AttributeLengthException | TlvNotFoundException | UnknownNodeIdException | UnknownPrefixException e) {
+        } catch (AttributeVariantException | UnknownSxpMessageTypeException | AddressLengthException | UnknownHostException | AttributeLengthException | TlvNotFoundException | UnknownNodeIdException | UnknownPrefixException e) {
             throw new ErrorMessageException(ErrorCodeNonExtended.MessageParseError, e);
         }
     }
