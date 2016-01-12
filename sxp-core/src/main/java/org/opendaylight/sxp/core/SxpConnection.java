@@ -19,6 +19,7 @@ import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.UpdateExportTask;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
+import org.opendaylight.sxp.util.exception.ErrorCodeDataLengthException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.exception.connection.IncompatiblePeerModeException;
@@ -943,6 +944,9 @@ public class SxpConnection {
                 setNodeIdRemote(attNodeId.getSxpNodeIdAttributes().getNodeId());
             }
         } catch (AttributeNotFoundException e) {
+            if (isVersion4()) {
+                throw new ErrorMessageException(ErrorCode.OpenMessageError, ErrorSubCode.OptionalAttributeError, e);
+            }
         }
 
         // Keep-alive and hold-time negotiation.
@@ -1032,8 +1036,8 @@ public class SxpConnection {
         try {
             SxpNodeIdAttribute attNodeId = (SxpNodeIdAttribute) AttributeList.get(message.getAttribute(),
                     AttributeType.SxpNodeId);
-            if (attNodeId != null) {
-                setNodeIdRemote(attNodeId.getSxpNodeIdAttributes().getNodeId());
+            if (attNodeId != null && isVersion4()) {
+                throw new ErrorMessageException(ErrorCode.OpenMessageError, ErrorSubCode.OptionalAttributeError, null);
             }
         } catch (AttributeNotFoundException e) {
         }

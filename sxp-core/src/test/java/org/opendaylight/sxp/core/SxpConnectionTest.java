@@ -302,6 +302,9 @@ public class SxpConnectionTest {
                 OpenMessage message = mock(OpenMessage.class);
                 when(message.getVersion()).thenReturn(Version.Version4);
                 when(message.getSxpMode()).thenReturn(ConnectionMode.Speaker);
+                List<Attribute> attributes = new ArrayList<>();
+                attributes.add(getNodeId("1.1.1.1"));
+                when(message.getAttribute()).thenReturn(attributes);
                 sxpConnection.setConnection(message);
                 verify(sxpConnection).setConnectionListenerPart(any(OpenMessage.class));
                 assertEquals(ConnectionState.On, sxpConnection.getState());
@@ -309,6 +312,7 @@ public class SxpConnectionTest {
                 sxpConnection =
                         spy(SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On)));
 
+                attributes.clear();
                 when(message.getSxpMode()).thenReturn(ConnectionMode.Listener);
                 sxpConnection.setConnection(message);
                 verify(sxpConnection).setConnectionSpeakerPart(any(OpenMessage.class));
@@ -350,13 +354,11 @@ public class SxpConnectionTest {
                 List<Attribute> attributes = new ArrayList<>();
                 when(message.getAttribute()).thenReturn(attributes);
 
-                attributes.add(getNodeId("127.0.0.0"));
                 attributes.add(getHoldTime(75, 130));
 
                 sxpConnection.setConnectionListenerPart(message);
                 assertEquals(Version.Version3, sxpConnection.getVersion());
                 assertEquals(ConnectionMode.Speaker, sxpConnection.getModeRemote());
-                assertEquals(new NodeId("127.0.0.0"), sxpConnection.getNodeIdRemote());
                 assertEquals(75, sxpConnection.getHoldTime());
                 assertEquals(75, sxpConnection.getHoldTimeMin());
                 assertNotNull(sxpConnection.getTimer(TimerType.HoldTimer));
@@ -427,14 +429,11 @@ public class SxpConnectionTest {
                 when(message.getType()).thenReturn(MessageType.Open);
                 List<Attribute> attributes = new ArrayList<>();
                 when(message.getAttribute()).thenReturn(attributes);
-
-                attributes.add(getNodeId("127.0.0.0"));
                 attributes.add(getHoldTime(75, 100));
 
                 sxpConnection.setConnectionSpeakerPart(message);
                 assertEquals(Version.Version3, sxpConnection.getVersion());
                 assertEquals(ConnectionMode.Listener, sxpConnection.getModeRemote());
-                assertEquals(new NodeId("127.0.0.0"), sxpConnection.getNodeIdRemote());
                 assertEquals(25, sxpConnection.getKeepaliveTime());
                 assertEquals(75, sxpConnection.getHoldTimeMinAcceptable());
                 assertNotNull(sxpConnection.getTimer(TimerType.KeepAliveTimer));
