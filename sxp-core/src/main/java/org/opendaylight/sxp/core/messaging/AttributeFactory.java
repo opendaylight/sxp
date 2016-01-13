@@ -155,7 +155,7 @@ public final class AttributeFactory {
             holdTimeMax = 0;
         }
         // Unsigned integer <0,65535>. 0 or at least 3 seconds.
-        else if (holdTimeMin < 0 || 65535 < holdTimeMin || holdTimeMin != 0 && holdTimeMin < 3) {
+        else if (holdTimeMin < 0 || 65535 < holdTimeMin || holdTimeMin < 3) {
             throw new HoldTimeMinException(holdTimeMin);
         } else {
             value = ArraysUtil.combine(ArraysUtil.int2bytesCropp(holdTimeMin, 2));
@@ -631,11 +631,11 @@ public final class AttributeFactory {
      */
     private static AttributeOptionalFields decodeHoldTime(byte[] value) {
         int holdTimeMin = 0, holdTimeMax = 0;
-        if (value.length > 1 && value[0] != 0xFF && value[1] != 0xFF) {
-            holdTimeMin = ArraysUtil.bytes2int(new byte[] { value[0], value[1] });
+        if (value.length > 1 && value[0] != (byte) 0xFF && value[1] != (byte) 0xFF) {
+            holdTimeMin = ArraysUtil.bytes2int(new byte[] {value[0], value[1]});
         }
-        if (value.length > 3 && value[2] != 0xFF && value[3] != 0xFF) {
-            holdTimeMax = ArraysUtil.bytes2int(new byte[] { value[2], value[3] });
+        if (value.length > 3 && value[2] != (byte) 0xFF && value[3] != (byte) 0xFF) {
+            holdTimeMax = ArraysUtil.bytes2int(new byte[] {value[2], value[3]});
         }
         HoldTimeAttributeBuilder attributeBuilder = new HoldTimeAttributeBuilder();
         HoldTimeAttributesBuilder attributesBuilder = new HoldTimeAttributesBuilder();

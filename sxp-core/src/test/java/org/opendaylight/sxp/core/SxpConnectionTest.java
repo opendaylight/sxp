@@ -39,6 +39,7 @@ import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.service.UpdateExportTask;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
+import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
@@ -340,7 +341,7 @@ public class SxpConnectionTest {
                 return attributeBuilder.build();
         }
 
-        @Test public void testSetConnectionListenerPart() throws Exception {
+        @Test public void testSetConnectionListenerPartOpen() throws Exception {
                 sxpConnection =
                         SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On));
                 OpenMessage message = mock(OpenMessage.class);
@@ -386,14 +387,19 @@ public class SxpConnectionTest {
                 attributes.clear();
                 attributes.add(getHoldTime(150, 180));
 
+                exception.expect(ErrorMessageException.class);
                 sxpConnection.setConnectionListenerPart(message);
-                assertNull(sxpConnection.getNodeIdRemote());
-                assertNull(sxpConnection.getTimer(TimerType.HoldTimer));
-                assertEquals(0, sxpConnection.getHoldTime());
-                assertEquals(0, sxpConnection.getHoldTimeMin());
+        }
 
-                //OPENRESP
+        @Test public void testSetConnectionListenerPartResp() throws Exception {
+                sxpConnection =
+                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On));
+                OpenMessage message = mock(OpenMessage.class);
+                when(message.getSxpMode()).thenReturn(ConnectionMode.Speaker);
+                when(message.getVersion()).thenReturn(Version.Version3);
                 when(message.getType()).thenReturn(MessageType.OpenResp);
+                List<Attribute> attributes = new ArrayList<>();
+                when(message.getAttribute()).thenReturn(attributes);
 
                 sxpConnection =
                         SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On));
@@ -403,7 +409,7 @@ public class SxpConnectionTest {
                 sxpConnection.setConnectionListenerPart(message);
                 assertEquals(Version.Version3, sxpConnection.getVersion());
                 assertEquals(ConnectionMode.Speaker, sxpConnection.getModeRemote());
-                assertEquals(80, sxpConnection.getHoldTime());
+                assertEquals(60, sxpConnection.getHoldTime());
                 assertNotNull(sxpConnection.getTimer(TimerType.HoldTimer));
 
                 sxpConnection =
@@ -411,14 +417,11 @@ public class SxpConnectionTest {
                 attributes.clear();
                 attributes.add(getHoldTime(150, 180));
 
+                exception.expect(ErrorMessageException.class);
                 sxpConnection.setConnectionListenerPart(message);
-                assertNull(sxpConnection.getNodeIdRemote());
-                assertNull(sxpConnection.getTimer(TimerType.HoldTimer));
-                assertEquals(0, sxpConnection.getHoldTime());
-                assertEquals(0, sxpConnection.getHoldTimeMin());
         }
 
-        @Test public void testSetConnectionSpeakerPart() throws Exception {
+        @Test public void testSetConnectionSpeakerPartOpen() throws Exception {
                 sxpConnection =
                         SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On));
                 OpenMessage message = mock(OpenMessage.class);
@@ -453,13 +456,17 @@ public class SxpConnectionTest {
                 attributes.clear();
                 attributes.add(getHoldTime(10, 20));
 
+                exception.expect(ErrorMessageException.class);
                 sxpConnection.setConnectionSpeakerPart(message);
-                assertNull(sxpConnection.getNodeIdRemote());
-                assertNull(sxpConnection.getTimer(TimerType.KeepAliveTimer));
-                assertEquals(0, sxpConnection.getKeepaliveTime());
+        }
 
-                //OPENRESP
+        @Test public void testSetConnectionSpeakerPartResp() throws Exception {
+                OpenMessage message = mock(OpenMessage.class);
+                when(message.getSxpMode()).thenReturn(ConnectionMode.Listener);
+                when(message.getVersion()).thenReturn(Version.Version3);
                 when(message.getType()).thenReturn(MessageType.OpenResp);
+                List<Attribute> attributes = new ArrayList<>();
+                when(message.getAttribute()).thenReturn(attributes);
 
                 sxpConnection =
                         SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On));
@@ -479,8 +486,8 @@ public class SxpConnectionTest {
 
                 sxpConnection.setConnectionSpeakerPart(message);
                 assertNull(sxpConnection.getNodeIdRemote());
-                assertNull(sxpConnection.getTimer(TimerType.KeepAliveTimer));
-                assertEquals(0, sxpConnection.getKeepaliveTime());
+                assertNotNull(sxpConnection.getTimer(TimerType.KeepAliveTimer));
+                assertEquals(8, sxpConnection.getKeepaliveTime());
         }
 
         @Test public void testIsStateOn() throws Exception {

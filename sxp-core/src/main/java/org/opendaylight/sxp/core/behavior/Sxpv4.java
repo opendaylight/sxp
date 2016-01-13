@@ -114,14 +114,14 @@ public final class Sxpv4 extends SxpLegacy {
             Integer holdTimeMax = connection.getHoldTimeMax();
             // Global time settings: Default values have been pulled during node
             // creation TimeSettings.pullDefaults().
-            if (holdTimeMin == null || holdTimeMin == 0 || holdTimeMax == null || holdTimeMax == 0) {
+            if (holdTimeMin == 0 || holdTimeMax < 0) {
                 holdTimeMin = getOwner().getHoldTimeMin();
                 holdTimeMax = getOwner().getHoldTimeMax();
             }
             // Local current connection settings.
             if (openMessageType.equals(OpenMessageType.OperResp)) {
                 Integer holdTime = connection.getHoldTime();
-                if (holdTime != null && holdTime == 0) {
+                if (holdTime == 0) {
                     holdTimeMin = 0;
                     holdTimeMax = 0;
                 }
@@ -141,13 +141,13 @@ public final class Sxpv4 extends SxpLegacy {
             Integer holdTimeMinAcc = connection.getHoldTimeMinAcceptable();
             // Global time settings: Default values have been pulled during node
             // creation TimeSettings.pullDefaults().
-            if (holdTimeMinAcc == null || holdTimeMinAcc == 0) {
+            if (holdTimeMinAcc == 0) {
                 holdTimeMinAcc = getOwner().getHoldTimeMinAcceptable();
             }
             // Local current connection settings.
             if (openMessageType.equals(OpenMessageType.OperResp)) {
                 Integer keepAliveTime = connection.getKeepaliveTime();
-                if (keepAliveTime != null && keepAliveTime == 0) {
+                if (keepAliveTime == 0) {
                     holdTimeMinAcc = 0;
                 }
             }

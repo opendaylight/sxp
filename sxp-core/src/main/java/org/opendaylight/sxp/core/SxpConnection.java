@@ -12,12 +12,10 @@ import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import org.opendaylight.sxp.core.behavior.Context;
-import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.messaging.AttributeList;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.UpdateExportTask;
-import org.opendaylight.sxp.util.database.SxpBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
@@ -26,7 +24,6 @@ import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognized
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeNotFoundException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownConnectionModeException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
@@ -38,19 +35,12 @@ import org.opendaylight.sxp.util.time.connection.DeleteHoldDownTimerTask;
 import org.opendaylight.sxp.util.time.connection.HoldTimerTask;
 import org.opendaylight.sxp.util.time.connection.KeepAliveTimerTask;
 import org.opendaylight.sxp.util.time.connection.ReconcilationTimerTask;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroupBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroupBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.ConnectionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
@@ -59,10 +49,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Erro
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorSubCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.HoldTimeAttribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.SxpNodeIdAttribute;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,8 +98,8 @@ public class SxpConnection {
 
     private Context context;
 
-    private List<ChannelHandlerContext> initCtxs = new ArrayList<>(2);
-    protected HashMap<ChannelHandlerContextType, ChannelHandlerContext> ctxs = new HashMap<>(2);
+    private final List<ChannelHandlerContext> initCtxs = new ArrayList<>(2);
+    private final HashMap<ChannelHandlerContextType, ChannelHandlerContext> ctxs = new HashMap<>(2);
 
     protected InetSocketAddress destination;
 
@@ -431,11 +421,11 @@ public class SxpConnection {
      * @param holdTimeMinAcc Negotiated value
      * @param holdTimeMax    Negotiated value
      */
-    private void disableKeepAliveMechanismConnectionTermination(int holdTimeMin, int holdTimeMinAcc, int holdTimeMax) {
+    private void disableKeepAliveMechanismConnectionTermination(int holdTimeMin, int holdTimeMinAcc, int holdTimeMax)
+            throws ErrorMessageException {
         disableKeepAliveMechanism("Unacceptable hold time [min=" + holdTimeMin + " acc=" + holdTimeMinAcc + " max="
                 + holdTimeMax + "] | Connection termination");
-        MessageDecoder.sendErrorMessage(null,
-                new ErrorMessageException(ErrorCode.OpenMessageError, ErrorSubCode.UnacceptableHoldTime, null), this);
+        throw new ErrorMessageException(ErrorCode.OpenMessageError, ErrorSubCode.UnacceptableHoldTime, null);
     }
 
     /**
@@ -869,7 +859,6 @@ public class SxpConnection {
         try {
             setStateOff(getChannelHandlerContext(ChannelHandlerContextType.ListenerContext));
         } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-            LOG.warn("{} Error setting Off connection", this, e);
             setStateOff();
         }
     }
@@ -989,17 +978,15 @@ public class SxpConnection {
             }
             if (holdTimeMinAcc > holdTimeMax) {
                 disableKeepAliveMechanismConnectionTermination(holdTimeMin, holdTimeMinAcc, holdTimeMax);
-                return;
             } else if (holdTimeMinAcc >= holdTimeMin && holdTimeMinAcc <= holdTimeMax) {
                 setHoldTime(holdTimeMinAcc);
                 setHoldTimeMin(holdTimeMinAcc);
             }
         } else if (message.getType().equals(MessageType.OpenResp)) {
-            if (holdTimeMinAcc <= holdTimeMax && holdTimeMinAcc >= holdTimeMin) {
-                setHoldTime(holdTimeMinAcc);
+            if (holdTimeMinAcc <= holdTimeMax) {
+                setHoldTime(holdTimeMin);
             } else {
                 disableKeepAliveMechanismConnectionTermination(holdTimeMin, holdTimeMinAcc, holdTimeMax);
-                return;
             }
         }
 
@@ -1066,30 +1053,23 @@ public class SxpConnection {
         // Global time settings.
         if (holdTimeMinAcc == 0) {
             holdTimeMinAcc = getOwner().getHoldTimeMinAcceptable();
-
-            // Globally disabled
-            if (holdTimeMinAcc == 0) {
-                disableKeepAliveMechanism("Minimum acceptable hold time value is globally disabled");
-                return;
-            }
+        }
+        // Globally disabled
+        if (holdTimeMinAcc == 0) {
+            disableKeepAliveMechanism("Minimum acceptable hold time value is globally disabled");
+            return;
         }
         // The negotiation succeeds?
         if (message.getType().equals(MessageType.Open)) {
             if (holdTimeMinAcc > holdTimeMax) {
                 disableKeepAliveMechanismConnectionTermination(holdTimeMin, holdTimeMinAcc, holdTimeMax);
-                return;
             } else {
                 int holdTimeSelected = Math.max(holdTimeMin, holdTimeMinAcc);
                 setKeepaliveTime((int) (1.0 / 3.0 * holdTimeSelected));
                 setHoldTimeMinAcceptable(holdTimeSelected);
             }
         } else if (message.getType().equals(MessageType.OpenResp)) {
-            if (holdTimeMin < holdTimeMinAcc) {
-                disableKeepAliveMechanismConnectionTermination(holdTimeMin, holdTimeMinAcc, holdTimeMax);
-                return;
-            } else {
-                setKeepaliveTime((int) (1.0 / 3.0 * holdTimeMin));
-            }
+            setKeepaliveTime((int) (1.0 / 3.0 * holdTimeMin));
         }
 
         initializeTimers(ConnectionMode.Speaker);
