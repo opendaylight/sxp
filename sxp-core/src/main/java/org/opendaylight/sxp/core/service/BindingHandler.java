@@ -279,11 +279,6 @@ public final class BindingHandler {
                             ((SourceGroupTagAttribute) attribute.getAttributeOptionalFields()).getSourceGroupTagAttributes()
                                     .getSgt();
                     break;
-                case Ipv4AddTable:
-                case Ipv6AddTable:
-                    // TODO prefixes.addAll(((IpvAddTableAttribute)
-                    // TODO attribute.getAttributeOptionalFields()).getIpPrefix());
-                    break;
             }
         }
         if (peerSequence != null && !prefixes.isEmpty() && prefixGroups.isEmpty()) {

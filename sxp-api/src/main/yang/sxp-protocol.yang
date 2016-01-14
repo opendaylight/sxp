@@ -59,12 +59,6 @@ module sxp-protocol {
             enum source-group-tag {
                 value 17;
             }
-            enum ipv4-add-table {
-                value 21;
-            }
-            enum ipv6-add-table {
-                value 22;
-            }
         }
     }
 
@@ -369,17 +363,6 @@ module sxp-protocol {
         }
     }
 
-    grouping ip-table-attribute-fields {
-        leaf ncolumns {
-            type uint8;
-            description "TODO";
-        }
-        container columns {
-        }
-        container rows {
-        }
-    }
-
     // *************************
     // SXP Attributes Definition
     // *************************
@@ -434,11 +417,6 @@ module sxp-protocol {
                         uses ip-prefixes-attribute-fields;
                     }
                 }
-                case ipv4-add-table-attribute {
-                    container ipv4-add-table-attributes {
-                        uses ip-table-attribute-fields;
-                    }
-                }
                 case ipv4-delete-prefix-attribute {
                     container ipv4-delete-prefix-attributes {
                         uses ip-prefixes-attribute-fields;
@@ -447,11 +425,6 @@ module sxp-protocol {
                 case ipv6-add-prefix-attribute {
                     container ipv6-add-prefix-attributes {
                         uses ip-prefixes-attribute-fields;
-                    }
-                }
-                case ipv6-add-table-attribute {
-                    container ipv6-add-table-attributes {
-                        uses ip-table-attribute-fields;
                     }
                 }
                 case ipv6-delete-prefix-attribute {
