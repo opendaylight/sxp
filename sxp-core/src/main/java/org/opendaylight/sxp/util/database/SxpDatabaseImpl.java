@@ -65,6 +65,9 @@ public class SxpDatabaseImpl implements SxpDatabaseInf {
      * @return If operation was successful
      */
     private boolean addBindingIdentity(SxpBindingIdentity bindingIdentity) {
+        if (ignoreBinding(bindingIdentity.binding)) {
+            return false;
+        }
         synchronized (database) {
             if (database.getPathGroup() != null && !database.getPathGroup().isEmpty()) {
 
@@ -91,7 +94,7 @@ public class SxpDatabaseImpl implements SxpDatabaseInf {
                                                     bindingIdentity.binding.getIpPrefix())) {
                                                 contain3 = true;
 
-                                                if (binding.isCleanUp() != null && binding.isCleanUp()) {
+                                                if (binding.isCleanUp()) {
                                                     BindingBuilder bindingBuilder = new BindingBuilder(binding);
                                                     bindingBuilder.setCleanUp(false);
                                                     added.add(bindingBuilder.build());
@@ -170,9 +173,7 @@ public class SxpDatabaseImpl implements SxpDatabaseInf {
             deleteBindingIdentity(bindingIdentity);
         }
         for (SxpBindingIdentity bindingIdentity : added) {
-            if (addBindingIdentity(bindingIdentity)) {
-                result = true;
-            }
+            result |= addBindingIdentity(bindingIdentity);
         }
         return result;
     }
@@ -533,5 +534,25 @@ public class SxpDatabaseImpl implements SxpDatabaseInf {
             }
         }
         return sxpDatabaseBuilder.build();
+    }
+
+    /**
+     * Checks if Binding has prefix 0:0:0:0:0:0:0:0/0 or 0.0.0.0/0,
+     * if so then it will be ignored
+     *
+     * @param binding Binding to be checked
+     * @return If binding will be ignored
+     */
+    private static boolean ignoreBinding(Binding binding) {
+        if (binding.getIpPrefix().getIpv6Prefix() != null && binding.getIpPrefix()
+                .getIpv6Prefix()
+                .getValue()
+                .equals("0:0:0:0:0:0:0:0/0") || (binding.getIpPrefix().getIpv4Prefix() != null && binding.getIpPrefix()
+                .getIpv4Prefix()
+                .getValue()
+                .equals("0.0.0.0/0"))) {
+            return true;
+        }
+        return false;
     }
 }

@@ -107,8 +107,10 @@ public class SxpDatabaseImplTest {
                 List<PathGroup> pathGroups = new ArrayList<>();
                 pathGroups.add(getPathGroup(getNodeIds("127.0.0.1", "127.0.0.2"), getPrefixGroup(10, "127.0.0.1/32")));
                 pathGroups.add(getPathGroup(getNodeIds("127.0.0.1", "127.0.0.2"), getPrefixGroup(10, "127.0.0.1/32")));
+                pathGroups.add(getPathGroup(getNodeIds("127.0.0.1", "127.0.0.2"), getPrefixGroup(10, "0.0.0.0/0")));
                 when(sxpDatabase_.getPathGroup()).thenReturn(pathGroups);
                 database.addBindings(sxpDatabase_);
+                pathGroups.remove(2);
                 pathGroups.remove(0);
                 assertEquals(pathGroups, pathGroupList);
                 bindingsAsCleanUp = true;
