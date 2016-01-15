@@ -5,13 +5,13 @@
   <parent>
     <groupId>org.opendaylight.odlparent</groupId>
     <artifactId>odlparent</artifactId>
-    <version>1.6.0-SNAPSHOT</version>
+    <version>1.7.0-SNAPSHOT</version>
     <relativePath></relativePath>
   </parent>
 
   <groupId>org.opendaylight.sxp</groupId>
   <artifactId>sxp-parent</artifactId>
-  <version>1.2.0-SNAPSHOT</version>
+  <version>1.3.0-SNAPSHOT</version>
   <name>sxp</name> <!-- Used by Sonar to set project name -->
   <packaging>pom</packaging>
 
@@ -44,21 +44,21 @@
     <java.version.source>1.7</java.version.source>
     <java.version.target>1.7</java.version.target>
 
-    <yangtools.version>0.8.0-SNAPSHOT</yangtools.version>
-    <yangtools.feature.version>0.8.0-SNAPSHOT</yangtools.feature.version>
-    <mdsal.version>1.3.0-SNAPSHOT</mdsal.version>
-    <config.version>0.4.0-SNAPSHOT</config.version>
-    <restconf.version>1.3.0-SNAPSHOT</restconf.version>
+    <yangtools.version>0.9.0-SNAPSHOT</yangtools.version>
+    <yangtools.feature.version>0.9.0-SNAPSHOT</yangtools.feature.version>
+    <mdsal.version>1.4.0-SNAPSHOT</mdsal.version>
+    <config.version>0.5.0-SNAPSHOT</config.version>
+    <restconf.version>1.4.0-SNAPSHOT</restconf.version>
 
     <!-- Yang Module Versions -->
-    <ietf-inet-types.version>2010.09.24.8-SNAPSHOT</ietf-inet-types.version>
-    <ietf-yang-types.version>2010.09.24.8-SNAPSHOT</ietf-yang-types.version>
-    <yang-ext.version>2013.09.07.8-SNAPSHOT</yang-ext.version>
-    <yang-nt.version>2013.10.21.8-SNAPSHOT</yang-nt.version>
+    <ietf-inet-types.version>2010.09.24.9-SNAPSHOT</ietf-inet-types.version>
+    <ietf-yang-types.version>2010.09.24.9-SNAPSHOT</ietf-yang-types.version>
+    <yang-ext.version>2013.09.07.9-SNAPSHOT</yang-ext.version>
+    <yang-nt.version>2013.10.21.9-SNAPSHOT</yang-nt.version>
 
     <!-- Utils Versions -->
     <powermock.version>1.5.4</powermock.version>
-    <tcpmd5.version>1.2.0-SNAPSHOT</tcpmd5.version>
+    <tcpmd5.version>1.3.0-SNAPSHOT</tcpmd5.version>
     <swt.version>4.4</swt.version>
 
   </properties>
