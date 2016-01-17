@@ -333,10 +333,6 @@ public class AttributeFactoryTest {
                 assertEquals(AttributeType.Ipv4DeletePrefix, AttributeFactory.decode(new byte[] {16, 13, 0}).getType());
 
                 assertEquals(AttributeType.Ipv6DeletePrefix, AttributeFactory.decode(new byte[] {16, 14, 0}).getType());
-
-                assertEquals(AttributeType.Ipv4AddTable, AttributeFactory.decode(new byte[] {16, 21, 0}).getType());
-
-                assertEquals(AttributeType.Ipv6AddTable, AttributeFactory.decode(new byte[] {16, 22, 0}).getType());
         }
 
         @Test public void testDecodeException0() throws Exception {

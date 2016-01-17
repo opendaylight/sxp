@@ -22,8 +22,6 @@ import org.opendaylight.sxp.util.exception.message.attribute.AttributeVariantExc
 import org.opendaylight.sxp.util.exception.message.attribute.CapabilityLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.HoldTimeMaxException;
 import org.opendaylight.sxp.util.exception.message.attribute.HoldTimeMinException;
-import org.opendaylight.sxp.util.exception.message.attribute.PrefixTableAttributeIsNotCompactException;
-import org.opendaylight.sxp.util.exception.message.attribute.PrefixTableColumnsSizeException;
 import org.opendaylight.sxp.util.exception.message.attribute.SecurityGroupTagValueException;
 import org.opendaylight.sxp.util.exception.message.attribute.TlvNotFoundException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
@@ -410,15 +408,6 @@ public class MessageFactory {
                     }
                 }
             }
-
-            // TODO: C. Processing IPv4-Add-Table attribute
-
-            // TODO: D. Processing IPv6-Add-Table attribute
-
-            // E. Processing Add-IPv4 attributes
-
-            // F. Processing Add-IPv6 attributes
-
             if (added) {
                 attributes.addAll(_attributes);
             }
@@ -493,47 +482,6 @@ public class MessageFactory {
         }
         attributes.add(AttributeFactory.createIpv4DeletePrefix(removeIpv4));
         attributes.add(AttributeFactory.createIpv6DeletePrefix(removeIpv6));
-        return getMessage(MessageType.Update, attributes.toBytes());
-    }
-
-    /**
-     * Creates AddTablePrefixes for UpdateMessage using provided values
-     *
-     * @param nodeID       NodeId included in message
-     * @param peerSequence PeerSequences to be used
-     * @param prefixGroups PrefixGroups to be used
-     * @return ByteBuf representation of AddTablePrefixes
-     * @throws PrefixTableColumnsSizeException           If some column size isn't correct
-     * @throws SecurityGroupTagValueException            If some Sgt isn't in rage [2, 65519]
-     * @throws PrefixTableAttributeIsNotCompactException If some Attribute isn't compact
-     * @throws AttributeVariantException                 If some attribute variant isn't supported
-     */
-    public static ByteBuf createUpdateTableAddPrefixes(NodeId nodeID, List<NodeId> peerSequence,
-            List<PrefixGroup> prefixGroups) throws PrefixTableColumnsSizeException, SecurityGroupTagValueException,
-            PrefixTableAttributeIsNotCompactException, AttributeVariantException {
-        AttributeList attributes = new AttributeList();
-        // Prepend local node ID.
-        peerSequence.add(0, nodeID);
-        Attribute _peerSequence = AttributeFactory.createPeerSequence(peerSequence);
-
-        PrefixTable addIpv4Table = new PrefixTable(2);
-        PrefixTable addIpv6Table = new PrefixTable(2);
-        for (PrefixGroup prefixGroup : prefixGroups) {
-            if (prefixGroup.getBinding() != null) {
-                for (Binding binding : prefixGroup.getBinding()) {
-                    Attribute _sgt = AttributeFactory.createSourceGroupTag(prefixGroup.getSgt().getValue());
-                    if (binding.getIpPrefix().getIpv4Prefix() != null) {
-                        addIpv4Table.addItem(binding.getIpPrefix(), _peerSequence, _sgt);
-                    } else if (binding.getIpPrefix().getIpv6Prefix() != null) {
-                        addIpv6Table.addItem(binding.getIpPrefix(), _peerSequence, _sgt);
-                    } else {
-                        throw new UnknownFormatConversionException("PrefixTable: Binding IP address is not supported.");
-                    }
-                }
-            }
-        }
-        attributes.add(AttributeFactory.createIpv4AddTable(addIpv4Table));
-        attributes.add(AttributeFactory.createIpv6AddTable(addIpv6Table));
         return getMessage(MessageType.Update, attributes.toBytes());
     }
 
@@ -897,7 +845,7 @@ public class MessageFactory {
         if (message instanceof SxpPayload) {
             _message = ArraysUtil.combine(_message, ((SxpPayload) message).getPayload());
         }
-        return result += " " + toString(_message);
+        return result + " " + toString(_message);
     }
 
     /**
