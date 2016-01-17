@@ -42,10 +42,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.CapabilitiesAttributeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.HoldTimeAttributeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.Ipv4AddPrefixAttributeBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.Ipv4AddTableAttributeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.Ipv4DeletePrefixAttributeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.Ipv6AddPrefixAttributeBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.Ipv6AddTableAttributeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.Ipv6DeletePrefixAttributeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.PeerSequenceAttributeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.SourceGroupTagAttributeBuilder;
@@ -249,34 +247,6 @@ public final class AttributeFactory {
     }
 
     /**
-     * Creates AddIpv4Table Attribute using provided table
-     *
-     * @param prefixTable PrefixTable to be used in attribute
-     * @return Attribute containing AddIpv4 table
-     */
-    // TODO: createIpv4AddTable
-    public static Attribute createIpv4AddTable(PrefixTable prefixTable) {
-        AttributeBuilder attributeBuilder = new AttributeBuilder();
-        attributeBuilder.setType(AttributeType.Ipv4AddTable);
-
-        byte[] value = new byte[0];
-        if (value.length < 256) {
-            attributeBuilder.setFlags(getFlags(_onpCe));
-            attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
-        } else {
-            attributeBuilder.setFlags(getFlags(_onpCE));
-            attributeBuilder.setAttributeVariant(AttributeVariant.CompactExtendedLength);
-        }
-
-        attributeBuilder.setLength(value.length);
-        attributeBuilder.setValue(value);
-
-        Ipv4AddTableAttributeBuilder _attributeBuilder = new Ipv4AddTableAttributeBuilder();
-        attributeBuilder.setAttributeOptionalFields(_attributeBuilder.build());
-        return attributeBuilder.build();
-    }
-
-    /**
      * Create DeleteIpv4Prefix Attribute using provided prefixes
      *
      * @param prefixes Prefixes to be used in attribute
@@ -331,34 +301,6 @@ public final class AttributeFactory {
         Ipv6AddPrefixAttributesBuilder _attributesBuilder = new Ipv6AddPrefixAttributesBuilder();
         _attributesBuilder.setIpPrefix(prefixes);
         _attributeBuilder.setIpv6AddPrefixAttributes(_attributesBuilder.build());
-        attributeBuilder.setAttributeOptionalFields(_attributeBuilder.build());
-        return attributeBuilder.build();
-    }
-
-    /**
-     * Creates AddIpv6Table Attribute using provided table
-     *
-     * @param prefixTable PrefixTable to be used in attribute
-     * @return Attribute containing AddIpv6 table
-     */
-    // TODO: createIpv6AddTable
-    public static Attribute createIpv6AddTable(PrefixTable prefixTable) {
-        AttributeBuilder attributeBuilder = new AttributeBuilder();
-        attributeBuilder.setType(AttributeType.Ipv6AddTable);
-
-        byte[] value = new byte[0];
-        if (value.length < 256) {
-            attributeBuilder.setFlags(getFlags(_onpCe));
-            attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
-        } else {
-            attributeBuilder.setFlags(getFlags(_onpCE));
-            attributeBuilder.setAttributeVariant(AttributeVariant.CompactExtendedLength);
-        }
-
-        attributeBuilder.setLength(value.length);
-        attributeBuilder.setValue(value);
-
-        Ipv6AddTableAttributeBuilder _attributeBuilder = new Ipv6AddTableAttributeBuilder();
         attributeBuilder.setAttributeOptionalFields(_attributeBuilder.build());
         return attributeBuilder.build();
     }
@@ -581,17 +523,11 @@ public final class AttributeFactory {
         case Ipv4AddPrefix:
             attributeOptionalFields = decodeIpv4AddPrefix(value, flags.isCompact());
             break;
-        case Ipv4AddTable:
-            attributeOptionalFields = decodeIpv4AddTable(value);
-            break;
         case Ipv4DeletePrefix:
             attributeOptionalFields = decodeIpv4DeletePrefix(value, flags.isCompact());
             break;
         case Ipv6AddPrefix:
             attributeOptionalFields = decodeIpv6AddPrefix(value, flags.isCompact());
-            break;
-        case Ipv6AddTable:
-            attributeOptionalFields = decodeIpv6AddTable(value);
             break;
         case Ipv6DeletePrefix:
             attributeOptionalFields = decodeIpv6DeletePrefix(value, flags.isCompact());
@@ -668,21 +604,6 @@ public final class AttributeFactory {
     }
 
     /**
-     * Decode AddIpv4 table from Byte Array
-     *
-     * @param value Byte Array containing attribute
-     * @return Decoded AddIpv4 table attribute
-     */
-    // TODO: decodeIpv4AddTable
-    private static AttributeOptionalFields decodeIpv4AddTable(byte[] value) {
-        Ipv4AddTableAttributeBuilder attributeBuilder = new Ipv4AddTableAttributeBuilder();
-        // attributeBuilder.setNcolumns(value);
-        // attributeBuilder.setColumns(value);
-        // attributeBuilder.setRows(value);
-        return attributeBuilder.build();
-    }
-
-    /**
      * Decode DeleteIpv4 prefix from Byte Array
      *
      * @param value   Byte Array containing attribute
@@ -713,21 +634,6 @@ public final class AttributeFactory {
         Ipv6AddPrefixAttributesBuilder attributesBuilder = new Ipv6AddPrefixAttributesBuilder();
         attributesBuilder.setIpPrefix(IpPrefixConv.decodeIpv6(value, compact));
         attributeBuilder.setIpv6AddPrefixAttributes(attributesBuilder.build());
-        return attributeBuilder.build();
-    }
-
-    /**
-     * Decode AddIpv6 table from Byte Array
-     *
-     * @param value Byte Array containing attribute
-     * @return Decoded AddIpv6 table attribute
-     */
-    // TODO: decodeIpv6AddTable
-    private static AttributeOptionalFields decodeIpv6AddTable(byte[] value) {
-        Ipv6AddTableAttributeBuilder attributeBuilder = new Ipv6AddTableAttributeBuilder();
-        // attributeBuilder.setNcolumns(value);
-        // attributeBuilder.setColumns(value);
-        // attributeBuilder.setRows(value);
         return attributeBuilder.build();
     }
 
