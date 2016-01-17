@@ -73,6 +73,9 @@ public class MasterDatabaseImpl implements MasterDatabaseInf {
      * @return If operation was successful
      */
     private boolean addBindingIdentity(MasterBindingIdentity bindingIdentity) {
+        if (ignoreBinding(bindingIdentity.binding)) {
+            return false;
+        }
         synchronized (database) {
             if (database.getSource() != null && !database.getSource().isEmpty()) {
 
@@ -309,7 +312,7 @@ public class MasterDatabaseImpl implements MasterDatabaseInf {
                                     break;
                                 }
                             }
-                            if (_binding == null) {
+                            if (_binding == null && !ignoreBinding(binding)) {
                                 if (binding.getIpPrefix().getIpv6Prefix() != null) {
                                     _binding =
                                             new BindingBuilder(binding).setKey(new BindingKey(new IpPrefix(
@@ -322,7 +325,6 @@ public class MasterDatabaseImpl implements MasterDatabaseInf {
                                 } else {
                                     _prefixGroup.getBinding().add(binding);
                                 }
-                                continue;
                             }
                         }
                     }
@@ -719,5 +721,25 @@ public class MasterDatabaseImpl implements MasterDatabaseInf {
             }
             return result;
         }
+    }
+
+    /**
+     * Checks if Binding has prefix 0:0:0:0:0:0:0:0/0 or 0.0.0.0/0,
+     * if so then it will be ignored
+     *
+     * @param binding Binding to be checked
+     * @return If binding will be ignored
+     */
+    private static boolean ignoreBinding(Binding binding) {
+        if (binding.getIpPrefix().getIpv6Prefix() != null && binding.getIpPrefix()
+                .getIpv6Prefix()
+                .getValue()
+                .equals("0:0:0:0:0:0:0:0/0") || (binding.getIpPrefix().getIpv4Prefix() != null && binding.getIpPrefix()
+                .getIpv4Prefix()
+                .getValue()
+                .equals("0.0.0.0/0"))) {
+            return true;
+        }
+        return false;
     }
 }

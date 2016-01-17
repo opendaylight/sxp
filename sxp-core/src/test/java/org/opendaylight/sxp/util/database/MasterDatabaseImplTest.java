@@ -132,10 +132,11 @@ import static org.mockito.Mockito.when;
                 assertTrue(sources.isEmpty());
 
                 List<MasterBindingIdentity> masterBindingIdentities = new ArrayList<>();
-                masterBindingIdentities.add(getMasterBindingIdentity(10, "127.0.0.0/32", "127.0.0.1/32"));
+                masterBindingIdentities.add(getMasterBindingIdentity(10, "127.0.0.0/32", "127.0.0.1/32", "0.0.0.0/0"));
                 database.addBindings(NodeId.getDefaultInstance("0.0.0.0"), masterBindingIdentities);
                 assertTrue(hasMasterBindingIdentity(getMasterBindingIdentity(10, "127.0.0.0/32", "127.0.0.1/32"),
                         sources));
+                assertFalse(hasMasterBindingIdentity(getMasterBindingIdentity(10, "0.0.0.0/0"), sources));
                 assertFalse(hasMasterBindingIdentity(getMasterBindingIdentity(100, "127.0.0.0/32", "127.0.0.1/32"),
                         sources));
 
@@ -177,9 +178,11 @@ import static org.mockito.Mockito.when;
                 assertTrue(sources.isEmpty());
 
                 list.add(getPrefixGroup(10, "0.0.0.0/32"));
+                list.add(getPrefixGroup(50, "0.0.0.0/0"));
                 database.addBindingsLocal(sxpNode, list);
                 assertTrue(hasMasterBindingIdentity(getMasterBindingIdentity(10, "0.0.0.0/32"), sources));
                 assertFalse(hasMasterBindingIdentity(getMasterBindingIdentity(10, "0.0.0.1/32"), sources));
+                assertFalse(hasMasterBindingIdentity(getMasterBindingIdentity(50, "0.0.0.0/0"), sources));
 
                 list.add(getPrefixGroup(100, "0.0.0.1/32"));
                 database.addBindingsLocal(sxpNode, list);
