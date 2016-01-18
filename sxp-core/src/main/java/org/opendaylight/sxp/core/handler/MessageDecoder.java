@@ -261,7 +261,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
                         null));
                 break;
             } catch (Exception e) {
-                LOG.warn(getLogMessage(owner, ctx, "Channel read", e) + ": {}", MessageFactory.toString(message));
+                LOG.warn(getLogMessage(owner, ctx, "Channel read") + ": {}", MessageFactory.toString(message), e);
                 break;
             }
         }

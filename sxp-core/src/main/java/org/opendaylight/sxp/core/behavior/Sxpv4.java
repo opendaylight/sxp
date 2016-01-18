@@ -255,24 +255,6 @@ public final class Sxpv4 extends SxpLegacy {
             if (_message.getType().equals(MessageType.Open)) {
 
                 if (connection.isModeBoth()) {
-                    /**
-                     * SXPv4 on routers is lightly different in using
-                     * bidirectional functionality, e.g. after both commands set
-                     * "no cts sxp enable" and "cts sxp enable"<br>
-                     * ASR acts<br>
-                     * 1. sent OPEN message as a Listener<br>
-                     * 2. sent OPEN message as a Speaker<br>
-                     * 3. after that after few seconds only one OPEN message as
-                     * a Listener is sent and thats it
-                     * <p>
-                     * ISR acts<br>
-                     * 1. sent OPEN message as a Speaker<br>
-                     * 2. every few seconds an OPEN message as a Speaker is sent
-                     * <p>
-                     * If an OPEN message as a Speaker is sent to a router,
-                     * router responds with PURGEALL.
-                     */
-
                     if (_message.getSxpMode().equals(ConnectionMode.Listener)) {
                         if (!connection.isBidirectionalBoth()) {
                             connection.markChannelHandlerContext(ctx, ChannelHandlerContextType.SpeakerContext);
@@ -303,16 +285,6 @@ public final class Sxpv4 extends SxpLegacy {
                     return;
                 }
 
-                /**
-                 * SXPv4 I-D discrepancy: If both ends of an SXP connection set
-                 * up the TCP connection at the same time, the end with source
-                 * IP address higher than the peer IP address wins: i.e. the TCP
-                 * connection initiated from that end is kept and the other TCP
-                 * connection is torn down.
-                 * <p>
-                 * Cisco device's implementation: Only the Speaker includes
-                 * NODE_ID in OPEN message.
-                 */
                 if (InetAddressComparator.greaterThan(connection.getDestination().getAddress(),
                         connection.getLocalAddress().getAddress())) {
                     // Close the dual channel.
@@ -427,8 +399,8 @@ public final class Sxpv4 extends SxpLegacy {
         // Bindings Expansion.
         // Compose new messages according to all|changed bindings and version.
         try {
-            return MessageFactory
-                    .createUpdate(masterDatabase, getOwner().getNodeId(), connection.isUpdateAllExported());
+            return MessageFactory.createUpdate(masterDatabase, getOwner().getNodeId(), connection.isUpdateAllExported(),
+                    connection.getCapabilitiesRemote());
         } catch (UpdateMessageBindingSourceException | SecurityGroupTagValueException | AttributeVariantException e) {
             throw new UpdateMessageCompositionException(connection.getVersion(), connection.isUpdateAllExported(), e);
         }

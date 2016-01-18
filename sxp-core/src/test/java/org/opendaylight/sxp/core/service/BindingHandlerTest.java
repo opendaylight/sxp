@@ -295,12 +295,13 @@ import static org.mockito.Mockito.when;
                 attributes.add(AttributeFactory.createSourceGroupTag(25));
 
                 List<IpPrefix> ipPrefixes = getIpPrefixes("127.0.0.0/32", "127.0.10.2/32");
-                attributes.add(AttributeFactory.createIpv4AddPrefix(getIpPrefixes("127.0.0.0/32", "127.0.10.2/32")));
+                attributes.add(AttributeFactory.createIpv4AddPrefix(getIpPrefixes("127.0.0.0/32", "127.0.10.2/32"),
+                        AttributeFactory._onpCe));
                 attributes.add(getPeerSequence("2.2.2.2"));
                 attributes.add(AttributeFactory.createSourceGroupTag(45));
                 ipPrefixes.addAll(getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"));
                 attributes.add(AttributeFactory.createIpv6AddPrefix(
-                        getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64")));
+                        getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"), AttributeFactory._onpCe));
 
                 //Legacy
                 ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
@@ -327,9 +328,10 @@ import static org.mockito.Mockito.when;
 
         private List<Attribute> getDeletion() {
                 List<Attribute> attributes = new ArrayList<>();
-                attributes.add(AttributeFactory.createIpv4DeletePrefix(getIpPrefixes("127.0.0.0/32", "127.0.10.2/32")));
+                attributes.add(AttributeFactory.createIpv4DeletePrefix(getIpPrefixes("127.0.0.0/32", "127.0.10.2/32"),
+                        AttributeFactory._onpCe));
                 attributes.add(AttributeFactory.createIpv6DeletePrefix(
-                        getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64")));
+                        getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"), AttributeFactory._onpCe));
                 //Legacy
                 attributes.add(getDeleteIpv4("128.0.0.0/32"));
                 attributes.add(getDeleteIpv4("128.50.0.0/24"));
