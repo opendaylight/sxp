@@ -37,6 +37,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorSubCode;
@@ -177,42 +178,19 @@ public class MessageFactoryTest {
                 sourceBuilder.setPrefixGroup(prefixGroups);
                 sourceList.add(sourceBuilder.build());
                 when(database.getSource()).thenReturn(sourceList);
-                ByteBuf message = MessageFactory.createUpdate(database, nodeId, false);
+                List<CapabilityType> capabilityTypes = new ArrayList<>();
+                capabilityTypes.add(CapabilityType.Ipv4Unicast);
+                capabilityTypes.add(CapabilityType.Ipv6Unicast);
+                ByteBuf message = MessageFactory.createUpdate(database, nodeId, false, capabilityTypes);
 
                 byte[]
                         result =
-                        new byte[] {0, 0, 0, 108, 0, 0, 0, 3, 16, 13, 5, 32, -64, -88, 0, 1, 16, 14, 17, -128, 32, 2, 0,
-                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 16, 16, 4, -64, -88, 0, 1, 16, 17, 2, 78, 32, 16,
-                                11, 5, 30, 10, 10, 10, 10, 16, 12, 9, 64, 32, 1, 0, 0, 0, 0, 0, 0, 16, 16, 4, -64, -88,
-                                0, 1, 16, 17, 2, -100, 64, 16, 11, 5, 29, 11, 11, 11, 0, 16, 16, 4, -64, -88, 0, 1, 16,
-                                17, 2, -3, -24, 16, 11, 5, 28, -84, -88, 1, 0};
+                        new byte[] {0, 0, 0, 108, 0, 0, 0, 3, 80, 13, 5, 32, -64, -88, 0, 1, 80, 14, 17, -128, 32, 2, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 16, 16, 4, -64, -88, 0, 1, 16, 17, 2, 78, 32, 80,
+                                11, 5, 30, 10, 10, 10, 10, 80, 12, 9, 64, 32, 1, 0, 0, 0, 0, 0, 0, 16, 16, 4, -64, -88,
+                                0, 1, 16, 17, 2, -100, 64, 80, 11, 5, 29, 11, 11, 11, 0, 16, 16, 4, -64, -88, 0, 1, 16,
+                                17, 2, -3, -24, 80, 11, 5, 28, -84, -88, 1, 0};
                 assertArrayEquals(result, toBytes(message));
-        }
-
-        @Test public void testCreateUpdateAddPrefixes() throws Exception {
-                List<PrefixGroup> prefixGroups = new ArrayList<>();
-                prefixGroups.add(createPrefixGroup(DatabaseAction.Add, 20000, "2001::1/64", "10.10.10.10/30"));
-
-                List<NodeId> peerSequence = new ArrayList<>();
-                peerSequence.add(NodeIdConv.createNodeId("192.168.5.1"));
-
-                ByteBuf message = MessageFactory.createUpdateAddPrefixes(nodeId, peerSequence, prefixGroups);
-                assertArrayEquals(
-                        new byte[] {0, 0, 0, 44, 0, 0, 0, 3, 16, 16, 8, -64, -88, 0, 1, -64, -88, 5, 1, 16, 17, 2, 78,
-                                32, 16, 11, 5, 30, 10, 10, 10, 10, 16, 12, 9, 64, 32, 1, 0, 0, 0, 0, 0, 0},
-                        toBytes(message));
-        }
-
-        @Test public void testCreateUpdateDeletePrefixes() throws Exception {
-                List<PrefixGroup> prefixGroups = new ArrayList<>();
-
-                prefixGroups.add(createPrefixGroup(DatabaseAction.Delete, 10000, "192.168.0.1/32"));
-                prefixGroups.add(createPrefixGroup(DatabaseAction.Delete, 30000, "2002::1/128"));
-
-                ByteBuf message = MessageFactory.createUpdateDeletePrefixes(prefixGroups);
-                assertArrayEquals(
-                        new byte[] {0, 0, 0, 36, 0, 0, 0, 3, 16, 13, 5, 32, -64, -88, 0, 1, 16, 14, 17, -128, 32, 2, 0,
-                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, toBytes(message));
         }
 
         @Test public void testDecodeErrorMessage() throws Exception {

@@ -50,6 +50,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerTyp
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
@@ -101,8 +102,7 @@ public class SxpConnectionTest {
         private Connection mockConnection(ConnectionMode mode, ConnectionState state) {
                 Connection connection = mock(Connection.class);
                 when(connection.getMode()).thenReturn(mode);
-                when(connection.getPeerAddress()).thenReturn(
-                        new IpAddress(("127.0.0." + (++ip4Address)).toCharArray()));
+                when(connection.getPeerAddress()).thenReturn(new IpAddress(("127.0.0." + (++ip4Address)).toCharArray()));
                 when(connection.getState()).thenReturn(state);
                 when(connection.getVersion()).thenReturn(Version.Version4);
                 ConnectionTimers timers = mock(ConnectionTimers.class);
@@ -610,5 +610,20 @@ public class SxpConnectionTest {
                 sxpConnection.removeFilter(FilterType.Outbound);
                 assertNull(sxpConnection.getFilter(FilterType.Outbound));
                 verify(sxpNode,atLeastOnce()).setSvcBindingDispatcherNotify();
+        }
+
+        @Test public void testSetCapabilitiesRemote() throws Exception {
+                sxpConnection = SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On));
+                assertTrue(sxpConnection.getCapabilitiesRemote().isEmpty());
+                List<CapabilityType> capabilityTypes = new ArrayList<>();
+                capabilityTypes.add(CapabilityType.Ipv4Unicast);
+                sxpConnection.setCapabilitiesRemote(capabilityTypes);
+                assertTrue(sxpConnection.getCapabilitiesRemote().contains(CapabilityType.Ipv4Unicast));
+
+                capabilityTypes.clear();
+                capabilityTypes.add(CapabilityType.Ipv6Unicast);
+                sxpConnection.setCapabilitiesRemote(capabilityTypes);
+                assertFalse(sxpConnection.getCapabilitiesRemote().contains(CapabilityType.Ipv4Unicast));
+                assertTrue(sxpConnection.getCapabilitiesRemote().contains(CapabilityType.Ipv6Unicast));
         }
 }

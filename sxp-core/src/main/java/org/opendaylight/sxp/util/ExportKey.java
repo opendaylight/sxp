@@ -8,8 +8,12 @@
 
 package org.opendaylight.sxp.util;
 
+import org.opendaylight.sxp.core.SxpConnection;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -20,18 +24,18 @@ public class ExportKey {
     private final Version version;
     private final boolean exportAll;
     private final String groupName;
+    private final List<CapabilityType> capabilityTypes;
 
     /**
      * Parametric constructor for ExportKey class
      *
-     * @param version   Version of Connections
-     * @param exportAll If all binding were exported
-     * @param groupName Name of group if any
+     * @param connection SxpConnection containing data necessary for Key generation
      */
-    public ExportKey(Version version, boolean exportAll, String groupName) {
-        this.version = version;
-        this.exportAll = exportAll;
-        this.groupName = groupName;
+    public ExportKey(SxpConnection connection) {
+        this.version = connection.getVersion();
+        this.exportAll = connection.isUpdateAllExported();
+        this.groupName = connection.getGroupName(FilterType.Outbound);
+        this.capabilityTypes = connection.getCapabilitiesRemote();
     }
 
     @Override public boolean equals(Object o) {
@@ -42,10 +46,11 @@ public class ExportKey {
         ExportKey exportKey = (ExportKey) o;
         return Objects.equals(exportAll, exportKey.exportAll) &&
                 Objects.equals(version, exportKey.version) &&
-                Objects.equals(groupName, exportKey.groupName);
+                Objects.equals(groupName, exportKey.groupName) &&
+                Objects.equals(capabilityTypes, exportKey.capabilityTypes);
     }
 
     @Override public int hashCode() {
-        return Objects.hash(version, exportAll, groupName);
+        return Objects.hash(version, exportAll, groupName, capabilityTypes);
     }
 }

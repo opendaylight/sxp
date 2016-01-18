@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.core;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -50,6 +52,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Erro
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorSubCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.HoldTimeAttribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.SxpNodeIdAttribute;
@@ -57,10 +60,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -95,6 +100,7 @@ public class SxpConnection {
         return new SxpConnection(owner, connection);
     }
 
+    private final List<CapabilityType> remoteCapabilityTypes = new ArrayList<>();
     private ConnectionBuilder connectionBuilder;
 
     private Context context;
@@ -434,9 +440,30 @@ public class SxpConnection {
      */
     public List<CapabilityType> getCapabilities() {
         if (connectionBuilder.getCapabilities() == null || connectionBuilder.getCapabilities().getCapability() == null) {
-            return new ArrayList<CapabilityType>();
+            return new ArrayList<>();
         }
         return connectionBuilder.getCapabilities().getCapability();
+    }
+
+    /**
+     * @return Gets all supported getCapabilities of Remote Peer
+     */
+    public List<CapabilityType> getCapabilitiesRemote() {
+        synchronized (remoteCapabilityTypes) {
+            return Collections.unmodifiableList(remoteCapabilityTypes);
+        }
+    }
+
+    /**
+     * Clears and afterwards sets Capabilities of Remote Peer
+     *
+     * @param capabilityTypeList List of Capabilities that Remote Peer supports
+     */
+    public void setCapabilitiesRemote(List<CapabilityType> capabilityTypeList) {
+        synchronized (remoteCapabilityTypes) {
+            remoteCapabilityTypes.clear();
+            remoteCapabilityTypes.addAll(capabilityTypeList);
+        }
     }
 
     /**
@@ -895,6 +922,22 @@ public class SxpConnection {
             setConnectionListenerPart(message);
         } else if (isModeSpeaker() && message.getSxpMode().equals(ConnectionMode.Listener)) {
             setConnectionSpeakerPart(message);
+            try {
+                CapabilitiesAttribute
+                        capabilitiesAttribute =
+                        (CapabilitiesAttribute) AttributeList.get(message.getAttribute(), AttributeType.Capabilities);
+
+                setCapabilitiesRemote(new ArrayList<>(
+                        Collections2.transform(capabilitiesAttribute.getCapabilitiesAttributes().getCapabilities(),
+                                new Function<Capabilities, CapabilityType>() {
+
+                                    @Nullable @Override public CapabilityType apply(Capabilities input) {
+                                        return CapabilityType.forValue(input.hashCode());
+                                    }
+                                })));
+            } catch (AttributeNotFoundException e) {
+                LOG.warn("{} No Capabilities specified by remote peer.", this);
+            }
         } else {
             throw new UnknownConnectionModeException();
         }

@@ -66,12 +66,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 public final class AttributeFactory {
 
     /** ONPCE000 (Optional-NonTransitive-Partial-Compact-ExtendedLength-0-0-0) */
-    private static final byte _onpCe = 16;
-    private static final byte _onpCE = 24;
-
-    /** ONPCE000 (Optional-NonTransitive-Partial-Compact-ExtendedLength-0-0-0) */
-    private static final byte _oNpCe = 80;
-    private static final byte _oNpCE = 88;
+    public static final byte _onpCe = 16;
+    public static final byte _OnpCe = -112;
+    public static final byte _oNpCe = 80;
 
     /**
      * Decode Capabilities from Byte Array
@@ -223,16 +220,16 @@ public final class AttributeFactory {
      * @param prefixes Prefixes to be used in attribute
      * @return Attribute containing AddIpv4 prefixes
      */
-    public static Attribute createIpv4AddPrefix(List<IpPrefix> prefixes) {
+    public static Attribute createIpv4AddPrefix(List<IpPrefix> prefixes, byte flags) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setType(AttributeType.Ipv4AddPrefix);
 
         byte[] value = IpPrefixConv.toBytes(prefixes);
         if (value.length < 256) {
-            attributeBuilder.setFlags(getFlags(_onpCe));
+            attributeBuilder.setFlags(getFlags(flags));
             attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         } else {
-            attributeBuilder.setFlags(getFlags(_onpCE));
+            attributeBuilder.setFlags(getFlags((byte) (flags + 8)));
             attributeBuilder.setAttributeVariant(AttributeVariant.CompactExtendedLength);
         }
         attributeBuilder.setLength(value.length);
@@ -252,16 +249,16 @@ public final class AttributeFactory {
      * @param prefixes Prefixes to be used in attribute
      * @return Attribute containing DeleteIpv4 prefixes
      */
-    public static Attribute createIpv4DeletePrefix(List<IpPrefix> prefixes) {
+    public static Attribute createIpv4DeletePrefix(List<IpPrefix> prefixes, byte flags) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setType(AttributeType.Ipv4DeletePrefix);
 
         byte[] value = IpPrefixConv.toBytes(prefixes);
         if (value.length < 256) {
-            attributeBuilder.setFlags(getFlags(_onpCe));
+            attributeBuilder.setFlags(getFlags(flags));
             attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         } else {
-            attributeBuilder.setFlags(getFlags(_onpCE));
+            attributeBuilder.setFlags(getFlags((byte) (flags + 8)));
             attributeBuilder.setAttributeVariant(AttributeVariant.CompactExtendedLength);
         }
         attributeBuilder.setLength(value.length);
@@ -281,16 +278,16 @@ public final class AttributeFactory {
      * @param prefixes Prefixes to be used in attribute
      * @return Attribute containing AddIpv6 prefixes
      */
-    public static Attribute createIpv6AddPrefix(List<IpPrefix> prefixes) {
+    public static Attribute createIpv6AddPrefix(List<IpPrefix> prefixes, byte flags) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setType(AttributeType.Ipv6AddPrefix);
 
         byte[] value = IpPrefixConv.toBytes(prefixes);
         if (value.length < 256) {
-            attributeBuilder.setFlags(getFlags(_onpCe));
+            attributeBuilder.setFlags(getFlags(flags));
             attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         } else {
-            attributeBuilder.setFlags(getFlags(_onpCE));
+            attributeBuilder.setFlags(getFlags((byte) (flags + 8)));
             attributeBuilder.setAttributeVariant(AttributeVariant.CompactExtendedLength);
         }
 
@@ -311,16 +308,16 @@ public final class AttributeFactory {
      * @param prefixes Prefixes to be used in attribute
      * @return Attribute containing DeleteIpv6 prefixes
      */
-    public static Attribute createIpv6DeletePrefix(List<IpPrefix> prefixes) {
+    public static Attribute createIpv6DeletePrefix(List<IpPrefix> prefixes, byte flags) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setType(AttributeType.Ipv6DeletePrefix);
 
         byte[] value = IpPrefixConv.toBytes(prefixes);
         if (value.length < 256) {
-            attributeBuilder.setFlags(getFlags(_onpCe));
+            attributeBuilder.setFlags(getFlags(flags));
             attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         } else {
-            attributeBuilder.setFlags(getFlags(_onpCE));
+            attributeBuilder.setFlags(getFlags((byte) (flags + 8)));
             attributeBuilder.setAttributeVariant(AttributeVariant.CompactExtendedLength);
         }
         attributeBuilder.setLength(value.length);
