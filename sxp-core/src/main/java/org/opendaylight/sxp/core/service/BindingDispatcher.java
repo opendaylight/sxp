@@ -141,10 +141,7 @@ public final class BindingDispatcher extends Service<Void> {
              * 1 message is exported, delete attributes are written before
              * added attributes.
              */
-            ExportKey
-                    key =
-                    new ExportKey(connection.getVersion(), connection.isUpdateAllExported(),
-                            connection.getGroupName(FilterType.Outbound));
+            ExportKey key = new ExportKey(connection);
             if (dataPool.get(key) == null) {
                 List<MasterDatabase> partitions;
                 partitions =

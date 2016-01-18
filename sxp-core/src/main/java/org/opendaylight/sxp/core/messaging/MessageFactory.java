@@ -36,6 +36,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
@@ -305,7 +306,8 @@ public class MessageFactory {
      * @throws SecurityGroupTagValueException      If some Sgt isn't in rage [2, 65519]
      * @throws AttributeVariantException           If some attribute variant isn't supported
      */
-    public static ByteBuf createUpdate(MasterDatabase masterDatabase, NodeId nodeId, boolean changed)
+    public static ByteBuf createUpdate(MasterDatabase masterDatabase, NodeId nodeId, boolean changed,
+            List<CapabilityType> capabilities)
             throws UpdateMessageBindingSourceException, SecurityGroupTagValueException, AttributeVariantException {
         AttributeList attributes = new AttributeList();
 
@@ -335,10 +337,10 @@ public class MessageFactory {
         // Binding delete attributes include any of IPv4-Del-Prefix,
         // IPv6-Del-Prefix, Del-IPv4, or Del-IPv6 attributes.
         if (!removeIpv4.isEmpty()) {
-            attributes.add(AttributeFactory.createIpv4DeletePrefix(removeIpv4));
+            attributes.add(AttributeFactory.createIpv4DeletePrefix(removeIpv4, AttributeFactory._oNpCe));
         }
         if (!removeIpv6.isEmpty()) {
-            attributes.add(AttributeFactory.createIpv6DeletePrefix(removeIpv6));
+            attributes.add(AttributeFactory.createIpv6DeletePrefix(removeIpv6, AttributeFactory._oNpCe));
         }
 
         // Processing Source.
@@ -399,11 +401,13 @@ public class MessageFactory {
                     _attributes.add(AttributeFactory.createSourceGroupTag(prefixGroup.getSgt().getValue()));
 
                     if (!addIpv4.isEmpty()) {
-                        _attributes.add(AttributeFactory.createIpv4AddPrefix(addIpv4));
+                        _attributes.add(AttributeFactory.createIpv4AddPrefix(addIpv4, capabilities.contains(
+                                CapabilityType.Ipv4Unicast) ? AttributeFactory._oNpCe : AttributeFactory._OnpCe));
                         added = true;
                     }
                     if (!addIpv6.isEmpty()) {
-                        _attributes.add(AttributeFactory.createIpv6AddPrefix(addIpv6));
+                        _attributes.add(AttributeFactory.createIpv6AddPrefix(addIpv6, capabilities.contains(
+                                CapabilityType.Ipv6Unicast) ? AttributeFactory._oNpCe : AttributeFactory._OnpCe));
                         added = true;
                     }
                 }
@@ -413,75 +417,6 @@ public class MessageFactory {
             }
         }
 
-        return getMessage(MessageType.Update, attributes.toBytes());
-    }
-
-    /**
-     * Create AddPrefixes for UpdateMessage using provided values
-     *
-     * @param nodeID       NodeId included in message
-     * @param peerSequence PeerSequences to be used
-     * @param prefixGroups PrefixGroups to be used
-     * @return ByteBuf representation of AddPrefixes
-     * @throws SecurityGroupTagValueException If some Sgt isn't in rage [2, 65519]
-     * @throws AttributeVariantException      If some attribute variant isn't supported
-     */
-    public static ByteBuf createUpdateAddPrefixes(NodeId nodeID, List<NodeId> peerSequence,
-            List<PrefixGroup> prefixGroups) throws SecurityGroupTagValueException, AttributeVariantException {
-        AttributeList attributes = new AttributeList();
-        // Prepend local node ID.
-        peerSequence.add(0, nodeID);
-        attributes.add(AttributeFactory.createPeerSequence(peerSequence));
-
-        for (PrefixGroup prefixGroup : prefixGroups) {
-            attributes.add(AttributeFactory.createSourceGroupTag(prefixGroup.getSgt().getValue()));
-
-            List<IpPrefix> addIpv4 = new ArrayList<>();
-            List<IpPrefix> addIpv6 = new ArrayList<>();
-            if (prefixGroup.getBinding() != null) {
-                for (Binding binding : prefixGroup.getBinding()) {
-                    if (binding.getIpPrefix().getIpv4Prefix() != null) {
-                        addIpv4.add(binding.getIpPrefix());
-                    } else if (binding.getIpPrefix().getIpv6Prefix() != null) {
-                        addIpv6.add(binding.getIpPrefix());
-                    }
-                }
-            }
-            if (!addIpv4.isEmpty()) {
-                attributes.add(AttributeFactory.createIpv4AddPrefix(addIpv4));
-            }
-            if (!addIpv6.isEmpty()) {
-                attributes.add(AttributeFactory.createIpv6AddPrefix(addIpv6));
-            }
-        }
-        return getMessage(MessageType.Update, attributes.toBytes());
-    }
-
-    /**
-     * Create DeletePrefixes for UpdateMessage using provided values
-     *
-     * @param prefixGroups PrefixGroups to be used
-     * @return ByteBuf representation of DeletePrefixes
-     * @throws AttributeVariantException If some attribute variant isn't supported
-     */
-    public static ByteBuf createUpdateDeletePrefixes(List<PrefixGroup> prefixGroups) throws AttributeVariantException {
-        AttributeList attributes = new AttributeList();
-        List<IpPrefix> removeIpv4 = new ArrayList<>();
-        List<IpPrefix> removeIpv6 = new ArrayList<>();
-
-        for (PrefixGroup prefixGroup : prefixGroups) {
-            if (prefixGroup.getBinding() != null) {
-                for (Binding binding : prefixGroup.getBinding()) {
-                    if (binding.getIpPrefix().getIpv4Prefix() != null) {
-                        removeIpv4.add(binding.getIpPrefix());
-                    } else if (binding.getIpPrefix().getIpv6Prefix() != null) {
-                        removeIpv6.add(binding.getIpPrefix());
-                    }
-                }
-            }
-        }
-        attributes.add(AttributeFactory.createIpv4DeletePrefix(removeIpv4));
-        attributes.add(AttributeFactory.createIpv6DeletePrefix(removeIpv6));
         return getMessage(MessageType.Update, attributes.toBytes());
     }
 
