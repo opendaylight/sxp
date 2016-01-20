@@ -13,7 +13,6 @@
     <repository>mvn:org.opendaylight.mdsal.model/features-mdsal-model/{{VERSION}}/xml/features</repository>
     <repository>mvn:org.opendaylight.controller/features-mdsal/{{VERSION}}/xml/features</repository>
     <repository>mvn:org.opendaylight.controller/features-config/{{VERSION}}/xml/features</repository>
-    <repository>mvn:org.opendaylight.tcpmd5/features-tcpmd5/{{VERSION}}/xml/features</repository>
     <repository>mvn:org.opendaylight.netconf/features-restconf/{{VERSION}}/xml/features</repository>
     <repository>mvn:org.opendaylight.odlparent/features-odlparent/{{VERSION}}/xml/features</repository>
 
@@ -29,8 +28,6 @@
     </feature>
     <feature name='odl-sxp-core' version='${project.version}' description='OpenDaylight :: Sxp :: Core'>
       <feature version='${project.version}'>odl-sxp-api</feature>
-      <feature version='${tcpmd5.version}'>odl-tcpmd5-base</feature>
-      <feature version='${tcpmd5.version}'>odl-tcpmd5-netty</feature>
       <bundle>mvn:org.opendaylight.sxp/sxp-core/{{VERSION}}</bundle>
       <bundle>mvn:io.netty/netty-buffer/{{VERSION}}</bundle>
       <bundle>mvn:io.netty/netty-codec/{{VERSION}}</bundle>
