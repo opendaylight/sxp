@@ -76,11 +76,11 @@ public final class UpdateExportTask implements Callable<Void> {
                 }
                 //Wait for all messages to be generated and then write them to pipeline
                 try {
-                        for (int i = 0; i < generatedMessages.length; i++) {
+                        for (ByteBuf generatedMessage : generatedMessages) {
                                 ByteBuf message;
                                 do {
                                         synchronized (generatedMessages) {
-                                                if ((message = generatedMessages[i]) == null) {
+                                                if ((message = generatedMessage) == null) {
                                                         generatedMessages.wait();
                                                 }
                                         }
@@ -119,9 +119,9 @@ public final class UpdateExportTask implements Callable<Void> {
          */
         public void freeReferences() {
                 if (messagesReleaseCounter.decrementAndGet() == 0) {
-                        for (int i = 0; i < generatedMessages.length; i++) {
-                                if (generatedMessages[i] != null) {
-                                        generatedMessages[i].release();
+                        for (ByteBuf generatedMessage : generatedMessages) {
+                                if (generatedMessage != null) {
+                                        generatedMessage.release();
                                 }
                         }
                 }

@@ -76,27 +76,8 @@ public class ArraysUtilTest {
         }
 
         @Test public void testSetBit() throws Exception {
-                assertEquals(1, ArraysUtil.setBit(1, true));
-                assertEquals(4, ArraysUtil.setBit(3, true));
-
                 assertEquals(81, ArraysUtil.setBit((byte) 80, 1, true));
                 assertEquals(119, ArraysUtil.setBit((byte) 127, 4, false));
-        }
-
-        @Test public void testTrimZerosPrime() throws Exception {
-                assertArrayEquals(new byte[] {}, ArraysUtil.trimZerosPrime(null));
-                assertArrayEquals(new byte[] {}, ArraysUtil.trimZerosPrime(new byte[] {}));
-                assertArrayEquals(new byte[] {12, 56}, ArraysUtil.trimZerosPrime(new byte[] {0, 0, 12, 56}));
-                assertArrayEquals(new byte[] {52, 0, 12, 56, 0},
-                        ArraysUtil.trimZerosPrime(new byte[] {0, 52, 0, 12, 56, 0}));
-        }
-
-        @Test public void testTrimZerosTail() throws Exception {
-                assertArrayEquals(new byte[] {}, ArraysUtil.trimZerosTail(null));
-                assertArrayEquals(new byte[] {}, ArraysUtil.trimZerosTail(new byte[] {}));
-                assertArrayEquals(new byte[] {0, 0, 12, 56}, ArraysUtil.trimZerosTail(new byte[] {0, 0, 12, 56}));
-                assertArrayEquals(new byte[] {0, 52, 0, 12, 56},
-                        ArraysUtil.trimZerosTail(new byte[] {0, 52, 0, 12, 56, 0}));
         }
 
         @Test public void testReverseBitsByte() throws Exception {

@@ -31,15 +31,16 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
 public class StrategyFactory {
 
     public static Strategy getStrategy(Context context, Version version) throws UnknownVersionException {
-        switch (version) {
-        case Version1:
-        case Version2:
-        case Version3:
-            return new SxpLegacy(context);
-        case Version4:
-            return new Sxpv4(context);
-        default:
-            throw new UnknownVersionException();
+        if (version != null) {
+            switch (version) {
+                case Version1:
+                case Version2:
+                case Version3:
+                    return new SxpLegacy(context);
+                case Version4:
+                    return new Sxpv4(context);
+            }
         }
+        throw new UnknownVersionException();
     }
 }

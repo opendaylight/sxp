@@ -107,10 +107,12 @@ public class SxpLegacy implements Strategy {
     }
 
     /**
-     * @param connection
-     * @param _message
-     * @param ctx
-     * @return
+     * Checks if SxpConnections and its peer have correct connection modes
+     *
+     * @param connection SxpConnection to check version against
+     * @param _message   Message containing version to check
+     * @param ctx        ChannelHandlerContext on which error will be send if mismatch occurred
+     * @return If ModeMismatch occurred
      */
     private boolean checkModeMismatch(SxpConnection connection, OpenMessageLegacy _message, ChannelHandlerContext ctx) {
         if (!(connection.isModeListener() && _message.getSxpMode().equals(ConnectionMode.Speaker)) && !(
@@ -218,7 +220,7 @@ public class SxpLegacy implements Strategy {
             }
             connection.setPurgeAllMessageReceived();
             connection.getContext().getOwner().purgeBindings(connection.getNodeIdRemote());
-            connection.getContext().getOwner().notifyService();
+            connection.getContext().getOwner().setSvcBindingManagerNotify();
             return;
         }
         LOG.warn("{} Cannot handle message, ignoring: {}", connection, MessageFactory.toString(message));

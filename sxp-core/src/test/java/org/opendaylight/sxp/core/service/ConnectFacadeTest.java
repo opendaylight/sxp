@@ -64,4 +64,17 @@ import static org.mockito.Mockito.when;
                 assertFalse(config.getOptions().containsKey(MD5ChannelOption.TCP_MD5SIG));
         }
 
+        @Test public void testCreateServer() throws Exception {
+                HandlerFactory handlerFactory = new HandlerFactory(MessageDecoder.createServerProfile(sxpNode));
+
+                ChannelConfig config = ConnectFacade.createServer(sxpNode, handlerFactory).channel().config();
+                assertNotNull(config.getAllocator());
+                assertTrue(config.getOptions().containsKey(MD5ChannelOption.TCP_MD5SIG));
+
+                PowerMockito.when(sxpNode.getPassword()).thenReturn("");
+                config = ConnectFacade.createServer(sxpNode, handlerFactory).channel().config();
+                assertNotNull(config.getAllocator());
+                assertFalse(config.getOptions().containsKey(MD5ChannelOption.TCP_MD5SIG));
+        }
+
 }

@@ -78,24 +78,6 @@ public final class Sxpv4 extends SxpLegacy {
      *
      * @param connection      SxpConnection containing setting
      * @param openMessageType Type of message to be generated
-     * @return ByteBuf representation of generated message
-     * @throws CapabilityLengthException If some Attributes has incorrect length
-     * @throws UnknownVersionException   If version isn't supported
-     * @throws HoldTimeMaxException      If Max hold time is greater than minimal
-     * @throws HoldTimeMinException      If Min hold time isn't in range of <0,65535>
-     * @throws AttributeVariantException If attribute variant isn't supported
-     */
-    private ByteBuf composeOpenHoldTimeMessage(SxpConnection connection, OpenMessageType openMessageType)
-            throws CapabilityLengthException, HoldTimeMaxException, AttributeVariantException, HoldTimeMinException,
-            UnknownVersionException {
-        return composeOpenHoldTimeMessage(connection, openMessageType, connection.getMode());
-    }
-
-    /**
-     * Creates OpenMessage containing HoldTime attribute
-     *
-     * @param connection      SxpConnection containing setting
-     * @param openMessageType Type of message to be generated
      * @param connectionMode  ConnectionMode for which message will be generated
      * @return ByteBuf representation of generated message
      * @throws CapabilityLengthException If some Attributes has incorrect length
@@ -168,24 +150,6 @@ public final class Sxpv4 extends SxpLegacy {
     /**
      * Creates OpenRespMessage containing HoldTime attribute
      *
-     * @param connection SxpConnection containing setting
-     * @param message    OpenMessage to be parsed for values
-     * @return ByteBuf representation of generated message
-     * @throws CapabilityLengthException If some Attributes has incorrect length
-     * @throws UnknownVersionException   If version isn't supported
-     * @throws HoldTimeMaxException      If Max hold time is greater than minimal
-     * @throws HoldTimeMinException      If Min hold time isn't in range of <0,65535>
-     * @throws AttributeVariantException If attribute variant isn't supported
-     */
-    private ByteBuf composeOpenRespHoldTimeMessage(SxpConnection connection, OpenMessage message)
-            throws CapabilityLengthException, AttributeVariantException, HoldTimeMaxException,
-            HoldTimeMinException, UnknownVersionException {
-        return composeOpenRespHoldTimeMessage(connection, message, connection.getMode());
-    }
-
-    /**
-     * Creates OpenRespMessage containing HoldTime attribute
-     *
      * @param connection     SxpConnection containing setting
      * @param message        OpenMessage to be parsed for values
      * @param connectionMode ConnectionMode for which message will be generated
@@ -234,7 +198,7 @@ public final class Sxpv4 extends SxpLegacy {
             if (connection.isModeBoth() && !connection.isBidirectionalBoth()) {
                 message = composeOpenHoldTimeMessage(connection, OpenMessageType.Open, ConnectionMode.Listener);
             } else {
-                message = composeOpenHoldTimeMessage(connection, OpenMessageType.Open);
+                message = composeOpenHoldTimeMessage(connection, OpenMessageType.Open, connection.getMode());
             }
         } catch (CapabilityLengthException | UnknownVersionException | HoldTimeMinException | AttributeVariantException | UnknownConnectionModeException | HoldTimeMaxException e) {
             LOG.error("{} Error sending OpenMessage due to creation error ", this, e);
@@ -304,7 +268,7 @@ public final class Sxpv4 extends SxpLegacy {
 
                 // Send a response.
                 try {
-                    ByteBuf response = composeOpenRespHoldTimeMessage(connection, _message);
+                    ByteBuf response = composeOpenRespHoldTimeMessage(connection, _message, connection.getMode());
                     LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
                     ctx.writeAndFlush(response);
                 } catch (CapabilityLengthException | HoldTimeMinException | HoldTimeMaxException | AttributeVariantException e) {
@@ -372,7 +336,7 @@ public final class Sxpv4 extends SxpLegacy {
             peerId = connection.getNodeIdRemote();
             connection.setPurgeAllMessageReceived();
             connection.getOwner().purgeBindings(peerId);
-            connection.getOwner().notifyService();
+            connection.getOwner().setSvcBindingManagerNotify();
             return;
 
         } else if (message instanceof KeepaliveMessage) {

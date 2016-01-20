@@ -17,15 +17,9 @@ import org.opendaylight.sxp.core.Configuration;
  */
 public final class LengthFieldBasedFrameDecoderImpl extends LengthFieldBasedFrameDecoder {
 
-    private static boolean failFast = true;
-
-    private static int initialBytesToStrip = 0;
-
     private static int lengthAdjustment = -Configuration.getConstants().getMessageHeaderLengthLength();
 
     private static int lengthFieldLength = Configuration.getConstants().getMessageHeaderLengthLength();
-
-    private static int lengthFieldOffset = 0;
 
     private static int maxFrameLength = Configuration.getConstants().getMessageLengthMax();
 
@@ -34,6 +28,6 @@ public final class LengthFieldBasedFrameDecoderImpl extends LengthFieldBasedFram
      * with default settings
      */
     public LengthFieldBasedFrameDecoderImpl() {
-        super(maxFrameLength, lengthFieldOffset, lengthFieldLength, lengthAdjustment, initialBytesToStrip, failFast);
+        super(maxFrameLength, 0, lengthFieldLength, lengthAdjustment, 0, true);
     }
 }

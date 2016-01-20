@@ -97,9 +97,6 @@ public final class SxpNode {
 
     private static final Logger LOG = LoggerFactory.getLogger(SxpNode.class.getName());
 
-    /** */
-    private static final long serialVersionUID = 5347662502940140082L;
-
     protected static final long THREAD_DELAY = 10;
 
     /**
@@ -863,30 +860,7 @@ public final class SxpNode {
      * @return If Node is enabled
      */
     public boolean isEnabled() {
-        return serverChannel != null ? serverChannel.isActive() : false;
-    }
-
-    /**
-     * @return If BindingDispatcher service is enabled
-     */
-    public boolean isSvcBindingDispatcherStarted() {
-        return svcBindingDispatcher != null;
-    }
-
-    /**
-     * @return If BindingManager service is enabled
-     */
-    public boolean isSvcBindingManagerStarted() {
-        return svcBindingManager != null;
-    }
-
-    /**
-     * Notify BindingManager service to update MasterDatabase
-     */
-    public void notifyService() {
-        if (isSvcBindingManagerStarted()) {
-            setSvcBindingManagerNotify();
-        }
+        return serverChannel != null && serverChannel.isActive();
     }
 
     /**
@@ -994,7 +968,7 @@ public final class SxpNode {
                 LOG.error("{} Error puting Bindings to DB {} ", this, masterDatabaseConfiguration, e);
                 return;
             }
-            notifyService();
+            setSvcBindingManagerNotify();
         }
     }
 
@@ -1073,9 +1047,7 @@ public final class SxpNode {
      * Notify BindingDispatcher to execute dispatch of bindings on reconnected connections
      */
     public void setSvcBindingDispatcherNotify() {
-        if (isSvcBindingDispatcherStarted()) {
-            svcBindingDispatcher.notifyChange();
-        }
+        svcBindingDispatcher.notifyChange();
     }
 
     /**
@@ -1083,9 +1055,7 @@ public final class SxpNode {
      * and afterwards to Connections
      */
     public void setSvcBindingManagerNotify() {
-        if (isSvcBindingManagerStarted()) {
-            svcBindingManager.notifyChange();
-        }
+        svcBindingManager.notifyChange();
     }
 
     /**

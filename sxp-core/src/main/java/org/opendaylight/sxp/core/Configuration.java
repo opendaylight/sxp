@@ -40,7 +40,7 @@ public final class Configuration {
 
     public static final boolean NETTY_LOGGER_HANDLER = false;
 
-    private static HashMap<String, SxpNode> nodes = new HashMap<String, SxpNode>();
+    private static HashMap<String, SxpNode> nodes = new HashMap<>();
 
     public static final boolean SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS = true;
 
@@ -54,7 +54,7 @@ public final class Configuration {
         _initializeLogger();
     }
 
-    private static final void _initializeLogger() {
+    private static void _initializeLogger() {
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
         System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
         // System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", new
@@ -160,10 +160,6 @@ public final class Configuration {
 
     public static TimerDefaultValues getTimerDefault() {
         return TIMER_DEFAULT_VALUES;
-    }
-
-    public static final void initializeLogger() {
-        ;
     }
 
     public static boolean isNodesRegistered() {

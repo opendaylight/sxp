@@ -13,8 +13,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
+import org.opendaylight.sxp.util.filtering.PrefixListFilter;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.DateAndTime;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroup;
@@ -23,6 +26,18 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.BindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.MaskRangeOperator;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.PrefixListMask;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.entry.PrefixListMatch;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.entry.PrefixListMatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.match.fields.MaskBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.SgtMatch;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.PrefixListFilterEntriesBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.prefix.list.filter.entries.PrefixListEntry;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.prefix.list.filter.entries.PrefixListEntryBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.sxp.database.Vpn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -262,4 +277,50 @@ public class SxpDatabaseImplTest {
                         database.toString());
         }
 
+        private PrefixListEntry getPrefixListEntry(FilterEntryType entryType, PrefixListMatch prefixListMatch) {
+                PrefixListEntryBuilder builder = new PrefixListEntryBuilder();
+                builder.setEntryType(entryType);
+                builder.setPrefixListMatch(prefixListMatch);
+                return builder.build();
+        }
+
+        private PrefixListMatch getPrefixListMatch(String prefix) {
+                PrefixListMatchBuilder builder = new PrefixListMatchBuilder();
+                if (prefix.contains(":")) {
+                        builder.setIpPrefix(new IpPrefix(Ipv6Prefix.getDefaultInstance(prefix)));
+                } else {
+                        builder.setIpPrefix(new IpPrefix(Ipv4Prefix.getDefaultInstance(prefix)));
+                }
+                return builder.build();
+        }
+
+        @Test public void testFilterDatabase() throws Exception {
+                //SETUP FILTER
+                List<PrefixListEntry> prefixListEntryList = new ArrayList<>();
+                PrefixListFilterEntriesBuilder builder = new PrefixListFilterEntriesBuilder();
+                builder.setPrefixListEntry(prefixListEntryList);
+                prefixListEntryList.add(getPrefixListEntry(FilterEntryType.Permit, getPrefixListMatch("50.0.0.0/16")));
+                SxpFilterBuilder filterBuilder = new SxpFilterBuilder();
+                filterBuilder.setFilterType(FilterType.Inbound);
+                filterBuilder.setFilterEntries(builder.build());
+                PrefixListFilter filter = new PrefixListFilter(filterBuilder.build(), "TEST");
+
+                //Fill DB
+                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.1"), getPrefixGroup(10, "127.0.0.1/32")));
+                pathGroupList.add(
+                        getPathGroup(getNodeIds("127.0.0.1", "127.0.1.0"), getPrefixGroup(20, "127.0.0.15/32")));
+                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.5", "127.0.0.10"),
+                        getPrefixGroup(30, "2001:0:0:0:0:0:0:1/128")));
+
+                //DB to be removed
+                SxpDatabase sxpDatabase_ = mock(SxpDatabase.class);
+                when(sxpDatabase_.getPathGroup()).thenReturn(pathGroupList);
+                SxpDatabase
+                        database =
+                        SxpDatabaseImpl.filterDatabase(sxpDatabase_, filter, NodeId.getDefaultInstance("127.0.0.1"));
+
+                assertTrue(containsPrefixGroup(getPrefixGroup(10, "127.0.0.1/32"), database.getPathGroup()));
+                assertTrue(containsPrefixGroup(getPrefixGroup(20, "127.0.0.15/32"), database.getPathGroup()));
+                assertFalse(containsPrefixGroup(getPrefixGroup(30, "2001:1:0:0:0:0:0:1/128"), database.getPathGroup()));
+        }
 }

@@ -58,7 +58,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UnknownFormatConversionException;
 
 /**
  * MessageFactory class contains logic for creating and parsing messages
@@ -377,7 +376,7 @@ public class MessageFactory {
                                 if (source.getBindingSource().equals(DatabaseBindingSource.Sxp)) {
                                     peerSequence = NodeIdConv.getPeerSequence(binding.getPeerSequence());
                                 } else if (source.getBindingSource().equals(DatabaseBindingSource.Local)) {
-                                    peerSequence = new ArrayList<NodeId>();
+                                    peerSequence = new ArrayList<>();
                                 } else {
                                     throw new UpdateMessageBindingSourceException(source.getBindingSource());
                                 }
@@ -643,8 +642,8 @@ public class MessageFactory {
             return "";
         }
         String result = " | ";
-        for (int i = 0; i < data.length; i++) {
-            result += data[i] + " ";
+        for (byte aData : data) {
+            result += aData + " ";
         }
         return result.trim();
     }

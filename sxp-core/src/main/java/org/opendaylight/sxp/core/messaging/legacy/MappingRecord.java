@@ -286,12 +286,16 @@ public class MappingRecord extends ArrayList<Tlv> {
      * Create new MappingRecord using provided Attributes
      *
      * @param tlvs Collection of Tlv used
-     * @return MappingRecord containing provided attributes
      */
     private MappingRecord(Collection<? extends Tlv> tlvs) {
         super(tlvs);
     }
 
+    /**
+     * @param type Type of Tlv field to look for
+     * @return TlvOptionalFields of specified type
+     * @throws TlvNotFoundException If Tvl of specified type was not found
+     */
     public TlvOptionalFields get(TlvType type) throws TlvNotFoundException {
         for (Tlv tlv : this) {
             if (tlv.getType().equals(type)) {

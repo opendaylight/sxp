@@ -346,7 +346,7 @@ public class SxpConnection {
         // started to clean up old mappings that didn’t get informed to be
         // removed because of the loss of connectivity.
         context.getOwner().cleanUpBindings(getNodeIdRemote());
-        context.getOwner().notifyService();
+        context.getOwner().setSvcBindingManagerNotify();
     }
 
     /**
@@ -606,16 +606,6 @@ public class SxpConnection {
     }
 
     /**
-     * Gets SxpNode specific Timer of owner
-     *
-     * @param timerType Type of Timer
-     * @return TimerType or null if not present
-     */
-    public ListenableScheduledFuture<?> getNodeTimer(TimerType timerType) {
-        return context.getOwner().getTimer(timerType);
-    }
-
-    /**
      * @return Gets Node that connections belongs to
      */
     public SxpNode getOwner() {
@@ -644,7 +634,6 @@ public class SxpConnection {
      */
     public int getReconciliationTime() {
         if (connectionBuilder.getConnectionTimers() == null
-                || connectionBuilder.getConnectionTimers().getReconciliationTime() == null
                 || connectionBuilder.getConnectionTimers().getReconciliationTime() == null) {
             return 0;
         }
@@ -703,10 +692,10 @@ public class SxpConnection {
      * @return If connection supports it
      */
     public boolean hasCapability(CapabilityType capability) {
-        if (connectionBuilder.getCapabilities() == null || connectionBuilder.getCapabilities().getCapability() == null) {
-            return false;
-        }
-        return connectionBuilder.getCapabilities().getCapability().contains(capability);
+        return !(connectionBuilder.getCapabilities() == null
+                || connectionBuilder.getCapabilities().getCapability() == null) && connectionBuilder.getCapabilities()
+                .getCapability()
+                .contains(capability);
     }
 
     /**
@@ -883,7 +872,7 @@ public class SxpConnection {
     public void purgeBindings() {
         // Get message relevant peer node ID.
         context.getOwner().purgeBindings(getNodeIdRemote());
-        context.getOwner().notifyService();
+        context.getOwner().setSvcBindingManagerNotify();
         try {
             setStateOff(getChannelHandlerContext(ChannelHandlerContextType.ListenerContext));
         } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
@@ -1070,6 +1059,7 @@ public class SxpConnection {
                 throw new ErrorMessageException(ErrorCode.OpenMessageError, ErrorSubCode.OptionalAttributeError, null);
             }
         } catch (AttributeNotFoundException e) {
+            //NOP
         }
 
         // Keep-alive and hold-time negotiation.
@@ -1137,15 +1127,6 @@ public class SxpConnection {
         }
 
         setStateDeleteHoldDown();
-    }
-
-    /**
-     * Sets port of Peer
-     *
-     * @param port Port to be set
-     */
-    public void setDestinationPort(int port) {
-        this.destination = new InetSocketAddress(destination.getAddress(), port);
     }
 
     /**
@@ -1269,13 +1250,6 @@ public class SxpConnection {
                 setTimer(TimerType.DeleteHoldDownTimer, null);
             }
         }
-    }
-
-    /**
-     * Set State to AdministrativelyDown
-     */
-    public void setStateAdminDown() {
-        connectionBuilder.setState(ConnectionState.AdministrativelyDown);
     }
 
     /**
