@@ -18,6 +18,7 @@ import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.epoll.Epoll;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -42,7 +43,6 @@ import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
-import org.opendaylight.tcpmd5.jni.NativeSupportUnavailableException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
@@ -196,6 +196,7 @@ public final class SxpNode {
      */
     private SxpNode(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseInf masterDatabase,
             SxpDatabaseInf sxpDatabase,ThreadsWorker worker) throws NoNetworkInterfacesException, SocketException {
+        Epoll.ensureAvailability();
         this.worker = worker;
         this.nodeId = nodeId;
         this.nodeBuilder = new SxpNodeIdentityBuilder(node);
@@ -211,7 +212,7 @@ public final class SxpNode {
         this._masterDatabase = Preconditions.checkNotNull(masterDatabase);
         this._sxpDatabase = Preconditions.checkNotNull(sxpDatabase);
 
-        addConnections(nodeBuilder.getConnections());
+        //addConnections(nodeBuilder.getConnections());
         svcBindingManager = new BindingManager(this);
         svcBindingDispatcher = new BindingDispatcher(this);
 
@@ -896,12 +897,8 @@ public final class SxpNode {
      * @param connection Connection containing necessary information for connecting to peer
      */
     public synchronized void openConnection(final SxpConnection connection){
-        if (connection.isStateOff()) {
-            try {
-                ConnectFacade.createClient(this, Preconditions.checkNotNull(connection), handlerFactoryClient);
-            } catch (NativeSupportUnavailableException e) {
-                LOG.warn(connection + " {}", e.getMessage());
-            }
+        if (Preconditions.checkNotNull(connection).isStateOff()) {
+            ConnectFacade.createClient(this, connection, handlerFactoryClient);
         }
     }
 
@@ -1180,7 +1177,8 @@ public final class SxpNode {
         worker.executeTask(new Runnable() {
 
             @Override public void run() {
-                ConnectFacade.createServer(node, handlerFactoryServer).addListener(new ChannelFutureListener() {
+                Preconditions.checkNotNull(ConnectFacade.createServer(node, handlerFactoryServer))
+                        .addListener(new ChannelFutureListener() {
 
                     @Override public void operationComplete(ChannelFuture channelFuture) throws Exception {
                         if (channelFuture.isSuccess()) {
@@ -1218,16 +1216,17 @@ public final class SxpNode {
         return new ChannelFutureListener() {
 
             @Override public void operationComplete(ChannelFuture future) throws Exception {
-                ConnectFacade.createServer(sxpNode, handlerFactoryServer).addListener(new ChannelFutureListener() {
+                Preconditions.checkNotNull(ConnectFacade.createServer(sxpNode, handlerFactoryServer))
+                        .addListener(new ChannelFutureListener() {
 
-                    @Override public void operationComplete(ChannelFuture future) throws Exception {
-                        setServerChannel(future.channel());
-                        serverChannelInit.set(false);
-                        if (updateMD5counter.decrementAndGet() > 0) {
-                            serverChannel.close().addListener(createMD5updateListener(sxpNode));
-                        }
-                    }
-                });
+                            @Override public void operationComplete(ChannelFuture future) throws Exception {
+                                setServerChannel(future.channel());
+                                serverChannelInit.set(false);
+                                if (updateMD5counter.decrementAndGet() > 0) {
+                                    serverChannel.close().addListener(createMD5updateListener(sxpNode));
+                                }
+                            }
+                        });
             }
         };
     }
