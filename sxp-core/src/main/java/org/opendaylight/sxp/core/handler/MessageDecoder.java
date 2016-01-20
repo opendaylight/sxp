@@ -37,7 +37,7 @@ import java.net.SocketAddress;
 @Sharable
 public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 
-    private static enum Profile {
+    private enum Profile {
         Client, Server
     }
 
@@ -255,10 +255,6 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
                 // Filter of error messages.
                 LOG.warn(getLogMessage(owner, ctx, "", e));
                 connection.setStateOff(ctx);
-                break;
-            } catch (IndexOutOfBoundsException e) {
-                LOG.info(getLogMessage(owner, ctx, "Unsupported message input: " + MessageFactory.toString(message),
-                        null));
                 break;
             } catch (Exception e) {
                 LOG.warn(getLogMessage(owner, ctx, "Channel read") + ": {}", MessageFactory.toString(message), e);

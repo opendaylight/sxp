@@ -34,26 +34,9 @@ public class InetAddressComparatorTest {
                 address3 = InetAddress.getByName("127.124.56.1");
         }
 
-        @Test public void testEqualTo() throws Exception {
-                assertTrue(InetAddressComparator.equalTo(address1, address1));
-                assertFalse(InetAddressComparator.equalTo(address1, address2));
-                assertFalse(InetAddressComparator.equalTo(address3, address2));
-
-                assertTrue(InetAddressComparator.equalTo(node1, node1));
-                assertFalse(InetAddressComparator.equalTo(node1, node2));
-                assertFalse(InetAddressComparator.equalTo(node3, node2));
-        }
-
         @Test public void testGreaterThan() throws Exception {
                 assertFalse(InetAddressComparator.greaterThan(address1, address3));
                 assertFalse(InetAddressComparator.greaterThan(address2, address3));
-
-                assertFalse(InetAddressComparator.greaterThan(node1, node3));
-                assertFalse(InetAddressComparator.greaterThan(node2, node3));
         }
 
-        @Test public void testLessThan() throws Exception {
-                assertTrue(InetAddressComparator.lessThan(address1, address3));
-                assertTrue(InetAddressComparator.lessThan(address2, address3));
-        }
 }

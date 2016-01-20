@@ -40,15 +40,12 @@ import org.opendaylight.tcpmd5.netty.MD5ChannelOption;
 import org.opendaylight.tcpmd5.netty.MD5NioServerSocketChannelFactory;
 import org.opendaylight.tcpmd5.netty.MD5NioSocketChannelFactory;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConnectFacade {
 

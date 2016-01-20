@@ -34,7 +34,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.FlagsFields.Flags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.TlvType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.AttributeBuilder;
@@ -77,7 +76,7 @@ public final class AttributeFactory {
      * @return Decoded Capabilities
      */
     private static List<Capabilities> _decodeCapabilities(byte[] array) {
-        List<Capabilities> _capabilities = new ArrayList<Capabilities>();
+        List<Capabilities> _capabilities = new ArrayList<>();
         while (array != null && array.length != 0) {
             Capabilities capability = _decodeCapability(array);
             _capabilities.add(capability);
@@ -657,7 +656,6 @@ public final class AttributeFactory {
      * @param value Byte Array containing PeerSequence attribute
      * @return Decoded PeerSequence attribute
      * @throws UnknownHostException      If address in Attribute is incorrect
-     * @throws UnknownPrefixException    If Attribute has incorrect or none Prefix
      */
     private static AttributeOptionalFields decodePeerSequence(byte[] value) throws UnknownHostException, UnknownNodeIdException {
         PeerSequenceAttributeBuilder attributeBuilder = new PeerSequenceAttributeBuilder();
@@ -750,7 +748,7 @@ public final class AttributeFactory {
      * @throws UnknownVersionException If version isn't supported
      */
     private static List<Capabilities> getCapabilities(Version version) throws UnknownVersionException {
-        List<Capabilities> capabilities = new ArrayList<Capabilities>();
+        List<Capabilities> capabilities = new ArrayList<>();
         switch (version) {
         case Version4:
         case Version3:

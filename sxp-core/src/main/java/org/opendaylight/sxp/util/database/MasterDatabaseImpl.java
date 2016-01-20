@@ -144,7 +144,7 @@ public class MasterDatabaseImpl implements MasterDatabaseInf {
         }
         // Local bindings have the priority.
         // Clear binding sources except the local contribution.
-        List<MasterBindingIdentity> masterBindingIdentities = new ArrayList<MasterBindingIdentity>();
+        List<MasterBindingIdentity> masterBindingIdentities = new ArrayList<>();
         synchronized (database) {
             masterBindingIdentities = MasterBindingIdentity.create(database, false);
         }
@@ -474,7 +474,7 @@ public class MasterDatabaseImpl implements MasterDatabaseInf {
                 if (source.getPrefixGroup() != null) {
                     for (PrefixGroup prefixGroup : source.getPrefixGroup()) {
                         if (prefixGroup.getBinding() != null) {
-                            List<Binding> removed = new ArrayList<Binding>();
+                            List<Binding> removed = new ArrayList<>();
                             for (Binding binding : prefixGroup.getBinding()) {
                                 if (binding.getAction().equals(DatabaseAction.Delete)) {
                                     removed.add(binding);
@@ -489,7 +489,7 @@ public class MasterDatabaseImpl implements MasterDatabaseInf {
             }
             for (Source source : database.getSource()) {
                 if (source.getPrefixGroup() != null) {
-                    List<PrefixGroup> removed = new ArrayList<PrefixGroup>();
+                    List<PrefixGroup> removed = new ArrayList<>();
                     for (PrefixGroup prefixGroup : source.getPrefixGroup()) {
                         if (prefixGroup.getBinding() != null && prefixGroup.getBinding().isEmpty()) {
                             removed.add(prefixGroup);
@@ -501,7 +501,7 @@ public class MasterDatabaseImpl implements MasterDatabaseInf {
                 }
             }
 
-            List<Source> removed = new ArrayList<Source>();
+            List<Source> removed = new ArrayList<>();
             for (Source source : database.getSource()) {
                 if (source.getPrefixGroup() != null && source.getPrefixGroup().isEmpty()) {
                     removed.add(source);
@@ -731,15 +731,8 @@ public class MasterDatabaseImpl implements MasterDatabaseInf {
      * @return If binding will be ignored
      */
     private static boolean ignoreBinding(Binding binding) {
-        if (binding.getIpPrefix().getIpv6Prefix() != null && binding.getIpPrefix()
-                .getIpv6Prefix()
-                .getValue()
-                .equals("0:0:0:0:0:0:0:0/0") || (binding.getIpPrefix().getIpv4Prefix() != null && binding.getIpPrefix()
-                .getIpv4Prefix()
-                .getValue()
-                .equals("0.0.0.0/0"))) {
-            return true;
-        }
-        return false;
+        return binding.getIpPrefix().getIpv6Prefix() != null && "0:0:0:0:0:0:0:0/0".equals(
+                binding.getIpPrefix().getIpv6Prefix().getValue()) || (binding.getIpPrefix().getIpv4Prefix() != null
+                && "0.0.0.0/0".equals(binding.getIpPrefix().getIpv4Prefix().getValue()));
     }
 }

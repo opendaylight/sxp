@@ -544,15 +544,8 @@ public class SxpDatabaseImpl implements SxpDatabaseInf {
      * @return If binding will be ignored
      */
     private static boolean ignoreBinding(Binding binding) {
-        if (binding.getIpPrefix().getIpv6Prefix() != null && binding.getIpPrefix()
-                .getIpv6Prefix()
-                .getValue()
-                .equals("0:0:0:0:0:0:0:0/0") || (binding.getIpPrefix().getIpv4Prefix() != null && binding.getIpPrefix()
-                .getIpv4Prefix()
-                .getValue()
-                .equals("0.0.0.0/0"))) {
-            return true;
-        }
-        return false;
+        return binding.getIpPrefix().getIpv6Prefix() != null && "0:0:0:0:0:0:0:0/0".equals(
+                binding.getIpPrefix().getIpv6Prefix().getValue()) || (binding.getIpPrefix().getIpv4Prefix() != null
+                && "0.0.0.0/0".equals(binding.getIpPrefix().getIpv4Prefix().getValue()));
     }
 }
