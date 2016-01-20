@@ -189,7 +189,7 @@ import io.netty.channel.ChannelHandlerContext;
                 sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
                 verify(connection).setPurgeAllMessageReceived();
                 verify(sxpNode).purgeBindings(any(NodeId.class));
-                verify(sxpNode).notifyService();
+                verify(sxpNode).setSvcBindingManagerNotify();
         }
 
 }

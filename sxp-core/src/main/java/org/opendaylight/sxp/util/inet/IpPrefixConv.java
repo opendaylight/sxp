@@ -82,7 +82,7 @@ public final class IpPrefixConv {
             ipPrefix = ipPrefix.substring(1);
         }
 
-        return new IpPrefix(new String(ipPrefix).toCharArray());
+        return new IpPrefix(ipPrefix.toCharArray());
     }
 
     /**
@@ -97,7 +97,7 @@ public final class IpPrefixConv {
      */
     private static List<IpPrefix> decode(IpPrefixConv.IpPrefixType ipPrefixType, byte[] array, boolean compact)
             throws UnknownPrefixException, UnknownHostException {
-        List<IpPrefix> prefixes = new ArrayList<IpPrefix>();
+        List<IpPrefix> prefixes = new ArrayList<>();
         while (array != null && array.length != 0) {
             // Reserved octets (not)presented.
             IpPrefix ipPrefix = _decode(ipPrefixType, array, compact);

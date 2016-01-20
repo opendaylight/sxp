@@ -37,7 +37,7 @@ import java.net.SocketAddress;
 @Sharable
 public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 
-    private static enum Profile {
+    private enum Profile {
         Client, Server
     }
 

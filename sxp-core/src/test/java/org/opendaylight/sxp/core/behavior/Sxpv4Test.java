@@ -75,8 +75,7 @@ public class Sxpv4Test {
                 PowerMockito.when(context.getOwner()).thenReturn(sxpNode);
                 when(connection.getContext()).thenReturn(context);
                 when(connection.getOwner()).thenReturn(sxpNode);
-                when(connection.getDestination()).thenReturn(
-                        new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 0));
+                when(connection.getDestination()).thenReturn(new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 0));
                 when(connection.getLocalAddress()).thenReturn(
                         new InetSocketAddress(InetAddress.getByName("0.0.0.1"), 0));
 
@@ -91,6 +90,12 @@ public class Sxpv4Test {
 
                 when(connection.isModeBoth()).thenReturn(true);
                 when(connection.isBidirectionalBoth()).thenReturn(false);
+                sxpv4.onChannelActivation(channelHandlerContext, connection);
+                verify(channelHandlerContext, times(2)).writeAndFlush(any(ByteBuf.class));
+                verify(connection, times(2)).setStatePendingOn();
+
+                when(connection.getMode()).thenReturn(ConnectionMode.None);
+                when(connection.isBidirectionalBoth()).thenReturn(true);
                 sxpv4.onChannelActivation(channelHandlerContext, connection);
                 verify(channelHandlerContext, times(2)).writeAndFlush(any(ByteBuf.class));
                 verify(connection, times(2)).setStatePendingOn();
@@ -255,7 +260,7 @@ public class Sxpv4Test {
                 sxpv4.onInputMessage(channelHandlerContext, connection, message);
                 verify(connection).setPurgeAllMessageReceived();
                 verify(sxpNode).purgeBindings(any(NodeId.class));
-                verify(sxpNode).notifyService();
+                verify(sxpNode).setSvcBindingManagerNotify();
         }
 
         @Test public void testOnInputMessageKeepAlive() throws Exception {

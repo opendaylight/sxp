@@ -90,9 +90,9 @@ public final class NodeIdConv {
      */
     public static PeerSequence createPeerSequence(List<NodeId> nodeIds) {
         if (nodeIds == null) {
-            nodeIds = new ArrayList<NodeId>();
+            nodeIds = new ArrayList<>();
         }
-        List<Peer> peers = new ArrayList<Peer>();
+        List<Peer> peers = new ArrayList<>();
         for (NodeId nodeId : nodeIds) {
             PeerBuilder peerBuilder = new PeerBuilder();
             peerBuilder.setSeq(nodeIds.indexOf(nodeId));
@@ -112,7 +112,7 @@ public final class NodeIdConv {
      */
     public static Sources createSources(List<NodeId> nodeIds) {
         if (nodeIds == null) {
-            nodeIds = new ArrayList<NodeId>();
+            nodeIds = new ArrayList<>();
         }
         SourcesBuilder sourcesBuilder = new SourcesBuilder();
         sourcesBuilder.setSource(new ArrayList<>(nodeIds));
@@ -128,7 +128,7 @@ public final class NodeIdConv {
      * @throws UnknownNodeIdException If one of addresses isn't in IPv4 format
      */
     public static List<NodeId> decode(byte[] array) throws UnknownHostException, UnknownNodeIdException {
-        List<NodeId> nodesIds = new ArrayList<NodeId>();
+        List<NodeId> nodesIds = new ArrayList<>();
         while (array != null && array.length != 0) {
             NodeId nodeId = _decode(array);
             nodesIds.add(nodeId);
@@ -156,9 +156,9 @@ public final class NodeIdConv {
      */
     public static List<NodeId> getPeerSequence(PeerSequence peerSequence) {
         if (peerSequence == null || peerSequence.getPeer() == null || peerSequence.getPeer().isEmpty()) {
-            return new ArrayList<NodeId>();
+            return new ArrayList<>();
         }
-        List<NodeId> nodeIds = new ArrayList<NodeId>();
+        List<NodeId> nodeIds = new ArrayList<>();
         int i = 0;
         while (true) {
             boolean contain = false;
@@ -195,9 +195,9 @@ public final class NodeIdConv {
      */
     public static List<NodeId> getSources(Sources sources) {
         if (sources == null || sources.getSource() == null || sources.getSource().isEmpty()) {
-            return new ArrayList<NodeId>();
+            return new ArrayList<>();
         }
-        List<NodeId> nodeIds = new ArrayList<NodeId>();
+        List<NodeId> nodeIds = new ArrayList<>();
         for (NodeId source : sources.getSource()) {
             nodeIds.add(source);
         }
@@ -241,7 +241,7 @@ public final class NodeIdConv {
      * @return ByteArray representing specified NodeId
      */
     public static byte[] toBytes(NodeId nodeId) {
-        String _prefix = new String(nodeId.getValue());
+        String _prefix = nodeId.getValue();
         if (_prefix.startsWith("/")) {
             _prefix = _prefix.substring(1);
         }
@@ -279,7 +279,7 @@ public final class NodeIdConv {
         if (nodeId == null) {
             return "";
         }
-        String result = new String(nodeId.getValue());
+        String result = nodeId.getValue();
         if (result.startsWith("/")) {
             result = result.substring(1);
         }

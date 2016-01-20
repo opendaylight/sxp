@@ -85,14 +85,10 @@ public final class Search {
 
             // Classfull.
             if (icol < 0) {
-                for (int j = 0; j < subnetNumber.length; j++) {
-                    firstAddress[j] = subnetNumber[j];
-                }
+                System.arraycopy(subnetNumber, 0, firstAddress, 0, subnetNumber.length);
                 firstAddress[firstAddress.length - 1] = 1;
 
-                for (int j = 0; j < broadcastAddress.length; j++) {
-                    lastAddress[j] = broadcastAddress[j];
-                }
+                System.arraycopy(broadcastAddress, 0, lastAddress, 0, broadcastAddress.length);
                 lastAddress[lastAddress.length - 1] = (byte) ((lastAddress[lastAddress.length - 1] & 0xFF) - 1);
 
                 LOG.info("<" + InetAddress.getByAddress(firstAddress) + " .. " + InetAddress.getByAddress(lastAddress)
@@ -110,9 +106,7 @@ public final class Search {
             firstAddress[icol] = subnetNumber[icol];
             firstAddress[firstAddress.length - 1] = 1;
 
-            for (int j = icol; j < broadcastAddress.length; j++) {
-                lastAddress[j] = broadcastAddress[j];
-            }
+            System.arraycopy(broadcastAddress, icol, lastAddress, icol, broadcastAddress.length - icol);
             lastAddress[lastAddress.length - 1] = (byte) ((lastAddress[lastAddress.length - 1] & 0xFF) - 1);
 
             LOG.info("<" + InetAddress.getByAddress(firstAddress) + " .. " + InetAddress.getByAddress(lastAddress)
@@ -187,11 +181,6 @@ public final class Search {
     private static final Logger LOG = LoggerFactory.getLogger(Search.class.getName());
     private static int bestAddresPointer = 1;
 
-    public static List<?> getAllSxpNodes() {
-
-        return new ArrayList<InetAddress>();
-    }
-
     /**
      * Gets Local address selected by heuristic
      *
@@ -201,7 +190,7 @@ public final class Search {
      */
     public static InetAddress getBestLocalDeviceAddress() throws NoNetworkInterfacesException, SocketException {
 
-        List<InetAddress> inetAddresses = new ArrayList<InetAddress>();
+        List<InetAddress> inetAddresses = new ArrayList<>();
         List<NetworkInterface> networkInterfaces;
         try {
             networkInterfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
@@ -237,7 +226,7 @@ public final class Search {
 
         List<NodeId> _peerSequence = NodeIdConv.getPeerSequence(binding.getPeerSequence());
         List<NodeId> _sources = NodeIdConv.getSources(binding.getSources());
-        List<Binding> _expandedBindings = new ArrayList<Binding>();
+        List<Binding> _expandedBindings = new ArrayList<>();
 
         for (Binding expadedBinding : new IpAddress(InetAddress.getByName(ipPrefix[0]), Integer.parseInt(ipPrefix[1]))
                 .expand(quantity)) {
@@ -249,22 +238,6 @@ public final class Search {
         }
 
         return _expandedBindings;
-    }
-
-    /**
-     * Expands Binding specified by Ip address and prefix into subnet.
-     * Amount of subnet that will be expanded is limited by quantity.
-     *
-     * @param inetAddress Ip Address of Binding
-     * @param prefix      Prefix of binding
-     * @param quantity    Max number to limit the expansion
-     * @return List of bindings that were created by expansion into subnet
-     * @throws UnknownHostException   If invalid Ip address was specified
-     * @throws UnknownPrefixException If invalid prefix was specified
-     */
-    public static List<Binding> getExpandedBindings(String inetAddress, int prefix, AtomicInteger quantity)
-            throws UnknownHostException, UnknownPrefixException {
-        return new IpAddress(InetAddress.getByName(inetAddress), prefix).expand(quantity);
     }
 
     /**

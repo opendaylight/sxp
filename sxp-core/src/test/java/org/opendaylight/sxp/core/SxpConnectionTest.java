@@ -116,7 +116,7 @@ public class SxpConnectionTest {
         @Test public void testCleanUpBindings() throws Exception {
                 sxpConnection.cleanUpBindings();
                 verify(sxpNode).cleanUpBindings(any(NodeId.class));
-                verify(sxpNode).notifyService();
+                verify(sxpNode).setSvcBindingManagerNotify();
         }
 
         @Test public void testCloseChannelHandlerContext() throws Exception {
@@ -164,7 +164,7 @@ public class SxpConnectionTest {
 
         @Test public void testPurgeBindings() throws Exception {
                 sxpConnection.purgeBindings();
-                verify(sxpNode).notifyService();
+                verify(sxpNode).setSvcBindingManagerNotify();
                 verify(sxpNode).purgeBindings(any(NodeId.class));
         }
 

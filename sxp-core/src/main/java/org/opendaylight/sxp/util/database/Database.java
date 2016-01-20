@@ -82,7 +82,7 @@ public class Database {
     public static PrefixGroup createPrefixGroup(int sgt, String... bindings) throws UnknownPrefixException {
         PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder();
         prefixGroupBuilder.setSgt(new Sgt(sgt));
-        List<Binding> _bindings = new ArrayList<Binding>();
+        List<Binding> _bindings = new ArrayList<>();
         for (String binding : bindings) {
             BindingBuilder bindingBuilder = new BindingBuilder();
             bindingBuilder.setIpPrefix(IpPrefixConv.createPrefix(binding));

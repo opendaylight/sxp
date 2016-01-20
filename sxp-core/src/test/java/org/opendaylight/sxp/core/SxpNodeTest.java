@@ -11,6 +11,7 @@ package org.opendaylight.sxp.core;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,6 +26,8 @@ import org.opendaylight.sxp.util.exception.unknown.UnknownSxpConnectionException
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
@@ -40,6 +43,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeerBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.network.topology.topology.node.Timers;
@@ -98,6 +103,7 @@ import static org.mockito.Mockito.*;
                 when(nodeIdentity.getName()).thenReturn("NAME");
                 when(nodeIdentity.getSecurity()).thenReturn(security);
                 when(nodeIdentity.getMappingExpanded()).thenReturn(150);
+                when(nodeIdentity.getTcpPort()).thenReturn(PortNumber.getDefaultInstance("64999"));
 
                 databaseProvider = mock(MasterDatabaseInf.class);
                 sxpDatabaseProvider = mock(SxpDatabaseInf.class);
@@ -111,7 +117,19 @@ import static org.mockito.Mockito.*;
                 when(connection.getMode()).thenReturn(mode);
                 when(connection.getPeerAddress()).thenReturn(new IpAddress(("127.0.0." + (++ip4Adrres)).toCharArray()));
                 when(connection.getState()).thenReturn(state);
+                when(connection.getPassword()).thenReturn(PasswordType.Default);
                 return connection;
+        }
+
+        @Test public void testCreateInstance() throws Exception {
+                when(nodeIdentity.getSourceIp()).thenReturn(new IpAddress(Ipv4Address.getDefaultInstance("0.0.0.0")));
+                assertNotNull(
+                        SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), nodeIdentity, databaseProvider,
+                                sxpDatabaseProvider, worker));
+                assertNotNull(
+                        SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), nodeIdentity, databaseProvider,
+                                sxpDatabaseProvider));
+                assertNotNull(SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), nodeIdentity));
         }
 
         @Test public void testGetAllDeleteHoldDownConnections() throws Exception {
@@ -191,7 +209,7 @@ import static org.mockito.Mockito.*;
                 assertEquals("NAME", node.getName());
                 assertEquals(NodeId.getDefaultInstance("127.0.0.1"), node.getNodeId());
                 assertEquals("default", node.getPassword());
-
+                assertEquals(64999, node.getServerPort());
         }
 
         @Test public void testGetByAddress() throws Exception {
@@ -351,8 +369,16 @@ import static org.mockito.Mockito.*;
                 node.addConnection(null);
                 assertEquals(0, node.getAllConnections().size());
 
-                node.addConnection(mockConnection(ConnectionMode.Both, ConnectionState.On));
+                List<SxpPeer> sxpPeers = new ArrayList<>();
+                Connection connection = mockConnection(ConnectionMode.Listener, ConnectionState.On);
+                sxpPeers.add(new SxpPeerBuilder().setPeerAddress(connection.getPeerAddress()).build());
+                node.addPeerGroup(getGroup("TEST", null, sxpPeers));
+                node.addFilterToPeerGroup("TEST", getFilter(FilterType.Inbound));
+                node.addConnection(connection);
                 assertEquals(1, node.getAllConnections().size());
+
+                node.addConnection(mockConnection(ConnectionMode.Both, ConnectionState.On));
+                assertEquals(2, node.getAllConnections().size());
                 PowerMockito.verifyStatic();
         }
 
@@ -368,6 +394,11 @@ import static org.mockito.Mockito.*;
                 node.addConnections(connections);
                 assertEquals(0, node.getAllConnections().size());
 
+                Channel channel = mock(Channel.class);
+                when(channel.isActive()).thenReturn(true);
+                when(channel.close()).thenReturn(mock(ChannelFuture.class));
+
+                node.setServerChannel(channel);
                 connection.add(mockConnection(ConnectionMode.Both, ConnectionState.On));
                 node.addConnections(connections);
                 assertEquals(1, node.getAllConnections().size());
@@ -401,7 +432,7 @@ import static org.mockito.Mockito.*;
                 return builder.build();
         }
 
-        private SxpPeerGroup getGroup(String name, ArrayList<SxpFilter> filters, ArrayList<SxpPeer> sxpPeers) {
+        private SxpPeerGroup getGroup(String name, List<SxpFilter> filters, List<SxpPeer> sxpPeers) {
                 SxpPeerGroupBuilder builder = new SxpPeerGroupBuilder();
                 builder.setName(name);
                 builder.setSxpFilter(filters);
@@ -471,7 +502,11 @@ import static org.mockito.Mockito.*;
         @Test public void testAddFilterToPeerGroup() throws Exception {
                 assertFalse(node.addPeerGroup(null));
                 assertTrue(node.getPeerGroups().isEmpty());
-                node.addPeerGroup(getGroup("TEST", null, null));
+                List<SxpPeer> sxpPeers = new ArrayList<>();
+                sxpPeers.add(
+                        new SxpPeerBuilder().setPeerAddress(new IpAddress(Ipv4Address.getDefaultInstance("5.5.5.0")))
+                                .build());
+                node.addPeerGroup(getGroup("TEST", null, sxpPeers));
                 node.addPeerGroup(getGroup("TEST1", null, null));
                 assertEquals(2, node.getPeerGroups().size());
 
@@ -506,5 +541,19 @@ import static org.mockito.Mockito.*;
                 node.removeFilterFromPeerGroup("TEST2", FilterType.Outbound);
                 node.removeFilterFromPeerGroup("TEST2", FilterType.Inbound);
                 assertEquals(0, node.getPeerGroup("TEST2").getSxpFilter().size());
+        }
+
+        @Test public void testUpdateFilterInPeerGroup() throws Exception {
+                assertFalse(node.addPeerGroup(null));
+                assertTrue(node.getPeerGroups().isEmpty());
+                node.addPeerGroup(getGroup("TEST", null, null));
+                SxpFilter filter = getFilter(FilterType.Inbound);
+                node.addFilterToPeerGroup("TEST", filter);
+                assertEquals(1, node.getPeerGroup("TEST").getSxpFilter().size());
+
+                assertNull(node.updateFilterInPeerGroup(null, getFilter(FilterType.Outbound)));
+                assertNull(node.updateFilterInPeerGroup("TEST", getFilter(FilterType.Outbound)));
+                assertEquals(filter, node.updateFilterInPeerGroup("TEST", getFilter(FilterType.Inbound)));
+                assertEquals(1, node.getPeerGroup("TEST").getSxpFilter().size());
         }
 }

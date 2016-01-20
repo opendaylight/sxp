@@ -47,10 +47,15 @@ public class ExportKey {
         return Objects.equals(exportAll, exportKey.exportAll) &&
                 Objects.equals(version, exportKey.version) &&
                 Objects.equals(groupName, exportKey.groupName) &&
-                Objects.equals(capabilityTypes, exportKey.capabilityTypes);
+                capabilityTypes.containsAll(exportKey.capabilityTypes) &&
+                exportKey.capabilityTypes.containsAll(capabilityTypes);
     }
 
     @Override public int hashCode() {
-        return Objects.hash(version, exportAll, groupName, capabilityTypes);
+        int hash = Objects.hash(version, exportAll, groupName);
+        for (CapabilityType type : capabilityTypes) {
+            hash += Objects.hash(type);
+        }
+        return hash;
     }
 }

@@ -59,10 +59,10 @@ public final class ArraysUtil {
 
         byte[] combined = new byte[combinedLength];
         int shift = 0;
-        for (int i = 0; i < bytes.length; i++) {
-            if (bytes[i] != null) {
-                System.arraycopy(bytes[i], 0, combined, shift, bytes[i].length);
-                shift += bytes[i].length;
+        for (byte[] aByte : bytes) {
+            if (aByte != null) {
+                System.arraycopy(aByte, 0, combined, shift, aByte.length);
+                shift += aByte.length;
             }
         }
         return combined;
@@ -194,50 +194,5 @@ public final class ArraysUtil {
     public static byte setBit(byte _byte, int position, boolean value) {
         position--;
         return (byte) (value ? _byte | 1 << position : _byte & ~(1 << position));
-    }
-
-    /**
-     * Sets a bit in the Zero byte
-     *
-     * @param position Position of bit in Byte, i.e. 1 to 8 to specified value
-     * @param value    Value to be set as (True=1,False=0)
-     * @return Byte with changed bit at specified position
-     */
-    public static byte setBit(int position, boolean value) {
-        return setBit((byte) 0x00, position, value);
-    }
-
-    /**
-     * Trims zero bytes from the beginning of Array
-     *
-     * @param bytes Array to be trimmed
-     * @return Trimmed Array
-     */
-    public static byte[] trimZerosPrime(byte[] bytes) {
-        if (bytes == null || bytes.length == 0) {
-            return new byte[0];
-        }
-        int i = 0;
-        while (i < bytes.length && bytes[i] == 0) {
-            i++;
-        }
-        return Arrays.copyOfRange(bytes, i, bytes.length);
-    }
-
-    /**
-     * Trims zero bytes from the end of Array
-     *
-     * @param bytes Array to be trimmed
-     * @return Trimmed Array
-     */
-    public static byte[] trimZerosTail(byte[] bytes) {
-        if (bytes == null || bytes.length == 0) {
-            return new byte[0];
-        }
-        int i = bytes.length - 1;
-        while (i >= 0 && bytes[i] == 0) {
-            i--;
-        }
-        return Arrays.copyOf(bytes, i + 1);
     }
 }

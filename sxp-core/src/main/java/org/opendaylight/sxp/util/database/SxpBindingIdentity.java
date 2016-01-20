@@ -116,11 +116,8 @@ public class SxpBindingIdentity {
 
         SxpBindingIdentity identity = (SxpBindingIdentity) o;
 
-        if (!binding.equals(identity.binding))
-            return false;
-        if (!pathGroup.equals(identity.pathGroup))
-            return false;
-        return prefixGroup.equals(identity.prefixGroup);
+        return binding.equals(identity.binding) && pathGroup.equals(identity.pathGroup) && prefixGroup.equals(
+                identity.prefixGroup);
 
     }
 
