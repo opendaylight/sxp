@@ -50,13 +50,15 @@ public final class HandlerFactory {
      * @return Gets all decoders
      */
     public ChannelHandler[] getDecoders() {
-        return new ChannelHandler[] { new LengthFieldBasedFrameDecoderImpl(), decoder };
+        //return new ChannelHandler[] { new LengthFieldBasedFrameDecoderImpl(), decoder };
+        return new ChannelHandler[] { decoder };
     }
 
     /**
      * @return Gets all encoders
      */
     public ChannelHandler[] getEncoders() {
-        return new ChannelHandler[] { new ByteArrayEncoder(), encoder };
+        //return new ChannelHandler[] { new ByteArrayEncoder(), encoder };
+        return new ChannelHandler[] { encoder };
     }
 }

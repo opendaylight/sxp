@@ -24,6 +24,8 @@
                         <Import-Package>org.opendaylight.yangtools.yang.binding.annotations,
                             *
                         </Import-Package>
+                        <Embed-Dependency>netty-transport-native-epoll,
+                            netty-transport,netty-buffer,netty-common</Embed-Dependency>
                     </instructions>
                 </configuration>
             </plugin>
@@ -41,15 +43,25 @@
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
+        <artifactId>netty-buffer</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-common</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
       </dependency>
       <dependency>
-        <groupId>org.opendaylight.tcpmd5</groupId>
-        <artifactId>tcpmd5-jni</artifactId>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport</artifactId>
       </dependency>
       <dependency>
-        <groupId>org.opendaylight.tcpmd5</groupId>
-        <artifactId>tcpmd5-netty</artifactId>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport-native-epoll</artifactId>
+        <version>${netty.version}</version>
+        <classifier>${os.detected.classifier}</classifier>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
