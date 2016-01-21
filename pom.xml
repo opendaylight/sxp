@@ -44,9 +44,10 @@
     <java.version.source>1.7</java.version.source>
     <java.version.target>1.7</java.version.target>
 
-    <yangtools.version>0.9.0-SNAPSHOT</yangtools.version>
-    <yangtools.feature.version>0.9.0-SNAPSHOT</yangtools.feature.version>
+    <yangtools.version>1.0.0-SNAPSHOT</yangtools.version>
+    <yangtools.feature.version>1.0.0-SNAPSHOT</yangtools.feature.version>
     <mdsal.version>1.4.0-SNAPSHOT</mdsal.version>
+    <mdsal.model.version>0.9.0-SNAPSHOT</mdsal.model.version>
     <config.version>0.5.0-SNAPSHOT</config.version>
     <restconf.version>1.4.0-SNAPSHOT</restconf.version>
 
@@ -266,7 +267,7 @@
             <dependency>
                 <groupId>org.opendaylight.mdsal</groupId>
                 <artifactId>yang-binding</artifactId>
-                <version>${yangtools.version}</version>
+                <version>${mdsal.model.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opendaylight.yangtools</groupId>
