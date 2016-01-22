@@ -386,32 +386,6 @@ public final class BindingHandler {
     }
 
     /**
-     * Validate if UpdateMessageLegacy isn't corrupted
-     *
-     * @param updateMessage UpdateMessageLegacy to be checked for errors
-     * @return Validated UpdateMessageLegacy
-     */
-    private static UpdateMessageLegacy validateLegacyMessage(UpdateMessageLegacy updateMessage) {
-        // TODO: Message validation.
-        // Message decomposition.
-        // Message attribute validation.
-        return updateMessage;
-    }
-
-    /**
-     * Validate if UpdateMessage isn't corrupted
-     *
-     * @param updateMessage UpdateMessage to be checked for errors
-     * @return Validated UpdateMessage
-     */
-    private static UpdateMessage validateMessage(UpdateMessage updateMessage) {
-        // TODO: Message validation.
-        // Message decomposition.
-        // Message attribute validation.
-        return updateMessage;
-    }
-
-    /**
      * Execute new task which perform SXP-DB changes according to received Update Messages
      * and recursively check,if connection has Update Messages to proceed, if so start again.
      *
@@ -436,34 +410,6 @@ public final class BindingHandler {
     }
 
     /**
-     * Parse UpdateLegacyNotification for deleted and added Bindings,
-     * afterwards propagate those changes into SxpDatabase and
-     * notifies BindingManager to export Bindings
-     *
-     * @param updateLegacyNotification UpdateLegacyNotification containing received message
-     */
-    private static void processUpdateLegacyNotification(UpdateLegacyNotification updateLegacyNotification) {
-        SxpNode owner = updateLegacyNotification.getConnection().getOwner();
-        // Validate message.
-        validateLegacyMessage(updateLegacyNotification.getMessage());
-        // Get message relevant peer node ID.
-        NodeId peerId = updateLegacyNotification.getConnection().getNodeIdRemote();
-        if (peerId == null) {
-            LOG.warn(owner + " Unknown message relevant peer node ID");
-            return;
-        }
-        try {
-            SxpDatabase databaseDelete = processMessageDeletion(peerId, updateLegacyNotification.getMessage()),
-                    databaseAdd =
-                            processMessageAddition(peerId, updateLegacyNotification.getMessage(),
-                                    updateLegacyNotification.getConnection().getFilter(FilterType.InboundDiscarding));
-            processUpdate(databaseDelete, databaseAdd, owner, updateLegacyNotification.getConnection());
-        } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixGroupsException | TlvNotFoundException | UpdateMessageSgtException | UpdateMessagePrefixException e) {
-            LOG.warn(" Process legacy message addition/deletion ", owner, e);
-        }
-    }
-
-    /**
      * Adds received UpdateMessage into queue for its
      * parsing and propagating changes contained in message
      * Used for Version 4
@@ -472,10 +418,22 @@ public final class BindingHandler {
      * @param connection Connection on which Update Messages was received
      */
     public static void processUpdateMessage(final UpdateMessage message, final SxpConnection connection) {
+        if (connection.getNodeIdRemote() == null) {
+            LOG.warn(connection.getOwner() + " Unknown message relevant peer node ID");
+            return;
+        }
         Callable task = new Callable<Void>() {
 
             @Override public Void call() throws Exception {
-                processUpdateNotification(UpdateNotification.create(message, connection));
+                try {
+                    SxpDatabase databaseDelete = processMessageDeletion(connection.getNodeIdRemote(), message),
+                            databaseAdd =
+                                    processMessageAddition(message, connection.getFilter(FilterType.InboundDiscarding));
+                    processUpdate(databaseDelete, databaseAdd, connection.getOwner(), connection);
+                } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixException |
+                        UpdateMessagePrefixGroupsException | UpdateMessageSgtException e) {
+                    LOG.warn(" Process message addition/deletion ", connection.getOwner(), e);
+                }
                 return null;
             }
         };
@@ -495,10 +453,22 @@ public final class BindingHandler {
      * @param connection Connection on which Update Messages was received
      */
     public static void processUpdateMessage(final UpdateMessageLegacy message, final SxpConnection connection) {
+        if (connection.getNodeIdRemote() == null) {
+            LOG.warn(connection.getOwner() + " Unknown message relevant peer node ID");
+            return;
+        }
         Callable task = new Callable<Void>() {
 
             @Override public Void call() throws Exception {
-                processUpdateLegacyNotification(UpdateLegacyNotification.create(message, connection));
+                try {
+                    SxpDatabase databaseDelete = processMessageDeletion(connection.getNodeIdRemote(), message),
+                            databaseAdd =
+                                    processMessageAddition(connection.getNodeIdRemote(), message,
+                                            connection.getFilter(FilterType.InboundDiscarding));
+                    processUpdate(databaseDelete, databaseAdd, connection.getOwner(), connection);
+                } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixGroupsException | TlvNotFoundException | UpdateMessageSgtException | UpdateMessagePrefixException e) {
+                    LOG.warn(" Process legacy message addition/deletion ", connection.getOwner(), e);
+                }
                 return null;
             }
         };
@@ -506,36 +476,6 @@ public final class BindingHandler {
             startBindingHandle(task, connection);
         } else {
             connection.pushUpdateMessageInbound(task);
-        }
-    }
-
-    /**
-     * Parse UpdateNotification for deleted and added Bindings,
-     * afterwards propagate those changes into SxpDatabase and
-     * notifies BindingManager to export Bindings
-     *
-     * @param updateNotification UpdateNotification containing received message
-     */
-    private static void processUpdateNotification(UpdateNotification updateNotification)
-            throws UpdateMessagePrefixGroupsException {
-        SxpNode owner = updateNotification.getConnection().getOwner();
-        // Validate message.
-        validateMessage(updateNotification.getMessage());
-        // Get message relevant peer node ID.
-        NodeId peerId = updateNotification.getConnection().getNodeIdRemote();
-        if (peerId == null) {
-            LOG.warn(owner + " Unknown message relevant peer node ID");
-            return;
-        }
-        try {
-            SxpDatabase databaseDelete = processMessageDeletion(peerId, updateNotification.getMessage()),
-                    databaseAdd =
-                            processMessageAddition(updateNotification.getMessage(),
-                                    updateNotification.getConnection().getFilter(FilterType.InboundDiscarding));
-            processUpdate(databaseDelete, databaseAdd, owner, updateNotification.getConnection());
-        } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixException |
-                UpdateMessagePrefixGroupsException | UpdateMessageSgtException e) {
-            LOG.warn(" Process message addition/deletion ", owner, e);
         }
     }
 

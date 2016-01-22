@@ -73,9 +73,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.acl.entry.AclMatch;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.entry.PrefixListMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.AclFilterEntries;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.PrefixListFilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.acl.filter.entries.AclEntry;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.prefix.list.filter.entries.PrefixListEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.ConnectionsBuilder;
@@ -457,7 +460,7 @@ public class RpcServiceImplTest {
                 return builder.build();
         }
 
-        @Test public void testAddFilter() throws Exception {
+        @Test public void testAddFilterACL() throws Exception {
                 AddFilterInputBuilder inputBuilder = new AddFilterInputBuilder();
                 assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
 
@@ -497,6 +500,49 @@ public class RpcServiceImplTest {
                 assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
 
                 when(entry.getAclMatch()).thenReturn(mock(AclMatch.class));
+                assertTrue(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+        }
+
+        @Test public void testAddFilterPL() throws Exception {
+                AddFilterInputBuilder inputBuilder = new AddFilterInputBuilder();
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.10"));
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                inputBuilder.setPeerGroupName("TEST");
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                SxpFilter filter = mock(SxpFilter.class);
+                inputBuilder.setSxpFilter(filter);
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(filter.getFilterType()).thenReturn(FilterType.Inbound);
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(filter.getFilterEntries()).thenReturn(mock(PrefixListFilterEntries.class));
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                PrefixListFilterEntries entries = mock(PrefixListFilterEntries.class);
+                when(filter.getFilterEntries()).thenReturn(entries);
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                ArrayList<PrefixListEntry> aclEntries = new ArrayList<>();
+                when(entries.getPrefixListEntry()).thenReturn(aclEntries);
+                PrefixListEntry entry = mock(PrefixListEntry.class);
+                aclEntries.add(entry);
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(entry.getEntryType()).thenReturn(FilterEntryType.Deny);
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(entry.getEntrySeq()).thenReturn(1);
+                assertFalse(service.addFilter(inputBuilder.build()).get().getResult().isResult());
+
+                when(entry.getPrefixListMatch()).thenReturn(mock(PrefixListMatch.class));
                 assertTrue(service.addFilter(inputBuilder.build()).get().getResult().isResult());
         }
 

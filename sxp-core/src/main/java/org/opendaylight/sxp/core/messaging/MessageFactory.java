@@ -130,22 +130,6 @@ public class MessageFactory {
     /**
      * Creates OpenMessage using provided values
      *
-     * @param version  Version included in message
-     * @param nodeMode ConnectionMode included in message
-     * @param nodeID   NodeId included in message
-     * @return ByteBuf representation of created OpenMessage
-     * @throws AttributeVariantException If attribute variant isn't supported
-     * @throws UnknownVersionException   If version isn't supported
-     * @throws CapabilityLengthException If some Attributes has incorrect length
-     */
-    public static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID)
-            throws AttributeVariantException, UnknownVersionException, CapabilityLengthException {
-        return createOpen(version, nodeMode, nodeID, null);
-    }
-
-    /**
-     * Creates OpenMessage using provided values
-     *
      * @param version               Version included in message
      * @param nodeMode              ConnectionMode included in message
      * @param nodeID                NodeId included in message

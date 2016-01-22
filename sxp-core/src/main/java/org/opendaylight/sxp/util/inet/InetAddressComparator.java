@@ -9,10 +9,8 @@
 package org.opendaylight.sxp.util.inet;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Comparator;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 
 /**
  * InetAddressComparator class used for comparing InetAddresses
@@ -56,11 +54,9 @@ public class InetAddressComparator implements Comparator<InetAddress> {
         for (int i = 0; i < addr1.length; i++) {
             int b1 = ubyte2int(addr1[i]);
             int b2 = ubyte2int(addr2[i]);
-            if (b1 == b2) {
-                continue;
-            } else if (b1 < b2) {
+            if (b1 < b2) {
                 return -1;
-            } else {
+            } else if (b1 > b2) {
                 return 1;
             }
         }

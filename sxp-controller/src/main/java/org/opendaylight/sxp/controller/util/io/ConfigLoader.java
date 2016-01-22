@@ -88,10 +88,6 @@ public class ConfigLoader {
 
     private DatastoreValidator datastoreValidator;
 
-    private HashMap<String, MasterDatastoreImpl> masterDatabaseProviders = new HashMap<>();
-
-    private HashMap<String, SxpDatastoreImpl> sxpDatabaseProviders = new HashMap<>();
-
     private ConfigLoader(DatastoreValidator datastoreValidator) {
         this.datastoreValidator = Preconditions.checkNotNull(datastoreValidator);
     }
@@ -288,7 +284,7 @@ public class ConfigLoader {
         SxpNodeIdentityBuilder nodeBuilder = new SxpNodeIdentityBuilder();
         boolean enabled = false;
         if (configuration.getEnabled() != null) {
-            enabled = configuration.getEnabled().booleanValue();
+            enabled = configuration.getEnabled();
         }
         nodeBuilder.setEnabled(enabled);
         nodeBuilder.setSourceIp(configuration.getSourceIp());
@@ -309,7 +305,7 @@ public class ConfigLoader {
 
         int expansionQuantity = 0;
         if (configuration.getMappingExpanded() != null) {
-            expansionQuantity = configuration.getMappingExpanded().intValue();
+            expansionQuantity = configuration.getMappingExpanded();
         }
         nodeBuilder.setMappingExpanded(expansionQuantity);
         nodeBuilder.setDescription(configuration.getDescription());
@@ -348,13 +344,11 @@ public class ConfigLoader {
                 sxpDatabaseProvider =
                 new SxpDatastoreImpl(new SxpDatabaseAccessImpl(NodeIdConv.toString(nodeId), datastoreAccess,
                         LogicalDatastoreType.OPERATIONAL));
-        sxpDatabaseProviders.put(NodeIdConv.toString(nodeId), sxpDatabaseProvider);
 
         MasterDatastoreImpl
                 ipSgtMasterDatabaseProvider =
                 new MasterDatastoreImpl(new MasterDatabaseAccessImpl(NodeIdConv.toString(nodeId), datastoreAccess,
                         LogicalDatastoreType.OPERATIONAL));
-        masterDatabaseProviders.put(NodeIdConv.toString(nodeId), ipSgtMasterDatabaseProvider);
 
         return org.opendaylight.sxp.core.SxpNode.createInstance(nodeId, node, ipSgtMasterDatabaseProvider,
                 sxpDatabaseProvider);

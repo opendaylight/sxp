@@ -119,7 +119,6 @@ public final class BindingManager extends Service<Void> {
 
             if (pathLength1 > pathLength2) {
                 biMap.put(key, bindingIdentity);
-                continue;
             } else if (pathLength1 == pathLength2) {
                 Binding binding1 = temp.getBinding();
                 Binding binding2 = bindingIdentity.getBinding();
