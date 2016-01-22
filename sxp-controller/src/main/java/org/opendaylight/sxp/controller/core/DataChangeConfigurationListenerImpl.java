@@ -30,7 +30,7 @@ public class DataChangeConfigurationListenerImpl implements
     public static final InstanceIdentifier<Topology> SUBSCRIBED_PATH = InstanceIdentifier.create(NetworkTopology.class)
             .child(Topology.class);
 
-    protected SxpDatastoreImpl bindingDatastoreProvider;
+    private SxpDatastoreImpl bindingDatastoreProvider;
 
     public DataChangeConfigurationListenerImpl(SxpDatastoreImpl bindingDatastoreProvider) {
         this.bindingDatastoreProvider = bindingDatastoreProvider;

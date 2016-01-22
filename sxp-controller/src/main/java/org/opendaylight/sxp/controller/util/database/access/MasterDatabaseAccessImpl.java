@@ -9,7 +9,6 @@
 package org.opendaylight.sxp.controller.util.database.access;
 
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseAccess;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;

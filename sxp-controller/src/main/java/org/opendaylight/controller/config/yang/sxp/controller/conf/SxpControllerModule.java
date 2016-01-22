@@ -31,7 +31,7 @@ import org.opendaylight.yangtools.concepts.ListenerRegistration;
 public class SxpControllerModule extends
         org.opendaylight.controller.config.yang.sxp.controller.conf.AbstractSxpControllerModule {
 
-    private List<ListenerRegistration<DataChangeListener>> dataChangeListenerRegistrations = new ArrayList<ListenerRegistration<DataChangeListener>>();
+    private List<ListenerRegistration<DataChangeListener>> dataChangeListenerRegistrations = new ArrayList<>();
 
     private RpcRegistration<SxpControllerService> rpcRegistration;
 
