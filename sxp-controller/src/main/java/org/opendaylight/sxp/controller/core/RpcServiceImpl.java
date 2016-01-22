@@ -14,17 +14,12 @@ import com.google.common.collect.Collections2;
 import com.google.common.util.concurrent.CheckedFuture;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
-import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
-import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
-import org.opendaylight.sxp.controller.util.database.access.MasterDatabaseAccessImpl;
-import org.opendaylight.sxp.controller.util.database.access.SxpDatabaseAccessImpl;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.TimeConv;
@@ -175,7 +170,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 if (source.getPrefixGroup() != null) {
                     for (PrefixGroup prefixGroup : source.getPrefixGroup()) {
                         if (prefixGroup.getBinding() != null) {
-                            List<IpPrefix> ipPrefixes = new ArrayList<IpPrefix>();
+                            List<IpPrefix> ipPrefixes = new ArrayList<>();
                             for (Binding binding : prefixGroup.getBinding()) {
                                 if (binding.getSources() != null && binding.getSources().getSource() != null) {
                                     boolean contains = false;
@@ -228,10 +223,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
         CheckedFuture<Optional<Binding>, ReadFailedException> binding = datastoreAccess.read(bindingIdentifier,
                 LogicalDatastoreType.OPERATIONAL);
-        if (binding.get() != null && binding.get().isPresent()) {
-            return true;
-        }
-        return false;
+        return binding.get() != null && binding.get().isPresent();
     }
 
     private static boolean isConnectionPresent(String nodeId, IpAddress peerAddress, PortNumber tcpPort)
@@ -247,10 +239,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
         CheckedFuture<Optional<Connection>, ReadFailedException> connection = datastoreAccess.read(
                 connectionIdentifier, LogicalDatastoreType.OPERATIONAL);
-        if (connection.get() != null && connection.get().isPresent()) {
-            return true;
-        }
-        return false;
+        return connection.get() != null && connection.get().isPresent();
     }
 
     private static boolean isPrefixGroupPresent(String nodeId, Sgt sgt) throws Exception {
@@ -267,10 +256,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
         CheckedFuture<Optional<PrefixGroup>, ReadFailedException> prefixGroup = datastoreAccess.read(
                 prefixGroupIdentifier, LogicalDatastoreType.OPERATIONAL);
-        if (prefixGroup.get() != null && prefixGroup.get().isPresent()) {
-            return true;
-        }
-        return false;
+        return prefixGroup.get() != null && prefixGroup.get().isPresent();
     }
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -297,7 +283,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
                 String nodeId = getNodeId(input.getRequestedNode());
 
-                List<Connection> _connections = new ArrayList<Connection>();
+                List<Connection> _connections = new ArrayList<>();
                 for (Connection connection : connections.getConnection()) {
                     IpAddress peerAddress = connection.getPeerAddress();
                     if (peerAddress == null || peerAddress.getValue() == null || peerAddress.getValue().length == 0) {
@@ -762,7 +748,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
                 }
 
-                List<Connection> connections = new ArrayList<Connection>();
+                List<Connection> connections = new ArrayList<>();
                 for (SxpConnection connection : Configuration.getRegisteredNode(nodeId).getAllConnections()) {
                     connections.add(connection.getConnection());
                 }

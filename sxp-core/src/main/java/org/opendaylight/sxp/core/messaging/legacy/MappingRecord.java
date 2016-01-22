@@ -277,8 +277,6 @@ public class MappingRecord extends ArrayList<Tlv> {
         return tlvBuilder.build();
     }
 
-    private org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord mappingRecord;
-
     private MappingRecord() {
     }
 
@@ -303,12 +301,5 @@ public class MappingRecord extends ArrayList<Tlv> {
             }
         }
         throw new TlvNotFoundException(type);
-    }
-
-    /**
-     * @return Gets current MappingRecord
-     */
-    public org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord getMappingRecord() {
-        return mappingRecord;
     }
 }

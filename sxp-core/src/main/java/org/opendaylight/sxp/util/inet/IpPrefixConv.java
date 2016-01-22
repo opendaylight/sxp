@@ -170,22 +170,6 @@ public final class IpPrefixConv {
     }
 
     /**
-     * Creates HashCode for multiple IpPrefixes
-     *
-     * @param IpPrefix IpPrefix used
-     * @return Hashcode of specified IpPrefix
-     */
-    public static int hashCode(List<IpPrefix> IpPrefix) {
-        final int prime = 31;
-
-        int result = 0;
-        for (IpPrefix ipPrefix : IpPrefix) {
-            result = prime * result + ipPrefix.hashCode();
-        }
-        return result;
-    }
-
-    /**
      * Parse InetSocketAddress from String
      *
      * @param ipPrefix String representing address

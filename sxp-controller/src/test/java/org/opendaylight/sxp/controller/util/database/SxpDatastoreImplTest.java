@@ -74,4 +74,16 @@ import static org.mockito.Mockito.*;
                 when(access.read()).thenThrow(DatabaseAccessException.class);
                 assertEquals("[error]", datastore.toString());
         }
+
+        @Test public void testCleanUpBindings() throws Exception {
+                datastore.cleanUpBindings(new NodeId("0.0.0.0"));
+                verify(access).read();
+                verify(access).put(sxpDatabase);
+        }
+
+        @Test public void testSetAsCleanUp() throws Exception {
+                datastore.setAsCleanUp(new NodeId("0.0.0.0"));
+                verify(access).read();
+                verify(access).put(sxpDatabase);
+        }
 }

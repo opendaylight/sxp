@@ -44,7 +44,7 @@ import com.google.common.util.concurrent.CheckedFuture;
 
 public final class DatastoreValidator {
 
-    protected static DatastoreValidator instance = null;
+    private static DatastoreValidator instance = null;
 
     private static final Logger LOG = LoggerFactory.getLogger(DatastoreValidator.class.getName());
 
@@ -106,7 +106,6 @@ public final class DatastoreValidator {
                 datastoreAccess.put(masterDatabaseIdentifier, databaseBuilder.build(), logicalDatastoreType).get();
             } catch (CancellationException | ExecutionException | InterruptedException e) {
                 LOG.error("SXP node '{}' master-database creation failed: '{}'", nodeName, e.getMessage());
-                return;
             }
         }
     }
@@ -171,7 +170,6 @@ public final class DatastoreValidator {
                         logicalDatastoreType).get();
             } catch (CancellationException | ExecutionException | InterruptedException e) {
                 LOG.error("SXP node identity'{}' parent creation failed: '{}'", nodeName, e.getMessage());
-                return;
             }
         }
     }

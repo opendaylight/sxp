@@ -10,14 +10,14 @@ package org.opendaylight.sxp.core;
 
 public final class TimerDefaultValues {
 
-    private final int DELETE_HOLD_DOWN_TIMER = 120;
-    private final int HOLD_TIMER = 90;
-    private final int HOLD_TIMER_MAX = 180;
-    private final int HOLD_TIMER_MIN = 90;
-    private final int HOLD_TIMER_MIN_ACCEPTABLE = 120;
-    private final int KEEP_ALIVE_TIMER = 30;
-    private final int RECONCILIATION_TIMER = 120;
-    private final int RETRY_OPEN_TIMER = 120;
+    private static final int DELETE_HOLD_DOWN_TIMER = 120;
+    private static final int HOLD_TIMER = 90;
+    private static final int HOLD_TIMER_MAX = 180;
+    private static final int HOLD_TIMER_MIN = 90;
+    private static final int HOLD_TIMER_MIN_ACCEPTABLE = 120;
+    private static final int KEEP_ALIVE_TIMER = 30;
+    private static final int RECONCILIATION_TIMER = 120;
+    private static final int RETRY_OPEN_TIMER = 120;
 
     /**
      * Non-configurable
