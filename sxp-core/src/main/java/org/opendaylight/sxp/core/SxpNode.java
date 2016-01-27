@@ -25,6 +25,7 @@ import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.BindingManager;
 import org.opendaylight.sxp.core.service.ConnectFacade;
 import org.opendaylight.sxp.core.service.Service;
+import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.Security;
 import org.opendaylight.sxp.util.database.Database;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
