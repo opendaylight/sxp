@@ -29,13 +29,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class}) public class BindingDispatcherTest {
 
@@ -53,6 +47,7 @@ import static org.mockito.Mockito.when;
                 when(connection.getVersion()).thenReturn(Version.Version4);
                 when(connection.getOwner()).thenReturn(sxpNode);
                 when(connection.getOutboundMonitor()).thenReturn(new AtomicLong(0));
+                when(connection.pollUpdateMessageOutbound()).thenReturn(mock(Callable.class));
                 return connection;
         }
 
@@ -81,21 +76,21 @@ import static org.mockito.Mockito.when;
 
                 verify(connection).resetUpdateExported();
                 verify(connection).setUpdateExported();
-                verify(worker).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
-                verify(connection, never()).pushUpdateMessageOutbound(any(Callable.class));
+                verify(connection).pushUpdateMessageOutbound(any(Callable.class));
+                verify(worker, atLeastOnce()).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
                 verify(databaseProvider).purgeAllDeletedBindings();
                 verify(databaseProvider).resetModified();
 
                 dispatcher.dispatch();
-                verify(worker).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
-                verify(connection).pushUpdateMessageOutbound(any(Callable.class));
+                verify(worker, atLeastOnce()).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
+                verify(connection, times(2)).pushUpdateMessageOutbound(any(Callable.class));
 
                 sxpConnections.clear();
                 connection = mockConnection(true, false);
                 sxpConnections.add(connection);
 
                 dispatcher.dispatch();
-                verify(worker).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
+                verify(worker, atLeastOnce()).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
                 verify(connection, never()).pushUpdateMessageOutbound(any(Callable.class));
         }
 
@@ -107,11 +102,11 @@ import static org.mockito.Mockito.when;
 
                 verify(connection).setUpdateExported();
                 verify(worker).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
-                verify(connection, never()).pushUpdateMessageOutbound(any(Callable.class));
+                verify(connection).pushUpdateMessageOutbound(any(Callable.class));
 
                 dispatcher.call();
                 verify(worker).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
-                verify(connection, never()).pushUpdateMessageOutbound(any(Callable.class));
+                verify(connection).pushUpdateMessageOutbound(any(Callable.class));
         }
 
         @Test public void testSetPartitionSize() throws Exception {

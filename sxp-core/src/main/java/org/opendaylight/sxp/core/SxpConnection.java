@@ -154,10 +154,9 @@ public class SxpConnection {
                     return null;
                 }
             };
+            pushUpdateMessageInbound(task);
             if (getInboundMonitor().getAndIncrement() == 0) {
-                BindingHandler.startBindingHandle(task, this);
-            } else {
-                pushUpdateMessageInbound(task);
+                BindingHandler.startBindingHandle(this);
             }
         } else if (filterType.equals(FilterType.Outbound) && (isModeSpeaker() || isModeBoth())) {
             try {
@@ -282,6 +281,7 @@ public class SxpConnection {
      */
     private void clearMessages() {
         synchronized (inboundUpdateMessageQueue) {
+            getInboundMonitor().set(0);
             inboundUpdateMessageQueue.clear();
         }
         synchronized (outboundUpdateMessageQueue) {
@@ -290,6 +290,7 @@ public class SxpConnection {
                     ((UpdateExportTask) t).freeReferences();
                 }
             }
+            getOutboundMonitor().set(0);
             outboundUpdateMessageQueue.clear();
         }
     }
@@ -1351,6 +1352,7 @@ public class SxpConnection {
      * notifies export of Bindings
      */
     public void setStateOn() {
+        clearMessages();
         connectionBuilder.setState(ConnectionState.On);
         if (isModeSpeaker() || isModeBoth()) {
             owner.setSvcBindingDispatcherNotify();
