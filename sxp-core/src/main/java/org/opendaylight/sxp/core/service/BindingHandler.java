@@ -12,7 +12,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.core.ThreadsWorker;
+import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.messaging.legacy.MappingRecord;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;

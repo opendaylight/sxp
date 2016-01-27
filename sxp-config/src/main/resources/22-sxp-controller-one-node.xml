@@ -39,12 +39,12 @@
                             <!--name></name-->
                             <enabled>true</enabled>
                             <node-id>127.0.0.1</node-id>
-                            <!--source-ip></source-ip-->
+                            <source-ip>127.0.0.1</source-ip>
                             <tcp-port>64999</tcp-port>
                             <version>version4</version>
-                            <!--security>
-                                <password>cisco123</password>
-                            </security-->
+                            <security>
+                                <password>password</password>
+                            </security>
                             <mapping-expanded>5</mapping-expanded>
                             <description>ODL SXP Controller</description>
 
