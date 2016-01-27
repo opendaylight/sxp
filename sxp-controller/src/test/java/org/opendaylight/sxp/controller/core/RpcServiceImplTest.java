@@ -226,8 +226,7 @@ public class RpcServiceImplTest {
                         bindings =
                         RpcServiceImpl.getNodeBindings(getMasterDatabase(
                                         getSource(getPrefixGroup(10, "0.0.0.0/32", "1.1.1.1/32"),
-                                                getPrefixGroup(50, "5.5.5.5/32"), getPrefixGroup(150, "0.0.0.0/32"))),
-                                NodeId.getDefaultInstance("0.0.0.0"));
+                                                getPrefixGroup(50, "5.5.5.5/32"), getPrefixGroup(150, "0.0.0.0/32"))));
                 assertNotNull(bindings);
                 assertBinding(bindings, "0.0.0.0/32", 10);
                 assertBinding(bindings, "0.0.0.0/32", 150);
