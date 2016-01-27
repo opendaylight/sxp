@@ -6,22 +6,17 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.sxp.core;
+package org.opendaylight.sxp.core.threading;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Matchers.any;
@@ -29,7 +24,7 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-@RunWith(PowerMockRunner.class) @PrepareForTest({MoreExecutors.class}) public class ThreadsWorkerTest {
+@RunWith(PowerMockRunner.class) public class ThreadsWorkerTest {
 
         private static ThreadsWorker worker;
         private static Callable callable;
@@ -46,12 +41,6 @@ import static org.mockito.Mockito.verify;
                 executorService = mock(ListeningExecutorService.class);
                 executorServiceInbound = mock(ListeningExecutorService.class);
                 executorServiceOutbound = mock(ListeningExecutorService.class);
-
-                PowerMockito.mockStatic(MoreExecutors.class);
-                PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class)))
-                        .thenReturn(executorService, executorServiceInbound, executorServiceOutbound);
-                PowerMockito.when(MoreExecutors.listeningDecorator(any(ScheduledExecutorService.class)))
-                        .thenReturn(scheduledExecutorService);
                 worker = new ThreadsWorker();
         }
 
@@ -86,5 +75,55 @@ import static org.mockito.Mockito.verify;
                 ListenableFuture future = mock(ListenableFuture.class);
                 worker.addListener(future, runnable);
                 verify(future).addListener(runnable, executorService);
+        }
+
+        @Test public void testExecuteTaskInSequence() throws Exception {
+                final int[] counter = {10};
+
+            worker.addListener(worker.executeTaskInSequence(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    for (int i = 0; i < 500000; i++) {
+                    }
+                    counter[0] += 10;
+                    System.out.println("DONE_1 " + counter[0]);
+                    return null;
+                }
+            }, ThreadsWorker.WorkerType.DEFAULT), new Runnable() {
+                @Override public void run() {
+                    System.out.println("DONE_1_1 " + counter[0]);
+                }
+            });
+            worker.addListener(worker.executeTaskInSequence(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    counter[0] *= 5;
+                    while (counter[0] > 0) {
+
+                    }
+                    System.out.println("DONE_2 " + counter[0]);
+                    return null;
+                }
+            }, ThreadsWorker.WorkerType.DEFAULT), new Runnable() {
+                @Override public void run() {
+                    System.out.println("DONE_2:2 " + counter[0]);
+                }
+            });
+
+            worker.executeTaskInSequence(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    counter[0] -= 5;
+                    System.out.println("DONE_3 " + counter[0]);
+                    return null;
+                }
+            }, ThreadsWorker.WorkerType.DEFAULT);
+
+            worker.executeTaskInSequence(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    counter[0] *= 2;
+                    System.out.println("DONE_4 " + counter[0]);
+                    return null;
+                }
+            }, ThreadsWorker.WorkerType.INBOUND);
+            Thread.sleep(15000);
+
         }
 }

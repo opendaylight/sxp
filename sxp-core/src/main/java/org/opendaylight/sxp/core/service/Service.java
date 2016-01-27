@@ -10,7 +10,7 @@ package org.opendaylight.sxp.core.service;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.core.ThreadsWorker;
+import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 
