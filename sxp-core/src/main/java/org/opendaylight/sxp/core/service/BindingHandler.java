@@ -415,10 +415,10 @@ public final class BindingHandler {
      * Execute new task which perform SXP-DB changes according to received Update Messages
      * and recursively check,if connection has Update Messages to proceed, if so start again.
      *
-     * @param task       Task containing logic for exporting changes to SXP-DB
      * @param connection Connection on which Update Messages was received
      */
-    public static void startBindingHandle(Callable<?> task, final SxpConnection connection) {
+    public static void startBindingHandle(final SxpConnection connection) {
+        Callable task = connection.pollUpdateMessageInbound();
         if (task == null) {
             return;
         }
@@ -429,7 +429,7 @@ public final class BindingHandler {
 
             @Override public void run() {
                 if (connection.getInboundMonitor().decrementAndGet() > 0) {
-                    startBindingHandle(connection.pollUpdateMessageInbound(), connection);
+                    startBindingHandle(connection);
                 }
             }
         });
@@ -479,10 +479,9 @@ public final class BindingHandler {
                 return null;
             }
         };
+        connection.pushUpdateMessageInbound(task);
         if (connection.getInboundMonitor().getAndIncrement() == 0) {
-            startBindingHandle(task, connection);
-        } else {
-            connection.pushUpdateMessageInbound(task);
+            startBindingHandle(connection);
         }
     }
 
@@ -502,10 +501,9 @@ public final class BindingHandler {
                 return null;
             }
         };
+        connection.pushUpdateMessageInbound(task);
         if (connection.getInboundMonitor().getAndIncrement() == 0) {
-            startBindingHandle(task, connection);
-        } else {
-            connection.pushUpdateMessageInbound(task);
+            startBindingHandle(connection);
         }
     }
 

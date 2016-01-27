@@ -122,7 +122,6 @@ public final class BindingDispatcher extends Service<Void> {
         Map<ExportKey, MasterDatabase[]> dataPool = new HashMap<>(4);
         Map<ExportKey, ByteBuf[]> messagesPool = new HashMap<>(4);
         Map<ExportKey, AtomicInteger> releaseCounterPool = new HashMap<>(4);
-        Map<SxpConnection, Callable> taskPool = new HashMap<>(connections.size());
 
         for (final SxpConnection connection : connections) {
             if (connection.isUpdateExported()) {
@@ -155,15 +154,13 @@ public final class BindingDispatcher extends Service<Void> {
             AtomicInteger releaseCounter = releaseCounterPool.get(key);
             releaseCounter.incrementAndGet();
             connection.setUpdateExported();
-            Callable task = new UpdateExportTask(connection, messagesPool.get(key), dataPool.get(key), releaseCounter);
-            taskPool.put(connection, task);
+            connection.pushUpdateMessageOutbound(
+                    new UpdateExportTask(connection, messagesPool.get(key), dataPool.get(key), releaseCounter));
         }
         //Start exporting messages
-        for (Map.Entry<SxpConnection, Callable> entry : taskPool.entrySet()) {
-            if (entry.getKey().getOutboundMonitor().getAndIncrement() == 0) {
-                startExportPerConnection(entry.getValue(), entry.getKey());
-            } else {
-                entry.getKey().pushUpdateMessageOutbound(entry.getValue());
+        for (SxpConnection connection : connections) {
+            if (connection.getOutboundMonitor().getAndIncrement() == 0) {
+                startExportPerConnection(connection);
             }
         }
     }
@@ -173,10 +170,10 @@ public final class BindingDispatcher extends Service<Void> {
      * and after execution check if new Update Messages were added to export,
      * if so start exporting again.
      *
-     * @param task       Task containing logic for exporting changes to SXP-DB
      * @param connection Connection on which Update Messages was received
      */
-    private static void startExportPerConnection(Callable<?> task, final SxpConnection connection) {
+    private static void startExportPerConnection(final SxpConnection connection) {
+        Callable task = connection.pollUpdateMessageOutbound();
         if (task == null) {
             return;
         }
@@ -187,7 +184,7 @@ public final class BindingDispatcher extends Service<Void> {
 
             @Override public void run() {
                 if (connection.getOutboundMonitor().decrementAndGet() > 0) {
-                    startExportPerConnection(connection.pollUpdateMessageOutbound(), connection);
+                    startExportPerConnection(connection);
                 }
             }
         });

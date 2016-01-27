@@ -356,7 +356,7 @@ public class ConfigLoader {
                         LogicalDatastoreType.OPERATIONAL));
         masterDatabaseProviders.put(NodeIdConv.toString(nodeId), ipSgtMasterDatabaseProvider);
 
-        return org.opendaylight.sxp.core.SxpNode.createInstance(nodeId, node, ipSgtMasterDatabaseProvider,
+        return org.opendaylight.sxp.core.SxpNode.createInstance(nodeId, nodeBuilder.build(), ipSgtMasterDatabaseProvider,
                 sxpDatabaseProvider);
     }
 

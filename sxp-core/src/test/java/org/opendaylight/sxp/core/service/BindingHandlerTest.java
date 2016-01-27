@@ -12,6 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.internal.matchers.Any;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.ThreadsWorker;
@@ -91,6 +92,7 @@ import static org.mockito.Mockito.when;
                 PowerMockito.when(sxpNode.isEnabled()).thenReturn(true);
                 connection = mock(SxpConnection.class);
                 when(connection.getInboundMonitor()).thenReturn(new AtomicLong(0));
+                when(connection.pollUpdateMessageInbound()).thenReturn(mock(Callable.class));
 
                 worker = mock(ThreadsWorker.class);
                 when(connection.getOwner()).thenReturn(sxpNode);
@@ -416,46 +418,34 @@ import static org.mockito.Mockito.when;
                 List<Attribute> attributes = getDeletion();
                 attributes.addAll(getAddition());
                 UpdateMessage updateMessage = getMessage(attributes);
-                ArgumentCaptor<Callable> argument = ArgumentCaptor.forClass(Callable.class);
-
-                BindingHandler.processUpdateMessage(updateMessage, connection);
-                verify(connection, never()).pushUpdateMessageInbound(any(Callable.class));
-                verify(worker).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
 
                 BindingHandler.processUpdateMessage(updateMessage, connection);
                 verify(connection).pushUpdateMessageInbound(any(Callable.class));
                 verify(worker).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
 
                 BindingHandler.processUpdateMessage(updateMessage, connection);
-                verify(worker, atLeastOnce()).executeTask(argument.capture(), any(ThreadsWorker.WorkerType.class));
+                verify(connection, times(2)).pushUpdateMessageInbound(any(Callable.class));
+                verify(worker).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
 
-                argument.getValue().call();
-                verify(databaseProvider).deleteBindings(any(SxpDatabase.class));
-                verify(databaseProvider).addBindings(any(SxpDatabase.class));
-                verify(sxpNode).setSvcBindingManagerNotify();
+                BindingHandler.processUpdateMessage(updateMessage, connection);
+                verify(worker, atLeastOnce()).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
         }
 
         @Test public void testProcessUpdateMessageLegacy() throws Exception {
-                ArgumentCaptor<Callable> argument = ArgumentCaptor.forClass(Callable.class);
                 List<MappingRecord> mappingRecords = getLegacyDeletion();
                 mappingRecords.addAll(getLegacyAddition());
 
                 UpdateMessageLegacy updateMessageLegacy = getMessageLegacy(mappingRecords);
 
                 BindingHandler.processUpdateMessage(updateMessageLegacy, connection);
-                verify(worker).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
-
-                BindingHandler.processUpdateMessage(updateMessageLegacy, connection);
                 verify(connection).pushUpdateMessageInbound(any(Callable.class));
                 verify(worker).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
 
                 BindingHandler.processUpdateMessage(updateMessageLegacy, connection);
-                verify(worker, atLeastOnce()).executeTask(argument.capture(), any(ThreadsWorker.WorkerType.class));
+                verify(connection, times(2)).pushUpdateMessageInbound(any(Callable.class));
+                verify(worker).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
 
-                argument.getValue().call();
-                verify(databaseProvider).deleteBindings(any(SxpDatabase.class));
-                verify(databaseProvider).addBindings(any(SxpDatabase.class));
-                verify(sxpNode).setSvcBindingManagerNotify();
-
+                BindingHandler.processUpdateMessage(updateMessageLegacy, connection);
+                verify(worker, atLeastOnce()).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
         }
 }

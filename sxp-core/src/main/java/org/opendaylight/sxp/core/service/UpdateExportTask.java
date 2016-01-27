@@ -76,11 +76,11 @@ public final class UpdateExportTask implements Callable<Void> {
                 }
                 //Wait for all messages to be generated and then write them to pipeline
                 try {
-                        for (ByteBuf generatedMessage : generatedMessages) {
+                        for (int i = 0; i < generatedMessages.length; i++) {
                                 ByteBuf message;
                                 do {
                                         synchronized (generatedMessages) {
-                                                if ((message = generatedMessage) == null) {
+                                                if ((message = generatedMessages[i]) == null) {
                                                         generatedMessages.wait();
                                                 }
                                         }
