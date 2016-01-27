@@ -11,6 +11,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.*;
 
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * ThreadsWorker class is used for executing and scheduling tasks inside SxpNode and SxpConnection
@@ -99,6 +100,14 @@ public class ThreadsWorker {
          */
         public <T> ListenableFuture<T> executeTask(Callable<T> task, WorkerType type) {
                 return getExecutor(type).submit(Preconditions.checkNotNull(task));
+        }
+
+        private final ListeningExecutorService executorService_ =
+            MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
+
+        //TODO
+        public <T> ListenableFuture<T> executeTaskInSequence(final Callable<T> task, final WorkerType type) {
+                return executorService_.submit(Preconditions.checkNotNull(task));
         }
 
         /**
