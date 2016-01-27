@@ -85,7 +85,7 @@ public class ThreadsWorker {
          * @return ListenableScheduledFuture that can be used to extract result or cancel
          * @throws NullPointerException If task is null
          */
-        public ListenableScheduledFuture<?> scheduleTask(Callable task, int period, TimeUnit unit) {
+        public <T> ListenableScheduledFuture<T> scheduleTask(Callable<T> task, int period, TimeUnit unit) {
                 return scheduledExecutorService.schedule(Preconditions.checkNotNull(task), period, unit);
         }
 
@@ -97,7 +97,7 @@ public class ThreadsWorker {
          * @return ListenableFuture that can be used to extract result or cancel
          * @throws NullPointerException If task is null
          */
-        public ListenableFuture<?> executeTask(Callable task, WorkerType type) {
+        public <T> ListenableFuture<T> executeTask(Callable<T> task, WorkerType type) {
                 return getExecutor(type).submit(Preconditions.checkNotNull(task));
         }
 
@@ -109,7 +109,7 @@ public class ThreadsWorker {
          * @return ListenableFuture that can be used to extract result or cancel
          * @throws NullPointerException If task is null
          */
-        public ListenableFuture<?> executeTask(Runnable task, WorkerType type) {
+        public ListenableFuture executeTask(Runnable task, WorkerType type) {
                 return getExecutor(type).submit(Preconditions.checkNotNull(task));
         }
 
@@ -120,7 +120,7 @@ public class ThreadsWorker {
          * @param listener Task which will be executed after Listenable future is done.
          * @throws NullPointerException If task or listener is null
          */
-        public void addListener(ListenableFuture<?> task, Runnable listener) {
+        public void addListener(ListenableFuture task, Runnable listener) {
                 Preconditions.checkNotNull(task).addListener(Preconditions.checkNotNull(listener), executorService);
         }
 }

@@ -350,7 +350,7 @@ public class ConfigLoader {
                 new MasterDatastoreImpl(new MasterDatabaseAccessImpl(NodeIdConv.toString(nodeId), datastoreAccess,
                         LogicalDatastoreType.OPERATIONAL));
 
-        return org.opendaylight.sxp.core.SxpNode.createInstance(nodeId, node, ipSgtMasterDatabaseProvider,
+        return org.opendaylight.sxp.core.SxpNode.createInstance(nodeId, nodeBuilder.build(), ipSgtMasterDatabaseProvider,
                 sxpDatabaseProvider);
     }
 
