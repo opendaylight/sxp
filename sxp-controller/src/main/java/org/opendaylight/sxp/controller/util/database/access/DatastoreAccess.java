@@ -27,13 +27,23 @@ public final class DatastoreAccess {
 
     private final BindingTransactionChain bindingTransactionChain;
 
-    private static DatastoreAccess instance = null;
+    // TODO: this effectively prevents us from releasing the DataBroker, which may cause problems
+    private static volatile DatastoreAccess INSTANCE = null;
 
-    public static synchronized DatastoreAccess getInstance(DataBroker dataBroker) {
-        if (instance == null) {
-            instance = new DatastoreAccess(dataBroker);
+    public static DatastoreAccess getInstance(DataBroker dataBroker) {
+        // Storing in local variable prevents multiple volatile reads
+        DatastoreAccess local = INSTANCE;
+        if (local == null) {
+            synchronized (DatastoreAccess.class) {
+                local = INSTANCE;
+                if (local == null) {
+                    local = new DatastoreAccess(dataBroker);
+                    INSTANCE = local;
+                }
+            }
         }
-        return instance;
+
+        return local;
     }
 
     private DatastoreAccess(DataBroker dataBroker) {
