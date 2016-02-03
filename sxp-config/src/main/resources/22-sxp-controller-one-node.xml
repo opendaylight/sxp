@@ -31,7 +31,7 @@
                         <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
                             binding:binding-async-data-broker
                         </type>
-                        <name>binding-data-broker</name>
+                        <name>pingpong-binding-data-broker</name>
                     </data-broker>
 
                     <sxp-controller>
