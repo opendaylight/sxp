@@ -16,6 +16,7 @@ import io.netty.channel.ChannelHandlerContext;
 import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.core.messaging.AttributeList;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
+import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.UpdateExportTask;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
@@ -144,31 +145,48 @@ public class SxpConnection {
         if (filterType.equals(FilterType.Inbound) && (isModeListener() || isModeBoth())) {
             owner.setSvcBindingManagerNotify();
         } else if (filterType.equals(FilterType.InboundDiscarding) && (isModeListener() || isModeBoth())) {
-            Callable task = new Callable() {
+            synchronized (getInboundMonitor()) {
+                Callable task = new Callable() {
 
-                @Override public Object call() throws Exception {
-                    owner.getBindingSxpDatabase()
-                            .deleteBindings(SxpDatabaseImpl.filterDatabase(owner.getBindingSxpDatabase().get(), getFilter(filterType),
-                                    getNodeIdRemote()));
-                    owner.setSvcBindingManagerNotify();
-                    return null;
+                    @Override public Object call() throws Exception {
+                        owner.getBindingSxpDatabase()
+                                .deleteBindings(SxpDatabaseImpl.filterDatabase(owner.getBindingSxpDatabase().get(),
+                                        getFilter(filterType), getNodeIdRemote()));
+                        owner.setSvcBindingManagerNotify();
+                        return null;
+                    }
+                };
+                pushUpdateMessageInbound(task);
+                if (getInboundMonitor().getAndIncrement() == 0) {
+                    BindingHandler.startBindingHandle(this);
                 }
-            };
-            pushUpdateMessageInbound(task);
-            if (getInboundMonitor().getAndIncrement() == 0) {
-                BindingHandler.startBindingHandle(this);
             }
         } else if (filterType.equals(FilterType.Outbound) && (isModeSpeaker() || isModeBoth())) {
-            try {
-                getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext).writeAndFlush(
-                        MessageFactory.createPurgeAll());
-            } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-                LOG.error(this + " Cannot send PURGE ALL message to set new filter| {} | ",
-                        e.getClass().getSimpleName());
+            if (getFilter(filterType) != null) {
+                pushUpdateMessageOutbound(new Callable<Void>() {
+
+                    @Override public Void call() throws Exception {
+                        try {
+                            LOG.info("{} Sending PurgeAll {}", this, getNodeIdRemote());
+                            getChannelHandlerContext(
+                                    SxpConnection.ChannelHandlerContextType.SpeakerContext).writeAndFlush(
+                                    MessageFactory.createPurgeAll());
+                        } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+                            LOG.error(this + " Cannot send PURGE ALL message to set new filter| {} | ",
+                                    e.getClass().getSimpleName());
+                        }
+                        connectionBuilder.setUpdateAllExported(false);
+                        owner.setSvcBindingDispatcherDispatch();
+                        return null;
+                    }
+                });
+                if (getOutboundMonitor().getAndIncrement() == 0) {
+                    BindingDispatcher.startExportPerConnection(this);
+                }
+            } else {
+                connectionBuilder.setUpdateAllExported(false);
+                owner.setSvcBindingDispatcherDispatch();
             }
-            connectionBuilder.setUpdateAllExported(false);
-            connectionBuilder.setUpdateExported(false);
-            owner.setSvcBindingDispatcherNotify();
         }
     }
 
@@ -207,7 +225,7 @@ public class SxpConnection {
     public SxpBindingFilter removeFilter(FilterType filterType) {
         synchronized (bindingFilterMap) {
             SxpBindingFilter filter = bindingFilterMap.remove(filterType);
-            if(filter!=null) {
+            if (filter != null) {
                 updateFlagsForDatabase(filterType);
             }
             return filter;

@@ -8,18 +8,8 @@
 
 package org.opendaylight.sxp.core.behavior;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,7 +25,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.AttributeBuilder;
@@ -50,8 +39,15 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.*;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class, Context.class, MessageFactory.class})
 public class Sxpv4Test {
@@ -78,6 +74,7 @@ public class Sxpv4Test {
                 when(connection.getDestination()).thenReturn(new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 0));
                 when(connection.getLocalAddress()).thenReturn(
                         new InetSocketAddress(InetAddress.getByName("0.0.0.1"), 0));
+                when(connection.getInboundMonitor()).thenReturn(new AtomicLong());
 
                 PowerMockito.mockStatic(MessageFactory.class);
         }
@@ -258,9 +255,7 @@ public class Sxpv4Test {
                 when(connection.getDestination()).thenReturn(
                         new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 5));
                 sxpv4.onInputMessage(channelHandlerContext, connection, message);
-                verify(connection).setPurgeAllMessageReceived();
-                verify(sxpNode).purgeBindings(any(NodeId.class));
-                verify(sxpNode).setSvcBindingManagerNotify();
+                verify(connection).pushUpdateMessageInbound(any(Callable.class));
         }
 
         @Test public void testOnInputMessageKeepAlive() throws Exception {
