@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.core.service;
 
+import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
@@ -15,7 +16,6 @@ import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.ThreadsWorker;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.messaging.legacy.MappingRecord;
-import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpBindingIdentity;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.exception.message.UpdateMessagePeerSequenceException;
@@ -24,12 +24,12 @@ import org.opendaylight.sxp.util.exception.message.UpdateMessagePrefixGroupsExce
 import org.opendaylight.sxp.util.exception.message.UpdateMessageSgtException;
 import org.opendaylight.sxp.util.exception.message.attribute.TlvNotFoundException;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.DateAndTime;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroup;
@@ -37,16 +37,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabaseBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.TlvType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.AddIpv4Attribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.AddIpv6Attribute;
@@ -58,6 +53,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.Ipv6DeletePrefixAttribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.PeerSequenceAttribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.SourceGroupTagAttribute;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlv.fields.tlv.optional.fields.SourceGroupTagTlvAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -418,28 +415,29 @@ public final class BindingHandler {
      * @param connection Connection on which Update Messages was received
      */
     public static void processUpdateMessage(final UpdateMessage message, final SxpConnection connection) {
-        if (connection.getNodeIdRemote() == null) {
-            LOG.warn(connection.getOwner() + " Unknown message relevant peer node ID");
-            return;
-        }
-        Callable task = new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                try {
-                    SxpDatabase databaseDelete = processMessageDeletion(connection.getNodeIdRemote(), message),
-                            databaseAdd =
-                                    processMessageAddition(message, connection.getFilter(FilterType.InboundDiscarding));
-                    processUpdate(databaseDelete, databaseAdd, connection.getOwner(), connection);
-                } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixException |
-                        UpdateMessagePrefixGroupsException | UpdateMessageSgtException e) {
-                    LOG.warn(" Process message addition/deletion ", connection.getOwner(), e);
-                }
-                return null;
+        synchronized (Preconditions.checkNotNull(connection).getInboundMonitor()) {
+            if (connection.getNodeIdRemote() == null) {
+                LOG.warn(connection.getOwner() + " Unknown message relevant peer node ID");
+                return;
             }
-        };
-        connection.pushUpdateMessageInbound(task);
-        if (connection.getInboundMonitor().getAndIncrement() == 0) {
-            startBindingHandle(connection);
+            Callable task = new Callable<Void>() {
+
+                @Override public Void call() throws Exception {
+                    try {
+                        SxpDatabase databaseDelete = processMessageDeletion(connection.getNodeIdRemote(), message),
+                                databaseAdd = processMessageAddition(message, connection.getFilter(FilterType.InboundDiscarding));
+                        processUpdate(databaseDelete, databaseAdd, connection.getOwner(), connection);
+                    } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixException |
+                            UpdateMessagePrefixGroupsException | UpdateMessageSgtException e) {
+                        LOG.warn(" Process message addition/deletion ", connection.getOwner(), e);
+                    }
+                    return null;
+                }
+            };
+            connection.pushUpdateMessageInbound(task);
+            if (connection.getInboundMonitor().getAndIncrement() == 0) {
+                startBindingHandle(connection);
+            }
         }
     }
 
@@ -452,28 +450,48 @@ public final class BindingHandler {
      * @param connection Connection on which Update Messages was received
      */
     public static void processUpdateMessage(final UpdateMessageLegacy message, final SxpConnection connection) {
-        if (connection.getNodeIdRemote() == null) {
-            LOG.warn(connection.getOwner() + " Unknown message relevant peer node ID");
-            return;
-        }
-        Callable task = new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                try {
-                    SxpDatabase databaseDelete = processMessageDeletion(connection.getNodeIdRemote(), message),
-                            databaseAdd =
-                                    processMessageAddition(connection.getNodeIdRemote(), message,
-                                            connection.getFilter(FilterType.InboundDiscarding));
-                    processUpdate(databaseDelete, databaseAdd, connection.getOwner(), connection);
-                } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixGroupsException | TlvNotFoundException | UpdateMessageSgtException | UpdateMessagePrefixException e) {
-                    LOG.warn(" Process legacy message addition/deletion ", connection.getOwner(), e);
-                }
-                return null;
+        synchronized (Preconditions.checkNotNull(connection).getInboundMonitor()) {
+            if (connection.getNodeIdRemote() == null) {
+                LOG.warn(connection.getOwner() + " Unknown message relevant peer node ID");
+                return;
             }
-        };
-        connection.pushUpdateMessageInbound(task);
-        if (connection.getInboundMonitor().getAndIncrement() == 0) {
-            startBindingHandle(connection);
+            Callable task = new Callable<Void>() {
+
+                @Override public Void call() throws Exception {
+                    try {
+                        SxpDatabase databaseDelete = processMessageDeletion(connection.getNodeIdRemote(), message),
+                                databaseAdd = processMessageAddition(connection.getNodeIdRemote(), message, connection.getFilter(FilterType.InboundDiscarding));
+                        processUpdate(databaseDelete, databaseAdd, connection.getOwner(), connection);
+                    } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixGroupsException | TlvNotFoundException | UpdateMessageSgtException | UpdateMessagePrefixException e) {
+                        LOG.warn(" Process legacy message addition/deletion ", connection.getOwner(), e);
+                    }
+                    return null;
+                }
+            };
+            connection.pushUpdateMessageInbound(task);
+            if (connection.getInboundMonitor().getAndIncrement() == 0) {
+                startBindingHandle(connection);
+            }
+        }
+    }
+
+    public static void processPurgeAllMessage(final SxpConnection connection) {
+        synchronized (Preconditions.checkNotNull(connection).getInboundMonitor()) {
+            if (connection == null || connection.getNodeIdRemote() == null) {
+                return;
+            }
+            connection.pushUpdateMessageInbound(new Callable<Void>() {
+
+                @Override public Void call() throws Exception {
+                    connection.setPurgeAllMessageReceived();
+                    connection.getContext().getOwner().purgeBindings(connection.getNodeIdRemote());
+                    connection.getContext().getOwner().setSvcBindingManagerNotify();
+                    return null;
+                }
+            });
+            if (connection.getInboundMonitor().getAndIncrement() == 0) {
+                startBindingHandle(connection);
+            }
         }
     }
 
