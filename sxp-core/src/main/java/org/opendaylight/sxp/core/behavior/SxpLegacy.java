@@ -15,6 +15,7 @@ import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
+import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
 import org.opendaylight.sxp.util.exception.connection.IncompatiblePeerVersionException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
@@ -209,18 +210,8 @@ public class SxpLegacy implements Strategy {
             throw new ErrorMessageReceivedException(((ErrorMessage) message).getInformation());
 
         } else if (message instanceof PurgeAllMessage) {
-            // Remove all bindings received from the speaker
-            // counter-part (no delete hold-down timer).
             LOG.info("{} PURGEALL processing", connection);
-
-            // Get message relevant peer node ID.
-            if (connection.getNodeIdRemote() == null) {
-                LOG.warn("{} Unknown message relevant peer node ID", connection);
-                return;
-            }
-            connection.setPurgeAllMessageReceived();
-            connection.getContext().getOwner().purgeBindings(connection.getNodeIdRemote());
-            connection.getContext().getOwner().setSvcBindingManagerNotify();
+            BindingHandler.processPurgeAllMessage(connection);
             return;
         }
         LOG.warn("{} Cannot handle message, ignoring: {}", connection, MessageFactory.toString(message));

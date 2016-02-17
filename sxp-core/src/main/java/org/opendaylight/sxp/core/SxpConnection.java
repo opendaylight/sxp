@@ -144,19 +144,21 @@ public class SxpConnection {
         if (filterType.equals(FilterType.Inbound) && (isModeListener() || isModeBoth())) {
             owner.setSvcBindingManagerNotify();
         } else if (filterType.equals(FilterType.InboundDiscarding) && (isModeListener() || isModeBoth())) {
-            Callable task = new Callable() {
+            synchronized (getInboundMonitor()) {
+                Callable task = new Callable() {
 
-                @Override public Object call() throws Exception {
-                    owner.getBindingSxpDatabase()
-                            .deleteBindings(SxpDatabaseImpl.filterDatabase(owner.getBindingSxpDatabase().get(), getFilter(filterType),
-                                    getNodeIdRemote()));
-                    owner.setSvcBindingManagerNotify();
-                    return null;
+                    @Override public Object call() throws Exception {
+                        owner.getBindingSxpDatabase()
+                                .deleteBindings(SxpDatabaseImpl.filterDatabase(owner.getBindingSxpDatabase().get(),
+                                        getFilter(filterType), getNodeIdRemote()));
+                        owner.setSvcBindingManagerNotify();
+                        return null;
+                    }
+                };
+                pushUpdateMessageInbound(task);
+                if (getInboundMonitor().getAndIncrement() == 0) {
+                    BindingHandler.startBindingHandle(this);
                 }
-            };
-            pushUpdateMessageInbound(task);
-            if (getInboundMonitor().getAndIncrement() == 0) {
-                BindingHandler.startBindingHandle(this);
             }
         } else if (filterType.equals(FilterType.Outbound) && (isModeSpeaker() || isModeBoth())) {
             try {
