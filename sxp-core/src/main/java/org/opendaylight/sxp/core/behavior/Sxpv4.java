@@ -10,11 +10,11 @@ package org.opendaylight.sxp.core.behavior;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpConnection.ChannelHandlerContextType;
 import org.opendaylight.sxp.core.messaging.AttributeList;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
+import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageBindingSourceException;
@@ -39,16 +39,15 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.HoldTimeAttribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.ErrorMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.KeepaliveMessage;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.HoldTimeAttribute;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
 
 import java.net.UnknownHostException;
 
@@ -212,9 +211,9 @@ public final class Sxpv4 extends SxpLegacy {
     @Override
     public void onInputMessage(ChannelHandlerContext ctx, SxpConnection connection, Notification message)
             throws ErrorMessageReceivedException, ErrorMessageException, UpdateMessageConnectionStateException {
-        LOG.info("{} Handle {}", connection, MessageFactory.toString(message));
 
         if (message instanceof OpenMessage) {
+            LOG.info("{} Handle {}", connection, MessageFactory.toString(message));
             OpenMessage _message = (OpenMessage) message;
             if (_message.getType().equals(MessageType.Open)) {
 
@@ -313,7 +312,6 @@ public final class Sxpv4 extends SxpLegacy {
                 LOG.info("{} Connected", connection);
                 return;
             }
-
         } else if (message instanceof UpdateMessage) {
             // Accepted only if connection is in ON state.
             if (!connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)) {
@@ -322,23 +320,11 @@ public final class Sxpv4 extends SxpLegacy {
             connection.setUpdateOrKeepaliveMessageTimestamp();
             connection.getContext().getOwner().processUpdateMessage((UpdateMessage) message, connection);
             return;
-
         } else if (message instanceof ErrorMessage) {
             throw new ErrorMessageReceivedException(((ErrorMessage) message).getInformation());
-
         } else if (message instanceof PurgeAllMessage) {
-            // Remove all bindings received from the speaker
-            // counter-part (no delete hold-down timer).
-            LOG.info("{} PURGEALL processing", connection);
-
-            // Get message relevant peer node ID.
-            NodeId peerId;
-            peerId = connection.getNodeIdRemote();
-            connection.setPurgeAllMessageReceived();
-            connection.getOwner().purgeBindings(peerId);
-            connection.getOwner().setSvcBindingManagerNotify();
+            BindingHandler.processPurgeAllMessage(connection);
             return;
-
         } else if (message instanceof KeepaliveMessage) {
             connection.setUpdateOrKeepaliveMessageTimestamp();
             return;
@@ -363,7 +349,7 @@ public final class Sxpv4 extends SxpLegacy {
         // Bindings Expansion.
         // Compose new messages according to all|changed bindings and version.
         try {
-            return MessageFactory.createUpdate(masterDatabase, getOwner().getNodeId(), connection.isUpdateAllExported(),
+            return MessageFactory.createUpdate(masterDatabase, getOwner().getNodeId(), false,
                     connection.getCapabilitiesRemote());
         } catch (UpdateMessageBindingSourceException | SecurityGroupTagValueException | AttributeVariantException e) {
             throw new UpdateMessageCompositionException(connection.getVersion(), connection.isUpdateAllExported(), e);

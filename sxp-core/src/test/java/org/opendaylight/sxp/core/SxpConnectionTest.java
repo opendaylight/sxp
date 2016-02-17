@@ -8,24 +8,10 @@
 
 package org.opendaylight.sxp.core;
 
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListenableScheduledFuture;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -62,11 +48,18 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListenableScheduledFuture;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Mockito.*;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class, UpdateExportTask.class})
 public class SxpConnectionTest {
@@ -572,7 +565,6 @@ public class SxpConnectionTest {
                 sxpConnection.putFilter(getFilter(FilterType.InboundDiscarding, "TEST1"));
                 verify(sxpNode,atLeastOnce()).setSvcBindingManagerNotify();
                 sxpConnection.putFilter(getFilter(FilterType.Outbound, "TEST2"));
-                verify(sxpNode,atLeastOnce()).setSvcBindingDispatcherNotify();
 
                 assertNotNull(sxpConnection.getFilter(FilterType.Inbound));
                 assertNotNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
@@ -617,7 +609,6 @@ public class SxpConnectionTest {
 
                 sxpConnection.removeFilter(FilterType.Outbound);
                 assertNull(sxpConnection.getFilter(FilterType.Outbound));
-                verify(sxpNode,atLeastOnce()).setSvcBindingDispatcherNotify();
         }
 
         @Test public void testSetCapabilitiesRemote() throws Exception {

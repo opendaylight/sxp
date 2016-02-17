@@ -8,16 +8,8 @@
 
 package org.opendaylight.sxp.core.behavior;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,8 +35,14 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.*;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class, Context.class}) public class SxpLegacyTest {
 
@@ -69,6 +67,7 @@ import io.netty.channel.ChannelHandlerContext;
                 Context context = PowerMockito.mock(Context.class);
                 PowerMockito.when(context.getOwner()).thenReturn(sxpNode);
                 when(connection.getContext()).thenReturn(context);
+                when(connection.getInboundMonitor()).thenReturn(new AtomicLong());
         }
 
         @Test public void testOnChannelActivation() throws Exception {
@@ -187,9 +186,7 @@ import io.netty.channel.ChannelHandlerContext;
                 when(message.getType()).thenReturn(MessageType.PurgeAll);
 
                 sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
-                verify(connection).setPurgeAllMessageReceived();
-                verify(sxpNode).purgeBindings(any(NodeId.class));
-                verify(sxpNode).setSvcBindingManagerNotify();
+                verify(connection).pushUpdateMessageInbound(any(Callable.class));
         }
 
 }

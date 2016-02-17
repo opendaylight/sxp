@@ -172,7 +172,7 @@ public final class BindingDispatcher extends Service<Void> {
      *
      * @param connection Connection on which Update Messages was received
      */
-    private static void startExportPerConnection(final SxpConnection connection) {
+    public static void startExportPerConnection(final SxpConnection connection) {
         Callable task = connection.pollUpdateMessageOutbound();
         if (task == null) {
             return;

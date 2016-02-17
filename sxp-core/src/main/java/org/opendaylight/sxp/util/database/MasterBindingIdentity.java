@@ -58,11 +58,7 @@ public class MasterBindingIdentity {
                     for (PrefixGroup prefixGroup : source.getPrefixGroup()) {
                         if (prefixGroup.getBinding() != null) {
                             for (Binding binding : prefixGroup.getBinding()) {
-                                Boolean changed = binding.isChanged();
-                                if (changed == null) {
-                                    changed = true;
-                                }
-                                if (!onlyChanged || changed) {
+                                if (!onlyChanged || binding.isChanged()) {
                                     identities.add(new MasterBindingIdentity(binding, prefixGroup, source));
                                 }
                             }
