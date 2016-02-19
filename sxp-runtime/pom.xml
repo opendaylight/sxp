@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.opendaylight.sxp</groupId>
         <artifactId>sxp-parent</artifactId>
-        <version>1.2.0-SNAPSHOT</version>
+        <version>1.2.0-Beryllium</version>
     </parent>
     <artifactId>sxp-runtime</artifactId>     
     <packaging>jar</packaging>          
