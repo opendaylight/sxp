@@ -16,7 +16,7 @@ import java.util.List;
 
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IetInetUtil;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.binding.Sources;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.binding.SourcesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.PeerSequence;
@@ -62,7 +62,7 @@ public final class NodeIdConv {
      */
     public static NodeId createNodeId(InetAddress inetAddress) throws UnknownNodeIdException {
         if (inetAddress instanceof Inet4Address) {
-            return new NodeId(new Ipv4Address(inetAddress.getHostAddress()));
+            return new NodeId(IetfInetUtil.INSTANCE.ipv4AddressFor(inetAddress));
         }
         throw new UnknownNodeIdException("Not IPv4 format [\"" + inetAddress.toString() + "\"]");
     }
