@@ -10,7 +10,7 @@
    <parent>
     <artifactId>sxp-parent</artifactId>
     <groupId>org.opendaylight.sxp</groupId>
-    <version>1.1.4-SNAPSHOT</version>
+    <version>1.1.4-Lithium-SR4</version>
   </parent>
    <!--
     Necessary TODO: Hookup your parent pom here, else you will not get necessary versions,
@@ -20,16 +20,16 @@
   -->
    <artifactId>features</artifactId>
    <!-- Optional TODO: Uncomment version if you are not using a parent pom.xml
-   <version>1.0.4-SNAPSHOT</version>
+   <version>1.0.4-Lithium-SR4</version>
    -->
    <packaging>jar</packaging>
    <properties>
       <features.file>features.xml</features.file>
       <!-- Optional TODO: Move these properties to your parent pom and possibly
             DependencyManagement section of your parent pom -->
-      <branding.version>1.0.4-SNAPSHOT</branding.version>
-      <karaf.resources.version>1.5.4-SNAPSHOT</karaf.resources.version>
-      <karaf.empty.version>1.5.4-SNAPSHOT</karaf.empty.version>
+      <branding.version>1.0.4-Lithium-SR4</branding.version>
+      <karaf.resources.version>1.5.4-Lithium-SR4</karaf.resources.version>
+      <karaf.empty.version>1.5.4-Lithium-SR4</karaf.empty.version>
    </properties>
    <dependencies>
     <!--
@@ -46,21 +46,21 @@
         <dependency>
           <groupId>org.opendaylight.yangtools</groupId>
           <artifactId>features-yangtools</artifactId>
-          <version>0.6.6-SNAPSHOT</version>
+          <version>0.6.6-Lithium-SR4</version>
           <classifier>features</classifier>
           <type>xml</type>
         </dependency>
         <dependency>
           <groupId>org.opendaylight.controller</groupId>
           <artifactId>features-mdsal</artifactId>
-          <version>1.1.4-SNAPSHOT</version>
+          <version>1.1.4-Lithium-SR4</version>
           <classifier>features</classifier>
           <type>xml</type>
         </dependency>
         <dependency>
           <groupId>org.opendaylight.openflowplugin</groupId>
           <artifactId>features-openflowplugin</artifactId>
-          <version>0.0.7-SNAPSHOT</version>
+          <version>0.0.7-Lithium-SR4</version>
           <classifier>features</classifier>
           <type>xml</type>
         </dependency>
@@ -145,7 +145,7 @@
     <dependency>
       <groupId>org.opendaylight.odlparent</groupId>
       <artifactId>features-test</artifactId>
-      <version>1.5.4-SNAPSHOT</version>
+      <version>1.5.4-Lithium-SR4</version>
       <scope>test</scope>
     </dependency>
     <!-- dependency for opendaylight-karaf-empty for use by testing -->
