@@ -19,17 +19,15 @@ import org.opendaylight.sxp.util.time.connection.HoldTimerTask;
 import org.opendaylight.sxp.util.time.connection.KeepAliveTimerTask;
 import org.opendaylight.sxp.util.time.connection.ReconcilationTimerTask;
 import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.mockito.Mockito.*;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class}) public class SxpTimerTaskTest {
 
@@ -39,6 +37,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
         @Before public void init() {
                 sxpNode = PowerMockito.mock(SxpNode.class);
                 sxpConnection = mock(SxpConnection.class);
+                List<SxpConnection> connections = new ArrayList<>();
+                connections.add(sxpConnection);
+                PowerMockito.when(sxpNode.getAllOffConnections()).thenReturn(connections);
                 when(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext)).thenReturn(true);
                 when(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)).thenReturn(true);
                 when(sxpConnection.isStateOn()).thenReturn(true);
@@ -63,12 +64,12 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
                         SxpConnection.ChannelHandlerContextType.SpeakerContext)).thenReturn(ctx);
                 KeepAliveTimerTask timerTask = new KeepAliveTimerTask(sxpConnection, 0);
 
-                when(sxpConnection.getTimestampUpdateMessageExport()).thenReturn(0l);
+                when(sxpConnection.getTimestampUpdateOrKeepAliveMessage()).thenReturn(0l);
                 timerTask.call();
                 verify(ctx).writeAndFlush(any());
                 verify(sxpConnection).setTimer(TimerType.KeepAliveTimer, timerTask.getPeriod());
 
-                when(sxpConnection.getTimestampUpdateMessageExport()).thenReturn(2 * System.currentTimeMillis());
+                when(sxpConnection.getTimestampUpdateOrKeepAliveMessage()).thenReturn(2 * System.currentTimeMillis());
                 timerTask.call();
                 verifyNoMoreInteractions(ctx);
                 verify(sxpConnection, times(2)).setTimer(TimerType.KeepAliveTimer, timerTask.getPeriod());

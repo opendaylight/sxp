@@ -23,22 +23,17 @@ import org.opendaylight.controller.config.yang.sxp.controller.conf.MasterDatabas
 import org.opendaylight.controller.config.yang.sxp.controller.conf.SxpController;
 import org.opendaylight.controller.config.yang.sxp.controller.conf.SxpNode;
 import org.opendaylight.controller.config.yang.sxp.controller.conf.Timers;
-import org.opendaylight.controller.config.yang.sxp.controller.conf.Vpn;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.DatastoreValidator;
 import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
@@ -108,17 +103,6 @@ import static org.mockito.Mockito.*;
                 return binding;
         }
 
-        private Vpn getVpn(String name, Binding... bindings) {
-                Vpn vpn = new Vpn();
-                vpn.setName(name);
-                List<Binding> bindings1 = new ArrayList<>();
-                for (Binding binding : bindings) {
-                        bindings1.add(binding);
-                }
-                vpn.setBinding(bindings1);
-                return vpn;
-        }
-
         @Test public void testLoad() throws Exception {
                 ConfigLoader configLoader = ConfigLoader.create(validator);
 
@@ -151,11 +135,6 @@ import static org.mockito.Mockito.*;
                 bindings.add(getBinding(null, "2000:0:0:0:0:0:0:2/128"));
                 masterDatabase.setBinding(bindings);
 
-                List<Vpn> vpns = new ArrayList<>();
-
-                vpns.add(getVpn("VPN", getBinding(30, "3.3.3.3/32")));
-                masterDatabase.setVpn(vpns);
-
                 node.setMasterDatabase(masterDatabase);
 
                 sxpNodes.add(node);
@@ -165,17 +144,16 @@ import static org.mockito.Mockito.*;
 
                 ArgumentCaptor<SxpNodeIdentity> argumentCaptor = ArgumentCaptor.forClass(SxpNodeIdentity.class);
 
-                verify(access).put(any(InstanceIdentifier.class), argumentCaptor.capture(),
+                verify(access).merge(any(InstanceIdentifier.class), argumentCaptor.capture(),
                         any(LogicalDatastoreType.class));
                 verify(validator, times(2)).validateSxpNodePath(anyString(), any(LogicalDatastoreType.class));
-                verify(validator).validateSxpNodeDatabases("0.0.0.0", LogicalDatastoreType.OPERATIONAL);
 
                 SxpNodeIdentity sxpNode = argumentCaptor.getValue();
                 assertEquals(64999, (long) sxpNode.getTcpPort().getValue());
                 assertEquals(10, (long) sxpNode.getMappingExpanded());
                 //Capabilities are config False
                 assertEquals(null, sxpNode.getCapabilities());
-                org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection
+                org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection
                         connection =
                         sxpNode.getConnections().getConnection().get(0);
                 assertEquals(Version.Version3, connection.getVersion());
@@ -186,7 +164,7 @@ import static org.mockito.Mockito.*;
 
                 node.setNodeId(null);
                 configLoader.load(controller);
-                verify(access).put(any(InstanceIdentifier.class), argumentCaptor.capture(),
+                verify(access).merge(any(InstanceIdentifier.class), argumentCaptor.capture(),
                         any(LogicalDatastoreType.class));
         }
 }

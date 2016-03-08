@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TransactionChainListenerImpl implements TransactionChainListener {
+
     private static final Logger LOG = LoggerFactory.getLogger(TransactionChainListenerImpl.class);
 
     @Override

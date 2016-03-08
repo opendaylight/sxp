@@ -5,8 +5,8 @@ module sxp-controller {
     prefix "sxpctrl";
 
     import ietf-inet-types { prefix inet; revision-date "2010-09-24"; }
-    import sxp-database { prefix sxpdb; revision-date "2014-10-02"; }
-    import sxp-node { prefix sxpnd; revision-date "2014-10-02"; }
+    import sxp-database { prefix sxpdb; revision-date "2016-03-08"; }
+    import sxp-node { prefix sxpnd; revision-date "2016-03-08"; }
     import sxp-filter { prefix sxpfl; revision-date "2015-09-11"; }
     import sxp-protocol { prefix sxppt; revision-date "2014-10-02"; }
 
@@ -218,13 +218,20 @@ module sxp-controller {
     }
 
     rpc get-node-bindings {
-        description "RPC returns local IP-SGT bindings configuration of a specified
+        description "RPC returns IP-SGT bindings configuration of a specified
                 node";
         input {
             leaf requested-node {
                 mandatory true;
                 type sxppt:node-id;
                 description "Node ID of the dedicated SXP source";
+            }
+            leaf bindings-range {
+                default local;
+                type enumeration {
+                    enum local;
+                    enum all;
+                }
             }
         }
         output {

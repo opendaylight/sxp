@@ -8,23 +8,14 @@
 
 package org.opendaylight.sxp.controller.util.database;
 
-import java.util.ArrayList;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-
+import com.google.common.base.Optional;
+import com.google.common.util.concurrent.CheckedFuture;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentityBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabaseBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabaseBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.sxp.database.Vpn;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopologyBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
@@ -39,8 +30,8 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Optional;
-import com.google.common.util.concurrent.CheckedFuture;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 
 public final class DatastoreValidator {
 
@@ -63,51 +54,6 @@ public final class DatastoreValidator {
 
     public DatastoreAccess getDatastoreAccess() {
         return datastoreAccess;
-    }
-
-    public void validateSxpNodeDatabases(String nodeName, LogicalDatastoreType logicalDatastoreType)
-            throws InterruptedException, ExecutionException {
-        // SXP database.
-        InstanceIdentifier<SxpDatabase> sxpDatabaseIdentifier = InstanceIdentifier.builder(NetworkTopology.class)
-                .child(Topology.class, new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME)))
-                .child(Node.class, new NodeKey(new NodeId(nodeName))).augmentation(SxpNodeIdentity.class)
-                .child(SxpDatabase.class).build();
-
-        CheckedFuture<Optional<SxpDatabase>, ReadFailedException> sxpDatabase = datastoreAccess.read(
-                sxpDatabaseIdentifier, LogicalDatastoreType.OPERATIONAL);
-
-        if (!sxpDatabase.get().isPresent()) {
-            try {
-                SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
-                databaseBuilder.setPathGroup(new ArrayList<PathGroup>());
-                databaseBuilder.setVpn(new ArrayList<Vpn>());
-                datastoreAccess.put(sxpDatabaseIdentifier, databaseBuilder.build(), logicalDatastoreType).get();
-            } catch (CancellationException | ExecutionException | InterruptedException e) {
-                LOG.error("SXP node '{}' sxp-database creation failed: '{}'", nodeName, e.getMessage());
-                return;
-            }
-        }
-
-        // Master database.
-        InstanceIdentifier<MasterDatabase> masterDatabaseIdentifier = InstanceIdentifier.builder(NetworkTopology.class)
-                .child(Topology.class, new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME)))
-                .child(Node.class, new NodeKey(new NodeId(nodeName))).augmentation(SxpNodeIdentity.class)
-                .child(MasterDatabase.class).build();
-
-        CheckedFuture<Optional<MasterDatabase>, ReadFailedException> masterDatabase = datastoreAccess.read(
-                masterDatabaseIdentifier, LogicalDatastoreType.OPERATIONAL);
-
-        if (!masterDatabase.get().isPresent()) {
-            try {
-                MasterDatabaseBuilder databaseBuilder = new MasterDatabaseBuilder();
-                databaseBuilder.setSource(new ArrayList<Source>());
-                databaseBuilder
-                        .setVpn(new ArrayList<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.master.database.Vpn>());
-                datastoreAccess.put(masterDatabaseIdentifier, databaseBuilder.build(), logicalDatastoreType).get();
-            } catch (CancellationException | ExecutionException | InterruptedException e) {
-                LOG.error("SXP node '{}' master-database creation failed: '{}'", nodeName, e.getMessage());
-            }
-        }
     }
 
     public void validateSxpNodePath(String nodeName, LogicalDatastoreType logicalDatastoreType)

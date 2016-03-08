@@ -17,9 +17,9 @@ import org.mockito.ArgumentCaptor;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
@@ -60,27 +60,6 @@ import static org.mockito.Mockito.*;
                 assertNotNull(validator);
                 assertEquals(validator.getDatastoreAccess(),
                         DatastoreValidator.getInstance(PowerMockito.mock(DatastoreAccess.class)).getDatastoreAccess());
-        }
-
-        @Test public void testValidateSxpNodeDatabases() throws Exception {
-                PowerMockito.when(access.put(any(InstanceIdentifier.class), any(DataObject.class),
-                        any(LogicalDatastoreType.class))).thenThrow(InterruptedException.class).thenReturn(future);
-                validator.validateSxpNodeDatabases("TestNode", LogicalDatastoreType.OPERATIONAL);
-
-                ArgumentCaptor<SxpDatabase> sxpDatabaseArgumentCaptor = ArgumentCaptor.forClass(SxpDatabase.class);
-                verify(access, atLeastOnce()).put(any(InstanceIdentifier.class), sxpDatabaseArgumentCaptor.capture(),
-                        any(LogicalDatastoreType.class));
-                assertTrue(sxpDatabaseArgumentCaptor.getValue() instanceof SxpDatabase);
-
-                validator.validateSxpNodeDatabases("TestNode", LogicalDatastoreType.OPERATIONAL);
-
-                ArgumentCaptor<MasterDatabase>
-                        masterDatabaseArgumentCaptor =
-                        ArgumentCaptor.forClass(MasterDatabase.class);
-                verify(access, atLeastOnce()).put(any(InstanceIdentifier.class), masterDatabaseArgumentCaptor.capture(),
-                        any(LogicalDatastoreType.class));
-                assertTrue(masterDatabaseArgumentCaptor.getValue() instanceof MasterDatabase);
-
         }
 
         @Test public void testValidateSxpNodePath() throws Exception {

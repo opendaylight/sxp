@@ -9,7 +9,6 @@
 package org.opendaylight.sxp.core.messaging.legacy;
 
 import io.netty.buffer.ByteBuf;
-
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.util.ArraysUtil;
@@ -20,21 +19,19 @@ import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthExcept
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageLegacyBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacyBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageLegacyBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacyBuilder;
 
 import java.net.UnknownHostException;
+import java.util.List;
 
 /**
  * LegacyMessageFactory class contains logic for creating and parsing legacy messages
@@ -118,102 +115,72 @@ public class LegacyMessageFactory extends MessageFactory {
      * If the Prefix Length TLV is not presented, the IP address is considered
      * as host address.
      */
-    public static ByteBuf createUpdate(MasterDatabase masterDatabase, boolean changed, Version version)
-            throws UnknownVersionException {
+    public static <T extends SxpBindingFields> ByteBuf createUpdate(List<T> deleteBindings, List<T> addBindings,
+            Version version, SxpBindingFilter bindingFilter) throws UnknownVersionException {
+        if (version == null || !MessageFactory.isLegacy(version))
+            throw new UnknownVersionException();
+
         MappingRecordList mappingRecords = new MappingRecordList();
-
-        // Processing of added and deleted bindings.
-        for (Source source : masterDatabase.getSource()) {
-            if (source.getPrefixGroup() != null) {
-                for (PrefixGroup prefixGroup : source.getPrefixGroup()) {
-                    if (prefixGroup.getBinding() != null) {
-                        for (Binding binding : prefixGroup.getBinding()) {
-                            if (changed && binding.isChanged() == null || changed && !binding.isChanged()) {
-                                continue;
-                            } else if (binding.getAction() == null) {
-                                continue;
-                            } else if (binding.getAction().equals(DatabaseAction.Delete)) {
-                                switch (version) {
-                                case Version1:
-                                    if (binding.getIpPrefix().getIpv4Prefix() != null) {
-                                        if (IpPrefixConv.getPrefixLength(binding.getIpPrefix()) != 32) {
-                                            continue;
-                                        }
-                                        mappingRecords.add(LegacyAttributeFactory.createDeleteIpv4(binding
-                                                .getIpPrefix()));
-                                    }
-                                    continue;
-                                case Version2:
-                                    if (binding.getIpPrefix().getIpv4Prefix() != null) {
-                                        if (IpPrefixConv.getPrefixLength(binding.getIpPrefix()) != 32) {
-                                            continue;
-                                        }
-                                        mappingRecords.add(LegacyAttributeFactory.createDeleteIpv4(binding
-                                                .getIpPrefix()));
-                                    } else if (binding.getIpPrefix().getIpv6Prefix() != null) {
-                                        if (IpPrefixConv.getPrefixLength(binding.getIpPrefix()) != 128) {
-                                            continue;
-                                        }
-                                        mappingRecords.add(LegacyAttributeFactory.createDeleteIpv6(binding
-                                                .getIpPrefix()));
-                                    }
-                                    continue;
-                                case Version3:
-                                    if (binding.getIpPrefix().getIpv4Prefix() != null) {
-                                        mappingRecords.add(LegacyAttributeFactory.createDeleteIpv4(binding
-                                                .getIpPrefix()));
-                                    } else if (binding.getIpPrefix().getIpv6Prefix() != null) {
-                                        mappingRecords.add(LegacyAttributeFactory.createDeleteIpv6(binding
-                                                .getIpPrefix()));
-                                    }
-                                    continue;
-                                default:
-                                    throw new UnknownVersionException();
-                                }
-
-                            } else if (binding.getAction().equals(DatabaseAction.Add)) {
-                                switch (version) {
-                                case Version1:
-                                    if (binding.getIpPrefix().getIpv4Prefix() != null) {
-                                        if (IpPrefixConv.getPrefixLength(binding.getIpPrefix()) != 32) {
-                                            continue;
-                                        }
-                                        mappingRecords.add(LegacyAttributeFactory.createAddIpv4(prefixGroup.getSgt(),
-                                                binding.getIpPrefix()));
-                                    }
-                                    continue;
-                                case Version2:
-                                    if (binding.getIpPrefix().getIpv4Prefix() != null) {
-                                        if (IpPrefixConv.getPrefixLength(binding.getIpPrefix()) != 32) {
-                                            continue;
-                                        }
-                                        mappingRecords.add(LegacyAttributeFactory.createAddIpv4(prefixGroup.getSgt(),
-                                                binding.getIpPrefix()));
-                                    } else if (binding.getIpPrefix().getIpv6Prefix() != null) {
-                                        if (IpPrefixConv.getPrefixLength(binding.getIpPrefix()) != 128) {
-                                            continue;
-                                        }
-                                        mappingRecords.add(LegacyAttributeFactory.createAddIpv6(prefixGroup.getSgt(),
-                                                binding.getIpPrefix()));
-                                    }
-                                    continue;
-                                case Version3:
-                                    if (binding.getIpPrefix().getIpv4Prefix() != null) {
-                                        mappingRecords.add(LegacyAttributeFactory.createAddIpv4(prefixGroup.getSgt(),
-                                                binding.getIpPrefix()));
-                                    } else if (binding.getIpPrefix().getIpv6Prefix() != null) {
-                                        mappingRecords.add(LegacyAttributeFactory.createAddIpv6(prefixGroup.getSgt(),
-                                                binding.getIpPrefix()));
-                                    }
-                                    continue;
-                                default:
-                                    throw new UnknownVersionException();
-                                }
+        if (deleteBindings != null && !deleteBindings.isEmpty()) {
+            deleteBindings.stream().forEach(binding -> {
+                switch (version) {
+                    case Version3:
+                        if (binding.getIpPrefix().getIpv4Prefix() != null) {
+                            mappingRecords.add(LegacyAttributeFactory.createDeleteIpv4(binding.getIpPrefix()));
+                        } else if (binding.getIpPrefix().getIpv6Prefix() != null) {
+                            mappingRecords.add(LegacyAttributeFactory.createDeleteIpv6(binding.getIpPrefix()));
+                        }
+                        break;
+                    case Version2:
+                        if (binding.getIpPrefix().getIpv6Prefix() != null) {
+                            if (IpPrefixConv.getPrefixLength(binding.getIpPrefix()) == 128) {
+                                mappingRecords.add(LegacyAttributeFactory.createDeleteIpv6(binding.getIpPrefix()));
+                            }
+                            break;
+                        }
+                    case Version1:
+                        if (binding.getIpPrefix().getIpv4Prefix() != null) {
+                            if (IpPrefixConv.getPrefixLength(binding.getIpPrefix()) == 32) {
+                                mappingRecords.add(LegacyAttributeFactory.createDeleteIpv4(binding.getIpPrefix()));
                             }
                         }
-                    }
+                        break;
                 }
-            }
+            });
+        }
+
+        if (addBindings != null && !addBindings.isEmpty()) {
+            addBindings.stream().forEach(binding -> {
+                if (bindingFilter != null && bindingFilter.filter(binding))
+                    return;
+                switch (version) {
+                    case Version3:
+                        if (binding.getIpPrefix().getIpv4Prefix() != null) {
+                            mappingRecords.add(LegacyAttributeFactory.createAddIpv4(binding.getSecurityGroupTag(),
+                                    binding.getIpPrefix()));
+                        } else if (binding.getIpPrefix().getIpv6Prefix() != null) {
+                            mappingRecords.add(LegacyAttributeFactory.createAddIpv6(binding.getSecurityGroupTag(),
+                                    binding.getIpPrefix()));
+                        }
+                        break;
+                    case Version2:
+                        if (binding.getIpPrefix().getIpv6Prefix() != null) {
+                            if (IpPrefixConv.getPrefixLength(binding.getIpPrefix()) == 128) {
+                                mappingRecords.add(LegacyAttributeFactory.createAddIpv6(binding.getSecurityGroupTag(),
+                                        binding.getIpPrefix()));
+                            }
+                            break;
+                        }
+                    case Version1:
+                        if (binding.getIpPrefix().getIpv4Prefix() != null) {
+                            if (IpPrefixConv.getPrefixLength(binding.getIpPrefix()) == 32) {
+                                mappingRecords.add(LegacyAttributeFactory.createAddIpv4(binding.getSecurityGroupTag(),
+                                        binding.getIpPrefix()));
+                            }
+                        }
+                        break;
+                }
+            });
         }
 
         if (mappingRecords.isEmpty()) {

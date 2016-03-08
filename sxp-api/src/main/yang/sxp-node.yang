@@ -7,7 +7,7 @@ module sxp-node {
     import ietf-inet-types { prefix inet; revision-date "2010-09-24"; }
     import ietf-yang-types { prefix ietf-yang; revision-date "2010-09-24"; }
     import network-topology { prefix nt; revision-date "2013-10-21"; }
-    import sxp-database { prefix sxpdb; revision-date "2014-10-02"; }
+    import sxp-database { prefix sxpdb; revision-date "2016-03-08"; }
     import sxp-protocol { prefix sxppt; revision-date "2014-10-02"; }
     import sxp-filter { prefix sxpfl; revision-date "2015-09-11"; }
     import yang-ext { prefix ext; revision-date "2013-07-09"; }
@@ -16,7 +16,7 @@ module sxp-node {
         "Module defines the base YANG definitions for SXP-aware network
         node.";
 
-    revision "2014-10-02" {
+    revision "2016-03-08" {
         description
                 "Reviewed revision of SXP node model";
     }
@@ -120,36 +120,13 @@ module sxp-node {
     grouping sxp-databases-fields {
         container sxp-database {
             description "SXP database";
-
             config false;
             uses sxpdb:sxp-database-fields;
-
-            list vpn {
-                key "name";
-
-                leaf name {
-                    type string;
-                    description "Assigned VPN label";
-                }
-                uses sxpdb:sxp-database-fields;
-            }
         }
 
         container master-database {
             description "IP-SGT-Master database";
-
-            config false;
             uses sxpdb:master-database-fields;
-
-            list vpn {
-                key "name";
-
-                leaf name {
-                    type string;
-                    description "Assigned VPN label";
-                }
-                uses sxpdb:master-database-fields;
-            }
         }
     }
 
@@ -181,10 +158,6 @@ module sxp-node {
     }
 
     grouping sxp-connection-fields {
-        leaf vpn {
-            type string;
-            description "Assigned VPN label";
-        }
         uses sxp-peer-fields;
 
         leaf password {
@@ -223,19 +196,8 @@ module sxp-node {
             type boolean;
             default "false";
         }
-        leaf timestamp-update-message-export {
-            type ietf-yang:date-and-time;
-        }
         leaf timestamp-update-or-keep-alive-message {
             type ietf-yang:date-and-time;
-        }
-        leaf update-all-exported {
-            type boolean;
-            default "false";
-        }
-        leaf update-exported {
-            type boolean;
-            default "false";
         }
     }
 
