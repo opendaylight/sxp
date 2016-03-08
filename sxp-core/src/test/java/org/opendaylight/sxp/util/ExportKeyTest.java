@@ -22,11 +22,9 @@ import static org.junit.Assert.*;
 
 public class ExportKeyTest {
 
-    private static ExportKey getKey(Version version, boolean exportAll, String groupName,
-            List<CapabilityType> capabilityTypes) {
+    private static ExportKey getKey(Version version, String groupName, List<CapabilityType> capabilityTypes) {
         SxpConnection connection = Mockito.mock(SxpConnection.class);
         Mockito.when(connection.getVersion()).thenReturn(version);
-        Mockito.when(connection.isUpdateAllExported()).thenReturn(exportAll);
         Mockito.when(connection.getGroupName(FilterType.Outbound)).thenReturn(groupName);
         Mockito.when(connection.getCapabilitiesRemote()).thenReturn(capabilityTypes);
         return new ExportKey(connection);
@@ -34,27 +32,26 @@ public class ExportKeyTest {
 
     @Test public void testEquals() throws Exception {
         List<CapabilityType> capabilityTypes = new ArrayList<>();
-        ExportKey exportKey = getKey(Version.Version4, false, null, capabilityTypes);
+        ExportKey exportKey = getKey(Version.Version4, null, capabilityTypes);
 
-        assertTrue(exportKey.equals(getKey(Version.Version4, false, null, new ArrayList<CapabilityType>())));
+        assertTrue(exportKey.equals(getKey(Version.Version4, null, new ArrayList<CapabilityType>())));
         assertTrue(exportKey.equals(exportKey));
         assertFalse(exportKey.equals(null));
 
-        assertFalse(exportKey.equals(getKey(Version.Version3, false, null, new ArrayList<CapabilityType>())));
-        assertFalse(exportKey.equals(getKey(Version.Version4, true, null, new ArrayList<CapabilityType>())));
-        assertFalse(exportKey.equals(getKey(Version.Version4, false, "wad", new ArrayList<CapabilityType>())));
+        assertFalse(exportKey.equals(getKey(Version.Version3, null, new ArrayList<CapabilityType>())));
+        assertFalse(exportKey.equals(getKey(Version.Version4, "wad", new ArrayList<CapabilityType>())));
 
         capabilityTypes.add(CapabilityType.Ipv4Unicast);
         capabilityTypes.add(CapabilityType.Ipv6Unicast);
-        assertFalse(exportKey.equals(getKey(Version.Version4, false, null, new ArrayList<CapabilityType>())));
+        assertFalse(exportKey.equals(getKey(Version.Version4, null, new ArrayList<CapabilityType>())));
 
         List<CapabilityType> capabilityTypes_ = new ArrayList<>();
         capabilityTypes_.add(CapabilityType.Ipv6Unicast);
         capabilityTypes_.add(CapabilityType.Ipv4Unicast);
-        assertTrue(exportKey.equals(getKey(Version.Version4, false, null, capabilityTypes_)));
+        assertTrue(exportKey.equals(getKey(Version.Version4, null, capabilityTypes_)));
 
-        assertEquals(exportKey.hashCode(), getKey(Version.Version4, false, null, capabilityTypes_).hashCode());
+        assertEquals(exportKey.hashCode(), getKey(Version.Version4, null, capabilityTypes_).hashCode());
         capabilityTypes_.add(CapabilityType.LoopDetection);
-        assertNotEquals(exportKey.hashCode(), getKey(Version.Version4, false, null, capabilityTypes_).hashCode());
+        assertNotEquals(exportKey.hashCode(), getKey(Version.Version4, null, capabilityTypes_).hashCode());
     }
 }

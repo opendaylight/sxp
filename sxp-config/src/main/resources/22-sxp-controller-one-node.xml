@@ -38,18 +38,20 @@
                         <sxp-node>
                             <!--name></name-->
                             <enabled>true</enabled>
-                            <node-id>127.0.0.1</node-id>
-                            <source-ip>127.0.0.1</source-ip>
+                            <node-id>0.0.0.0</node-id>
+                            <source-ip>0.0.0.0</source-ip>
                             <tcp-port>64999</tcp-port>
                             <version>version4</version>
                             <security>
                                 <password>password</password>
                             </security>
-                            <mapping-expanded>5</mapping-expanded>
+                            <mapping-expanded>150</mapping-expanded>
                             <description>ODL SXP Controller</description>
 
                             <!-- Binding format: prefix/length -->
-                            <master-database></master-database>
+                            <master-database>
+                            </master-database>
+
                             <!-- Timers setup: 0 to disable specific timer usability -->
                             <timers>
                                 <!-- Common -->

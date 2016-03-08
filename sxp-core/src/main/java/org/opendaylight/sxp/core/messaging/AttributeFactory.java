@@ -8,10 +8,6 @@
 
 package org.opendaylight.sxp.core.messaging;
 
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyAttributeFactory;
 import org.opendaylight.sxp.util.ArraysUtil;
@@ -58,6 +54,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.peer.sequence.attribute.PeerSequenceAttributesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.source.group.tag.attribute.SourceGroupTagAttributesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.sxp.node.id.attribute.SxpNodeIdAttributesBuilder;
+
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * AttributeFactory class contains logic for decoding and encoding Attributes
@@ -538,7 +538,7 @@ public final class AttributeFactory {
             attributeOptionalFields = decodeSxpNodeId(value);
             break;
         default:
-            attributeOptionalFields = decodeUnrecognized(value);
+            attributeOptionalFields = null;
             break;
         }
 
@@ -693,14 +693,6 @@ public final class AttributeFactory {
         attributesBuilder.setNodeId(NodeIdConv._decode(value));
         attributeBuilder.setSxpNodeIdAttributes(attributesBuilder.build());
         return attributeBuilder.build();
-    }
-
-    /**
-     * @param value Unimportant
-     * @return Gets null
-     */
-    private static AttributeOptionalFields decodeUnrecognized(byte[] value) {
-        return null;
     }
 
     /**
