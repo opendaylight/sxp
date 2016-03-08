@@ -16,7 +16,6 @@ import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
@@ -27,7 +26,6 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.mockito.Mockito.*;
 
@@ -37,26 +35,22 @@ import static org.mockito.Mockito.*;
         private static SxpNode sxpNode;
         private static BindingDispatcher dispatcher;
         private static ThreadsWorker worker;
-        private static MasterDatabaseInf databaseProvider;
+        private static org.opendaylight.sxp.util.database.spi.MasterDatabase databaseProvider;
         private static List<SxpConnection> sxpConnections;
 
         private SxpConnection mockConnection(boolean updateExported, boolean updateAll) {
                 SxpConnection connection = mock(SxpConnection.class);
-                when(connection.isUpdateExported()).thenReturn(updateExported);
-                when(connection.isUpdateAllExported()).thenReturn(updateAll);
                 when(connection.getVersion()).thenReturn(Version.Version4);
                 when(connection.getOwner()).thenReturn(sxpNode);
-                when(connection.getOutboundMonitor()).thenReturn(new AtomicLong(0));
-                when(connection.pollUpdateMessageOutbound()).thenReturn(mock(Callable.class));
                 return connection;
         }
 
         @Before public void init() throws Exception {
-                databaseProvider = mock(MasterDatabaseInf.class);
+                databaseProvider = mock(org.opendaylight.sxp.util.database.spi.MasterDatabase.class);
                 List<MasterDatabase> masterDatabases = new ArrayList<>();
                 masterDatabases.add(mock(MasterDatabase.class));
-                when(databaseProvider.partition(anyInt(), anyBoolean(), any(SxpBindingFilter.class))).thenReturn(
-                        masterDatabases);
+                /*when(databaseProvider.partition(anyInt(), anyBoolean(), any(SxpBindingFilter.class))).thenReturn(
+                        masterDatabases);*/
                 worker = mock(ThreadsWorker.class);
                 sxpNode = PowerMockito.mock(SxpNode.class);
                 PowerMockito.when(sxpNode.getWorker()).thenReturn(worker);
@@ -68,45 +62,14 @@ import static org.mockito.Mockito.*;
                 dispatcher = new BindingDispatcher(sxpNode);
         }
 
-        @Test public void testDispatch() throws Exception {
-                SxpConnection connection = mockConnection(false, true);
-                sxpConnections.add(mockConnection(true, false));
-                sxpConnections.add(connection);
-                dispatcher.dispatch();
-
-                verify(connection).resetUpdateExported();
-                verify(connection).setUpdateExported();
-                verify(connection).pushUpdateMessageOutbound(any(Callable.class));
-                verify(worker, atLeastOnce()).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
-                verify(databaseProvider).purgeAllDeletedBindings();
-                verify(databaseProvider).resetModified();
-
-                dispatcher.dispatch();
-                verify(worker, atLeastOnce()).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
-                verify(connection, times(2)).pushUpdateMessageOutbound(any(Callable.class));
-
-                sxpConnections.clear();
-                connection = mockConnection(true, false);
-                sxpConnections.add(connection);
-
-                dispatcher.dispatch();
-                verify(worker, atLeastOnce()).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
-                verify(connection, never()).pushUpdateMessageOutbound(any(Callable.class));
-        }
-
         @Test public void testCall() throws Exception {
                 SxpConnection connection = mockConnection(false, false);
                 sxpConnections.add(mockConnection(false, true));
                 sxpConnections.add(connection);
-                dispatcher.call();
 
-                verify(connection).setUpdateExported();
                 verify(worker).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
-                verify(connection).pushUpdateMessageOutbound(any(Callable.class));
 
-                dispatcher.call();
                 verify(worker).executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class));
-                verify(connection).pushUpdateMessageOutbound(any(Callable.class));
         }
 
         @Test public void testSetPartitionSize() throws Exception {

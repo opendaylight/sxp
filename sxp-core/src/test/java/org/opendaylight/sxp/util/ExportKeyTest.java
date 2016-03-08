@@ -26,7 +26,6 @@ public class ExportKeyTest {
             List<CapabilityType> capabilityTypes) {
         SxpConnection connection = Mockito.mock(SxpConnection.class);
         Mockito.when(connection.getVersion()).thenReturn(version);
-        Mockito.when(connection.isUpdateAllExported()).thenReturn(exportAll);
         Mockito.when(connection.getGroupName(FilterType.Outbound)).thenReturn(groupName);
         Mockito.when(connection.getCapabilitiesRemote()).thenReturn(capabilityTypes);
         return new ExportKey(connection);

@@ -8,24 +8,24 @@
 
 package org.opendaylight.sxp.util.inet;
 
+import com.google.common.net.InetAddresses;
+import org.opendaylight.sxp.util.ArraysUtil;
+import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequence;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.Peer;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.opendaylight.sxp.util.ArraysUtil;
-import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IetfInetUtil;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.binding.Sources;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.binding.SourcesBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.PeerSequence;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.PeerSequenceBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.peer.sequence.Peer;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.peer.sequence.PeerBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-
-import com.google.common.net.InetAddresses;
+import java.util.stream.Collectors;
 
 public final class NodeIdConv {
 
@@ -105,21 +105,6 @@ public final class NodeIdConv {
     }
 
     /**
-     * Creates Sources that consist of specified NodeIds
-     *
-     * @param nodeIds List of NodeIds used for Sources
-     * @return Sources generated from NodeIds
-     */
-    public static Sources createSources(List<NodeId> nodeIds) {
-        if (nodeIds == null) {
-            nodeIds = new ArrayList<>();
-        }
-        SourcesBuilder sourcesBuilder = new SourcesBuilder();
-        sourcesBuilder.setSource(new ArrayList<>(nodeIds));
-        return sourcesBuilder.build();
-    }
-
-    /**
      * Decode Node specific identifications from byte array
      *
      * @param array Byte Array that will be decoded
@@ -132,7 +117,7 @@ public final class NodeIdConv {
         while (array != null && array.length != 0) {
             NodeId nodeId = _decode(array);
             nodesIds.add(nodeId);
-            array = ArraysUtil.readBytes(array, IpPrefixConv.getBytesLength(getPrefixLength(nodeId)));
+            array = ArraysUtil.readBytes(array, IpPrefixConv.getBytesLength(32));
         }
         return nodesIds;
     }
@@ -158,50 +143,11 @@ public final class NodeIdConv {
         if (peerSequence == null || peerSequence.getPeer() == null || peerSequence.getPeer().isEmpty()) {
             return new ArrayList<>();
         }
-        List<NodeId> nodeIds = new ArrayList<>();
-        int i = 0;
-        while (true) {
-            boolean contain = false;
-            for (Peer peer : peerSequence.getPeer()) {
-                if (i == peer.getKey().getSeq()) {
-                    nodeIds.add(peer.getNodeId());
-                    i++;
-                    contain = true;
-                    break;
-                }
-            }
-            if (!contain) {
-                break;
-            }
-        }
-        return nodeIds;
-    }
-
-    /**
-     * Gets Prefix length of NodeId, return 32 since all NodeIds must have it
-     *
-     * @param nodeId NodeId where to check for Prefix length
-     * @return Length of prefix in NodeID
-     */
-    public static int getPrefixLength(NodeId nodeId) {
-        return 32;
-    }
-
-    /**
-     * Creates List of NodeIds from Sources
-     *
-     * @param sources Sources used for generation
-     * @return List of NodeIds contained in Sources
-     */
-    public static List<NodeId> getSources(Sources sources) {
-        if (sources == null || sources.getSource() == null || sources.getSource().isEmpty()) {
-            return new ArrayList<>();
-        }
-        List<NodeId> nodeIds = new ArrayList<>();
-        for (NodeId source : sources.getSource()) {
-            nodeIds.add(source);
-        }
-        return nodeIds;
+        return peerSequence.getPeer()
+                .stream()
+                .sorted((p1, p2) -> Integer.compare(p1.getSeq(), p2.getSeq()))
+                .map(Peer::getNodeId)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -298,15 +244,5 @@ public final class NodeIdConv {
      */
     public static String toString(PeerSequence peerSequence) {
         return toString(getPeerSequence(peerSequence));
-    }
-
-    /**
-     * Create String representation of Sources
-     *
-     * @param sources Sources used
-     * @return String representation of specified Sources
-     */
-    public static String toString(Sources sources) {
-        return toString(getSources(sources));
     }
 }

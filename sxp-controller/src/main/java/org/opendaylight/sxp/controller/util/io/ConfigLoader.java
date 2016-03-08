@@ -8,15 +8,6 @@
 
 package org.opendaylight.sxp.controller.util.io;
 
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-
 import com.google.common.base.Preconditions;
 import org.opendaylight.controller.config.yang.sxp.controller.conf.Connection;
 import org.opendaylight.controller.config.yang.sxp.controller.conf.SxpController;
@@ -26,8 +17,6 @@ import org.opendaylight.sxp.controller.util.database.DatastoreValidator;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
-import org.opendaylight.sxp.controller.util.database.access.MasterDatabaseAccessImpl;
-import org.opendaylight.sxp.controller.util.database.access.SxpDatabaseAccessImpl;
 import org.opendaylight.sxp.controller.util.exception.ConfigurationException;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.util.exception.connection.NoNetworkInterfacesException;
@@ -38,13 +27,8 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.DateAndTime;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.SourceBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroupBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentityBuilder;
@@ -58,8 +42,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.ConnectionKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabaseBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.master.database.Vpn;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.master.database.VpnBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.node.fields.SecurityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -72,6 +54,14 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 
 /**
  * <pre>
@@ -114,8 +104,6 @@ public class ConfigLoader {
                 datastoreValidator.validateSxpNodePath(nodeId, LogicalDatastoreType.CONFIGURATION);
 
                 datastoreValidator.validateSxpNodePath(nodeId, LogicalDatastoreType.OPERATIONAL);
-
-                datastoreValidator.validateSxpNodeDatabases(nodeId, LogicalDatastoreType.OPERATIONAL);
 
                 org.opendaylight.sxp.core.SxpNode node = parseNode(_nodeId, nodeConfiguration);
 
@@ -198,12 +186,11 @@ public class ConfigLoader {
         return connectionsBuilder.build();
     }
 
-    private Source parseMasterBindings(NodeId nodeId,
+    private void parseMasterBindings(NodeId nodeId,
             List<org.opendaylight.controller.config.yang.sxp.controller.conf.Binding> bindings) {
         DateAndTime timestamp = TimeConv.toDt(System.currentTimeMillis());
 
         // Core
-        List<PrefixGroup> _prefixGroups = new ArrayList<>();
         for (org.opendaylight.controller.config.yang.sxp.controller.conf.Binding binding : bindings) {
             // Configuration.
             Sgt sgt = binding.getSgt();
@@ -218,26 +205,8 @@ public class ConfigLoader {
                         NodeIdConv.toString(nodeId));
                 continue;
             }
-
-            // ODL
-            List<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding> _bindings = new ArrayList<>();
-            for (IpPrefix ipPrefix : ipPrefixes) {
-                BindingBuilder _binding = new BindingBuilder();
-                _binding.setIpPrefix(ipPrefix);
-                _binding.setTimestamp(timestamp);
-                _bindings.add(_binding.build());
-            }
-
-            PrefixGroupBuilder _prefixGroupBuilder = new PrefixGroupBuilder();
-            _prefixGroupBuilder.setSgt(sgt);
-            _prefixGroupBuilder.setBinding(_bindings);
-            _prefixGroups.add(_prefixGroupBuilder.build());
+            //TODO
         }
-
-        SourceBuilder _sourceBuilder = new SourceBuilder();
-        _sourceBuilder.setBindingSource(DatabaseBindingSource.Local);
-        _sourceBuilder.setPrefixGroup(_prefixGroups);
-        return _sourceBuilder.build();
     }
 
     private MasterDatabase parseMasterDatabase(NodeId nodeId,
@@ -245,28 +214,10 @@ public class ConfigLoader {
 
         MasterDatabaseBuilder masterDatabaseBuilder = new MasterDatabaseBuilder();
         if (configuration.getMasterDatabase() != null) {
-            List<Source> _sources = new ArrayList<>();
 
             if (configuration.getMasterDatabase().getBinding() != null) {
-                _sources.add(parseMasterBindings(nodeId, configuration.getMasterDatabase().getBinding()));
+                parseMasterBindings(nodeId, configuration.getMasterDatabase().getBinding());
             }
-
-            List<Vpn> _vpns = new ArrayList<>();
-            if (configuration.getMasterDatabase().getVpn() != null) {
-                List<Source> _sourcesVpn = new ArrayList<>();
-                for (org.opendaylight.controller.config.yang.sxp.controller.conf.Vpn vpn : configuration
-                        .getMasterDatabase().getVpn()) {
-
-                    _sourcesVpn.add(parseMasterBindings(nodeId, vpn.getBinding()));
-
-                    VpnBuilder vpnBuilder = new VpnBuilder();
-                    vpnBuilder.setName(vpn.getName());
-                    vpnBuilder.setSource(_sourcesVpn);
-                    _vpns.add(vpnBuilder.build());
-                }
-            }
-            masterDatabaseBuilder.setSource(_sources);
-            masterDatabaseBuilder.setVpn(_vpns);
         }
 
         return masterDatabaseBuilder.build();
@@ -328,7 +279,7 @@ public class ConfigLoader {
 
         SxpNodeIdentity node = nodeBuilder.build();
         try {
-            datastoreAccess.put(nodeIdentifier, node, LogicalDatastoreType.CONFIGURATION).get();
+            datastoreAccess.merge(nodeIdentifier, node, LogicalDatastoreType.CONFIGURATION).get();
         } catch (CancellationException | ExecutionException | InterruptedException e) {
             throw new ConfigurationException("Failed to create node \"" + nodeId
                     + "\" identity in configuration datastore");
@@ -340,15 +291,9 @@ public class ConfigLoader {
         // Local bindings.
         nodeBuilder.setMasterDatabase(parseMasterDatabase(nodeId, configuration));
 
-        SxpDatastoreImpl
-                sxpDatabaseProvider =
-                new SxpDatastoreImpl(new SxpDatabaseAccessImpl(NodeIdConv.toString(nodeId), datastoreAccess,
-                        LogicalDatastoreType.OPERATIONAL));
+        SxpDatastoreImpl sxpDatabaseProvider = new SxpDatastoreImpl(datastoreAccess, nodeId.getValue());
 
-        MasterDatastoreImpl
-                ipSgtMasterDatabaseProvider =
-                new MasterDatastoreImpl(new MasterDatabaseAccessImpl(NodeIdConv.toString(nodeId), datastoreAccess,
-                        LogicalDatastoreType.OPERATIONAL));
+        MasterDatastoreImpl ipSgtMasterDatabaseProvider = new MasterDatastoreImpl(datastoreAccess, nodeId.getValue());
 
         return org.opendaylight.sxp.core.SxpNode.createInstance(nodeId, nodeBuilder.build(), ipSgtMasterDatabaseProvider,
                 sxpDatabaseProvider);

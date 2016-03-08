@@ -21,17 +21,14 @@ import org.mockito.ArgumentCaptor;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.ConnectFacade;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
+import org.opendaylight.sxp.util.database.spi.SxpDatabase;
 import org.opendaylight.sxp.util.exception.unknown.UnknownSxpConnectionException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.sgt.match.SgtMatchesBuilder;
@@ -51,15 +48,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerTyp
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.network.topology.topology.node.Timers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.node.fields.Security;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -81,8 +76,8 @@ import static org.mockito.Mockito.*;
 
         private static SxpNode node;
         private static SxpNodeIdentity nodeIdentity;
-        private static MasterDatabaseInf databaseProvider;
-        private static SxpDatabaseInf sxpDatabaseProvider;
+        private static org.opendaylight.sxp.util.database.spi.MasterDatabase databaseProvider;
+        private static SxpDatabase sxpDatabaseProvider;
         private static ThreadsWorker worker;
         private static Timers timers;
         private static int ip4Adrres = 0;
@@ -106,8 +101,8 @@ import static org.mockito.Mockito.*;
                 when(nodeIdentity.getMappingExpanded()).thenReturn(150);
                 when(nodeIdentity.getTcpPort()).thenReturn(PortNumber.getDefaultInstance("64999"));
 
-                databaseProvider = mock(MasterDatabaseInf.class);
-                sxpDatabaseProvider = mock(SxpDatabaseInf.class);
+                databaseProvider = mock(org.opendaylight.sxp.util.database.spi.MasterDatabase.class);
+                sxpDatabaseProvider = mock(SxpDatabase.class);
                 node =
                         SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), nodeIdentity, databaseProvider,
                                 sxpDatabaseProvider, worker);
@@ -305,17 +300,17 @@ import static org.mockito.Mockito.*;
                 node.addConnection(mockConnection(ConnectionMode.Listener, ConnectionState.On));
                 node.shutdownConnections();
 
-                verify(sxpDatabaseProvider).purgeBindings((NodeId) any());
+                verify(sxpDatabaseProvider).deleteBindings((NodeId) any());
 
                 node.addConnection(mockConnection(ConnectionMode.Speaker, ConnectionState.On));
                 node.shutdownConnections();
 
-                verify(sxpDatabaseProvider).purgeBindings((NodeId) any());
+                verify(sxpDatabaseProvider).deleteBindings((NodeId) any());
 
                 node.addConnection(mockConnection(ConnectionMode.Listener, ConnectionState.On));
                 node.shutdownConnections();
 
-                verify(sxpDatabaseProvider, times(2)).purgeBindings((NodeId) any());
+                verify(sxpDatabaseProvider, times(2)).deleteBindings((NodeId) any());
         }
 
         @Test public void testStart() throws Exception {
@@ -330,22 +325,7 @@ import static org.mockito.Mockito.*;
         }
 
         @Test public void testPutLocalBindingsMasterDatabase() throws Exception {
-                MasterDatabase masterDatabase = mock(MasterDatabase.class);
-                List<Source> sourceList = new ArrayList<>();
-                Source source = mock(Source.class);
-                when(source.getBindingSource()).thenReturn(DatabaseBindingSource.Local);
-                sourceList.add(source);
-                List<PrefixGroup> prefixGroups = new ArrayList<>();
-                prefixGroups.add(mock(PrefixGroup.class));
-                when(source.getPrefixGroup()).thenReturn(prefixGroups);
-                when(masterDatabase.getSource()).thenReturn(sourceList);
-
-                node.putLocalBindingsMasterDatabase(masterDatabase);
-                verify(databaseProvider).addBindingsLocal(any(SxpNode.class), anyList());
-
-                when(source.getBindingSource()).thenReturn(DatabaseBindingSource.Sxp);
-                node.putLocalBindingsMasterDatabase(masterDatabase);
-                verify(databaseProvider).addBindingsLocal(any(SxpNode.class), anyList());
+                //TODO
         }
 
         @Test public void testRemoveConnection() throws Exception {

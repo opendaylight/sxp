@@ -28,19 +28,21 @@ import org.opendaylight.sxp.util.exception.message.attribute.TlvNotFoundExceptio
 import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownSxpMessageTypeException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.ErrorMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.ErrorMessage;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageLegacy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
 
 import java.net.UnknownHostException;
+import java.util.List;
 
 /**
  * SxpLegacy class provides logic for handling connection on Version 1/2/3
@@ -226,9 +228,9 @@ public class SxpLegacy implements Strategy {
     }
 
     @Override
-    public ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
-            throws UpdateMessageCompositionException {
+    public <T extends SxpBindingFields> ByteBuf onUpdateMessage(SxpConnection connection, List<T> deleteBindings,
+            List<T> addBindings, SxpBindingFilter bindingFilter) throws UpdateMessageCompositionException {
         // Compose new messages according to all|changed bindings and version.
-        return LegacyMessageFactory.createUpdate(masterDatabase, false, connection.getVersion());
+        return LegacyMessageFactory.createUpdate(deleteBindings, addBindings, connection.getVersion(), bindingFilter);
     }
 }
