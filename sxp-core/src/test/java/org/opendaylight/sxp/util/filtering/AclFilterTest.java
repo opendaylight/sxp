@@ -10,17 +10,14 @@ package org.opendaylight.sxp.util.filtering;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.opendaylight.sxp.util.database.MasterBindingIdentity;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Prefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.SourceBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroupBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.WildcardMask;
@@ -117,17 +114,14 @@ public class AclFilterTest {
     }
 
     private boolean filterOutbound(String prefix, int sgt) {
-        BindingBuilder bindingBuilder = new BindingBuilder();
+        MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
         if (prefix.contains(":")) {
             bindingBuilder.setIpPrefix(new IpPrefix(Ipv6Prefix.getDefaultInstance(prefix)));
         } else {
             bindingBuilder.setIpPrefix(new IpPrefix(Ipv4Prefix.getDefaultInstance(prefix)));
         }
-        PrefixGroupBuilder groupBuilder = new PrefixGroupBuilder();
-        groupBuilder.setSgt(new Sgt(sgt));
-        SourceBuilder sourceBuilder = new SourceBuilder();
-        return filter.filter(
-                MasterBindingIdentity.create(bindingBuilder.build(), groupBuilder.build(), sourceBuilder.build()));
+        bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
+        return filter.filter(bindingBuilder.build());
     }
 
     @Test public void testFilterSgtOnly() throws Exception {
