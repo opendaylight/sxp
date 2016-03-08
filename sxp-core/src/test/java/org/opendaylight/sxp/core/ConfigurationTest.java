@@ -8,15 +8,15 @@
 
 package org.opendaylight.sxp.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import org.junit.Test;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.network.topology.topology.node.Timers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ConfigurationTest {
 
@@ -68,7 +68,7 @@ public class ConfigurationTest {
                 assertEquals(4, (long) defaultValues.getMessageHeaderLengthLength());
                 assertEquals(4, (long) defaultValues.getMessageHeaderTypeLength());
                 assertEquals(4096, (long) defaultValues.getMessageLengthMax());
-                assertEquals(5, (long) defaultValues.getMessagesExportQuantity());
+                assertEquals(150, (long) defaultValues.getMessagesExportQuantity());
                 assertEquals(20, (long) defaultValues.getNodeConnectionsInitialSize());
                 assertEquals(64999, (long) defaultValues.getPort());
         }

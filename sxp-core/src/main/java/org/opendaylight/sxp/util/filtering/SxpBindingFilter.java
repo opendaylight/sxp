@@ -10,11 +10,9 @@ package org.opendaylight.sxp.util.filtering;
 
 import com.google.common.net.InetAddresses;
 import org.opendaylight.sxp.util.ArraysUtil;
-import org.opendaylight.sxp.util.database.MasterBindingIdentity;
-import org.opendaylight.sxp.util.database.SxpBindingIdentity;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.SgtMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.sgt.match.SgtMatches;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.sgt.match.SgtRange;
@@ -67,36 +65,9 @@ public abstract class SxpBindingFilter<T extends FilterEntries> {
         return peerGroupName;
     }
 
-    /**
-     * Filters SxpBindingIdentity according to provided SxpFilter
-     *
-     * @param identity SxpBindingIdentity checked
-     * @return If SxpBindingIdentity will be propagated
-     * @throws IllegalArgumentException If filter is set do different type of filtering
-     */
-    public boolean filter(SxpBindingIdentity identity) {
-        if (sxpFilter.getFilterType().equals(FilterType.Outbound)) {
-            throw new IllegalArgumentException("Outbound filter cannot filter inbound bindings");
-        }
+    public <R extends SxpBindingFields> boolean filter(R binding) {
         //noinspection unchecked
-        return filter((T) sxpFilter.getFilterEntries(), identity.getPrefixGroup().getSgt(),
-                identity.getBinding().getIpPrefix());
-    }
-
-    /**
-     * Filters MasterBindingIdentity according to provided SxpFilter
-     *
-     * @param identity MasterBindingIdentity checked
-     * @return If MasterBindingIdentity will be propagated
-     * @throws IllegalArgumentException If filter is set do different type of filtering
-     */
-    public boolean filter(MasterBindingIdentity identity) {
-        if (sxpFilter.getFilterType().equals(FilterType.Inbound)) {
-            throw new IllegalArgumentException("Inbound filter cannot filter outbound bindings");
-        }
-        //noinspection unchecked
-        return filter((T) sxpFilter.getFilterEntries(), identity.getPrefixGroup().getSgt(),
-                identity.getBinding().getIpPrefix());
+        return filter((T) sxpFilter.getFilterEntries(), binding.getSecurityGroupTag(), binding.getIpPrefix());
     }
 
     /**

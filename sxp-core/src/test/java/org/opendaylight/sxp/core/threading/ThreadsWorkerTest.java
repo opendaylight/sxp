@@ -358,7 +358,7 @@ import static org.mockito.Mockito.verify;
         });
 
         synchronized (monitor) {
-            monitor.wait(5000L);
+            monitor.wait(10000L);
         }
         assertEquals(114, monitor[0]);
         assertEquals(25, monitor[1]);

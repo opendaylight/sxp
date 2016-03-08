@@ -19,6 +19,7 @@ import org.mockito.Matchers;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
+import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
@@ -39,7 +40,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -64,10 +64,11 @@ import static org.mockito.Mockito.*;
                         new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 5));
                 PowerMockito.mockStatic(LegacyMessageFactory.class);
                 sxpNode = PowerMockito.mock(SxpNode.class);
+                when(connection.getOwner()).thenReturn(sxpNode);
                 Context context = PowerMockito.mock(Context.class);
                 PowerMockito.when(context.getOwner()).thenReturn(sxpNode);
+                PowerMockito.when(sxpNode.getWorker()).thenReturn(mock(ThreadsWorker.class));
                 when(connection.getContext()).thenReturn(context);
-                when(connection.getInboundMonitor()).thenReturn(new AtomicLong());
         }
 
         @Test public void testOnChannelActivation() throws Exception {
@@ -163,7 +164,7 @@ import static org.mockito.Mockito.*;
                 when(connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)).thenReturn(true);
                 sxpLegacy.onInputMessage(channelHandlerContext, connection, messageLegacy);
                 verify(connection).setUpdateOrKeepaliveMessageTimestamp();
-                verify(sxpNode).processUpdateMessage(any(UpdateMessageLegacy.class), any(SxpConnection.class));
+                verify(connection).processUpdateMessage(any(UpdateMessageLegacy.class));
 
                 when(connection.getState()).thenReturn(ConnectionState.Off);
                 when(connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)).thenReturn(false);
@@ -186,7 +187,8 @@ import static org.mockito.Mockito.*;
                 when(message.getType()).thenReturn(MessageType.PurgeAll);
 
                 sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
-                verify(connection).pushUpdateMessageInbound(any(Callable.class));
+                verify(sxpNode.getWorker()).executeTaskInSequence(any(Callable.class),
+                        eq(ThreadsWorker.WorkerType.INBOUND), any(SxpConnection.class));
         }
 
 }

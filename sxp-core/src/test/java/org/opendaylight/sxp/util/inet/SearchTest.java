@@ -9,34 +9,23 @@
 package org.opendaylight.sxp.util.inet;
 
 import org.junit.Test;
-import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Address;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.DateAndTime;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class SearchTest {
 
         @Test public void testGetBestLocalDeviceAddress() throws Exception {
                 assertNotEquals(null, Search.getBestLocalDeviceAddress());
-        }
-
-        @Test public void testGetExpandedBindings() throws Exception {
-                AtomicInteger expansionQuantity = new AtomicInteger(Short.MAX_VALUE);
-                assertEquals(1016, Search.getExpandedBindings(new BindingBuilder().setTimestamp(TimeConv.toDt(6542135))
-                                .setIpPrefix(IpPrefixConv.createPrefix("130.4.102.1/22"))
-                                .build(), expansionQuantity).size());
-                assertEquals(254, Search.getExpandedBindings(new BindingBuilder().setTimestamp(TimeConv.toDt(6542135))
-                                .setIpPrefix(IpPrefixConv.createPrefix("2001:db8::ff00:42:8329/120"))
-                                .build(), expansionQuantity).size());
         }
 
         @Test public void testGetAddress() throws Exception {
@@ -46,5 +35,28 @@ public class SearchTest {
                         Search.getAddress(new IpAddress(Ipv6Address.getDefaultInstance("2001:0:0:0:0:0:0:0"))));
                 assertNotEquals("2001:0:0:0:0:0:0:0",
                         Search.getAddress(new IpAddress(Ipv6Address.getDefaultInstance("2001:0:5:0:0:0:fe:0"))));
+        }
+
+        private <T extends SxpBindingFields> List<T> getBindings(String... strings) {
+                List<T> bindings = new ArrayList<>();
+                MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
+                for (String s : strings) {
+                        bindings.add((T) bindingBuilder.setIpPrefix(new IpPrefix(s.toCharArray())).build());
+                }
+                return bindings;
+        }
+
+        @Test public void testExpandBindings() throws Exception {
+                assertEquals(2, Search.expandBindings(getBindings("127.0.0.5/24"), 2).size());
+                assertEquals(1, Search.expandBindings(getBindings("127.0.0.5/32"), 20).size());
+                assertEquals(21, Search.expandBindings(getBindings("127.0.0.5/32","8.8.8.8/24"), 20).size());
+        }
+
+        @Test public void testExpandBinding() throws Exception {
+                assertEquals(1016, Search.expandBinding(
+                        new MasterDatabaseBindingBuilder().setIpPrefix(IpPrefixConv.createPrefix("130.4.102.1/30")).build(),
+                        1016).size());
+                assertEquals(254, Search.expandBinding(new MasterDatabaseBindingBuilder().setIpPrefix(
+                        IpPrefixConv.createPrefix("2001:db8::ff00:42:8329/120")).build(), 254).size());
         }
 }
