@@ -11,7 +11,7 @@ module sxp-database {
     description
         "Module defines the base YANG definitions for SXP databases.";
 
-    revision "2014-10-02" {
+    revision "2016-03-08" {
         description
                 "Reviewed revision of SXP database model";
     }
@@ -25,31 +25,26 @@ module sxp-database {
         description "Source group tag";
     }
 
-    typedef database-action {
-        type enumeration {
-            enum add;
-            enum delete;
-            enum none;
-        }
-    }
-
-    typedef database-binding-source {
-        type enumeration {
-            enum local;
-            enum sxp;
-        }
-    }
-
-    typedef database-type {
-        type enumeration {
-            enum master-database;
-            enum sxp-binding-database;
-        }
-    }
-
     // ***********************
     // SXP Databases Groupings
     // ***********************
+
+    grouping sxp-binding-fields {
+        leaf ip-prefix {
+            mandatory true;
+            type inet:ip-prefix;
+        }
+        leaf security-group-tag {
+            mandatory true;
+            type sgt;
+        }
+        leaf timestamp {
+            type ietf-yang:date-and-time;
+            description "Time when a node received a binding to trace most recently received
+                                    bindings";
+        }
+        uses peer-sequence-fields;
+    }
 
     grouping peer-sequence-fields {
         container peer-sequence {
@@ -68,39 +63,25 @@ module sxp-database {
     }
 
     grouping sxp-database-fields {
-        list path-group {
-            key "path-hash";
-            leaf path-hash {
-                description "Hash of the peer sequence";
-                type int32;
-            }
-            uses peer-sequence-fields;
-            list prefix-group {
-                description "Bindings by SGT";
-                key "sgt";
-                leaf sgt {
-                    type sgt;
-                    description "Assigned source-group tag";
+        list binding-database {
+            key "binding-type";
+            leaf binding-type {
+                type enumeration {
+                    enum active-bindings;
+                    enum reconciled-bindings;
                 }
-                list binding {
-                    key "ip-prefix";
-                    leaf ip-prefix {
-                        config false;
-                        type inet:ip-prefix;
-                        description "Assigned IPv4/IPv6 host IP or network address (prefix is less
-                                                than 32/64).";
+            }
+            container binding-sources {
+                list binding-source {
+                    key "source-id";
+                    leaf source-id {
+                        type sxppt:node-id;
                     }
-                    leaf timestamp {
-                        config false;
-                        type ietf-yang:date-and-time;
-                        description "Time when a node received a binding to trace most recently received
-                                                bindings";
-                    }
-                    leaf clean-up {
-                        config false;
-                        type boolean;
-                        description "Reconciliation timer: Mapping that could be deleted on the remote
-                                                side when the connection is down";
+                    container sxp-database-bindings {
+                        list sxp-database-binding {
+                            key "ip-prefix security-group-tag";
+                            uses sxp-binding-fields;
+                        }
                     }
                 }
             }
@@ -111,59 +92,9 @@ module sxp-database {
         description "The master database preserves sxp-database structure to simplify
                 copying the items between databases and UPDATE message construction
                 process.";
-        list source {
-            key "binding-source";
-            leaf binding-source {
-                description "Assigned data source that represents a source type (dynamic|static)";
-                type database-binding-source;
-            }
-            list prefix-group {
-                description "Bindings by SGT";
-                key "sgt";
-                leaf sgt {
-                    type sgt;
-                    description "Assigned source-group tag";
-                }
-                list binding {
-                    key "ip-prefix";
-                    leaf ip-prefix {
-                        type inet:ip-prefix;
-                        description "Assigned IP address";
-                    }
-                    uses peer-sequence-fields;
-                    container sources {
-                        description "Available binding sources within SXP network topology";
-                        leaf-list source {
-                            type sxppt:node-id;
-                        }
-                    }
-                    leaf timestamp {
-                        config false;
-                        type ietf-yang:date-and-time;
-                        description "Time when a node received a binding to trace most recently received
-                                                bindings";
-                    }
-                    leaf action {
-                        config false;
-                        type database-action;
-                        description "Actions are used to mark a binding for a further processing.
-                                                If a dispatcher provides a lookup into master database, it can
-                                                make a decision according to this binding action and construct
-                                                an UPDATE message, i.e. if a binding is new and added it goes
-                                                to AddAttribute, if a binding has been deleted it goes to DeleteAttribute.
-                                                This solution is generic for output UPDATE messages construction.
-                                                After messages export all deleted binding are removed from the
-                                                masted DB.";
-                    }
-                    leaf changed {
-                        config false;
-                        type boolean;
-                        description "Detection of a binding change. If a dispatcher provides a lookup
-                                                into the master database, it searches for changed bindings, so
-                                                an UPDATE message is constructed only with changed bindings.";
-                    }
-                }
-            }
+        list master-database-binding {
+            key "ip-prefix";
+            uses sxp-binding-fields;
         }
     }
 
@@ -193,16 +124,6 @@ module sxp-database {
         container master-database {
             config true;
             uses master-database-configuration-fields;
-            list vpn {
-                description "VPN related SXP databases";
-                key "name";
-                leaf name {
-                    mandatory true;
-                    type string;
-                    description "Assigned VPN label";
-                }
-                uses master-database-configuration-fields;
-            }
         }
     }
 }
