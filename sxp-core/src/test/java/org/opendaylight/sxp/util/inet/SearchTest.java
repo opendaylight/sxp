@@ -11,11 +11,8 @@ package org.opendaylight.sxp.util.inet;
 import org.junit.Test;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Address;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.DateAndTime;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -27,16 +24,6 @@ public class SearchTest {
 
         @Test public void testGetBestLocalDeviceAddress() throws Exception {
                 assertNotEquals(null, Search.getBestLocalDeviceAddress());
-        }
-
-        @Test public void testGetExpandedBindings() throws Exception {
-                AtomicInteger expansionQuantity = new AtomicInteger(Short.MAX_VALUE);
-                assertEquals(1016, Search.getExpandedBindings(new BindingBuilder().setTimestamp(TimeConv.toDt(6542135))
-                                .setIpPrefix(IpPrefixConv.createPrefix("130.4.102.1/22"))
-                                .build(), expansionQuantity).size());
-                assertEquals(254, Search.getExpandedBindings(new BindingBuilder().setTimestamp(TimeConv.toDt(6542135))
-                                .setIpPrefix(IpPrefixConv.createPrefix("2001:db8::ff00:42:8329/120"))
-                                .build(), expansionQuantity).size());
         }
 
         @Test public void testGetAddress() throws Exception {

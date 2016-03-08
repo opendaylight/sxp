@@ -17,7 +17,6 @@ import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
-import org.opendaylight.sxp.util.exception.message.UpdateMessageBindingSourceException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageCompositionException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
 import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
@@ -34,8 +33,9 @@ import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownSxpMessageTypeException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.InetAddressComparator;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
@@ -50,6 +50,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
 
 import java.net.UnknownHostException;
+import java.util.List;
 
 /**
  * Sxpv4 class provides logic for handling connection on Version 4
@@ -318,7 +319,7 @@ public final class Sxpv4 extends SxpLegacy {
                 throw new UpdateMessageConnectionStateException(connection.getState());
             }
             connection.setUpdateOrKeepaliveMessageTimestamp();
-            connection.getContext().getOwner().processUpdateMessage((UpdateMessage) message, connection);
+            connection.processUpdateMessage((UpdateMessage) message);
             return;
         } else if (message instanceof ErrorMessage) {
             throw new ErrorMessageReceivedException(((ErrorMessage) message).getInformation());
@@ -343,16 +344,13 @@ public final class Sxpv4 extends SxpLegacy {
     }
 
     @Override
-    public ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
-            throws UpdateMessageCompositionException {
-        // Supports: New implementations of IPv4 Binding, IPv6 Bindings, Subnet
-        // Bindings Expansion.
-        // Compose new messages according to all|changed bindings and version.
+    public <T extends SxpBindingFields> ByteBuf onUpdateMessage(SxpConnection connection, List<T> deleteBindings,
+            List<T> addBindings, SxpBindingFilter bindingFilter) throws UpdateMessageCompositionException {
         try {
-            return MessageFactory.createUpdate(masterDatabase, getOwner().getNodeId(), false,
-                    connection.getCapabilitiesRemote());
-        } catch (UpdateMessageBindingSourceException | SecurityGroupTagValueException | AttributeVariantException e) {
-            throw new UpdateMessageCompositionException(connection.getVersion(), connection.isUpdateAllExported(), e);
+            return MessageFactory.createUpdate(deleteBindings, addBindings, getOwner().getNodeId(),
+                    connection.getCapabilitiesRemote(), bindingFilter);
+        } catch (SecurityGroupTagValueException | AttributeVariantException e) {
+            throw new UpdateMessageCompositionException(connection.getVersion(), false, e);
         }
     }
 

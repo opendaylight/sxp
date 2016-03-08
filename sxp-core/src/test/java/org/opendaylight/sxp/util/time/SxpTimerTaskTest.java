@@ -63,12 +63,12 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
                         SxpConnection.ChannelHandlerContextType.SpeakerContext)).thenReturn(ctx);
                 KeepAliveTimerTask timerTask = new KeepAliveTimerTask(sxpConnection, 0);
 
-                when(sxpConnection.getTimestampUpdateMessageExport()).thenReturn(0l);
+                when(sxpConnection.getTimestampUpdateOrKeepAliveMessage()).thenReturn(0l);
                 timerTask.call();
                 verify(ctx).writeAndFlush(any());
                 verify(sxpConnection).setTimer(TimerType.KeepAliveTimer, timerTask.getPeriod());
 
-                when(sxpConnection.getTimestampUpdateMessageExport()).thenReturn(2 * System.currentTimeMillis());
+                when(sxpConnection.getTimestampUpdateOrKeepAliveMessage()).thenReturn(2 * System.currentTimeMillis());
                 timerTask.call();
                 verifyNoMoreInteractions(ctx);
                 verify(sxpConnection, times(2)).setTimer(TimerType.KeepAliveTimer, timerTask.getPeriod());

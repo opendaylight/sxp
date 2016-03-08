@@ -16,10 +16,13 @@ import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageCompositionException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * SXP supports various versions. The details of what is supported in each of
@@ -97,10 +100,11 @@ public interface Strategy {
          * Logic that generate message containing Bindings for export
          *
          * @param connection     SxpConnection that participate in communication
-         * @param masterDatabase MasterDatabase containing Bindings
+         * @param deleteBindings Bindings that will be deleted
+         * @param addBindings    Bindings that will be added
          * @return ByteBuf containing Update message
          * @throws UpdateMessageCompositionException If during generating of message error occurs
          */
-        ByteBuf onUpdateMessage(SxpConnection connection, MasterDatabase masterDatabase)
-                throws UpdateMessageCompositionException;
+        <T extends SxpBindingFields> ByteBuf onUpdateMessage(SxpConnection connection, List<T> deleteBindings,
+                List<T> addBindings, SxpBindingFilter bindingFilter) throws UpdateMessageCompositionException;
 }
