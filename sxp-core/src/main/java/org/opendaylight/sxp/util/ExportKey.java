@@ -22,7 +22,6 @@ import java.util.Objects;
 public class ExportKey {
 
     private final Version version;
-    private final boolean exportAll;
     private final String groupName;
     private final List<CapabilityType> capabilityTypes;
 
@@ -33,7 +32,6 @@ public class ExportKey {
      */
     public ExportKey(SxpConnection connection) {
         this.version = connection.getVersion();
-        this.exportAll = connection.isUpdateAllExported();
         this.groupName = connection.getGroupName(FilterType.Outbound);
         this.capabilityTypes = connection.getCapabilitiesRemote();
     }
@@ -44,15 +42,14 @@ public class ExportKey {
         if (o == null || getClass() != o.getClass())
             return false;
         ExportKey exportKey = (ExportKey) o;
-        return Objects.equals(exportAll, exportKey.exportAll) &&
-                Objects.equals(version, exportKey.version) &&
+        return Objects.equals(version, exportKey.version) &&
                 Objects.equals(groupName, exportKey.groupName) &&
                 capabilityTypes.containsAll(exportKey.capabilityTypes) &&
                 exportKey.capabilityTypes.containsAll(capabilityTypes);
     }
 
     @Override public int hashCode() {
-        int hash = Objects.hash(version, exportAll, groupName);
+        int hash = Objects.hash(version, groupName);
         for (CapabilityType type : capabilityTypes) {
             hash += Objects.hash(type);
         }

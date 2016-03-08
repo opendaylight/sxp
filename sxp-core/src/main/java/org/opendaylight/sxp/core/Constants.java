@@ -13,7 +13,7 @@ public final class Constants {
     private static final int MESSAGE_HEADER_LENGTH_LENGTH = 4;
     private static final int MESSAGE_HEADER_TYPE_LENGTH = 4;
     private static final int MESSAGE_LENGTH_MAX = 4096;
-    private static final int MESSAGE_EXPORT_QUANTITY = 5;
+    private static final int MESSAGE_EXPORT_QUANTITY = 150;
     private static final int NODE_CONNECTIONS_INITIAL_SIZE = 20;
     private static final int PORT = 64999;
 

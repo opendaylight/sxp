@@ -11,21 +11,16 @@ package org.opendaylight.sxp.util.inet;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.PeerSequenceBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.peer.sequence.Peer;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.peer.sequence.fields.peer.sequence.PeerBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.Peer;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 
 import java.net.Inet4Address;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class NodeIdConvTest {
 
@@ -78,14 +73,6 @@ public class NodeIdConvTest {
                 assertTrue(NodeIdConv.createPeerSequence(null).getPeer().isEmpty());
         }
 
-        @Test public void testCreateSources() throws Exception {
-                assertNotNull(NodeIdConv.createSources(nodeIds1));
-                assertNotNull(NodeIdConv.createSources(new ArrayList<NodeId>()));
-                assertNotNull(NodeIdConv.createSources(null));
-                assertEquals(3, NodeIdConv.createSources(nodeIds1).getSource().size());
-                assertTrue(NodeIdConv.createSources(null).getSource().isEmpty());
-        }
-
         @Test public void testDecode() throws Exception {
                 assertNotNull(NodeIdConv.decode(null));
                 assertNotNull(NodeIdConv.decode(new byte[] {}));
@@ -104,13 +91,6 @@ public class NodeIdConvTest {
                 assertNotNull(NodeIdConv.getPeerSequence(NodeIdConv.createPeerSequence(null)));
                 assertEquals(nodeIds1, NodeIdConv.getPeerSequence(NodeIdConv.createPeerSequence(nodeIds1)));
                 assertNotEquals(nodeIds1, NodeIdConv.getPeerSequence(NodeIdConv.createPeerSequence(nodeIds2)));
-        }
-
-        @Test public void testGetSources() throws Exception {
-                assertNotNull(NodeIdConv.getSources(null));
-                assertNotNull(NodeIdConv.getSources(NodeIdConv.createSources(null)));
-                assertEquals(nodeIds1, NodeIdConv.getSources(NodeIdConv.createSources(nodeIds1)));
-                assertNotEquals(nodeIds1, NodeIdConv.getSources(NodeIdConv.createSources(nodeIds2)));
         }
 
         @Test public void testToBytes() throws Exception {

@@ -15,7 +15,6 @@ import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.ErrorCodeDataLengthException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
-import org.opendaylight.sxp.util.exception.message.UpdateMessageBindingSourceException;
 import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeVariantException;
@@ -28,32 +27,30 @@ import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownSxpMessageTypeException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequence;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.ErrorMessageBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorSubCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.KeepaliveMessageBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessageBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.SxpHeader;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.SxpPayload;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.ErrorMessageBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.KeepaliveMessageBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessageBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageBuilder;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -281,125 +278,88 @@ public class MessageFactory {
     /**
      * Creates UpdateMessage using provided values
      *
-     * @param masterDatabase MasterDatabase containing Binding for export
+     * @param deleteBindings Bindings that will be deleted
+     * @param addBindings    Bindings that will be added
      * @param nodeId         NodeId included in message
-     * @param changed        If only changed Binding are exported
      * @return ByteBuf representation of UpdateMessage
-     * @throws UpdateMessageBindingSourceException If some binding source isn't Local or Sxp
      * @throws SecurityGroupTagValueException      If some Sgt isn't in rage [2, 65519]
      * @throws AttributeVariantException           If some attribute variant isn't supported
      */
-    public static ByteBuf createUpdate(MasterDatabase masterDatabase, NodeId nodeId, boolean changed,
-            List<CapabilityType> capabilities)
-            throws UpdateMessageBindingSourceException, SecurityGroupTagValueException, AttributeVariantException {
+    public static <R extends SxpBindingFields,T extends SxpBindingFields> ByteBuf createUpdate(List<R> deleteBindings, List<T> addBindings,
+            NodeId nodeId, List<CapabilityType> capabilities, SxpBindingFilter bindingFilter)
+            throws SecurityGroupTagValueException, AttributeVariantException {
         AttributeList attributes = new AttributeList();
+        List<IpPrefix> ipv4Prefixes = new ArrayList<>();
+        List<IpPrefix> ipv6Prefixes = new ArrayList<>();
 
         // Processing of binding delete attributes.
-        List<IpPrefix> removeIpv4 = new ArrayList<>();
-        List<IpPrefix> removeIpv6 = new ArrayList<>();
-        for (Source source : masterDatabase.getSource()) {
-            if (source.getPrefixGroup() != null) {
-                for (PrefixGroup prefixGroup : source.getPrefixGroup()) {
-                    if (prefixGroup.getBinding() != null) {
-                        for (Binding binding : prefixGroup.getBinding()) {
-                            if (changed && binding.isChanged() == null || changed && !binding.isChanged()) {
-                                continue;
-                            } else if (binding.getAction() == null
-                                    || !binding.getAction().equals(DatabaseAction.Delete)) {
-                                continue;
-                            } else if (binding.getIpPrefix().getIpv4Prefix() != null) {
-                                removeIpv4.add(binding.getIpPrefix());
-                            } else if (binding.getIpPrefix().getIpv6Prefix() != null) {
-                                removeIpv6.add(binding.getIpPrefix());
-                            }
-                        }
-                    }
+        if (deleteBindings != null && !deleteBindings.isEmpty()) {
+            deleteBindings.stream().forEach(b -> {
+                if (b.getIpPrefix().getIpv4Prefix() != null) {
+                    ipv4Prefixes.add(b.getIpPrefix());
+                } else if (b.getIpPrefix().getIpv6Prefix() != null) {
+                    ipv6Prefixes.add(b.getIpPrefix());
                 }
+            });
+            // Binding delete attributes include any of IPv4-Del-Prefix,
+            // IPv6-Del-Prefix, Del-IPv4, or Del-IPv6 attributes.
+            if (!ipv4Prefixes.isEmpty()) {
+                attributes.add(AttributeFactory.createIpv4DeletePrefix(ipv4Prefixes, AttributeFactory._oNpCe));
+                ipv4Prefixes.clear();
+            }
+            if (!ipv6Prefixes.isEmpty()) {
+                attributes.add(AttributeFactory.createIpv6DeletePrefix(ipv6Prefixes, AttributeFactory._oNpCe));
+                ipv6Prefixes.clear();
             }
         }
-        // Binding delete attributes include any of IPv4-Del-Prefix,
-        // IPv6-Del-Prefix, Del-IPv4, or Del-IPv6 attributes.
-        if (!removeIpv4.isEmpty()) {
-            attributes.add(AttributeFactory.createIpv4DeletePrefix(removeIpv4, AttributeFactory._oNpCe));
-        }
-        if (!removeIpv6.isEmpty()) {
-            attributes.add(AttributeFactory.createIpv6DeletePrefix(removeIpv6, AttributeFactory._oNpCe));
-        }
 
-        // Processing Source.
-        for (Source source : masterDatabase.getSource()) {
-            AttributeList _attributes = new AttributeList();
+        // Processing of binding add attributes.
+        if (addBindings != null && !addBindings.isEmpty()) {
+            Sgt sgt = null;
+            PeerSequence peerSequence = null;
+            for (T binding : addBindings) {
+                if (bindingFilter != null && bindingFilter.filter(binding))
+                    continue;
+                if ((!binding.getPeerSequence().equals(peerSequence) || !binding.getSecurityGroupTag().equals(sgt))) {
 
-            // Add-Prefix groups. Each Add-Prefix group starts with a
-            // Source-Group-Tag attribute.
-            boolean oneShot = false;
-            boolean added = false;
-
-            if (source.getPrefixGroup() != null) {
-                for (PrefixGroup prefixGroup : source.getPrefixGroup()) {
-                    List<IpPrefix> addIpv4 = new ArrayList<>();
-                    List<IpPrefix> addIpv6 = new ArrayList<>();
-                    List<NodeId> peerSequence = null;
-
-                    boolean _added = false;
-                    if (prefixGroup.getBinding() != null) {
-                        for (Binding binding : prefixGroup.getBinding()) {
-                            if (changed && binding.isChanged() == null || changed && !binding.isChanged()) {
-                                continue;
-                            } else if (binding.getAction() == null || !binding.getAction().equals(DatabaseAction.Add)) {
-                                continue;
-                            } else if (binding.getIpPrefix().getIpv4Prefix() != null) {
-                                addIpv4.add(binding.getIpPrefix());
-                                _added = true;
-                            } else if (binding.getIpPrefix().getIpv6Prefix() != null) {
-                                addIpv6.add(binding.getIpPrefix());
-                                _added = true;
-                            }
-
-                            if (_added && peerSequence == null) {
-                                if (source.getBindingSource().equals(DatabaseBindingSource.Sxp)) {
-                                    peerSequence = NodeIdConv.getPeerSequence(binding.getPeerSequence());
-                                } else if (source.getBindingSource().equals(DatabaseBindingSource.Local)) {
-                                    peerSequence = new ArrayList<>();
-                                } else {
-                                    throw new UpdateMessageBindingSourceException(source.getBindingSource());
-                                }
-                            }
-                        }
-                    }
-                    if (addIpv4.isEmpty() && addIpv6.isEmpty()) {
-                        continue;
-                    }
-
-                    peerSequence.add(0, nodeId);
-                    Attribute peerSequenceAttribute = AttributeFactory.createPeerSequence(peerSequence);
-
-                    if (Configuration.SET_COMPOSITION_UPDATE_MESSAGE_PEER_SEQUENCE_WITH_EACH_SGT) {
-                        _attributes.add(peerSequenceAttribute);
-                    } else if (!Configuration.SET_COMPOSITION_UPDATE_MESSAGE_PEER_SEQUENCE_WITH_EACH_SGT && !oneShot) {
-                        _attributes.add(peerSequenceAttribute);
-                        oneShot = true;
-                    }
-
-                    _attributes.add(AttributeFactory.createSourceGroupTag(prefixGroup.getSgt().getValue()));
-
-                    if (!addIpv4.isEmpty()) {
-                        _attributes.add(AttributeFactory.createIpv4AddPrefix(addIpv4, capabilities.contains(
+                    if (!ipv4Prefixes.isEmpty() && sgt != null && peerSequence != null) {
+                        attributes.add(AttributeFactory.createIpv4AddPrefix(ipv4Prefixes, capabilities.contains(
                                 CapabilityType.Ipv4Unicast) ? AttributeFactory._oNpCe : AttributeFactory._OnpCe));
-                        added = true;
+                        ipv4Prefixes.clear();
                     }
-                    if (!addIpv6.isEmpty()) {
-                        _attributes.add(AttributeFactory.createIpv6AddPrefix(addIpv6, capabilities.contains(
+                    if (!ipv6Prefixes.isEmpty() && sgt != null && peerSequence != null) {
+                        attributes.add(AttributeFactory.createIpv6AddPrefix(ipv6Prefixes, capabilities.contains(
                                 CapabilityType.Ipv6Unicast) ? AttributeFactory._oNpCe : AttributeFactory._OnpCe));
-                        added = true;
+                        ipv6Prefixes.clear();
                     }
+
+                    List<NodeId> peers = NodeIdConv.getPeerSequence(binding.getPeerSequence());
+                    peers.add(0, nodeId);
+                    attributes.add(AttributeFactory.createPeerSequence(peers));
+                    attributes.add(AttributeFactory.createSourceGroupTag(binding.getSecurityGroupTag().getValue()));
+
+                    sgt = binding.getSecurityGroupTag();
+                    peerSequence = binding.getPeerSequence();
                 }
+
+                if (binding.getIpPrefix().getIpv4Prefix() != null) {
+                    ipv4Prefixes.add(binding.getIpPrefix());
+                } else if (binding.getIpPrefix().getIpv6Prefix() != null) {
+                    ipv6Prefixes.add(binding.getIpPrefix());
+                }
+
             }
-            if (added) {
-                attributes.addAll(_attributes);
+            if (!ipv4Prefixes.isEmpty()) {
+                attributes.add(AttributeFactory.createIpv4AddPrefix(ipv4Prefixes, capabilities.contains(
+                        CapabilityType.Ipv4Unicast) ? AttributeFactory._oNpCe : AttributeFactory._OnpCe));
+                ipv4Prefixes.clear();
+            }
+            if (!ipv6Prefixes.isEmpty()) {
+                attributes.add(AttributeFactory.createIpv6AddPrefix(ipv6Prefixes, capabilities.contains(
+                        CapabilityType.Ipv6Unicast) ? AttributeFactory._oNpCe : AttributeFactory._OnpCe));
+                ipv6Prefixes.clear();
             }
         }
-
         return getMessage(MessageType.Update, attributes.toBytes());
     }
 

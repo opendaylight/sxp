@@ -8,6 +8,9 @@
 
 package org.opendaylight.sxp.core.behavior;
 
+import com.google.common.base.Preconditions;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
@@ -16,7 +19,8 @@ import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageCompositionException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
@@ -27,10 +31,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
+import java.util.List;
 
 /**
  * Context class is used for handling different behaviour in versions
@@ -197,13 +198,15 @@ public final class Context {
      * Logic that generate message containing Bindings for export
      *
      * @param connection     SxpConnection that participate in communication
-     * @param masterDatabase MasterDatabase containing Bindings
+     * @param deleteBindings Bindings that will be deleted
+     * @param addBindings    Bindings that will be added
      * @return ByteBuf containing Update message
      * @throws UpdateMessageCompositionException If during generating of message error occurs
      */
-    public ByteBuf executeUpdateMessageStrategy(SxpConnection connection, MasterDatabase masterDatabase)
+    public <T extends SxpBindingFields> ByteBuf executeUpdateMessageStrategy(SxpConnection connection,
+            List<T> deleteBindings, List<T> addBindings, SxpBindingFilter bindingFilter)
             throws UpdateMessageCompositionException {
-        return this.strategy.onUpdateMessage(connection, masterDatabase);
+        return this.strategy.onUpdateMessage(connection, deleteBindings, addBindings, bindingFilter);
     }
 
     /**

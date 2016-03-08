@@ -13,29 +13,24 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
+import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.SourceBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageLegacy;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageLegacy;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class LegacyMessageFactoryTest {
 
@@ -46,6 +41,14 @@ public class LegacyMessageFactoryTest {
                 message.readBytes(_message);
                 message.release();
                 return _message;
+        }
+
+        private MasterDatabaseBinding getBinding(int sgt, String prefix) throws UnknownPrefixException {
+                MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
+                bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
+                bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
+                bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+                return bindingBuilder.build();
         }
 
         @Test public void testCreateError() throws Exception {
@@ -124,39 +127,19 @@ public class LegacyMessageFactoryTest {
                 assertArrayEquals(result, toBytes(message));
         }
 
-        private PrefixGroup createPrefixGroup(DatabaseAction action, int sgt, String... bindings) {
-                PrefixGroup prefixGroup = mock(PrefixGroup.class);
-                when(prefixGroup.getSgt()).thenReturn(new Sgt(sgt));
-                List<Binding> bindingList = new ArrayList<>();
-                for (String binding : bindings) {
-                        BindingBuilder bindingBuilder = new BindingBuilder();
-                        bindingBuilder.setAction(action);
-                        bindingBuilder.setIpPrefix(new IpPrefix(binding.toCharArray()));
-                        bindingList.add(bindingBuilder.build());
-                }
-                when(prefixGroup.getBinding()).thenReturn(bindingList);
-                return prefixGroup;
-        }
-
         @Test public void testCreateUpdate() throws Exception {
-                MasterDatabase database = mock(MasterDatabase.class);
-                SourceBuilder sourceBuilder = new SourceBuilder();
-                List<PrefixGroup> prefixGroups = new ArrayList<>();
-                List<Source> sourceList = new ArrayList<>();
+                List<SxpBindingFields> add = new ArrayList<>(), dell = new ArrayList<>();
 
-                prefixGroups.add(createPrefixGroup(DatabaseAction.Delete, 10, "192.168.10.1/32"));
-                prefixGroups.add(createPrefixGroup(DatabaseAction.Delete, 30, "2000::1/128"));
-                prefixGroups.add(createPrefixGroup(DatabaseAction.Add, 10000, "192.168.0.1/32"));
-                prefixGroups.add(createPrefixGroup(DatabaseAction.Add, 20000, "2001::1/64", "10.10.10.10/30"));
-                prefixGroups.add(createPrefixGroup(DatabaseAction.Add, 30000, "2002::1/128"));
-                prefixGroups.add(createPrefixGroup(DatabaseAction.Add, 40000, "11.11.11.0/29"));
-                prefixGroups.add(createPrefixGroup(DatabaseAction.Add, 65000, "172.168.1.0/28"));
+                dell.add(getBinding(10, "192.168.10.1/32"));
+                dell.add(getBinding(30, "2000::1/128"));
+                add.add(getBinding(10000, "192.168.0.1/32"));
+                add.add(getBinding(20000, "2001::1/64"));
+                add.add(getBinding(20000, "10.10.10.10/30"));
+                add.add(getBinding(30000, "2002::1/128"));
+                add.add(getBinding(40000, "11.11.11.0/29"));
+                add.add(getBinding(65000, "172.168.1.0/28"));
 
-                sourceBuilder.setPrefixGroup(prefixGroups);
-                sourceList.add(sourceBuilder.build());
-                when(database.getSource()).thenReturn(sourceList);
-
-                ByteBuf message = LegacyMessageFactory.createUpdate(database, false, Version.Version1);
+                ByteBuf message = LegacyMessageFactory.createUpdate(dell, add, Version.Version1, null);
                 //192.168.10.1/32, 192.168.0.1/32
                 byte[]
                         result =
@@ -164,7 +147,7 @@ public class LegacyMessageFactoryTest {
                                 0, 14, -64, -88, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 39, 16};
                 assertArrayEquals(result, toBytes(message));
 
-                message = LegacyMessageFactory.createUpdate(database, false, Version.Version2);
+                message = LegacyMessageFactory.createUpdate(dell, add, Version.Version2, null);
                 //2000::1/128, 192.168.10.1/32, 192.168.0.1/32, 2002::1/128
                 result =
                         new byte[] {0, 0, 0, 100, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 4, -64, -88, 10, 1, 0, 0, 0, 4, 0, 0,
@@ -173,7 +156,7 @@ public class LegacyMessageFactoryTest {
                                 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 117, 48};
                 assertArrayEquals(result, toBytes(message));
 
-                message = LegacyMessageFactory.createUpdate(database, false, Version.Version3);
+                message = LegacyMessageFactory.createUpdate(dell, add, Version.Version3, null);
                 //ALL
                 result =
                         new byte[] {0, 0, 0, -20, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 4, -64, -88, 10, 1, 0, 0, 0, 4, 0, 0,

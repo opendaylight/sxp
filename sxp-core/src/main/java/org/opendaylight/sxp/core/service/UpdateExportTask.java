@@ -10,29 +10,29 @@ package org.opendaylight.sxp.core.service;
 
 import com.google.common.base.Preconditions;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
-import org.opendaylight.sxp.util.exception.message.UpdateMessageCompositionException;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 
 /**
  * UpdateExportTask class contains logic for Binding export
  */
-public final class UpdateExportTask implements Callable<Void> {
+public final class  UpdateExportTask implements Callable<Void> {
 
         protected static final Logger LOG = LoggerFactory.getLogger(UpdateExportTask.class.getName());
 
         private final SxpConnection connection;
         private final ByteBuf[] generatedMessages;
-        private final MasterDatabase[] partitions;
+        private final BiFunction<SxpConnection,SxpBindingFilter,ByteBuf>[] partitions;
         private final AtomicInteger messagesReleaseCounter;
 
         /**
@@ -43,7 +43,8 @@ public final class UpdateExportTask implements Callable<Void> {
          * @param partitions             Pool of bindings from which are messages generated
          * @param messagesReleaseCounter Monitor for releasing weak references of ByteBuf
          */
-        public UpdateExportTask(SxpConnection connection, ByteBuf[] generatedMessages, MasterDatabase[] partitions,
+        public UpdateExportTask(SxpConnection connection, ByteBuf[] generatedMessages,
+                BiFunction<SxpConnection, SxpBindingFilter, ByteBuf>[] partitions,
                 AtomicInteger messagesReleaseCounter) {
                 this.connection = Preconditions.checkNotNull(connection);
                 this.generatedMessages = Preconditions.checkNotNull(generatedMessages);
@@ -51,23 +52,20 @@ public final class UpdateExportTask implements Callable<Void> {
                 this.messagesReleaseCounter = Preconditions.checkNotNull(messagesReleaseCounter);
         }
 
+        public SxpConnection getConnection(){
+                return connection;
+        }
+
         @Override public Void call() {
                 //Generate messages
                 for (int i = 0; i < partitions.length; i++) {
-                        MasterDatabase data;
+                        BiFunction<SxpConnection,SxpBindingFilter,ByteBuf> data;
                         synchronized (partitions) {
                                 data = partitions[i];
                                 partitions[i] = null;
                         }
                         if (data != null) {
-                                ByteBuf message;
-                                try {
-                                        message =
-                                                connection.getContext().executeUpdateMessageStrategy(connection, data);
-                                } catch (UpdateMessageCompositionException e) {
-                                        LOG.error("{} Error creating update message {} ", connection, data, e);
-                                        message = PooledByteBufAllocator.DEFAULT.buffer(0);
-                                }
+                                ByteBuf message = data.apply(connection, connection.getFilter(FilterType.Outbound));
                                 synchronized (generatedMessages) {
                                         generatedMessages[i] = message;
                                         generatedMessages.notifyAll();
@@ -87,7 +85,6 @@ public final class UpdateExportTask implements Callable<Void> {
                                 } while (message == null);
                                 if (message.capacity() == 0) {
                                         LOG.warn("{} Cannot export empty message aborting export", connection);
-                                        connection.resetUpdateExported();
                                         freeReferences();
                                         return null;
                                 }
@@ -97,18 +94,15 @@ public final class UpdateExportTask implements Callable<Void> {
                                         SxpConnection.ChannelHandlerContextType.SpeakerContext)
                                         .writeAndFlush(generatedMessages[i].duplicate().retain());
                                 if (LOG.isTraceEnabled()) {
-                                        LOG.trace("{} {} UPDATEv{}(" + (connection.isUpdateAllExported() ? "C" : "A")
-                                                        + ") {}", connection, i, connection.getVersion().getIntValue(),
+                                        LOG.trace("{} {} UPDATEv{} {}", connection, i, connection.getVersion().getIntValue(),
                                                 MessageFactory.toString(generatedMessages[i]));
                                 }
                         }
-                        connection.setUpdateMessageExportTimestamp();
-                        connection.setUpdateAllExported();
+                        connection.setUpdateOrKeepaliveMessageTimestamp();
                 } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-                        LOG.error("{} Cannot find context aborting bindings export.", connection, e);
-                        connection.resetUpdateExported();
+                        LOG.warn("{} Cannot find context aborting bindings export.", connection, e);
                 } catch (InterruptedException e) {
-                        connection.resetUpdateExported();
+                        LOG.warn("{} Bindings export canceled.", connection, e);
                 }
                 freeReferences();
                 return null;

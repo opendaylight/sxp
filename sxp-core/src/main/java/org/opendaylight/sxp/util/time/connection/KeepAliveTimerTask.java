@@ -43,7 +43,7 @@ public class KeepAliveTimerTask extends SxpTimerTask<Void> {
 
         if (connection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext) && connection.isModeSpeaker()
                 && connection.isVersion4()) {
-            if (connection.getTimestampUpdateMessageExport() + TimeUnit.SECONDS.toMillis(getPeriod())
+            if (connection.getTimestampUpdateOrKeepAliveMessage() + TimeUnit.SECONDS.toMillis(getPeriod())
                     <= System.currentTimeMillis()) {
                 ByteBuf keepAlive = MessageFactory.createKeepalive();
                 try {

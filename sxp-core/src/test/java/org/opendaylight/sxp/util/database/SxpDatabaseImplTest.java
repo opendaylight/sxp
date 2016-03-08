@@ -12,315 +12,241 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.filtering.PrefixListFilter;
-import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Prefix;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.DateAndTime;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroupBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroupBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.BindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.MaskRangeOperator;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.PrefixListMask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.entry.PrefixListMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.entry.PrefixListMatchBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.match.fields.MaskBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.SgtMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.PrefixListFilterEntriesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.prefix.list.filter.entries.PrefixListEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.prefix.list.filter.entries.PrefixListEntryBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.sxp.database.Vpn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class SxpDatabaseImplTest {
 
-        @Rule public ExpectedException exception = ExpectedException.none();
+    private static SxpDatabaseImpl database;
 
-        private static SxpDatabase sxpDatabase;
-        private static SxpDatabaseImpl database;
-        private static List<PathGroup> pathGroupList;
-        private static boolean bindingsAsCleanUp;
+    @Before public void init() {
+        database = new SxpDatabaseImpl();
+    }
 
-        @Before public void init() {
-                pathGroupList = new ArrayList<>();
-                sxpDatabase = mock(SxpDatabase.class);
-                when(sxpDatabase.getVpn()).thenReturn(new ArrayList<Vpn>());
-                when(sxpDatabase.getPathGroup()).thenReturn(pathGroupList);
-                database = new SxpDatabaseImpl(sxpDatabase);
-                bindingsAsCleanUp = false;
+    private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, String... peers) {
+        MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
+        bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
+        PeerSequenceBuilder sequenceBuilder = new PeerSequenceBuilder();
+        sequenceBuilder.setPeer(new ArrayList<>());
+        for (int i = 0; i < peers.length; i++) {
+            sequenceBuilder.getPeer()
+                    .add(new PeerBuilder().setSeq(i).setNodeId(NodeId.getDefaultInstance(peers[i])).build());
         }
+        bindingBuilder.setPeerSequence(sequenceBuilder.build());
+        return (T) bindingBuilder.build();
+    }
 
-        private Binding getBinding(String prefix) {
-                BindingBuilder bindingBuilder = new BindingBuilder();
-                bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
-                bindingBuilder.setTimestamp(DateAndTime.getDefaultInstance("2015-06-30T12:00:00Z"));
-                bindingBuilder.setCleanUp(bindingsAsCleanUp);
-                return bindingBuilder.build();
+    private <T extends SxpBindingFields> List<T> mergeBindings(T... binding) {
+        return new ArrayList<>(Arrays.asList(binding));
+    }
+
+    private <T extends SxpBindingFields, R extends SxpBindingFields> void assertBindings(List<T> bindings1,
+            List<R> bindings2) {
+        bindings1.stream()
+                .forEach(b -> assertTrue(bindings2.stream()
+                        .anyMatch(r -> r.getSecurityGroupTag().getValue().equals(b.getSecurityGroupTag().getValue())
+                                && Arrays.equals(r.getIpPrefix().getValue(), b.getIpPrefix().getValue()))));
+    }
+
+    private PrefixListEntry getPrefixListEntry(FilterEntryType entryType, PrefixListMatch prefixListMatch) {
+        PrefixListEntryBuilder builder = new PrefixListEntryBuilder();
+        builder.setEntryType(entryType);
+        builder.setPrefixListMatch(prefixListMatch);
+        return builder.build();
+    }
+
+    private PrefixListMatch getPrefixListMatch(String prefix) {
+        PrefixListMatchBuilder builder = new PrefixListMatchBuilder();
+        if (prefix.contains(":")) {
+            builder.setIpPrefix(new IpPrefix(Ipv6Prefix.getDefaultInstance(prefix)));
+        } else {
+            builder.setIpPrefix(new IpPrefix(Ipv4Prefix.getDefaultInstance(prefix)));
         }
+        return builder.build();
+    }
 
-        private PrefixGroup getPrefixGroup(int sgt, String... prefixes) {
-                PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder();
-                List<Binding> bindings = new ArrayList<>();
-                for (String s : prefixes) {
-                        bindings.add(getBinding(s));
-                }
-                prefixGroupBuilder.setBinding(bindings);
-                prefixGroupBuilder.setSgt(new Sgt(sgt));
-                return prefixGroupBuilder.build();
-        }
+    @Test public void testDeleteBindings() throws Exception {
+        assertEquals(0, database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10")).size());
+        assertEquals(0,
+                database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), new ArrayList<>())
+                        .size());
 
-        private PathGroup getPathGroup(List<NodeId> nodeIds, PrefixGroup... prefixGroups_) {
-                PathGroupBuilder pathGroupBuilder = new PathGroupBuilder();
-                List<PrefixGroup> prefixGroups = new ArrayList<>();
-                pathGroupBuilder.setPrefixGroup(prefixGroups);
-                for (PrefixGroup group : prefixGroups_) {
-                        prefixGroups.add(group);
-                }
-                pathGroupBuilder.setPeerSequence(NodeIdConv.createPeerSequence(nodeIds));
-                pathGroupBuilder.setPathHash(nodeIds.hashCode() + 25);
-                return pathGroupBuilder.build();
-        }
+        database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),
+                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 200, "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 100, "10.10.10.10")));
 
-        private List<NodeId> getNodeIds(String... peerSeq) {
-                List<NodeId> nodeIds = new ArrayList<>();
-                for (String s : peerSeq) {
-                        nodeIds.add(NodeId.getDefaultInstance(s));
-                }
-                return nodeIds;
-        }
+        database.addBinding(NodeId.getDefaultInstance("20.20.20.20"),
+                mergeBindings(getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 10, "20.20.20.20")));
 
-        private SxpBindingIdentity getSxpBindingIdentity(int sgt, String prefix, String... peerSeq) {
-                SxpBindingIdentity identity;
-                PrefixGroup prefixGroup = getPrefixGroup(sgt, prefix);
-                List<NodeId> nodeIds = getNodeIds(peerSeq);
-                identity =
-                        SxpBindingIdentity.create(getBinding(prefix), prefixGroup, getPathGroup(nodeIds, prefixGroup));
-                return identity;
-        }
+        database.addBinding(NodeId.getDefaultInstance("30.30.30.30"),
+                mergeBindings(getBinding("25.2.2.6/32", 20, "30.30.30.30", "20.20.20.20", "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 10, "30.30.30.30")));
 
-        @Test public void testAddBindings() throws Exception {
-                SxpDatabase sxpDatabase_ = mock(SxpDatabase.class);
-                List<PathGroup> pathGroups = new ArrayList<>();
-                pathGroups.add(getPathGroup(getNodeIds("127.0.0.1", "127.0.0.2"), getPrefixGroup(10, "127.0.0.1/32")));
-                pathGroups.add(getPathGroup(getNodeIds("127.0.0.1", "127.0.0.2"), getPrefixGroup(10, "127.0.0.1/32")));
-                pathGroups.add(getPathGroup(getNodeIds("127.0.0.1", "127.0.0.2"), getPrefixGroup(10, "0.0.0.0/0")));
-                when(sxpDatabase_.getPathGroup()).thenReturn(pathGroups);
-                database.addBindings(sxpDatabase_);
-                pathGroups.remove(2);
-                pathGroups.remove(0);
-                assertEquals(pathGroups, pathGroupList);
-                bindingsAsCleanUp = true;
-                pathGroups.add(getPathGroup(getNodeIds("127.0.0.5", "127.0.0.10"),
-                        getPrefixGroup(10, "2001:0:0:0:0:0:0:1/128")));
-                pathGroups.add(getPathGroup(getNodeIds("127.0.0.1", "127.0.0.2"), getPrefixGroup(10, "127.0.0.1/32")));
-                database.addBindings(sxpDatabase_);
-                pathGroups.remove(2);
-                assertEquals(pathGroups, pathGroupList);
-                database.addBindings(null);
-                assertEquals(pathGroups, pathGroupList);
-        }
+        assertEquals(0,
+                database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), new ArrayList<>())
+                        .size());
+        assertEquals(2, database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10")).size());
+        assertEquals(0, database.getBindings(NodeId.getDefaultInstance("10.10.10.10")).size());
 
-        private boolean containsPrefixGroup(PrefixGroup group, List<PathGroup> pathGroups) {
-                boolean found = false;
-                for (PathGroup pathGroup : pathGroups) {
-                        found = found || pathGroup.getPrefixGroup().contains(group);
-                }
-                return found;
-        }
+        assertEquals(1, database.deleteBindings(NodeId.getDefaultInstance("20.20.20.20"),
+                mergeBindings(getBinding("1.1.1.1/32", 10, "20.20.20.20"))).size());
+        assertBindings(database.getBindings(NodeId.getDefaultInstance("20.20.20.20")),
+                mergeBindings(getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10")));
 
-        @Test public void testCleanUpBindings() throws Exception {
-                bindingsAsCleanUp = true;
-                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.1"), getPrefixGroup(10, "127.0.0.1/32")));
-                pathGroupList.add(
-                        getPathGroup(getNodeIds("127.0.0.1", "127.0.1.0"), getPrefixGroup(10, "127.0.0.15/32")));
-                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.5", "127.0.0.10"),
-                        getPrefixGroup(10, "2001:0:0:0:0:0:0:1/128")));
+        assertBindings(database.getBindings(NodeId.getDefaultInstance("30.30.30.30")),
+                mergeBindings(getBinding("25.2.2.6/32", 20, "30.30.30.30", "20.20.20.20", "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 10, "30.30.30.30")));
+    }
 
-                database.cleanUpBindings(NodeId.getDefaultInstance("127.0.0.1"));
-                assertFalse(containsPrefixGroup(getPrefixGroup(10, "127.0.0.1/32"), pathGroupList));
-                assertFalse(containsPrefixGroup(getPrefixGroup(10, "127.0.0.15/32"), pathGroupList));
+    @Test public void testFilterDatabase() throws Exception {
+        List<PrefixListEntry> prefixListEntryList = new ArrayList<>();
+        PrefixListFilterEntriesBuilder builder = new PrefixListFilterEntriesBuilder();
+        builder.setPrefixListEntry(prefixListEntryList);
+        prefixListEntryList.add(getPrefixListEntry(FilterEntryType.Permit, getPrefixListMatch("127.0.0.0/16")));
+        SxpFilterBuilder filterBuilder = new SxpFilterBuilder();
+        filterBuilder.setFilterType(FilterType.Inbound);
+        filterBuilder.setFilterEntries(builder.build());
+        PrefixListFilter filter = new PrefixListFilter(filterBuilder.build(), "TEST");
 
-                database.cleanUpBindings(NodeId.getDefaultInstance("127.0.0.10"));
-                assertTrue(containsPrefixGroup(getPrefixGroup(10, "2001:0:0:0:0:0:0:1/128"), pathGroupList));
+        //Fill DB
+        database.addBinding(NodeId.getDefaultInstance("127.0.0.1"),
+                mergeBindings(getBinding("127.25.0.1/32", 10, "127.0.0.1"),
+                        getBinding("127.0.0.15/32", 20, "127.0.0.1", "127.0.1.0"),
+                        getBinding("2001:0:0:0:0:0:0:1/128", 30, "127.0.0.5", "127.0.0.10")));
+        //DB to be removed
+        assertBindings(SxpDatabase.filterDatabase(database, NodeId.getDefaultInstance("127.0.0.1"), filter),
+                mergeBindings(getBinding("127.25.0.1/32", 10), getBinding("2001:0:0:0:0:0:0:1/128", 30)));
+    }
 
-                bindingsAsCleanUp = false;
-                pathGroupList.add(
-                        getPathGroup(getNodeIds("127.0.0.8", "127.0.0.20"), getPrefixGroup(10, "80.2.2.1/32")));
-                database.cleanUpBindings(NodeId.getDefaultInstance("127.0.0.8"));
-                assertTrue(containsPrefixGroup(getPrefixGroup(10, "80.2.2.1/32"), pathGroupList));
+    @Test public void testGetReplaceForBindings() throws Exception {
+        database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),
+                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 200, "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 100, "10.10.10.10")));
 
-                exception.expect(NodeIdNotDefinedException.class);
-                database.cleanUpBindings(null);
-        }
+        database.addBinding(NodeId.getDefaultInstance("20.20.20.20"),
+                mergeBindings(getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 10, "20.20.20.20")));
 
-        @Test public void testDeleteBindings() throws Exception {
-                //Fill DB
-                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.1"), getPrefixGroup(10, "127.0.0.1/32")));
-                pathGroupList.add(
-                        getPathGroup(getNodeIds("127.0.0.1", "127.0.1.0"), getPrefixGroup(20, "127.0.0.15/32")));
-                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.5", "127.0.0.10"),
-                        getPrefixGroup(30, "2001:0:0:0:0:0:0:1/128")));
+        database.addBinding(NodeId.getDefaultInstance("30.30.30.30"),
+                mergeBindings(getBinding("25.2.2.6/32", 20, "30.30.30.30", "20.20.20.20", "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 10, "30.30.30.30")));
 
-                //DB to be removed
-                SxpDatabase sxpDatabase_ = mock(SxpDatabase.class);
-                when(sxpDatabase_.getPathGroup()).thenReturn(pathGroupList);
-                database.deleteBindings(sxpDatabase_);
-                assertTrue(pathGroupList.isEmpty());
+        database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), mergeBindings(getBinding("2.2.2.2/32", 200)));
+        assertBindings(SxpDatabase.getReplaceForBindings(database, mergeBindings()), mergeBindings());
 
-                List<PathGroup> pathGroups = new ArrayList<>();
-                pathGroups.add(getPathGroup(getNodeIds("127.0.0.1"), getPrefixGroup(10, "127.0.0.1/32")));
-                pathGroups.add(getPathGroup(getNodeIds("127.0.0.1", "127.0.1.0"), getPrefixGroup(20, "127.0.0.15/32")));
-                pathGroups.add(getPathGroup(getNodeIds("127.0.0.5", "127.0.0.10"),
-                        getPrefixGroup(30, "2001:0:0:0:0:0:0:1/128")));
-                when(sxpDatabase_.getPathGroup()).thenReturn(pathGroups);
+        assertBindings(SxpDatabase.getReplaceForBindings(database, mergeBindings(getBinding("2.2.2.2/32", 200))),
+                mergeBindings(getBinding("2.2.2.2/32", 20)));
 
-                //Fill DB
-                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.1"), getPrefixGroup(10, "127.0.0.1/32")));
-                pathGroupList.add(
-                        getPathGroup(getNodeIds("0.0.25.1", "0.0.10.0"), getPrefixGroup(200, "128.0.0.15/32")));
-                pathGroupList.add(getPathGroup(getNodeIds("0.0.0.50", "0.0.0.100"),
-                        getPrefixGroup(300, "2001:1:0:0:0:0:0:1/128")));
+        database.deleteBindings(NodeId.getDefaultInstance("20.20.20.20"), mergeBindings(getBinding("2.2.2.2/32", 20)));
 
-                database.deleteBindings(sxpDatabase_);
-                assertFalse(containsPrefixGroup(getPrefixGroup(10, "127.0.0.1/32"), pathGroupList));
-                assertTrue(containsPrefixGroup(getPrefixGroup(200, "128.0.0.15/32"), pathGroupList));
-                assertTrue(containsPrefixGroup(getPrefixGroup(300, "2001:1:0:0:0:0:0:1/128"), pathGroupList));
-        }
+        assertBindings(SxpDatabase.getReplaceForBindings(database, mergeBindings(getBinding("2.2.2.2/32", 20))),
+                mergeBindings(getBinding("2.2.2.2/32", 200)));
+        assertBindings(SxpDatabase.getReplaceForBindings(database, mergeBindings(getBinding("2.2.2.2/32", 254))),
+                mergeBindings(getBinding("2.2.2.2/32", 200)));
+        assertBindings(SxpDatabase.getReplaceForBindings(database, mergeBindings(getBinding("25.2.2.2/32", 20))),
+                mergeBindings());
+    }
 
-        @Test public void testPurgeBindings() throws Exception {
-                //Fill DB
-                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.1"), getPrefixGroup(10, "127.0.0.1/32")));
-                pathGroupList.add(
-                        getPathGroup(getNodeIds("127.0.0.1", "127.0.1.0"), getPrefixGroup(20, "127.0.0.15/32")));
-                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.5", "127.0.0.10"),
-                        getPrefixGroup(30, "2001:0:0:0:0:0:0:1/128")));
+    @Test public void testAddBinding() throws Exception {
+        assertEquals(0, database.addBinding(NodeId.getDefaultInstance("1.1.1.1"), mergeBindings()).size());
+        assertEquals(0, database.getBindings().size());
 
-                List<PathGroup> pathGroups = new ArrayList<>();
-                pathGroups.add(getPathGroup(getNodeIds("127.0.0.1"), getPrefixGroup(10, "127.0.0.1/32")));
-                pathGroups.add(getPathGroup(getNodeIds("127.0.0.1", "127.0.1.0"), getPrefixGroup(20, "127.0.0.15/32")));
+        database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),
+                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("1.1.1.1/32", 10, "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 100, "10.10.10.10")));
 
-                database.purgeBindings(NodeId.getDefaultInstance("127.0.0.5"));
-                assertEquals(pathGroups, pathGroupList);
+        database.addBinding(NodeId.getDefaultInstance("20.20.20.20"),
+                mergeBindings(getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 200, "20.20.20.20")));
 
-                database.purgeBindings(NodeId.getDefaultInstance("127.127.0.5"));
-                assertEquals(pathGroups, pathGroupList);
+        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 10, "10.10.10.10"),
+                getBinding("1.1.1.1/32", 100, "10.10.10.10"),
+                getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
+                getBinding("2.2.2.2/32", 200, "20.20.20.20")));
 
-                database.purgeBindings(NodeId.getDefaultInstance("127.0.0.1"));
-                assertTrue(pathGroupList.isEmpty());
+        assertBindings(database.getBindings(NodeId.getDefaultInstance("10.10.10.10")),
+                mergeBindings(getBinding("1.1.1.1/32", 10, "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 100, "10.10.10.10")));
+        assertBindings(database.getBindings(NodeId.getDefaultInstance("20.20.20.20")),
+                mergeBindings(getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 200, "20.20.20.20")));
+    }
 
-                exception.expect(NodeIdNotDefinedException.class);
-                database.purgeBindings(null);
-        }
+    @Test public void testReconcileBindings() throws Exception {
+        database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),
+                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("1.1.1.1/32", 10, "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 100, "10.10.10.10")));
 
-        @Test public void testReadBindings() throws Exception {
-                //Fill DB
-                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.1"), getPrefixGroup(10, "127.0.0.1/32")));
-                pathGroupList.add(
-                        getPathGroup(getNodeIds("127.0.0.2", "127.0.2.2"), getPrefixGroup(100, "127.0.1.1/32")));
-                List<SxpBindingIdentity> sxpBindingIdentities = new ArrayList<>();
-                sxpBindingIdentities.add(getSxpBindingIdentity(10, "127.0.0.1/32", "127.0.0.1"));
-                sxpBindingIdentities.add(getSxpBindingIdentity(100, "127.0.1.1/32", "127.0.0.2", "127.0.2.2"));
-                assertEquals(sxpBindingIdentities, database.readBindings());
+        database.addBinding(NodeId.getDefaultInstance("20.20.20.20"),
+                mergeBindings(getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 200, "20.20.20.20")));
 
-                sxpBindingIdentities.clear();
-                SxpDatabaseImpl database_ = new SxpDatabaseImpl();
-                assertEquals(sxpBindingIdentities, database_.readBindings());
-        }
+        database.setReconciliation(NodeId.getDefaultInstance("50.50.50.50"));
 
-        @Test public void testSetAsCleanUp() throws Exception {
-                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.1"), getPrefixGroup(10, "127.0.0.1/32")));
-                pathGroupList.add(
-                        getPathGroup(getNodeIds("127.0.1.1", "127.0.2.2"), getPrefixGroup(100, "127.0.1.1/32")));
-                database.setAsCleanUp(NodeId.getDefaultInstance("127.0.0.1"));
-                bindingsAsCleanUp = true;
-                assertTrue(containsPrefixGroup(getPrefixGroup(10, "127.0.0.1/32"), pathGroupList));
-                assertFalse(containsPrefixGroup(getPrefixGroup(100, "127.0.1.1/32"), pathGroupList));
-                database.setAsCleanUp(NodeId.getDefaultInstance("127.0.1.1"));
-                assertTrue(containsPrefixGroup(getPrefixGroup(10, "127.0.0.1/32"), pathGroupList));
-                assertTrue(containsPrefixGroup(getPrefixGroup(100, "127.0.1.1/32"), pathGroupList));
+        assertBindings(database.getBindings(NodeId.getDefaultInstance("10.10.10.10")),
+                mergeBindings(getBinding("1.1.1.1/32", 10, "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 100, "10.10.10.10")));
+        assertBindings(database.getBindings(NodeId.getDefaultInstance("20.20.20.20")),
+                mergeBindings(getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 200, "20.20.20.20")));
 
-                assertFalse(containsPrefixGroup(getPrefixGroup(100, "0.0.1.1/32"), pathGroupList));
+        database.setReconciliation(NodeId.getDefaultInstance("10.10.10.10"));
+        database.reconcileBindings(NodeId.getDefaultInstance("20.20.20.20"));
+        database.reconcileBindings(NodeId.getDefaultInstance("50.50.50.50"));
 
-                exception.expect(NodeIdNotDefinedException.class);
-                database.setAsCleanUp(null);
-        }
+        assertBindings(database.getBindings(NodeId.getDefaultInstance("10.10.10.10")),
+                mergeBindings(getBinding("1.1.1.1/32", 10, "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 100, "10.10.10.10")));
+        assertBindings(database.getBindings(NodeId.getDefaultInstance("20.20.20.20")),
+                mergeBindings(getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 200, "20.20.20.20")));
 
-        @Test public void testToString() throws Exception {
-                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.1"), getPrefixGroup(10, "127.0.0.1/32")));
-                pathGroupList.add(
-                        getPathGroup(getNodeIds("127.0.0.1", "127.0.1.0"), getPrefixGroup(10, "127.0.0.15/32")));
-                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.5", "127.0.0.10"),
-                        getPrefixGroup(10, "2001:0:0:0:0:0:0:1/128")));
+        database.reconcileBindings(NodeId.getDefaultInstance("10.10.10.10"));
 
-                assertEquals("SxpDatabaseImpl\n" + " 127.0.0.1\n" + "  10 127.0.0.1/32 [2015-06-30T12:00:00Z]\n"
-                                + " 127.0.0.1,127.0.1.0\n" + "  10 127.0.0.15/32 [2015-06-30T12:00:00Z]\n"
-                                + " 127.0.0.5,127.0.0.10\n" + "  10 2001:0:0:0:0:0:0:1/128 [2015-06-30T12:00:00Z]",
-                        database.toString());
-        }
+        assertEquals(0, database.getBindings(NodeId.getDefaultInstance("10.10.10.10")).size());
+        assertBindings(database.getBindings(NodeId.getDefaultInstance("20.20.20.20")),
+                mergeBindings(getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 200, "20.20.20.20")));
+    }
 
-        private PrefixListEntry getPrefixListEntry(FilterEntryType entryType, PrefixListMatch prefixListMatch) {
-                PrefixListEntryBuilder builder = new PrefixListEntryBuilder();
-                builder.setEntryType(entryType);
-                builder.setPrefixListMatch(prefixListMatch);
-                return builder.build();
-        }
+    @Test public void testToString() throws Exception {
+        assertEquals("SxpDatabaseImpl\n", database.toString());
 
-        private PrefixListMatch getPrefixListMatch(String prefix) {
-                PrefixListMatchBuilder builder = new PrefixListMatchBuilder();
-                if (prefix.contains(":")) {
-                        builder.setIpPrefix(new IpPrefix(Ipv6Prefix.getDefaultInstance(prefix)));
-                } else {
-                        builder.setIpPrefix(new IpPrefix(Ipv4Prefix.getDefaultInstance(prefix)));
-                }
-                return builder.build();
-        }
+        database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),
+                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("1.1.1.1/32", 10, "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 100, "10.10.10.10")));
 
-        @Test public void testFilterDatabase() throws Exception {
-                //SETUP FILTER
-                List<PrefixListEntry> prefixListEntryList = new ArrayList<>();
-                PrefixListFilterEntriesBuilder builder = new PrefixListFilterEntriesBuilder();
-                builder.setPrefixListEntry(prefixListEntryList);
-                prefixListEntryList.add(getPrefixListEntry(FilterEntryType.Permit, getPrefixListMatch("50.0.0.0/16")));
-                SxpFilterBuilder filterBuilder = new SxpFilterBuilder();
-                filterBuilder.setFilterType(FilterType.Inbound);
-                filterBuilder.setFilterEntries(builder.build());
-                PrefixListFilter filter = new PrefixListFilter(filterBuilder.build(), "TEST");
-
-                //Fill DB
-                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.1"), getPrefixGroup(10, "127.0.0.1/32")));
-                pathGroupList.add(
-                        getPathGroup(getNodeIds("127.0.0.1", "127.0.1.0"), getPrefixGroup(20, "127.0.0.15/32")));
-                pathGroupList.add(getPathGroup(getNodeIds("127.0.0.5", "127.0.0.10"),
-                        getPrefixGroup(30, "2001:0:0:0:0:0:0:1/128")));
-
-                //DB to be removed
-                SxpDatabase sxpDatabase_ = mock(SxpDatabase.class);
-                when(sxpDatabase_.getPathGroup()).thenReturn(pathGroupList);
-                SxpDatabase
-                        database =
-                        SxpDatabaseImpl.filterDatabase(sxpDatabase_, filter, NodeId.getDefaultInstance("127.0.0.1"));
-
-                assertTrue(containsPrefixGroup(getPrefixGroup(10, "127.0.0.1/32"), database.getPathGroup()));
-                assertTrue(containsPrefixGroup(getPrefixGroup(20, "127.0.0.15/32"), database.getPathGroup()));
-                assertFalse(containsPrefixGroup(getPrefixGroup(30, "2001:1:0:0:0:0:0:1/128"), database.getPathGroup()));
-        }
+        database.addBinding(NodeId.getDefaultInstance("20.20.20.20"),
+                mergeBindings(getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 200, "20.20.20.20")));
+        assertEquals("SxpDatabaseImpl\n" + "\t10 1.1.1.1/32\n" + "\t100 1.1.1.1/32\n" + "\t20 2.2.2.2/32\n"
+                + "\t200 2.2.2.2/32\n", database.toString());
+    }
 }
