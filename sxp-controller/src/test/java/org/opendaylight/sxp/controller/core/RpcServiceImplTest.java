@@ -8,21 +8,8 @@
 
 package org.opendaylight.sxp.controller.core;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
+import com.google.common.base.Optional;
+import com.google.common.util.concurrent.CheckedFuture;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,7 +17,6 @@ import org.junit.runner.RunWith;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
-import org.opendaylight.sxp.controller.util.database.access.MasterDatabaseAccessImpl;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
@@ -59,17 +45,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.up
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.NewBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBindingBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.SourceBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.SourceKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroupBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.binding.SourcesBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.acl.entry.AclMatch;
@@ -85,7 +61,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.ConnectionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -93,8 +68,16 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import com.google.common.base.Optional;
-import com.google.common.util.concurrent.CheckedFuture;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({MasterDatastoreImpl.class, DatastoreAccess.class, SxpNode.class})
 public class RpcServiceImplTest {
@@ -135,37 +118,20 @@ public class RpcServiceImplTest {
                 when(datastoreAccess.put(any(InstanceIdentifier.class), any(DataObject.class),
                         any(LogicalDatastoreType.class))).thenReturn(checkedFuture);
                 service = new RpcServiceImpl(datastoreAccess);
-                when(node.getBindingMasterDatabase()).thenReturn(new MasterDatastoreImpl(
-                        new MasterDatabaseAccessImpl("0.0.0.0", datastoreAccess, LogicalDatastoreType.OPERATIONAL)));
+                when(node.getBindingMasterDatabase()).thenReturn(new MasterDatastoreImpl(datastoreAccess, "0.0.0.0"));
         }
 
-        private Binding getBinding(String prefix) {
-                BindingBuilder bindingBuilder = new BindingBuilder();
-                List<NodeId> nodeIds = new ArrayList<>();
-                if (prefix.contains(":")) {
-                        bindingBuilder.setIpPrefix(new IpPrefix(Ipv6Prefix.getDefaultInstance(prefix)));
-                } else {
-                        bindingBuilder.setIpPrefix(new IpPrefix(Ipv4Prefix.getDefaultInstance(prefix)));
-                        nodeIds.add(NodeId.getDefaultInstance(prefix.split("/")[0]));
-                }
-                bindingBuilder.setKey(new BindingKey(bindingBuilder.getIpPrefix()));
-                SourcesBuilder sourcesBuilder = new SourcesBuilder();
-                sourcesBuilder.setSource(nodeIds);
-                bindingBuilder.setSources(sourcesBuilder.build());
-                return bindingBuilder.build();
-        }
-
-        private org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.configuration.fields.Binding getBinding(
+        private org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.Binding getBinding(
                 String prefix, String sgt) {
-                org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.configuration.fields.BindingBuilder
+                org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingBuilder
                         bindingBuilder =
-                        new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.configuration.fields.BindingBuilder();
+                        new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingBuilder();
 
                 bindingBuilder.setSgt(Sgt.getDefaultInstance(sgt));
                 List<IpPrefix> ipPrefixes = new ArrayList<>();
                 bindingBuilder.setIpPrefix(ipPrefixes);
                 bindingBuilder.setKey(
-                        new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.configuration.fields.BindingKey(
+                        new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingKey(
                                 bindingBuilder.getSgt()));
                 if (prefix.contains(":")) {
                         ipPrefixes.add(new IpPrefix(Ipv6Prefix.getDefaultInstance(prefix)));
@@ -175,67 +141,10 @@ public class RpcServiceImplTest {
                 return bindingBuilder.build();
         }
 
-        private PrefixGroup getPrefixGroup(int sgt, String... prefixes) {
-                PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder();
-                List<Binding> bindings = new ArrayList<>();
-                for (String s : prefixes) {
-                        bindings.add(getBinding(s));
-                }
-                prefixGroupBuilder.setBinding(bindings);
-                prefixGroupBuilder.setSgt(new Sgt(sgt));
-                return prefixGroupBuilder.build();
-        }
-
-        private Source getSource(PrefixGroup... prefixGroups_) {
-                SourceBuilder sourceBuilder = new SourceBuilder();
-                List<PrefixGroup> prefixGroups = new ArrayList<>();
-                sourceBuilder.setPrefixGroup(prefixGroups);
-                for (PrefixGroup group : prefixGroups_) {
-                        prefixGroups.add(group);
-                }
-                sourceBuilder.setBindingSource(DatabaseBindingSource.Local);
-                sourceBuilder.setKey(new SourceKey(sourceBuilder.getBindingSource()));
-                return sourceBuilder.build();
-        }
-
-        private MasterDatabase getMasterDatabase(Source... sources_) {
-                MasterDatabaseBuilder masterDatabaseBuilder = new MasterDatabaseBuilder();
-                List<Source> sources = new ArrayList<>();
-                for (Source source : sources_) {
-                        sources.add(source);
-                }
-                masterDatabaseBuilder.setSource(sources);
-                return masterDatabaseBuilder.build();
-        }
-
-        @Test public void testGetBindingsSources() throws Exception {
-                List<NodeId>
-                        nodeIds =
-                        RpcServiceImpl.getBindingsSources(getMasterDatabase(
-                                getSource(getPrefixGroup(10, "0.0.0.0/32", "1.1.1.1/32"),
-                                        getPrefixGroup(50, "5.5.5.5/32"), getPrefixGroup(150, "5.5.5.5/32"))));
-                assertNotNull(nodeIds);
-                assertTrue(nodeIds.contains(NodeId.getDefaultInstance("0.0.0.0")));
-                assertTrue(nodeIds.contains(NodeId.getDefaultInstance("1.1.1.1")));
-                assertTrue(nodeIds.contains(NodeId.getDefaultInstance("5.5.5.5")));
-                assertFalse(nodeIds.contains(NodeId.getDefaultInstance("5.5.5.50")));
-        }
-
-        @Test public void testGetNodeBindings() throws Exception {
-                List<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.configuration.fields.Binding>
-                        bindings =
-                        RpcServiceImpl.getNodeBindings(getMasterDatabase(
-                                        getSource(getPrefixGroup(10, "0.0.0.0/32", "1.1.1.1/32"),
-                                                getPrefixGroup(50, "5.5.5.5/32"), getPrefixGroup(150, "0.0.0.0/32"))));
-                assertNotNull(bindings);
-                assertBinding(bindings, "0.0.0.0/32", 10);
-                assertBinding(bindings, "0.0.0.0/32", 150);
-        }
-
         private void assertBinding(
-                List<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.configuration.fields.Binding> bindings,
+                List<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.Binding> bindings,
                 String prefix, int sgt) {
-                for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.configuration.fields.Binding binding : bindings) {
+                for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.Binding binding : bindings) {
                         if (binding.getSgt().getValue().equals(sgt)) {
                                 for (IpPrefix ipPrefix : binding.getIpPrefix()) {
                                         if (ipPrefix.getIpv4Prefix().getValue().equals(prefix)) {
@@ -348,10 +257,6 @@ public class RpcServiceImplTest {
                 input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
                 Optional optional = mock(Optional.class);
                 when(optional.isPresent()).thenReturn(true);
-                when(optional.get()).thenReturn(getMasterDatabase(
-                                getSource(getPrefixGroup(10, "0.0.0.0/32", "1.1.1.1/32"),
-                                        getPrefixGroup(50, "5.5.5.5/32"), getPrefixGroup(150, "0.0.0.0/32"))),
-                        NodeId.getDefaultInstance("0.0.0.0"));
                 when(checkedFuture.get()).thenReturn(optional);
 
                 input.setIpPrefix(new IpPrefix(Ipv4Prefix.getDefaultInstance("0.0.0.0/32")));
@@ -383,10 +288,6 @@ public class RpcServiceImplTest {
         @Test public void testGetNodeBindings1() throws Exception {
                 Optional optional = mock(Optional.class);
                 when(optional.isPresent()).thenReturn(true);
-                when(optional.get()).thenReturn(getMasterDatabase(
-                                getSource(getPrefixGroup(10, "0.0.0.0/32", "1.1.1.1/32"),
-                                        getPrefixGroup(50, "5.5.5.5/32"), getPrefixGroup(150, "0.0.0.0/32"))),
-                        NodeId.getDefaultInstance("0.0.0.0"));
                 when(checkedFuture.get()).thenReturn(optional);
                 GetNodeBindingsInputBuilder input = new GetNodeBindingsInputBuilder();
                 input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
