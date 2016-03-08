@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.controller.util.database.access;
 
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.CheckedFuture;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -21,8 +22,9 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import java.util.concurrent.ExecutionException;
+
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
@@ -153,4 +155,70 @@ public class DatastoreAccessTest {
                 access.read(null, null);
         }
 
+        @Test public void testDeleteSynchronous() throws Exception {
+                WriteTransaction transaction = mock(WriteTransaction.class);
+                when(transaction.submit()).thenReturn(mock(CheckedFuture.class));
+                InstanceIdentifier identifier = mock(InstanceIdentifier.class);
+
+                when(transactionChain.newWriteOnlyTransaction()).thenReturn(transaction);
+                assertTrue(access.deleteSynchronous(identifier, LogicalDatastoreType.OPERATIONAL));
+
+                verify(transaction).delete(LogicalDatastoreType.OPERATIONAL, identifier);
+
+                when(transaction.submit()).thenThrow(ExecutionException.class);
+                assertFalse(access.deleteSynchronous(identifier, LogicalDatastoreType.OPERATIONAL));
+        }
+
+        @Test public void testMergeSynchronous() throws Exception {
+                WriteTransaction transaction = mock(WriteTransaction.class);
+                when(transaction.submit()).thenReturn(mock(CheckedFuture.class));
+                InstanceIdentifier identifier = mock(InstanceIdentifier.class);
+                DataObject dataObject = mock(DataObject.class);
+
+                when(transactionChain.newWriteOnlyTransaction()).thenReturn(transaction);
+                assertTrue(access.mergeSynchronous(identifier, dataObject, LogicalDatastoreType.OPERATIONAL));
+
+                verify(transaction).merge(LogicalDatastoreType.OPERATIONAL, identifier, dataObject);
+
+                when(transaction.submit()).thenThrow(ExecutionException.class);
+                assertFalse(access.mergeSynchronous(identifier, dataObject, LogicalDatastoreType.OPERATIONAL));
+        }
+
+        @Test public void testPutSynchronous() throws Exception {
+                WriteTransaction transaction = mock(WriteTransaction.class);
+                when(transaction.submit()).thenReturn(mock(CheckedFuture.class));
+                InstanceIdentifier identifier = mock(InstanceIdentifier.class);
+                DataObject dataObject = mock(DataObject.class);
+
+                when(transactionChain.newWriteOnlyTransaction()).thenReturn(transaction);
+                assertTrue(access.putSynchronous(identifier, dataObject, LogicalDatastoreType.OPERATIONAL));
+
+                verify(transaction).put(LogicalDatastoreType.OPERATIONAL, identifier, dataObject);
+
+                when(transaction.submit()).thenThrow(ExecutionException.class);
+                assertFalse(access.putSynchronous(identifier, dataObject, LogicalDatastoreType.OPERATIONAL));
+        }
+
+        @Test public void testReadSynchronous() throws Exception {
+                Optional optional = mock(Optional.class);
+                when(optional.isPresent()).thenReturn(true);
+                when(optional.get()).thenReturn(mock(DataObject.class));
+
+                CheckedFuture future = mock(CheckedFuture.class);
+                when(future.get()).thenReturn(optional);
+
+                ReadOnlyTransaction transaction = mock(ReadOnlyTransaction.class);
+                when(transaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(
+                        future);
+                InstanceIdentifier identifier = mock(InstanceIdentifier.class);
+
+                when(transactionChain.newReadOnlyTransaction()).thenReturn(transaction);
+                assertNotNull(access.readSynchronous(identifier, LogicalDatastoreType.OPERATIONAL));
+
+                verify(transaction).read(LogicalDatastoreType.OPERATIONAL, identifier);
+
+                when(transaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenThrow(
+                        ExecutionException.class);
+                assertNull(access.readSynchronous(identifier, LogicalDatastoreType.OPERATIONAL));
+        }
 }

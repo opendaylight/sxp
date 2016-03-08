@@ -39,13 +39,13 @@
                             <!--name></name-->
                             <enabled>true</enabled>
                             <node-id>127.0.0.1</node-id>
-                            <source-ip>127.0.0.1</source-ip>
+                            <source-ip>0.0.0.0</source-ip>
                             <tcp-port>64999</tcp-port>
                             <version>version4</version>
                             <security>
                                 <password>password</password>
                             </security>
-                            <mapping-expanded>5</mapping-expanded>
+                            <mapping-expanded>0</mapping-expanded>
                             <description>ODL SXP Controller</description>
 
                             <!-- Binding format: prefix/length -->

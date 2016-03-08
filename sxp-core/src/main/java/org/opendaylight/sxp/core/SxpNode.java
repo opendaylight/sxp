@@ -22,20 +22,16 @@ import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
-import org.opendaylight.sxp.core.service.BindingManager;
 import org.opendaylight.sxp.core.service.ConnectFacade;
-import org.opendaylight.sxp.core.service.Service;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.Security;
-import org.opendaylight.sxp.util.database.Database;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
+import org.opendaylight.sxp.util.database.SxpDatabase;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.connection.NoNetworkInterfacesException;
 import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
-import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
-import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownSxpConnectionException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
@@ -44,25 +40,22 @@ import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
 import org.opendaylight.tcpmd5.jni.NativeSupportUnavailableException;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.node.fields.SecurityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +81,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * The source-group tag exchange protocol (SXP) aware node implementation. SXP
  * is a control protocol to propagate IP address to Source Group Tag (SGT)
  * binding information across network devices.
- * <p>
  * Source groups are the endpoints connecting to the network that have common
  * network policies. Each source group is identified by a unique SGT value. The
  * SGT to which an endpoint belongs can be assigned statically or dynamically,
@@ -161,28 +153,25 @@ public final class SxpNode {
             addressToSxpConnection =
             new HashMap<>(Configuration.getConstants().getNodeConnectionsInitialSize());
 
-    protected volatile MasterDatabaseInf _masterDatabase = null;
-
-    protected volatile SxpDatabaseInf _sxpDatabase = null;
+    private final MasterDatabaseInf _masterDatabase;
+    private final SxpDatabaseInf _sxpDatabase;
 
     private final HandlerFactory handlerFactoryClient = new HandlerFactory(MessageDecoder.createClientProfile(this));
-
     private final HandlerFactory handlerFactoryServer = new HandlerFactory(MessageDecoder.createServerProfile(this));
 
     private SxpNodeIdentityBuilder nodeBuilder;
-
     private NodeId nodeId;
 
     private Channel serverChannel;
-
     protected InetAddress sourceIp;
 
-    private final Service svcBindingManager, svcBindingDispatcher;
+    private final BindingDispatcher svcBindingDispatcher;
+    private final BindingHandler svcBindingHandler;
     private final ThreadsWorker worker;
 
     /** Common timers setup. */
     private HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(6);
-    private final Map<String,SxpPeerGroupBuilder> peerGroupMap = new HashMap<>();
+    private final Map<String, SxpPeerGroupBuilder> peerGroupMap = new HashMap<>();
 
     /**
      * Default constructor that creates and start SxpNode using provided values
@@ -213,8 +202,8 @@ public final class SxpNode {
         this._sxpDatabase = Preconditions.checkNotNull(sxpDatabase);
 
         addConnections(nodeBuilder.getConnections());
-        svcBindingManager = new BindingManager(this);
         svcBindingDispatcher = new BindingDispatcher(this);
+        svcBindingHandler = new BindingHandler(this, svcBindingDispatcher);
 
         // Start services.
         if (nodeBuilder.isEnabled()) {
@@ -228,7 +217,7 @@ public final class SxpNode {
      * @param group SxpPeerGroup to be checked on overlap
      * @return SxpPeerGroup that overlaps the specified one or null if there is no overlap
      */
-    private SxpPeerGroup checkPeerGroupOverlap(SxpPeerGroupBuilder group){
+    private SxpPeerGroup checkPeerGroupOverlap(SxpPeerGroupBuilder group) {
         Set<SxpPeer> peerSet1 = new HashSet<>();
         if (group.getSxpPeers() != null && group.getSxpPeers().getSxpPeer() != null) {
             peerSet1.addAll(group.getSxpPeers().getSxpPeer());
@@ -471,7 +460,7 @@ public final class SxpNode {
      * @return Removed SxpFilter
      */
     public SxpFilter removeFilterFromPeerGroup(String peerGroupName, FilterType filterType) {
-        synchronized (peerGroupMap){
+        synchronized (peerGroupMap) {
             SxpPeerGroupBuilder peerGroup = peerGroupMap.get(peerGroupName);
             if (peerGroup == null || filterType == null) {
                 return null;
@@ -536,18 +525,6 @@ public final class SxpNode {
         }
         for (Connection connection : connections.getConnection()) {
             addConnection(connection);
-        }
-    }
-
-    /**
-     * Notifies BindingManager to remove Bindings of specified NodeId,
-     * with Flag CleanUp
-     *
-     * @param nodeID NodeId that filters removed Bindings
-     */
-    public void cleanUpBindings(NodeId nodeID) {
-        if (svcBindingManager instanceof BindingManager) {
-            ((BindingManager) svcBindingManager).cleanUpBindings(nodeID);
         }
     }
 
@@ -659,14 +636,12 @@ public final class SxpNode {
      * @throws IllegalStateException If found more than 1 SxpConnection
      */
     public SxpConnection getByAddress(final InetSocketAddress inetSocketAddress) {
-        List<SxpConnection> sxpConnections =
-                filterConnections(new Predicate<SxpConnection>() {
+        List<SxpConnection> sxpConnections = filterConnections(new Predicate<SxpConnection>() {
 
-                    @Override
-                    public boolean apply(SxpConnection connection) {
-                        return inetSocketAddress.getAddress().equals(connection.getDestination().getAddress());
-                    }
-                });
+            @Override public boolean apply(SxpConnection connection) {
+                return inetSocketAddress.getAddress().equals(connection.getDestination().getAddress());
+            }
+        });
         if (sxpConnections.isEmpty()) {
             return null;
         } else if (sxpConnections.size() == 1) {
@@ -683,14 +658,12 @@ public final class SxpNode {
      * @throws IllegalStateException If found more than 1 SxpConnection
      */
     public SxpConnection getByPort(final int port) {
-        List<SxpConnection> sxpConnections =
-                filterConnections(new Predicate<SxpConnection>() {
+        List<SxpConnection> sxpConnections = filterConnections(new Predicate<SxpConnection>() {
 
-                    @Override
-                    public boolean apply(SxpConnection connection) {
-                        return port == connection.getDestination().getPort();
-                    }
-                });
+            @Override public boolean apply(SxpConnection connection) {
+                return port == connection.getDestination().getPort();
+            }
+        });
         if (sxpConnections.isEmpty()) {
             return null;
         } else if (sxpConnections.size() == 1) {
@@ -794,8 +767,8 @@ public final class SxpNode {
      * @return Gets Name of Node
      */
     public String getName() {
-        return nodeBuilder.getName() == null || nodeBuilder.getName().isEmpty() ? NodeIdConv.toString(nodeId)
-                : nodeBuilder.getName();
+        return nodeBuilder.getName() == null || nodeBuilder.getName().isEmpty() ? NodeIdConv.toString(
+                nodeId) : nodeBuilder.getName();
     }
 
     /**
@@ -883,7 +856,7 @@ public final class SxpNode {
 
             @Override public void run() {
                 LOG.info(node + " Open connections [X/O/All=\"" + connections.size() + "/" + connectionsOnSize + "/"
-                                + connectionsAllSize + "\"]");
+                        + connectionsAllSize + "\"]");
                 for (final SxpConnection connection : connections) {
                     openConnection(connection);
                 }
@@ -896,7 +869,7 @@ public final class SxpNode {
      *
      * @param connection Connection containing necessary information for connecting to peer
      */
-    public synchronized void openConnection(final SxpConnection connection){
+    public synchronized void openConnection(final SxpConnection connection) {
         if (connection.isStateOff()) {
             try {
                 ConnectFacade.createClient(this, Preconditions.checkNotNull(connection), handlerFactoryClient);
@@ -906,70 +879,42 @@ public final class SxpNode {
         }
     }
 
-    /**
-     * Propagate changes learned from network to SxpDatabase
-     * Used by Version 4
-     *
-     * @param message    UpdateMessage containing changes
-     * @param connection SxpConnection on which the message was received
-     */
-    public void processUpdateMessage(UpdateMessage message, SxpConnection connection) {
-        BindingHandler.processUpdateMessage(message, connection);
+    BindingDispatcher getSvcBindingDispatcher() {
+        return svcBindingDispatcher;
     }
 
-    /**
-     * Propagate changes learned from network to SxpDatabase
-     * Used by Version 1/2/3
-     *
-     * @param message    UpdateMessageLegacy containing changes
-     * @param connection SxpConnection on which the message was received
-     */
-    public void processUpdateMessage(UpdateMessageLegacy message, SxpConnection connection) {
-        BindingHandler.processUpdateMessage(message, connection);
-    }
-
-    /**
-     * Notifies BindingManager to delete all Bindings from specified NodeId
-     *
-     * @param nodeID NodeId used to filter deletion
-     */
-    public void purgeBindings(NodeId nodeID) {
-        try {
-            synchronized (getBindingSxpDatabase()) {
-                getBindingSxpDatabase().purgeBindings(nodeID);
-            }
-        } catch (NodeIdNotDefinedException | DatabaseAccessException e) {
-            LOG.error("{} Error purging bindings ", this, e);
-        }
+    BindingHandler getSvcBindingHandler() {
+        return svcBindingHandler;
     }
 
     /**
      * Adds Bindings to database as Local bindings
      *
-     * @param masterDatabaseConfiguration MasterDatabase containing bindings that will be added
+     * @param bindings MasterDatabase containing bindings that will be added
      */
-    public void putLocalBindingsMasterDatabase(MasterDatabase masterDatabaseConfiguration) {
-        Source source = null;
-        if (masterDatabaseConfiguration.getSource() != null) {
-            for (Source _source : masterDatabaseConfiguration.getSource()) {
-                if (_source.getBindingSource().equals(DatabaseBindingSource.Local)) {
-                    source = _source;
-                    break;
-                }
-            }
-        }
+    public List<MasterDatabaseBinding> putLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings) {
+        synchronized (getBindingMasterDatabase()) {
+            List<MasterDatabaseBinding> addedBindings = getBindingMasterDatabase().addLocalBindings(bindings);
 
-        if (source != null && source.getPrefixGroup() != null && !source.getPrefixGroup().isEmpty()) {
-            try {
-                synchronized (getBindingMasterDatabase()) {
-                    getBindingMasterDatabase().addBindingsLocal(this,
-                            Database.assignPrefixGroups(nodeId, source.getPrefixGroup()));
-                }
-            } catch (DatabaseAccessException  |NodeIdNotDefinedException e) {
-                LOG.error("{} Error puting Bindings to DB {} ", this, masterDatabaseConfiguration, e);
-                return;
-            }
-            setSvcBindingManagerNotify();
+            svcBindingDispatcher.propagateUpdate(null, addedBindings, getAllOnSpeakerConnections());
+            return addedBindings;
+        }
+    }
+
+    /**
+     * Removes Local Bindings from database
+     *
+     * @param bindings MasterDatabase containing bindings that will be removed
+     */
+    public List<MasterDatabaseBinding> removeLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings) {
+        synchronized (getBindingMasterDatabase()) {
+            List<MasterDatabaseBinding> deletedBindings = getBindingMasterDatabase().deleteBindingsLocal(bindings);
+            List<SxpDatabaseBinding> replacedBindings =
+                SxpDatabase.getReplaceForBindings(getBindingSxpDatabase(), deletedBindings);
+
+            svcBindingDispatcher.propagateUpdate(deletedBindings, getBindingMasterDatabase().addBindings(replacedBindings),
+                    getAllOnSpeakerConnections());
+            return deletedBindings;
         }
     }
 
@@ -991,17 +936,6 @@ public final class SxpNode {
     }
 
     /**
-     * Notify BindingManager to set Flag CleanUp on Bindings specified by NodeId
-     *
-     * @param nodeID NodeId that filters setting flag Bindings
-     */
-    public void setAsCleanUp(NodeId nodeID) {
-        if (svcBindingManager instanceof BindingManager) {
-            ((BindingManager) svcBindingManager).setAsCleanUp(nodeID);
-        }
-    }
-
-    /**
      * Sets Security password used to connect
      *
      * @param security Security to be set
@@ -1016,47 +950,14 @@ public final class SxpNode {
         }
 
         if (nodeBuilder.getSecurity() != null && nodeBuilder.getSecurity().getPassword() != null
-                && !nodeBuilder.getSecurity().getPassword().isEmpty()
-                && !nodeBuilder.getSecurity().getPassword().equals(security.getPassword())) {
+                && !nodeBuilder.getSecurity().getPassword().isEmpty() && !nodeBuilder.getSecurity()
+                .getPassword()
+                .equals(security.getPassword())) {
             shutdownConnections();
         }
         securityBuilder.setPassword(security.getPassword());
         securityBuilder.setMd5Digest(Security.getMD5s(security.getPassword()));
         return securityBuilder.build();
-    }
-
-    /**
-     * Sets Channel on which Node operates
-     *
-     * @param serverChannel Channel to be set
-     */
-    public void setServerChannel(Channel serverChannel) {
-        this.serverChannel = serverChannel;
-    }
-
-    /**
-     * Notify BindingDispatcher to execute dispatch of bindings to all Connection,
-     * mainly after Database modification
-     */
-    public void setSvcBindingDispatcherDispatch() {
-        if (svcBindingDispatcher instanceof BindingDispatcher) {
-            ((BindingDispatcher) svcBindingDispatcher).dispatch();
-        }
-    }
-
-    /**
-     * Notify BindingDispatcher to execute dispatch of bindings on reconnected connections
-     */
-    public void setSvcBindingDispatcherNotify() {
-        svcBindingDispatcher.notifyChange();
-    }
-
-    /**
-     * Notify BindingManager to execute propagation of newly learned Bindings to MasterDatabase
-     * and afterwards to Connections
-     */
-    public void setSvcBindingManagerNotify() {
-        svcBindingManager.notifyChange();
     }
 
     /**
@@ -1107,9 +1008,7 @@ public final class SxpNode {
      * @throws IllegalArgumentException If size of partitioning is bellow 2 or above 150
      */
     public void setMessagePartitionSize(int size) throws IllegalArgumentException {
-        if (svcBindingDispatcher instanceof BindingDispatcher) {
-            ((BindingDispatcher) svcBindingDispatcher).setPartitionSize(size);
-        }
+        svcBindingDispatcher.setPartitionSize(size);
     }
 
     /**
@@ -1117,7 +1016,7 @@ public final class SxpNode {
      *
      * @return ThreadsWorker reference
      */
-    public ThreadsWorker getWorker(){
+    public ThreadsWorker getWorker() {
         return worker;
     }
 
@@ -1140,12 +1039,6 @@ public final class SxpNode {
             serverChannel.close();
             serverChannel = null;
         }
-        if (svcBindingDispatcher != null) {
-            svcBindingDispatcher.cancel();
-        }
-        if (svcBindingManager != null) {
-            svcBindingManager.cancel();
-        }
     }
 
     /**
@@ -1161,7 +1054,7 @@ public final class SxpNode {
         }
     }
 
-    private AtomicBoolean serverChannelInit = new AtomicBoolean(false);
+    private final AtomicBoolean serverChannelInit = new AtomicBoolean(false);
 
     /**
      * Start SxpNode
@@ -1171,10 +1064,11 @@ public final class SxpNode {
             return;
         }
         // Put local bindings before services startup.
-        MasterDatabase masterDatabaseConfiguration = nodeBuilder.getMasterDatabase();
+        org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase
+                masterDatabaseConfiguration =
+                nodeBuilder.getMasterDatabase();
         if (masterDatabaseConfiguration != null) {
-            putLocalBindingsMasterDatabase(masterDatabaseConfiguration);
-            // LOG.info(this + " " + getBindingMasterDatabase().toString());
+            putLocalBindingsMasterDatabase(masterDatabaseConfiguration.getMasterDatabaseBinding());
         }
 
         final SxpNode node = this;
@@ -1185,7 +1079,7 @@ public final class SxpNode {
 
                     @Override public void operationComplete(ChannelFuture channelFuture) throws Exception {
                         if (channelFuture.isSuccess()) {
-                            node.setServerChannel(channelFuture.channel());
+                            serverChannel = channelFuture.channel();
                             LOG.info(node + " Server created [" + getSourceIp().getHostAddress() + ":" + getServerPort()
                                     + "]");
                             node.setTimer(TimerType.RetryOpenTimer, node.getRetryOpenTime());
@@ -1200,7 +1094,7 @@ public final class SxpNode {
         }, ThreadsWorker.WorkerType.DEFAULT);
     }
 
-    private AtomicInteger updateMD5counter = new AtomicInteger();
+    private final AtomicInteger updateMD5counter = new AtomicInteger();
 
     private void updateMD5keys(final SxpConnection connection) {
         if (serverChannel == null || !(connection.getPasswordType().equals(PasswordType.Default)
@@ -1222,7 +1116,7 @@ public final class SxpNode {
                 ConnectFacade.createServer(sxpNode, handlerFactoryServer).addListener(new ChannelFutureListener() {
 
                     @Override public void operationComplete(ChannelFuture future) throws Exception {
-                        setServerChannel(future.channel());
+                        serverChannel = future.channel();
                         serverChannelInit.set(false);
                         if (updateMD5counter.decrementAndGet() > 0) {
                             serverChannel.close().addListener(createMD5updateListener(sxpNode));
@@ -1233,10 +1127,9 @@ public final class SxpNode {
         };
     }
 
-    @Override
-    public String toString() {
-        return "["
-                + (nodeBuilder.getName() != null && !nodeBuilder.getName().isEmpty() ? nodeBuilder.getName() + ":" : "")
+    @Override public String toString() {
+        return "[" + (
+                nodeBuilder.getName() != null && !nodeBuilder.getName().isEmpty() ? nodeBuilder.getName() + ":" : "")
                 + NodeIdConv.toString(nodeId) + "]";
     }
 }

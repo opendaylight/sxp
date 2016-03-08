@@ -91,8 +91,8 @@ public class ThreadsWorker {
      * have 10 threads both
      */
     public ThreadsWorker() {
-        this(Executors.newScheduledThreadPool(10), Executors.newFixedThreadPool(10), Executors.newFixedThreadPool(5),
-                Executors.newFixedThreadPool(10));
+        this(Executors.newScheduledThreadPool(1), Executors.newFixedThreadPool(2), Executors.newFixedThreadPool(2),
+                Executors.newFixedThreadPool(2));
     }
 
     /**
