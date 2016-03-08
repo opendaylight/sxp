@@ -8,77 +8,71 @@
 
 package org.opendaylight.sxp.util.database.spi;
 
-import java.util.List;
-
-import org.opendaylight.sxp.util.database.SxpBindingIdentity;
-import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
-import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+
+import java.util.List;
 
 /**
  * SxpDatabaseInf interface representing supported operations on SxpDatabase
  */
 public interface SxpDatabaseInf {
 
-        String PRINT_DELIMITER = " ";
+    /**
+     * @return All bindings stored in SxpDatabase
+     */
+    List<SxpDatabaseBinding> getBindings();
 
-        /**
-         * Adds Bindings from specified SxpDatabase
-         *
-         * @param database SxpDatabase containing Bindings
-         * @return If Bindings were added to database
-         * @throws DatabaseAccessException If database isn't accessible
-         */
-        boolean addBindings(SxpDatabase database) throws DatabaseAccessException;
+    /**
+     * Return all bindings learned from specified peer
+     *
+     * @param nodeId Specifying peer
+     * @return Bindings learned from peer
+     */
+    List<SxpDatabaseBinding> getBindings(NodeId nodeId);
 
-        /**
-         * Remove all bindings with Flag CleanUp from specified NodeId
-         *
-         * @param nodeId NodeId used to filter Binding that will be removed
-         * @throws NodeIdNotDefinedException If NodeId is null
-         */
-        void cleanUpBindings(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException;
+    /**
+     * Adds bindings to SxpDatabase under specified peer
+     *
+     * @param nodeId   Specifying peer from which bindings came
+     * @param bindings Bindings to be added
+     * @param <T>      Any type extending SxpBindingFields
+     * @return List of bindings that were actually added
+     */
+    <T extends SxpBindingFields> List<SxpDatabaseBinding> addBinding(NodeId nodeId, List<T> bindings);
 
-        /**
-         * Delete Bindings from specified SxpDatabase
-         *
-         * @param database SxpDatabase containing Bindings
-         * @return List of removed SxpBindingIdentities
-         * @throws DatabaseAccessException If database isn't accessible
-         */
-        List<SxpBindingIdentity> deleteBindings(SxpDatabase database) throws DatabaseAccessException;
+    /**
+     * Delete all binding learned from specified peer
+     *
+     * @param nodeId Specifying peer from which bindings will be removed
+     * @return List of bindings that were actually removed
+     */
+    List<SxpDatabaseBinding> deleteBindings(NodeId nodeId);
 
-        /**
-         * Gets SxpDatabase
-         *
-         * @return SxpDatabase used
-         * @throws DatabaseAccessException If database isn't accessible
-         */
-        SxpDatabase get() throws DatabaseAccessException;
+    /**
+     * Delete specified bindings from peer
+     *
+     * @param nodeId   Specifying peer from which bindings will be removed
+     * @param bindings List of bindings that will be removed
+     * @param <T>      Any type extending SxpBindingFields
+     * @return List of bindings that were actually removed
+     */
+    <T extends SxpBindingFields> List<SxpDatabaseBinding> deleteBindings(NodeId nodeId, List<T> bindings);
 
-        /**
-         * Delete all Bindings from specified NodeId
-         *
-         * @param nodeId NodeId used to filter Bindings that will be deleted
-         * @throws NodeIdNotDefinedException If NodeId is null
-         * @throws DatabaseAccessException   If database isn't accessible
-         */
-        void purgeBindings(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException;
+    /**
+     * Delete all bindings from peer that were previously set for reconciliation
+     *
+     * @param nodeId Specifying peer on which operation will be held
+     * @return List of bindings that were actually removed
+     */
+    List<SxpDatabaseBinding> reconcileBindings(NodeId nodeId);
 
-        /**
-         * Reads all bindings in database
-         *
-         * @return List of SxpBindingIdentities contained by database
-         * @throws DatabaseAccessException If database isn't accessible
-         */
-        List<SxpBindingIdentity> readBindings() throws DatabaseAccessException;
-
-        /**
-         * Sets CleanUp flag for all bindings from specified NodeId
-         *
-         * @param nodeId NodeId used to filter Bindings that will be set for CleanUp
-         * @throws NodeIdNotDefinedException If NodeId is null
-         */
-        void setAsCleanUp(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException;
+    /**
+     * Sets all bindings from specified peer marked as reconciled,
+     * this state have no effect until reconcileBindings is called on peer
+     *
+     * @param nodeId Specifying peer on operation will be held
+     */
+    void setReconciliation(NodeId nodeId);
 }

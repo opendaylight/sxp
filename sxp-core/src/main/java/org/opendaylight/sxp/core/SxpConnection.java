@@ -10,16 +10,15 @@ package org.opendaylight.sxp.core;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.core.messaging.AttributeList;
-import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
-import org.opendaylight.sxp.core.service.UpdateExportTask;
-import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
+import org.opendaylight.sxp.core.threading.ThreadsWorker;
+import org.opendaylight.sxp.util.database.SxpDatabase;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.exception.connection.IncompatiblePeerModeException;
@@ -38,6 +37,8 @@ import org.opendaylight.sxp.util.time.connection.DeleteHoldDownTimerTask;
 import org.opendaylight.sxp.util.time.connection.HoldTimerTask;
 import org.opendaylight.sxp.util.time.connection.KeepAliveTimerTask;
 import org.opendaylight.sxp.util.time.connection.ReconcilationTimerTask;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
@@ -52,28 +53,27 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Erro
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorSubCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.CapabilitiesAttribute;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.capabilities.attribute.capabilities.attributes.Capabilities;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.CapabilitiesAttribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.HoldTimeAttribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.SxpNodeIdAttribute;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.capabilities.attribute.capabilities.attributes.Capabilities;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * SxpConnection class represent SxpPeer and contains logic for maintaining communication
@@ -116,11 +116,6 @@ public class SxpConnection {
     protected SxpNode owner;
 
     protected HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(5);
-
-    private final Deque<Callable<?>> inboundUpdateMessageQueue = new ArrayDeque<>(10),
-            outboundUpdateMessageQueue =
-                    new ArrayDeque<>(10);
-    private final AtomicLong inboundMonitor = new AtomicLong(0), outboundMonitor = new AtomicLong(0);
     private final Map<FilterType, SxpBindingFilter> bindingFilterMap = new HashMap<>();
 
     /**
@@ -138,55 +133,63 @@ public class SxpConnection {
      *
      * @param filterType Type of SxpBindingFilter that was set
      */
-    private void updateFlagsForDatabase(final FilterType filterType) {
+    private void updateFlagsForDatabase(final FilterType filterType, final boolean removed) {
         if(!isStateOn()){
             return;
         }
-        if (filterType.equals(FilterType.Inbound) && (isModeListener() || isModeBoth())) {
-            owner.setSvcBindingManagerNotify();
-        } else if (filterType.equals(FilterType.InboundDiscarding) && (isModeListener() || isModeBoth())) {
-            synchronized (getInboundMonitor()) {
-                Callable task = new Callable() {
+        switch (filterType) {
+            case InboundDiscarding:
+                if (!removed) {
+                    owner.getWorker().executeTaskInSequence(() -> {
+                        synchronized (owner.getBindingSxpDatabase()) {
+                            List<SxpDatabaseBinding>
+                                    bindings = SxpDatabase
+                                .filterDatabase(owner.getBindingSxpDatabase(), getNodeIdRemote(),
+                                    getFilter(filterType));
 
-                    @Override public Object call() throws Exception {
-                        owner.getBindingSxpDatabase()
-                                .deleteBindings(SxpDatabaseImpl.filterDatabase(owner.getBindingSxpDatabase().get(),
-                                        getFilter(filterType), getNodeIdRemote()));
-                        owner.setSvcBindingManagerNotify();
-                        return null;
-                    }
-                };
-                pushUpdateMessageInbound(task);
-                if (getInboundMonitor().getAndIncrement() == 0) {
-                    BindingHandler.startBindingHandle(this);
-                }
-            }
-        } else if (filterType.equals(FilterType.Outbound) && (isModeSpeaker() || isModeBoth())) {
-            if (getFilter(filterType) != null) {
-                pushUpdateMessageOutbound(new Callable<Void>() {
+                            getOwner().getSvcBindingDispatcher()
+                                    .propagateUpdate(owner.getBindingMasterDatabase().deleteBindings(bindings), null,
+                                            owner.getAllOnSpeakerConnections());
 
-                    @Override public Void call() throws Exception {
-                        try {
-                            LOG.info("{} Sending PurgeAll {}", this, getNodeIdRemote());
-                            getChannelHandlerContext(
-                                    SxpConnection.ChannelHandlerContextType.SpeakerContext).writeAndFlush(
-                                    MessageFactory.createPurgeAll());
-                        } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-                            LOG.error(this + " Cannot send PURGE ALL message to set new filter| {} | ",
-                                    e.getClass().getSimpleName());
+                            owner.getBindingSxpDatabase().deleteBindings(getNodeIdRemote(), bindings);
                         }
-                        connectionBuilder.setUpdateAllExported(false);
-                        owner.setSvcBindingDispatcherDispatch();
                         return null;
+                    }, ThreadsWorker.WorkerType.INBOUND);
+                }
+                break;
+            case Inbound:
+                owner.getWorker().executeTaskInSequence(() -> {
+                    synchronized (owner.getBindingSxpDatabase()) {
+                        if (removed) {
+                            getOwner().getSvcBindingDispatcher()
+                                    .propagateUpdate(null, owner.getBindingMasterDatabase()
+                                                    .addBindings(owner.getBindingSxpDatabase().getBindings(getNodeIdRemote())),
+                                            owner.getAllOnSpeakerConnections());
+                        } else {
+                            getOwner().getSvcBindingDispatcher().propagateUpdate(
+                                owner.getBindingMasterDatabase().deleteBindings(SxpDatabase
+                                    .filterDatabase(owner.getBindingSxpDatabase(),
+                                        getNodeIdRemote(), getFilter(filterType))), null,
+                                owner.getAllOnSpeakerConnections());
+                        }
+                    }
+                    return null;
+                }, ThreadsWorker.WorkerType.INBOUND);
+                break;
+            case Outbound:
+                List<SxpConnection> connections = new ArrayList<>();
+                connections.add(this);
+
+                ListenableFuture task = BindingDispatcher.sendPurgeAllMessage(this);
+                owner.getWorker().addListener(task, () -> {
+                    if (!task.isCancelled()) {
+                        getOwner().getSvcBindingDispatcher()
+                                .propagateUpdate(null, owner.getBindingMasterDatabase().getBindings(), connections);
+                    } else {
+                        LOG.warn("Cannot proceed filter update", this);
                     }
                 });
-                if (getOutboundMonitor().getAndIncrement() == 0) {
-                    BindingDispatcher.startExportPerConnection(this);
-                }
-            } else {
-                connectionBuilder.setUpdateAllExported(false);
-                owner.setSvcBindingDispatcherDispatch();
-            }
+                break;
         }
     }
 
@@ -200,7 +203,7 @@ public class SxpConnection {
             synchronized (bindingFilterMap) {
                 FilterType filterType = filter.getSxpFilter().getFilterType();
                 bindingFilterMap.put(filterType, filter);
-                updateFlagsForDatabase(filterType);
+                updateFlagsForDatabase(filterType, false);
             }
         }
     }
@@ -226,90 +229,9 @@ public class SxpConnection {
         synchronized (bindingFilterMap) {
             SxpBindingFilter filter = bindingFilterMap.remove(filterType);
             if (filter != null) {
-                updateFlagsForDatabase(filterType);
+                updateFlagsForDatabase(filterType, true);
             }
             return filter;
-        }
-    }
-
-    /**
-     * Gets AtomicLong used for notification of incoming messages that will be needed to proceed
-     *
-     * @return AtomicLong used for counting of incoming messages
-     */
-    public AtomicLong getInboundMonitor() {
-        return inboundMonitor;
-    }
-
-    /**
-     * Gets AtomicLong used for notification of outgoing messages that will be needed to proceed
-     *
-     * @return AtomicLong used for counting of outgoing messages
-     */
-    public AtomicLong getOutboundMonitor() {
-        return outboundMonitor;
-    }
-
-    /**
-     * Poll Task representing export of Update Message on this connection.
-     *
-     * @return Task exporting specific Update Message
-     */
-    public Callable<?> pollUpdateMessageOutbound() {
-        synchronized (outboundUpdateMessageQueue) {
-            return outboundUpdateMessageQueue.poll();
-        }
-    }
-
-    /**
-     * Push new Update Message task into export queue.
-     *
-     * @param task Task containing process information of Update Message
-     */
-    public void pushUpdateMessageOutbound(Callable<?> task) {
-        synchronized (outboundUpdateMessageQueue) {
-            outboundUpdateMessageQueue.push(task);
-        }
-    }
-
-    /**
-     * Poll Task representing import of Update Message on this connection.
-     *
-     * @return Task importing specific Update Message
-     */
-    public Callable<?> pollUpdateMessageInbound() {
-        synchronized (inboundUpdateMessageQueue) {
-            return inboundUpdateMessageQueue.poll();
-        }
-    }
-
-    /**
-     * Push new Update Message task into import queue.
-     *
-     * @param task Task containing process information of Update Message
-     */
-    public void pushUpdateMessageInbound(Callable<?> task) {
-        synchronized (inboundUpdateMessageQueue) {
-            inboundUpdateMessageQueue.push(task);
-        }
-    }
-
-    /**
-     * Clears queue of inbound and outbound Update Messages.
-     */
-    private void clearMessages() {
-        synchronized (inboundUpdateMessageQueue) {
-            getInboundMonitor().set(0);
-            inboundUpdateMessageQueue.clear();
-        }
-        synchronized (outboundUpdateMessageQueue) {
-            for (Callable t : outboundUpdateMessageQueue) {
-                if (t instanceof UpdateExportTask) {
-                    ((UpdateExportTask) t).freeReferences();
-                }
-            }
-            getOutboundMonitor().set(0);
-            outboundUpdateMessageQueue.clear();
         }
     }
 
@@ -344,6 +266,49 @@ public class SxpConnection {
     }
 
     /**
+     * Propagate changes learned from network to SxpDatabase
+     *
+     * @param message UpdateMessage containing changes
+     */
+    public void processUpdateMessage(UpdateMessage message) {
+        if (getNodeIdRemote() == null) {
+            LOG.warn(getOwner() + " Unknown message relevant peer node ID");
+            return;
+        }
+        owner.getWorker().executeTaskInSequence(() -> {
+            owner.getSvcBindingHandler()
+                    .processUpdate(BindingHandler.processMessageDeletion(message),
+                            BindingHandler.processMessageAddition(message, getFilter(FilterType.InboundDiscarding)),
+                            this);
+            return null;
+        }, ThreadsWorker.WorkerType.INBOUND, this);
+    }
+
+    /**
+     * Propagate changes learned from network to SxpDatabase
+     *
+     * @param message UpdateMessage containing changes
+     */
+    public void processUpdateMessage(UpdateMessageLegacy message) {
+        if (getNodeIdRemote() == null) {
+            LOG.warn(getOwner() + " Unknown message relevant peer node ID");
+            return;
+        }
+        owner.getWorker().executeTaskInSequence(() -> {
+            owner.getSvcBindingHandler()
+                    .processUpdate(BindingHandler.processMessageDeletion(message),
+                            BindingHandler.processMessageAddition(message, getFilter(FilterType.InboundDiscarding),
+                                    getNodeIdRemote()), this);
+            return null;
+        }, ThreadsWorker.WorkerType.INBOUND, this);
+    }
+
+    public <T extends SxpBindingFields> void propagateUpdate(List<T> deleteBindings, List<T> addBindings) {
+        owner.getSvcBindingDispatcher()
+                .propagateUpdate(deleteBindings, addBindings, owner.getAllOnSpeakerConnections());
+    }
+
+    /**
      * Adds ChannelHandlerContext into init queue
      *
      * @param ctx ChannelHandlerContext to be added
@@ -364,8 +329,7 @@ public class SxpConnection {
         // before the delete hold down timer expiration, a reconcile timer is
         // started to clean up old mappings that didn’t get informed to be
         // removed because of the loss of connectivity.
-        context.getOwner().cleanUpBindings(getNodeIdRemote());
-        context.getOwner().setSvcBindingManagerNotify();
+        context.getOwner().getBindingSxpDatabase().reconcileBindings(getNodeIdRemote());
     }
 
     /**
@@ -677,13 +641,6 @@ public class SxpConnection {
     }
 
     /**
-     * @return Gets Update message timestamp
-     */
-    public long getTimestampUpdateMessageExport() {
-        return TimeConv.toLong(connectionBuilder.getTimestampUpdateMessageExport());
-    }
-
-    /**
      * @return Gets KeepAlive timestamp
      */
     public long getTimestampUpdateOrKeepAliveMessage() {
@@ -702,19 +659,6 @@ public class SxpConnection {
      */
     public Version getVersionRemote() {
         return connectionBuilder.getVersionRemote();
-    }
-
-    /**
-     * Check if connection support capability
-     *
-     * @param capability Type of capability
-     * @return If connection supports it
-     */
-    public boolean hasCapability(CapabilityType capability) {
-        return !(connectionBuilder.getCapabilities() == null
-                || connectionBuilder.getCapabilities().getCapability() == null) && connectionBuilder.getCapabilities()
-                .getCapability()
-                .contains(capability);
     }
 
     /**
@@ -826,28 +770,6 @@ public class SxpConnection {
     }
 
     /**
-     * @return If Update message was exported at least once
-     */
-    public boolean isUpdateAllExported() {
-        return connectionBuilder.isUpdateAllExported() == null ? false : connectionBuilder.isUpdateAllExported();
-    }
-
-    /**
-     * @return If Update message was exported
-     */
-    public boolean isUpdateExported() {
-        return connectionBuilder.isUpdateExported() == null ? false : connectionBuilder.isUpdateExported();
-    }
-
-    /**
-     * @return If connection is legacy version
-     */
-    public boolean isVersion123() {
-        return getVersion().equals(Version.Version1) || getVersion().equals(Version.Version2)
-                || getVersion().equals(Version.Version3);
-    }
-
-    /**
      * @return If connection is version 4
      */
     public boolean isVersion4() {
@@ -890,20 +812,12 @@ public class SxpConnection {
 
     public void purgeBindings() {
         // Get message relevant peer node ID.
-        context.getOwner().purgeBindings(getNodeIdRemote());
-        context.getOwner().setSvcBindingManagerNotify();
+        BindingHandler.processPurgeAllMessage(this);
         try {
             setStateOff(getChannelHandlerContext(ChannelHandlerContextType.ListenerContext));
         } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
             setStateOff();
         }
-    }
-
-    /**
-     * Reset Flag UpdateExported
-     */
-    public void resetUpdateExported() {
-        connectionBuilder.setUpdateExported(false);
     }
 
     /**
@@ -1275,11 +1189,9 @@ public class SxpConnection {
      * Set State to DeleteHoldDown and triggers cleanUp of Database
      */
     public void setStateDeleteHoldDown() {
-        connectionBuilder.setUpdateAllExported(false);
-        connectionBuilder.setUpdateExported(false);
         connectionBuilder.setPurgeAllMessageReceived(false);
         connectionBuilder.setState(ConnectionState.DeleteHoldDown);
-        context.getOwner().setAsCleanUp(getNodeIdRemote());
+        owner.getBindingSxpDatabase().setReconciliation(getNodeIdRemote());
     }
 
     /**
@@ -1287,13 +1199,12 @@ public class SxpConnection {
      * clear Handling of messages and close ChannelHandlerContexts
      */
     public void setStateOff() {
-        closeChannelHandlerContexts();
-        connectionBuilder.setState(ConnectionState.Off);
-        connectionBuilder.setUpdateAllExported(false);
-        connectionBuilder.setUpdateExported(false);
-        connectionBuilder.setPurgeAllMessageReceived(false);
         stopTimers();
-        clearMessages();
+        connectionBuilder.setState(ConnectionState.Off);
+        getOwner().getWorker().cancelTasksInSequence(true, ThreadsWorker.WorkerType.INBOUND, this);
+        getOwner().getWorker().cancelTasksInSequence(true, ThreadsWorker.WorkerType.OUTBOUND, this);
+        closeChannelHandlerContexts();
+        connectionBuilder.setPurgeAllMessageReceived(false);
     }
 
     /**
@@ -1334,22 +1245,11 @@ public class SxpConnection {
                     setTimer(TimerType.DeleteHoldDownTimer, 0);
                     setTimer(TimerType.ReconciliationTimer, 0);
                     setTimer(TimerType.HoldTimer, 0);
-                    synchronized (inboundUpdateMessageQueue) {
-                        inboundUpdateMessageQueue.clear();
-                    }
+                    getOwner().getWorker().cancelTasksInSequence(true, ThreadsWorker.WorkerType.INBOUND, this);
                     break;
                 case SpeakerContext:
-                    connectionBuilder.setUpdateAllExported(false);
-                    connectionBuilder.setUpdateExported(false);
                     setTimer(TimerType.KeepAliveTimer, 0);
-                    synchronized (outboundUpdateMessageQueue) {
-                        for (Callable t : outboundUpdateMessageQueue) {
-                            if (t instanceof UpdateExportTask) {
-                                ((UpdateExportTask) t).freeReferences();
-                            }
-                        }
-                        outboundUpdateMessageQueue.clear();
-                    }
+                    getOwner().getWorker().cancelTasksInSequence(true, ThreadsWorker.WorkerType.OUTBOUND, this);
                     break;
             }
         }
@@ -1370,10 +1270,15 @@ public class SxpConnection {
      * notifies export of Bindings
      */
     public void setStateOn() {
-        clearMessages();
         connectionBuilder.setState(ConnectionState.On);
         if (isModeSpeaker() || isModeBoth()) {
-            owner.setSvcBindingDispatcherNotify();
+            getOwner().getWorker().executeTaskInSequence(() -> {
+                List<SxpConnection> sxpConnections = new ArrayList<>();
+                sxpConnections.add(this);
+                owner.getSvcBindingDispatcher()
+                        .propagateUpdate(null, getOwner().getBindingMasterDatabase().getBindings(), sxpConnections);
+                return null;
+            }, ThreadsWorker.WorkerType.OUTBOUND, this);
         }
     }
 
@@ -1434,27 +1339,6 @@ public class SxpConnection {
     }
 
     /**
-     * Sets that Update was exported at least once
-     */
-    public void setUpdateAllExported() {
-        connectionBuilder.setUpdateAllExported(true);
-    }
-
-    /**
-     * Sets that Update was exported and connections should have all Bindings up to date
-     */
-    public void setUpdateExported() {
-        connectionBuilder.setUpdateExported(true);
-    }
-
-    /**
-     * Update Export TimeStamp
-     */
-    public void setUpdateMessageExportTimestamp() {
-        connectionBuilder.setTimestampUpdateMessageExport(TimeConv.toDt(System.currentTimeMillis()));
-    }
-
-    /**
      * Update KeepAlive TimeStamp
      */
     public void setUpdateOrKeepaliveMessageTimestamp() {
@@ -1479,13 +1363,10 @@ public class SxpConnection {
             LOG.info("{} PURGE bindings ", this);
             purgeBindings();
         } else if (isModeSpeaker() && isStateOn()) {
-            ByteBuf message = MessageFactory.createPurgeAll();
-            LOG.info("{} Sending PURGEALL {}", this, MessageFactory.toString(message));
             try {
-                getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext).writeAndFlush(message);
-            } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+                BindingDispatcher.sendPurgeAllMessage(this).get();
+            } catch (InterruptedException | ExecutionException e) {
                 LOG.error(this + " Shutdown connection | {} | ", e.getClass().getSimpleName());
-                message.release();
             }
         }
         setStateOff();

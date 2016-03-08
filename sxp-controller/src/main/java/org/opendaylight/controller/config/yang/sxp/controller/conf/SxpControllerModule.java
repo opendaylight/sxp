@@ -22,7 +22,6 @@ import org.opendaylight.sxp.controller.core.RpcServiceImpl;
 import org.opendaylight.sxp.controller.util.database.DatastoreValidator;
 import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
-import org.opendaylight.sxp.controller.util.database.access.SxpDatabaseAccessImpl;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.SxpControllerService;
@@ -60,9 +59,9 @@ public class SxpControllerModule extends
             dataChangeListenerRegistrations.add(
                     dataBroker.registerDataChangeListener(LogicalDatastoreType.CONFIGURATION,
                             DataChangeConfigurationListenerImpl.SUBSCRIBED_PATH,
-                            new DataChangeConfigurationListenerImpl(new SxpDatastoreImpl(
-                                    new SxpDatabaseAccessImpl(controllerName, datastoreAccess,
-                                            LogicalDatastoreType.OPERATIONAL))), DataChangeScope.SUBTREE));
+                        new DataChangeConfigurationListenerImpl(
+                            new SxpDatastoreImpl(datastoreAccess, controllerName)),
+                        DataChangeScope.SUBTREE));
 
             DataChangeOperationalListenerImpl
                     dataChangeOperationalListenerImpl =
