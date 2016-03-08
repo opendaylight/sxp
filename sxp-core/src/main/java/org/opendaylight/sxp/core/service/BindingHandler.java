@@ -8,36 +8,27 @@
 
 package org.opendaylight.sxp.core.service;
 
+import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.core.threading.ThreadsWorker;
-import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.messaging.legacy.MappingRecord;
-import org.opendaylight.sxp.util.database.SxpBindingIdentity;
-import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
-import org.opendaylight.sxp.util.exception.message.UpdateMessagePeerSequenceException;
-import org.opendaylight.sxp.util.exception.message.UpdateMessagePrefixException;
-import org.opendaylight.sxp.util.exception.message.UpdateMessagePrefixGroupsException;
-import org.opendaylight.sxp.util.exception.message.UpdateMessageSgtException;
+import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.exception.message.attribute.TlvNotFoundException;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.DateAndTime;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.Sgt;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.PathGroupBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.PrefixGroupBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.Binding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.sxp.database.fields.path.group.prefix.group.BindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.Peer;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.TlvType;
@@ -59,10 +50,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 /**
  * BindingHandler class contains logic for parsing and propagating
@@ -73,168 +62,77 @@ public final class BindingHandler {
     protected static final Logger LOG = LoggerFactory.getLogger(BindingHandler.class.getName());
 
     /**
-     * Gets PathGroup generated from specified values
-     *
-     * @param updateMessage String representation of message
-     * @param pathGroups    PathGroup where the new one will be placed
-     * @param peerSequence  PeerSequence used in new PathGroup
-     * @param prefixGroups  PrefixGroup used in new PathGroup
-     * @return List of PathGroups with newly generated one
-     * @throws UpdateMessagePeerSequenceException If PeerSequence is empty or null
-     * @throws UpdateMessagePrefixGroupsException If PrefixGroup is empty or null
-     */
-    private static List<PathGroup> getPathGroups(String updateMessage, List<PathGroup> pathGroups,
-            List<NodeId> peerSequence, List<PrefixGroup> prefixGroups)
-            throws UpdateMessagePeerSequenceException, UpdateMessagePrefixGroupsException {
-        if (peerSequence == null || peerSequence.isEmpty()) {
-            throw new UpdateMessagePeerSequenceException(updateMessage);
-        } else if (prefixGroups == null || prefixGroups.isEmpty()) {
-            throw new UpdateMessagePrefixGroupsException(updateMessage);
-        }
-
-        PathGroupBuilder pathGroupBuilder = new PathGroupBuilder();
-        // TODO: pathGroupBuilder.setAttribute(value);
-        pathGroupBuilder.setPathHash(NodeIdConv.hashCode(peerSequence));
-        pathGroupBuilder.setPeerSequence(NodeIdConv.createPeerSequence(peerSequence));
-        pathGroupBuilder.setPrefixGroup(new ArrayList<>(prefixGroups));
-        pathGroups.add(pathGroupBuilder.build());
-
-        prefixGroups.clear();
-        return pathGroups;
-    }
-
-    /**
-     * Gets PrefixGroup generated from specified values
-     *
-     * @param updateMessage String representation of message
-     * @param sgt           Sgt value assigned to PrefixGroup
-     * @param prefixes      IpPrefixes used in new PrefixGroup
-     * @return Newly created PrefixGroup
-     * @throws UpdateMessageSgtException    If is Sgt value isn't correct
-     * @throws UpdateMessagePrefixException If Prefixes are empty or null
-     */
-    private static PrefixGroup getPrefixGroups(String updateMessage, int sgt, List<IpPrefix> prefixes,
-            SxpBindingFilter filter)
-            throws UpdateMessageSgtException, UpdateMessagePrefixException {
-        if (sgt == -1) {
-            throw new UpdateMessageSgtException(updateMessage);
-        } else if (prefixes.isEmpty()) {
-            throw new UpdateMessagePrefixException(updateMessage);
-        }
-
-        List<Binding> bindings = new ArrayList<>();
-        PrefixGroup prefixGroup = new PrefixGroupBuilder().setSgt(new Sgt(sgt)).setBinding(bindings).build();
-        DateAndTime timestamp = TimeConv.toDt(System.currentTimeMillis());
-
-        for (IpPrefix ipPrefix : prefixes) {
-            Binding binding = new BindingBuilder().setIpPrefix(ipPrefix).setTimestamp(timestamp).build();
-            if (filter != null && filter.filter(
-                    SxpBindingIdentity.create(binding, prefixGroup, new PathGroupBuilder().build()))) {
-                continue;
-            }
-            bindings.add(binding);
-        }
-        prefixes.clear();
-        return prefixGroup;
-    }
-
-    /**
      * Removes all paths that contains specified NodeId,
      * thus performs loop filtering
      *
      * @param nodeId   NodeId to be used as filter
-     * @param database SxpDatabase containing data
+     * @param bindings List of bindings to be checked
      * @return SxpDatabase without loops
      */
-    public static SxpDatabase loopDetection(NodeId nodeId, SxpDatabase database) {
-        List<PathGroup> removed = new ArrayList<>();
-        for (PathGroup pathGroup : database.getPathGroup()) {
-            for (NodeId _nodeId : NodeIdConv.getPeerSequence(pathGroup.getPeerSequence())) {
-                if (NodeIdConv.equalTo(_nodeId, nodeId)) {
-                    removed.add(pathGroup);
+    public static <T extends SxpBindingFields> List<T> loopDetection(NodeId nodeId, List<T> bindings) {
+        if (nodeId != null && bindings != null && !bindings.isEmpty()) {
+            bindings.removeIf(b -> {
+                if (b.getPeerSequence() != null && b.getPeerSequence().getPeer() != null) {
+                    return NodeIdConv.getPeerSequence(b.getPeerSequence()).contains(nodeId);
                 }
-            }
+                return true;
+            });
         }
-        database.getPathGroup().removeAll(removed);
-        return database;
+        return bindings;
     }
 
     /**
      * Parse UpdateMessageLegacy and process addition of Bindings into new SxpDatabase
      *
-     * @param nodeId  NodeId of Peer where message came from
      * @param message UpdateMessageLegacy containing data to be proceed
-     * @return SxpDatabase containing added Bindings
+     * @param filter SxpBinding filter that will be applied to bindings
+     * @param nodeIdRemote
+     * @return List of new Bindings
      * @throws TlvNotFoundException               If Tlv isn't present in message
-     * @throws UpdateMessagePrefixGroupsException If PrefixGroup isn't correct in message
-     * @throws UpdateMessagePeerSequenceException If PeerSequence isn't correct in message
      */
-    public static SxpDatabase processMessageAddition(NodeId nodeId, UpdateMessageLegacy message, SxpBindingFilter filter)
-            throws TlvNotFoundException, UpdateMessagePrefixGroupsException, UpdateMessagePeerSequenceException {
-        DateAndTime timestamp = TimeConv.toDt(System.currentTimeMillis());
-        List<PathGroup> pathGroups = new ArrayList<>();
-        List<NodeId> peerSequence = new ArrayList<>();
-        Map<Sgt,PrefixGroup> prefixGroupMap = new HashMap<>();
+    public static List<SxpDatabaseBinding> processMessageAddition(UpdateMessageLegacy message, SxpBindingFilter filter,
+            NodeId nodeIdRemote)
+            throws TlvNotFoundException {
+        List<SxpDatabaseBinding> bindings = new ArrayList<>();
+        List<Peer> peers=new ArrayList<>();
+        peers.add(new PeerBuilder().setSeq(0).setNodeId(Preconditions.checkNotNull(nodeIdRemote)).build());
+        SxpDatabaseBindingBuilder
+                bindingBuilder =
+                new SxpDatabaseBindingBuilder().setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
+                        .setPeerSequence(new PeerSequenceBuilder().setPeer(peers).build());
 
-        SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder().setPathGroup(pathGroups);
         for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord mappingRecord : message
                 .getMappingRecord()) {
             switch (mappingRecord.getOperationCode()) {
                 case AddIpv4:
                 case AddIpv6:
-                    Sgt
-                            sgt =
+                    bindingBuilder.setSecurityGroupTag(
                             new Sgt(((SourceGroupTagTlvAttribute) MappingRecord.create(mappingRecord.getTlv())
-                                    .get(TlvType.Sgt)).getSourceGroupTagTlvAttributes().getSgt());
-                    Binding
-                            binding =
-                            new BindingBuilder().setIpPrefix(mappingRecord.getAddress())
-                                    .setTimestamp(new DateAndTime(timestamp))
-                                    .build();
-                    PrefixGroup prefixGroup = prefixGroupMap.get(sgt);
-                    if (prefixGroup == null) {
-                        PrefixGroupBuilder prefixGroupBuilder = new PrefixGroupBuilder();
-                        prefixGroupBuilder.setSgt(new Sgt(sgt));
-                        prefixGroupBuilder.setBinding(new ArrayList<Binding>());
-                        prefixGroup = prefixGroupBuilder.build();
-                        prefixGroupMap.put(sgt, prefixGroup);
+                                    .get(TlvType.Sgt)).getSourceGroupTagTlvAttributes().getSgt()));
+                    SxpDatabaseBinding binding = bindingBuilder.setIpPrefix(mappingRecord.getAddress()).build();
+                    if (filter == null || !filter.filter(binding)) {
+                        bindings.add(binding);
                     }
-                    if (filter != null && filter.filter(
-                            SxpBindingIdentity.create(binding, prefixGroup, new PathGroupBuilder().build()))) {
-                        continue;
-                    }
-                    prefixGroup.getBinding().add(binding);
                     break;
             }
         }
-
-        peerSequence.add(nodeId);
-        if (!prefixGroupMap.isEmpty()) {
-            databaseBuilder.setPathGroup(getPathGroups(MessageFactory.toString(message), pathGroups, peerSequence,
-                    new ArrayList<PrefixGroup>(prefixGroupMap.values())));
-        }
-        return databaseBuilder.build();
+        return bindings;
     }
 
     /**
      * Parse UpdateMessage and process addition of Bindings into new SxpDatabase
      *
      * @param message UpdateMessage containing data to be proceed
-     * @return SxpDatabase containing added Bindings
-     * @throws UpdateMessagePrefixGroupsException If PrefixGroup isn't correct in message
-     * @throws UpdateMessagePeerSequenceException If PeerSequence isn't correct in message
+     * @param filter SxpBinding filter that will be applied to bindings
+     * @return List of new Bindings
      */
-    public static SxpDatabase processMessageAddition(UpdateMessage message, SxpBindingFilter filter)
-            throws UpdateMessageSgtException, UpdateMessagePrefixException, UpdateMessagePrefixGroupsException,
-            UpdateMessagePeerSequenceException {
-        String updateMessage = MessageFactory.toString(message);
-        SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder();
-
-        List<PathGroup> pathGroups = new ArrayList<>();
-        List<PrefixGroup> prefixGroups = new ArrayList<>();
+    public static List<SxpDatabaseBinding> processMessageAddition(UpdateMessage message, SxpBindingFilter filter) {
+        List<SxpDatabaseBinding> bindings = new ArrayList<>();
         List<IpPrefix> prefixes = new ArrayList<>();
-        List<NodeId> peerSequence = null;
-        int sgt = -1;
+        SxpDatabaseBindingBuilder
+                bindingBuilder =
+                new SxpDatabaseBindingBuilder().setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
+
         for (Attribute attribute : message.getAttribute()) {
             switch (attribute.getType()) {
                 case AddIpv4:
@@ -256,52 +154,40 @@ public final class BindingHandler {
                                     .getIpPrefix());
                     break;
                 case PeerSequence:
-                    if (peerSequence != null && !prefixes.isEmpty() && prefixGroups.isEmpty()) {
-                        prefixGroups.add(getPrefixGroups(updateMessage, sgt, prefixes, filter));
-                        pathGroups = getPathGroups(updateMessage, pathGroups, peerSequence, prefixGroups);
-                    }
-                    peerSequence =
+                    bindingBuilder.setPeerSequence(NodeIdConv.createPeerSequence(
                             ((PeerSequenceAttribute) attribute.getAttributeOptionalFields()).getPeerSequenceAttributes()
-                                    .getNodeId();
+                                    .getNodeId()));
                     break;
                 case SourceGroupTag:
-                    if (sgt != -1 && !prefixGroups.isEmpty()){
-                        prefixGroups.add(getPrefixGroups(updateMessage, sgt, prefixes, filter));
-                    }
-                    sgt =
-                            ((SourceGroupTagAttribute) attribute.getAttributeOptionalFields()).getSourceGroupTagAttributes()
-                                    .getSgt();
+                    bindingBuilder.setSecurityGroupTag(
+                            new Sgt(((SourceGroupTagAttribute) attribute.getAttributeOptionalFields()).getSourceGroupTagAttributes()
+                                    .getSgt()));
                     break;
             }
+            prefixes.stream().forEach(p -> {
+                SxpDatabaseBinding binding = bindingBuilder.setIpPrefix(p).build();
+                if (filter == null || !filter.filter(binding)) {
+                    bindings.add(binding);
+                }
+            });
+            prefixes.clear();
         }
-        if (peerSequence != null && !prefixes.isEmpty() && prefixGroups.isEmpty()) {
-            prefixGroups.add(getPrefixGroups(updateMessage, sgt, prefixes, filter));
-            pathGroups = getPathGroups(updateMessage, pathGroups, peerSequence, prefixGroups);
-        }
-        databaseBuilder.setPathGroup(pathGroups);
-        return databaseBuilder.build();
+        return bindings;
     }
 
     /**
      * Parse UpdateMessage and process deletion of Bindings into new SxpDatabase
      *
-     * @param nodeId  NodeId of Peer where message came from
      * @param message UpdateMessage containing data to be proceed
-     * @return SxpDatabase containing deleted Bindings
-     * @throws UpdateMessageSgtException          If Sgt in message isn't correct
-     * @throws UpdateMessagePrefixException       If Prefix isn't correct in message
-     * @throws UpdateMessagePrefixGroupsException If PrefixGroup isn't correct in message
-     * @throws UpdateMessagePeerSequenceException If PeerSequence isn't correct in message
+     * @return List of deleted Bindings
      */
-    public static SxpDatabase processMessageDeletion(NodeId nodeId, UpdateMessage message)
-            throws UpdateMessageSgtException, UpdateMessagePrefixException, UpdateMessagePrefixGroupsException,
-            UpdateMessagePeerSequenceException {
-        SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder().setPathGroup(new ArrayList<PathGroup>());
-
+    public static List<SxpDatabaseBinding> processMessageDeletion(UpdateMessage message) {
         List<IpPrefix> prefixes = new ArrayList<>();
-        List<PrefixGroup> prefixGroups = new ArrayList<>();
-        List<NodeId> peerSequence = new ArrayList<>();
-        peerSequence.add(nodeId);
+        SxpDatabaseBindingBuilder
+                bindingsBuilder =
+                new SxpDatabaseBindingBuilder().setSecurityGroupTag(new Sgt(Configuration.DEFAULT_PREFIX_GROUP))
+                        .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
+                        .setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
 
         for (Attribute attribute : message.getAttribute()) {
             if (attribute.getFlags().isOptional() && (attribute.getFlags().isPartial() || !attribute.getFlags()
@@ -331,75 +217,33 @@ public final class BindingHandler {
                     break;
             }
         }
-        if (!prefixes.isEmpty()) {
-            String updateMessage = MessageFactory.toString(message);
-            prefixGroups.add(getPrefixGroups(updateMessage, Configuration.DEFAULT_PREFIX_GROUP, prefixes, null));
-            databaseBuilder.setPathGroup(
-                    getPathGroups(updateMessage, databaseBuilder.getPathGroup(), peerSequence, prefixGroups));
-        }
-        return databaseBuilder.build();
+        return prefixes.parallelStream().map(p -> bindingsBuilder.setIpPrefix(p).build()).collect(Collectors.toList());
     }
 
     /**
      * Parse UpdateMessageLegacy and process deletion of Bindings into new SxpDatabase
      *
-     * @param nodeId  NodeId of Peer where message came from
      * @param message UpdateMessageLegacy containing data to be proceed
-     * @return SxpDatabase containing deleted Bindings
-     * @throws UpdateMessageSgtException          If Sgt in message isn't correct
-     * @throws UpdateMessagePrefixException       If Prefix isn't correct in message
-     * @throws UpdateMessagePrefixGroupsException If PrefixGroup isn't correct in message
-     * @throws UpdateMessagePeerSequenceException If PeerSequence isn't correct in message
+     * @return List of deleted Bindings
      */
-    public static SxpDatabase processMessageDeletion(NodeId nodeId, UpdateMessageLegacy message)
-            throws UpdateMessagePrefixGroupsException, UpdateMessagePeerSequenceException, UpdateMessageSgtException,
-            UpdateMessagePrefixException {
-        SxpDatabaseBuilder databaseBuilder = new SxpDatabaseBuilder().setPathGroup(new ArrayList<PathGroup>());
-        List<PrefixGroup> prefixGroups = new ArrayList<>();
-        List<NodeId> peerSequence = new ArrayList<>();
+    public static List<SxpDatabaseBinding> processMessageDeletion(UpdateMessageLegacy message) {
+        List<SxpDatabaseBinding> bindings = new ArrayList<>();
+        SxpDatabaseBindingBuilder
+                bindingsBuilder =
+                new SxpDatabaseBindingBuilder().setSecurityGroupTag(new Sgt(Configuration.DEFAULT_PREFIX_GROUP))
+                        .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
+                        .setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
 
-        List<IpPrefix> prefixes = new ArrayList<>();
         for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord mappingRecord : message
                 .getMappingRecord()) {
             switch (mappingRecord.getOperationCode()) {
                 case DelIpv4:
                 case DelIpv6:
-                    prefixes.add(mappingRecord.getAddress());
+                    bindings.add(bindingsBuilder.setIpPrefix(mappingRecord.getAddress()).build());
                     break;
             }
         }
-        if (!prefixes.isEmpty()) {
-            String updateMessage = MessageFactory.toString(message);
-            prefixGroups.add(getPrefixGroups(updateMessage, Configuration.DEFAULT_PREFIX_GROUP, prefixes, null));
-            peerSequence.add(nodeId);
-            databaseBuilder.setPathGroup(
-                    getPathGroups(updateMessage, databaseBuilder.getPathGroup(), peerSequence, prefixGroups));
-        }
-        return databaseBuilder.build();
-    }
-
-    /**
-     * Execute new task which perform SXP-DB changes according to received Update Messages
-     * and recursively check,if connection has Update Messages to proceed, if so start again.
-     *
-     * @param connection Connection on which Update Messages was received
-     */
-    public static void startBindingHandle(final SxpConnection connection) {
-        Callable task = connection.pollUpdateMessageInbound();
-        if (task == null) {
-            return;
-        }
-        ListenableFuture
-                future =
-                connection.getOwner().getWorker().executeTask(task, ThreadsWorker.WorkerType.INBOUND);
-        connection.getOwner().getWorker().addListener(future, new Runnable() {
-
-            @Override public void run() {
-                if (connection.getInboundMonitor().decrementAndGet() > 0) {
-                    startBindingHandle(connection);
-                }
-            }
-        });
+        return bindings;
     }
 
     /**
@@ -410,29 +254,16 @@ public final class BindingHandler {
      * @param message    UpdateMessage containing data to be proceed
      * @param connection Connection on which Update Messages was received
      */
-    public static void processUpdateMessage(final UpdateMessage message, final SxpConnection connection) {
-            if (connection.getNodeIdRemote() == null) {
-                LOG.warn(connection.getOwner() + " Unknown message relevant peer node ID");
-                return;
-            }
-            Callable task = new Callable<Void>() {
-
-                @Override public Void call() throws Exception {
-                    try {
-                        SxpDatabase databaseDelete = processMessageDeletion(connection.getNodeIdRemote(), message),
-                                databaseAdd = processMessageAddition(message, connection.getFilter(FilterType.InboundDiscarding));
-                        processUpdate(databaseDelete, databaseAdd, connection.getOwner(), connection);
-                    } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixException |
-                            UpdateMessagePrefixGroupsException | UpdateMessageSgtException e) {
-                        LOG.warn(" Process message addition/deletion ", connection.getOwner(), e);
-                    }
-                    return null;
-                }
-            };
-            connection.pushUpdateMessageInbound(task);
-            if (connection.getInboundMonitor().getAndIncrement() == 0) {
-                startBindingHandle(connection);
-            }
+    public static ListenableFuture processUpdateMessage(final UpdateMessage message, final SxpConnection connection) {
+        if (Preconditions.checkNotNull(connection).getNodeIdRemote() == null) {
+            LOG.warn(connection.getOwner() + " Unknown message relevant peer node ID");
+            return null;
+        }
+        return connection.getOwner().getWorker().executeTaskInSequence(() -> {
+            processUpdate(processMessageDeletion(message),
+                    processMessageAddition(message, connection.getFilter(FilterType.InboundDiscarding)), connection);
+            return null;
+        }, ThreadsWorker.WorkerType.INBOUND, connection);
     }
 
     /**
@@ -443,28 +274,22 @@ public final class BindingHandler {
      * @param message    UpdateMessageLegacy containing data to be proceed
      * @param connection Connection on which Update Messages was received
      */
-    public static void processUpdateMessage(final UpdateMessageLegacy message, final SxpConnection connection) {
-            if (connection.getNodeIdRemote() == null) {
-                LOG.warn(connection.getOwner() + " Unknown message relevant peer node ID");
-                return;
+    public static ListenableFuture processUpdateMessage(final UpdateMessageLegacy message,
+            final SxpConnection connection) {
+        if (Preconditions.checkNotNull(connection).getNodeIdRemote() == null) {
+            LOG.warn(connection.getOwner() + " Unknown message relevant peer node ID");
+            return null;
+        }
+        return connection.getOwner().getWorker().executeTaskInSequence(() -> {
+            try {
+                processUpdate(processMessageDeletion(message),
+                        processMessageAddition(message, connection.getFilter(FilterType.InboundDiscarding),
+                                connection.getNodeIdRemote()), connection);
+            } catch (TlvNotFoundException e) {
+                LOG.warn(" Process legacy message addition/deletion ", connection.getOwner(), e);
             }
-            Callable task = new Callable<Void>() {
-
-                @Override public Void call() throws Exception {
-                    try {
-                        SxpDatabase databaseDelete = processMessageDeletion(connection.getNodeIdRemote(), message),
-                                databaseAdd = processMessageAddition(connection.getNodeIdRemote(), message, connection.getFilter(FilterType.InboundDiscarding));
-                        processUpdate(databaseDelete, databaseAdd, connection.getOwner(), connection);
-                    } catch (DatabaseAccessException | UpdateMessagePeerSequenceException | UpdateMessagePrefixGroupsException | TlvNotFoundException | UpdateMessageSgtException | UpdateMessagePrefixException e) {
-                        LOG.warn(" Process legacy message addition/deletion ", connection.getOwner(), e);
-                    }
-                    return null;
-                }
-            };
-            connection.pushUpdateMessageInbound(task);
-            if (connection.getInboundMonitor().getAndIncrement() == 0) {
-                startBindingHandle(connection);
-            }
+            return null;
+        }, ThreadsWorker.WorkerType.INBOUND, connection);
     }
 
     /**
@@ -472,49 +297,54 @@ public final class BindingHandler {
      *
      * @param connection SxpConnection for which PurgeAll will be proceed
      */
-    public static void processPurgeAllMessage(final SxpConnection connection) {
-            if (connection == null) {
-                return;
-            }
-            connection.pushUpdateMessageInbound(new Callable<Void>() {
-
-                @Override public Void call() throws Exception {
-                    LOG.info("{} Handle PurgeAll {}", connection, connection.getNodeIdRemote());
-                    connection.setPurgeAllMessageReceived();
-                    connection.getContext().getOwner().purgeBindings(connection.getNodeIdRemote());
-                    connection.getContext().getOwner().setSvcBindingManagerNotify();
-                    return null;
-                }
-            });
-            if (connection.getInboundMonitor().getAndIncrement() == 0) {
-                startBindingHandle(connection);
-            }
+    public static ListenableFuture processPurgeAllMessage(final SxpConnection connection) {
+        return Preconditions.checkNotNull(connection).getOwner().getWorker().executeTaskInSequence(() -> {
+            SxpNode owner = connection.getOwner();
+            List<SxpDatabaseBinding>
+                    removed =
+                    owner.getBindingSxpDatabase().deleteBindings(connection.getNodeIdRemote()),
+                    replace = owner.getBindingSxpDatabase().getReplaceForBindings(removed);
+            BindingDispatcher.propagateUpdate(owner.getBindingMasterDatabase().deleteBindings(removed),
+                    owner.getBindingMasterDatabase().addBindings(replace), owner.getAllOnSpeakerConnections());
+            return null;
+        }, ThreadsWorker.WorkerType.INBOUND, connection);
     }
 
-    private static void processUpdate(SxpDatabase databaseDelete, SxpDatabase databaseAdd, SxpNode owner,
-            SxpConnection connection) throws DatabaseAccessException {
+    private static <T extends SxpBindingFields> void processUpdate(List<T> databaseDelete,
+            List<T> databaseAdd, SxpConnection connection) throws DatabaseAccessException {
         // Loop detection.
         if (connection != null && connection.getCapabilities().contains(CapabilityType.LoopDetection)) {
-            databaseAdd = loopDetection(owner.getNodeId(), databaseAdd);
+            databaseAdd = loopDetection(connection.getOwnerId(), databaseAdd);
         }
-        List<SxpBindingIdentity> deletedIdentities = null;
-        boolean added = false;
-        synchronized (owner.getBindingSxpDatabase()) {
-            if (!databaseDelete.getPathGroup().isEmpty()) {
-                deletedIdentities = owner.getBindingSxpDatabase().deleteBindings(databaseDelete);
+
+        List<SxpDatabaseBinding> added = new ArrayList<>(), removed = new ArrayList<>(), replace = new ArrayList<>();
+        synchronized (connection.getOwner().getBindingSxpDatabase()) {
+            if (databaseDelete != null && !databaseDelete.isEmpty()) {
+                removed =
+                        connection.getOwner()
+                                .getBindingSxpDatabase()
+                                .deleteBindings(connection.getNodeIdRemote(), databaseDelete);
+                replace = connection.getOwner().getBindingSxpDatabase().getReplaceForBindings(removed);
             }
-            if (!databaseAdd.getPathGroup().isEmpty()) {
-                added = owner.getBindingSxpDatabase().addBindings(databaseAdd);
+            if (databaseAdd != null && !databaseAdd.isEmpty()) {
+                added =
+                        connection.getOwner()
+                                .getBindingSxpDatabase()
+                                .addBinding(connection.getNodeIdRemote(), databaseAdd);
             }
+
+            if (!replace.isEmpty()) {
+                added.addAll(replace);
+            }
+
+            BindingDispatcher.propagateUpdate(connection.getOwner().getBindingMasterDatabase().deleteBindings(removed),
+                    connection.getOwner().getBindingMasterDatabase().addBindings(added),
+                    connection.getOwner().getAllOnSpeakerConnections());
         }
-        if ((deletedIdentities != null && !deletedIdentities.isEmpty()) || added) {
-            owner.setSvcBindingManagerNotify();
-        }
-        if (deletedIdentities != null && !deletedIdentities.isEmpty()) {
-            LOG.info(owner + " Deleted bindings | {}", deletedIdentities);
-        }
-        if (added) {
-            LOG.info(owner + " Added bindings | {}", new SxpDatabaseImpl(databaseAdd).toString());
+
+        if (!removed.isEmpty() || !added.isEmpty() || !replace.isEmpty()) {
+            LOG.info(connection.getOwnerId() + " [Deleted/Added/ToReplace] bindings [{}/{}/{}]", removed.size(),
+                    added.size(), replace.size());
         }
     }
 }

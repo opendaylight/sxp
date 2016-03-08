@@ -9,79 +9,141 @@
 package org.opendaylight.sxp.controller.util.database;
 
 import com.google.common.base.Preconditions;
-import org.opendaylight.sxp.util.database.SxpBindingIdentity;
-import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseAccess;
-import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
-import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
+import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
+import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.BindingDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.BindingDatabaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.BindingDatabaseKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.BindingSources;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.BindingSourcesBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.BindingSource;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.BindingSourceBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.BindingSourceKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.SxpDatabaseBindingsBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.SxpDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyKey;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
-public final class SxpDatastoreImpl extends SxpDatabaseImpl {
+public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.spi.SxpDatabase {
 
-    private final SxpDatabaseAccess databaseAccess;
+    private final DatastoreAccess datastoreAccess;
+    private final String nodeId;
 
-    public SxpDatastoreImpl(SxpDatabaseAccess databaseAccess) {
-        this.databaseAccess = Preconditions.checkNotNull(databaseAccess);
+    public SxpDatastoreImpl(DatastoreAccess datastoreAccess, String nodeId) {
+        this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
+        this.nodeId = Preconditions.checkNotNull(nodeId);
+        List<BindingDatabase> databases = new ArrayList<>();
+        databases.add(
+            new BindingDatabaseBuilder().setBindingType(BindingDatabase.BindingType.ActiveBindings)
+                .setBindingSources(
+                    new BindingSourcesBuilder().setBindingSource(new ArrayList<>()).build())
+                .build());
+        databases.add(new BindingDatabaseBuilder()
+            .setBindingType(BindingDatabase.BindingType.ReconciledBindings).setBindingSources(
+                new BindingSourcesBuilder().setBindingSource(new ArrayList<>()).build()).build());
+        datastoreAccess.putSynchronous(getIdentifierBuilder().build(),
+            new SxpDatabaseBuilder().setBindingDatabase(databases).build(),
+            LogicalDatastoreType.OPERATIONAL);
+    }
+
+
+    private InstanceIdentifier.InstanceIdentifierBuilder<SxpDatabase> getIdentifierBuilder() {
+        return InstanceIdentifier.builder(NetworkTopology.class)
+            .child(Topology.class, new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME)))
+            .child(Node.class, new NodeKey(
+                new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
+                    nodeId))).augmentation(SxpNodeIdentity.class).child(SxpDatabase.class);
+    }
+
+    private InstanceIdentifier.InstanceIdentifierBuilder<BindingDatabase> getIdentifierBuilder(
+        BindingDatabase.BindingType bindingType) {
+        return getIdentifierBuilder()
+            .child(BindingDatabase.class, new BindingDatabaseKey(bindingType));
+    }
+
+    private InstanceIdentifier.InstanceIdentifierBuilder<BindingSource> getIdentifierBuilder(
+        BindingDatabase.BindingType bindingType, NodeId nodeId) {
+        return getIdentifierBuilder()
+            .child(BindingDatabase.class, new BindingDatabaseKey(bindingType))
+            .child(BindingSources.class).child(BindingSource.class, new BindingSourceKey(nodeId));
+    }
+
+    @Override protected boolean putBindings(NodeId nodeId, BindingDatabase.BindingType bindingType,
+            List<SxpDatabaseBinding> bindings) {
+        return datastoreAccess.mergeSynchronous(getIdentifierBuilder(bindingType, nodeId).build(),
+                new BindingSourceBuilder().setSourceId(nodeId)
+                        .setSxpDatabaseBindings(
+                                new SxpDatabaseBindingsBuilder().setSxpDatabaseBinding(bindings).build())
+                        .build(), LogicalDatastoreType.OPERATIONAL);
     }
 
     @Override
-    public synchronized boolean addBindings(SxpDatabase database) throws DatabaseAccessException {
-        this.database = databaseAccess.read();
-        boolean result = super.addBindings(database);
-        databaseAccess.put(this.database);
-        return result;
-    }
-
-    @Override
-    public synchronized void cleanUpBindings(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException {
-        this.database = databaseAccess.read();
-        super.cleanUpBindings(nodeId);
-        databaseAccess.put(this.database);
-    }
-
-    @Override
-    public synchronized List<SxpBindingIdentity> deleteBindings(SxpDatabase database) throws DatabaseAccessException {
-        this.database = databaseAccess.read();
-        List<SxpBindingIdentity> result = super.deleteBindings(database);
-        databaseAccess.put(this.database);
-        return result;
-    }
-
-    @Override
-    public synchronized SxpDatabase get() throws DatabaseAccessException {
-        return databaseAccess.read();
-    }
-
-    @Override
-    public synchronized void purgeBindings(NodeId nodeId) throws DatabaseAccessException, NodeIdNotDefinedException {
-        this.database = databaseAccess.read();
-        super.purgeBindings(nodeId);
-        databaseAccess.put(this.database);
-    }
-
-    @Override
-    public synchronized List<SxpBindingIdentity> readBindings() throws DatabaseAccessException {
-        database = databaseAccess.read();
-        return super.readBindings();
-    }
-
-    @Override
-    public synchronized void setAsCleanUp(NodeId nodeId) throws NodeIdNotDefinedException, DatabaseAccessException {
-        database = databaseAccess.read();
-        super.setAsCleanUp(nodeId);
-        databaseAccess.put(this.database);
-    }
-
-    @Override
-    public synchronized String toString() {
-        try {
-            database = databaseAccess.read();
-            return super.toString();
-        } catch (DatabaseAccessException e) {
-            return "[error]";
+    protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType) {
+        BindingDatabase result = datastoreAccess
+            .readSynchronous(getIdentifierBuilder(bindingType).build(),
+                LogicalDatastoreType.OPERATIONAL);
+        List<SxpDatabaseBinding> bindings = new ArrayList<>();
+        if (result != null && result.getBindingSources() != null
+            && result.getBindingSources().getBindingSource() != null) {
+            result.getBindingSources().getBindingSource().stream().forEach(s -> {
+                if (s.getSxpDatabaseBindings() != null
+                    && s.getSxpDatabaseBindings().getSxpDatabaseBinding() != null && !s
+                    .getSxpDatabaseBindings().getSxpDatabaseBinding().isEmpty()) {
+                    bindings.addAll(s.getSxpDatabaseBindings().getSxpDatabaseBinding());
+                }
+            });
         }
+        return bindings;
+    }
+
+    @Override
+    protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType,
+        NodeId nodeId) {
+        BindingSource result = datastoreAccess
+            .readSynchronous(getIdentifierBuilder(bindingType, nodeId).build(),
+                LogicalDatastoreType.OPERATIONAL);
+        if (result != null && result.getSxpDatabaseBindings() != null) {
+            return result.getSxpDatabaseBindings().getSxpDatabaseBinding();
+        }
+        return new ArrayList<>();
+    }
+
+    @Override
+    protected boolean deleteBindings(NodeId nodeId, BindingDatabase.BindingType bindingType) {
+        return datastoreAccess.deleteSynchronous(getIdentifierBuilder(bindingType, nodeId).build(),
+            LogicalDatastoreType.OPERATIONAL);
+    }
+
+    @Override protected List<SxpDatabaseBinding> deleteBindings(NodeId nodeId, Set<IpPrefix> ipPrefixes,
+        BindingDatabase.BindingType bindingType) {
+        List<SxpDatabaseBinding> bindingList = getBindings(bindingType, nodeId), removed = new ArrayList<>();
+        if (!bindingList.isEmpty() && bindingList.removeIf(b -> {
+            boolean result = ipPrefixes.contains(b.getIpPrefix());
+            if (result)
+                removed.add(b);
+            return result;
+        })) {
+            datastoreAccess.putSynchronous(getIdentifierBuilder(bindingType, nodeId).build(),
+                    new BindingSourceBuilder().setSourceId(nodeId)
+                            .setSxpDatabaseBindings(
+                                    new SxpDatabaseBindingsBuilder().setSxpDatabaseBinding(bindingList).build())
+                            .build(), LogicalDatastoreType.OPERATIONAL);
+        }
+        return removed;
     }
 }

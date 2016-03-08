@@ -38,8 +38,6 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -67,7 +65,6 @@ import static org.mockito.Mockito.*;
                 Context context = PowerMockito.mock(Context.class);
                 PowerMockito.when(context.getOwner()).thenReturn(sxpNode);
                 when(connection.getContext()).thenReturn(context);
-                when(connection.getInboundMonitor()).thenReturn(new AtomicLong());
         }
 
         @Test public void testOnChannelActivation() throws Exception {
@@ -186,7 +183,6 @@ import static org.mockito.Mockito.*;
                 when(message.getType()).thenReturn(MessageType.PurgeAll);
 
                 sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
-                verify(connection).pushUpdateMessageInbound(any(Callable.class));
         }
 
 }

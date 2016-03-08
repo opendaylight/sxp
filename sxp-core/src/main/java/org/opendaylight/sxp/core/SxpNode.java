@@ -14,6 +14,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Sets;
 import com.google.common.net.InetAddresses;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -22,20 +23,16 @@ import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
-import org.opendaylight.sxp.core.service.BindingManager;
 import org.opendaylight.sxp.core.service.ConnectFacade;
-import org.opendaylight.sxp.core.service.Service;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.Security;
-import org.opendaylight.sxp.util.database.Database;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
+import org.opendaylight.sxp.util.database.spi.MasterDatabase;
+import org.opendaylight.sxp.util.database.spi.SxpDatabase;
 import org.opendaylight.sxp.util.exception.connection.NoNetworkInterfacesException;
 import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
 import org.opendaylight.sxp.util.exception.node.DatabaseAccessException;
-import org.opendaylight.sxp.util.exception.node.NodeIdNotDefinedException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownSxpConnectionException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
@@ -44,26 +41,24 @@ import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
 import org.opendaylight.tcpmd5.jni.NativeSupportUnavailableException;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseBindingSource;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.node.fields.SecurityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,8 +125,8 @@ public final class SxpNode {
      * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
      * @throws SocketException              If IO error occurs
      */
-    public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseInf masterDatabase,
-            SxpDatabaseInf sxpDatabase) throws NoNetworkInterfacesException, SocketException {
+    public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabase masterDatabase,
+            SxpDatabase sxpDatabase) throws NoNetworkInterfacesException, SocketException {
         return createInstance(nodeId, node, masterDatabase, sxpDatabase, new ThreadsWorker());
     }
 
@@ -151,8 +146,8 @@ public final class SxpNode {
      * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
      * @throws SocketException              If IO error occurs
      */
-    public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseInf masterDatabase,
-            SxpDatabaseInf sxpDatabase, ThreadsWorker worker)
+    public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabase masterDatabase,
+            SxpDatabase sxpDatabase, ThreadsWorker worker)
             throws NoNetworkInterfacesException, SocketException {
         return new SxpNode(nodeId, node, masterDatabase, sxpDatabase, worker);
     }
@@ -161,9 +156,9 @@ public final class SxpNode {
             addressToSxpConnection =
             new HashMap<>(Configuration.getConstants().getNodeConnectionsInitialSize());
 
-    protected volatile MasterDatabaseInf _masterDatabase = null;
+    protected volatile MasterDatabase _masterDatabase = null;
 
-    protected volatile SxpDatabaseInf _sxpDatabase = null;
+    protected volatile SxpDatabase _sxpDatabase = null;
 
     private final HandlerFactory handlerFactoryClient = new HandlerFactory(MessageDecoder.createClientProfile(this));
 
@@ -177,7 +172,7 @@ public final class SxpNode {
 
     protected InetAddress sourceIp;
 
-    private final Service svcBindingManager, svcBindingDispatcher;
+    private final BindingDispatcher svcBindingDispatcher;
     private final ThreadsWorker worker;
 
     /** Common timers setup. */
@@ -195,8 +190,8 @@ public final class SxpNode {
      * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
      * @throws SocketException              If IO error occurs
      */
-    private SxpNode(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseInf masterDatabase,
-            SxpDatabaseInf sxpDatabase,ThreadsWorker worker) throws NoNetworkInterfacesException, SocketException {
+    private SxpNode(NodeId nodeId, SxpNodeIdentity node, MasterDatabase masterDatabase,
+            SxpDatabase sxpDatabase,ThreadsWorker worker) throws NoNetworkInterfacesException, SocketException {
         this.worker = worker;
         this.nodeId = nodeId;
         this.nodeBuilder = new SxpNodeIdentityBuilder(node);
@@ -213,7 +208,6 @@ public final class SxpNode {
         this._sxpDatabase = Preconditions.checkNotNull(sxpDatabase);
 
         addConnections(nodeBuilder.getConnections());
-        svcBindingManager = new BindingManager(this);
         svcBindingDispatcher = new BindingDispatcher(this);
 
         // Start services.
@@ -545,10 +539,10 @@ public final class SxpNode {
      *
      * @param nodeID NodeId that filters removed Bindings
      */
-    public void cleanUpBindings(NodeId nodeID) {
-        if (svcBindingManager instanceof BindingManager) {
-            ((BindingManager) svcBindingManager).cleanUpBindings(nodeID);
-        }
+    public ListenableFuture<List<SxpDatabaseBinding>> cleanUpBindings(NodeId nodeID) {
+        return getWorker().executeTask(() -> {
+            return getBindingSxpDatabase().reconcileBindings(nodeID);
+        }, ThreadsWorker.WorkerType.DEFAULT);
     }
 
     private List<SxpConnection> filterConnections(Predicate<SxpConnection> predicate) {
@@ -640,14 +634,14 @@ public final class SxpNode {
     /**
      * @return Gets MasterDatabase that is used in Node
      */
-    public synchronized MasterDatabaseInf getBindingMasterDatabase() {
+    public synchronized MasterDatabase getBindingMasterDatabase() {
         return _masterDatabase;
     }
 
     /**
      * @return Gets SxpDatabase that is used in Node
      */
-    public synchronized SxpDatabaseInf getBindingSxpDatabase() {
+    public synchronized SxpDatabase getBindingSxpDatabase() {
         return _sxpDatabase;
     }
 
@@ -864,6 +858,7 @@ public final class SxpNode {
         return serverChannel != null && serverChannel.isActive();
     }
 
+
     /**
      * Start all Connections that are in state Off
      */
@@ -929,48 +924,15 @@ public final class SxpNode {
     }
 
     /**
-     * Notifies BindingManager to delete all Bindings from specified NodeId
-     *
-     * @param nodeID NodeId used to filter deletion
-     */
-    public void purgeBindings(NodeId nodeID) {
-        try {
-            synchronized (getBindingSxpDatabase()) {
-                getBindingSxpDatabase().purgeBindings(nodeID);
-            }
-        } catch (NodeIdNotDefinedException | DatabaseAccessException e) {
-            LOG.error("{} Error purging bindings ", this, e);
-        }
-    }
-
-    /**
      * Adds Bindings to database as Local bindings
      *
      * @param masterDatabaseConfiguration MasterDatabase containing bindings that will be added
      */
-    public void putLocalBindingsMasterDatabase(MasterDatabase masterDatabaseConfiguration) {
-        Source source = null;
-        if (masterDatabaseConfiguration.getSource() != null) {
-            for (Source _source : masterDatabaseConfiguration.getSource()) {
-                if (_source.getBindingSource().equals(DatabaseBindingSource.Local)) {
-                    source = _source;
-                    break;
-                }
-            }
-        }
+    public void putLocalBindingsMasterDatabase(
+            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase masterDatabaseConfiguration) {
+        //TODO
 
-        if (source != null && source.getPrefixGroup() != null && !source.getPrefixGroup().isEmpty()) {
-            try {
-                synchronized (getBindingMasterDatabase()) {
-                    getBindingMasterDatabase().addBindingsLocal(this,
-                            Database.assignPrefixGroups(nodeId, source.getPrefixGroup()));
-                }
-            } catch (DatabaseAccessException  |NodeIdNotDefinedException e) {
-                LOG.error("{} Error puting Bindings to DB {} ", this, masterDatabaseConfiguration, e);
-                return;
-            }
-            setSvcBindingManagerNotify();
-        }
+
     }
 
     /**
@@ -995,10 +957,9 @@ public final class SxpNode {
      *
      * @param nodeID NodeId that filters setting flag Bindings
      */
-    public void setAsCleanUp(NodeId nodeID) {
-        if (svcBindingManager instanceof BindingManager) {
-            ((BindingManager) svcBindingManager).setAsCleanUp(nodeID);
-        }
+    public ListenableFuture setAsCleanUp(NodeId nodeID) {
+        return getWorker().executeTask(() -> getBindingSxpDatabase().setReconciliation(nodeID),
+            ThreadsWorker.WorkerType.DEFAULT);
     }
 
     /**
@@ -1035,28 +996,11 @@ public final class SxpNode {
     }
 
     /**
-     * Notify BindingDispatcher to execute dispatch of bindings to all Connection,
-     * mainly after Database modification
-     */
-    public void setSvcBindingDispatcherDispatch() {
-        if (svcBindingDispatcher instanceof BindingDispatcher) {
-            ((BindingDispatcher) svcBindingDispatcher).dispatch();
-        }
-    }
-
-    /**
-     * Notify BindingDispatcher to execute dispatch of bindings on reconnected connections
-     */
-    public void setSvcBindingDispatcherNotify() {
-        svcBindingDispatcher.notifyChange();
-    }
-
-    /**
      * Notify BindingManager to execute propagation of newly learned Bindings to MasterDatabase
      * and afterwards to Connections
      */
     public void setSvcBindingManagerNotify() {
-        svcBindingManager.notifyChange();
+        //TODO svcBindingManager.notifyChange();
     }
 
     /**
@@ -1141,10 +1085,7 @@ public final class SxpNode {
             serverChannel = null;
         }
         if (svcBindingDispatcher != null) {
-            svcBindingDispatcher.cancel();
-        }
-        if (svcBindingManager != null) {
-            svcBindingManager.cancel();
+            //TODO
         }
     }
 
@@ -1171,7 +1112,9 @@ public final class SxpNode {
             return;
         }
         // Put local bindings before services startup.
-        MasterDatabase masterDatabaseConfiguration = nodeBuilder.getMasterDatabase();
+        org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase
+                masterDatabaseConfiguration =
+                nodeBuilder.getMasterDatabase();
         if (masterDatabaseConfiguration != null) {
             putLocalBindingsMasterDatabase(masterDatabaseConfiguration);
             // LOG.info(this + " " + getBindingMasterDatabase().toString());

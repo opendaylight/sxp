@@ -8,6 +8,10 @@
 
 package org.opendaylight.sxp.controller.util.database.access;
 
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.opendaylight.controller.md.sal.binding.api.BindingTransactionChain;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
@@ -18,10 +22,7 @@ import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFaile
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.CheckedFuture;
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.ExecutionException;
 
 public final class DatastoreAccess {
 
@@ -111,6 +112,50 @@ public final class DatastoreAccess {
             try (ReadOnlyTransaction transaction = bindingTransactionChain.newReadOnlyTransaction()) {
                 return transaction.read(logicalDatastoreType, path);
             }
+        }
+    }
+
+    public <T extends DataObject> boolean deleteSynchronous(InstanceIdentifier<T> path,
+            LogicalDatastoreType logicalDatastoreType) {
+        try {
+            delete(path, logicalDatastoreType).get();
+            return true;
+        } catch (InterruptedException | ExecutionException e) {
+            //TODO LOG and throw DatabaseAccessException
+            return false;
+        }
+    }
+
+    public <T extends DataObject> boolean mergeSynchronous(InstanceIdentifier<T> path, T data,
+            LogicalDatastoreType logicalDatastoreType) {
+        try {
+            merge(path, data, logicalDatastoreType).get();
+            return true;
+        } catch (InterruptedException | ExecutionException e) {
+            //TODO LOG and throw DatabaseAccessException
+            return false;
+        }
+    }
+
+    public <T extends DataObject> boolean putSynchronous(InstanceIdentifier<T> path, T data,
+            LogicalDatastoreType logicalDatastoreType) {
+        try {
+            put(path, data, logicalDatastoreType).get();
+            return true;
+        } catch (InterruptedException | ExecutionException e) {
+            //TODO LOG and throw DatabaseAccessException
+            return false;
+        }
+    }
+
+    public <T extends DataObject> T readSynchronous(InstanceIdentifier<T> path,
+            LogicalDatastoreType logicalDatastoreType) {
+        try {
+            Optional<T> result = read(path, logicalDatastoreType).get();
+            return result.isPresent() ? result.get() : null;
+        } catch (InterruptedException | ExecutionException e) {
+            //TODO LOG and throw DatabaseAccessException
+            return null;
         }
     }
 }
