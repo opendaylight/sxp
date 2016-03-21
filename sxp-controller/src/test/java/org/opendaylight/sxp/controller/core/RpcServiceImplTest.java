@@ -8,21 +8,8 @@
 
 package org.opendaylight.sxp.controller.core;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
+import com.google.common.base.Optional;
+import com.google.common.util.concurrent.CheckedFuture;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,6 +21,7 @@ import org.opendaylight.sxp.controller.util.database.access.MasterDatabaseAccess
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
@@ -93,8 +81,16 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import com.google.common.base.Optional;
-import com.google.common.util.concurrent.CheckedFuture;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({MasterDatastoreImpl.class, DatastoreAccess.class, SxpNode.class})
 public class RpcServiceImplTest {
@@ -103,13 +99,16 @@ public class RpcServiceImplTest {
         private static RpcServiceImpl service;
         private static DatastoreAccess datastoreAccess;
         private static CheckedFuture checkedFuture;
+        private static ThreadsWorker worker;
 
         @BeforeClass public static void initClass() throws Exception {
+                worker = new ThreadsWorker();
                 node = PowerMockito.mock(SxpNode.class);
                 when(node.getNodeId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
                 ArrayList<SxpPeerGroup> sxpPeerGroups = new ArrayList<>();
                 sxpPeerGroups.add(mock(SxpPeerGroup.class));
                 when(node.getPeerGroups()).thenReturn(sxpPeerGroups);
+                when(node.getWorker()).thenReturn(worker);
                 when(node.getPeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
                 when(node.removePeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
                 when(node.removeFilterFromPeerGroup(anyString(), any(FilterType.class))).thenReturn(
@@ -226,8 +225,7 @@ public class RpcServiceImplTest {
                         bindings =
                         RpcServiceImpl.getNodeBindings(getMasterDatabase(
                                         getSource(getPrefixGroup(10, "0.0.0.0/32", "1.1.1.1/32"),
-                                                getPrefixGroup(50, "5.5.5.5/32"), getPrefixGroup(150, "0.0.0.0/32"))),
-                                NodeId.getDefaultInstance("0.0.0.0"));
+                                                getPrefixGroup(50, "5.5.5.5/32"), getPrefixGroup(150, "0.0.0.0/32"))));
                 assertNotNull(bindings);
                 assertBinding(bindings, "0.0.0.0/32", 10);
                 assertBinding(bindings, "0.0.0.0/32", 150);
