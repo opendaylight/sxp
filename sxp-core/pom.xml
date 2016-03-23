@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.opendaylight.sxp</groupId>
         <artifactId>sxp-parent</artifactId>
-        <version>1.2.1-Beryllium-SR1</version>
+        <version>1.2.2-SNAPSHOT</version>
     </parent>
     <artifactId>sxp-core</artifactId>
    	<packaging>bundle</packaging>
