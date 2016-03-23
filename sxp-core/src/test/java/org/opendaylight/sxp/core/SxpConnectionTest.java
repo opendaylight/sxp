@@ -176,10 +176,10 @@ public class SxpConnectionTest {
                 when(worker.scheduleTask(any(Callable.class), anyInt(), any(TimeUnit.class))).thenReturn(future);
 
                 sxpConnection.setReconciliationTimer();
-                assertNull(sxpConnection.getTimer(TimerType.ReconciliationTimer));
+                assertNotNull(sxpConnection.getTimer(TimerType.ReconciliationTimer));
                 sxpConnection.setTimer(TimerType.DeleteHoldDownTimer, 120);
                 sxpConnection.setReconciliationTimer();
-                assertNull(sxpConnection.getTimer(TimerType.ReconciliationTimer));
+                assertNotNull(sxpConnection.getTimer(TimerType.ReconciliationTimer));
                 when(future.isDone()).thenReturn(false);
                 sxpConnection.setReconciliationTimer();
                 assertNotNull(sxpConnection.getTimer(TimerType.ReconciliationTimer));

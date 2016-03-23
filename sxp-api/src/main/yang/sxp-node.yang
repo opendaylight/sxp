@@ -36,9 +36,7 @@ module sxp-node {
         description "Timer types with their default values";
 
         type enumeration {
-            enum delete-hold-down-timer {
-                description "Non-configurable";
-            }
+            enum delete-hold-down-timer;
             enum hold-timer;
             enum hold-timer-max;
             enum hold-timer-min;
@@ -205,7 +203,6 @@ module sxp-node {
         container connections {
             list connection {
                 description "SXP connections to dedicated peers";
-
                 key "peer-address tcp-port";
                 uses sxp-connection-fields;
             }
@@ -215,7 +212,7 @@ module sxp-node {
     grouping sxp-node-time-settings-fields {
         leaf retry-open-time {
             type uint16;
-
+            default 120;
             description "Retry Open Timer: Default timer value is 120 sec. If zero, timer
                         won’t be used.";
         }
@@ -223,28 +220,29 @@ module sxp-node {
 
     grouping sxp-listener-time-settings-fields {
         leaf delete-hold-down-time {
-            config false;
             type uint16;
-
+            default 120;
             description "Delete Hold-down Timer: Default timer value is 120 sec. and it’s
                         not configurable.";
         }
         leaf reconciliation-time {
             type uint16;
-
+            default 120;
             description "Reconciliation Timer: Default timer value is 120 sec. If zero,
                         timer won’t be used.";
         }
         leaf hold-time {
             type uint16;
-
+            default 90;
             description "Optional Hold Timer: Default timer value is 90 sec. and can be
                         configurable. The actual value used for a connection is negotiated.";
         }
         leaf hold-time-min {
+            default 90;
             type uint16;
         }
         leaf hold-time-max {
+            default 180;
             type uint16;
         }
     }
@@ -252,10 +250,11 @@ module sxp-node {
     grouping sxp-speaker-time-settings-fields {
         leaf hold-time-min-acceptable {
             type uint16;
+            default 120;
         }
         leaf keep-alive-time {
             type uint16;
-
+            default 30;
             description "Optional Keep-alive Timer: Default timer value is 30 sec. and
                         can be configurable. The actual value used for a connection is
                         set to 1/3 of negotiated Hold Time and can be further restarted

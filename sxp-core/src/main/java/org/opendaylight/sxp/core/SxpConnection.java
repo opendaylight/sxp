@@ -667,20 +667,11 @@ public class SxpConnection {
      * @param connectionMode ConnectionMode used for setup
      */
     private void initializeTimers(ConnectionMode connectionMode) {
-
-        // Listener connection specific.
         if (connectionMode.equals(ConnectionMode.Listener)) {
-            // Set reconciliation timer per connection.
-            setReconciliationTimer();
             if (getHoldTime() > 0) {
                 setTimer(TimerType.HoldTimer, getHoldTime());
             }
         }
-        // Speaker connection specific. According to the initial negotiation in
-        // the Sxpv4 behavior, we can't use Speaker configuration that is
-        // related to channel context, i.e.
-        // ChannelHandlerContextDiscrepancyException. This timer will be setup
-        // during Binding Dispatcher runtime.
         if (connectionMode.equals(ConnectionMode.Speaker)) {
             if (getKeepaliveTime() > 0) {
                 setTimer(TimerType.KeepAliveTimer, getKeepaliveTime());
@@ -1049,16 +1040,12 @@ public class SxpConnection {
      * Start DeleteHoldDown timer and if Reconciliation timer is started stop it
      */
     public void setDeleteHoldDownTimer() {
-        // Non configurable.
-        setTimer(TimerType.DeleteHoldDownTimer,Configuration.getTimerDefault()
-                .getDeleteHoldDownTimer());
-
+        setTimer(TimerType.DeleteHoldDownTimer, connectionBuilder.getConnectionTimers().getDeleteHoldDownTime());
         ListenableScheduledFuture<?> ctReconciliation = getTimer(TimerType.ReconciliationTimer);
         if (ctReconciliation != null && !ctReconciliation.isDone()) {
             LOG.info("{} Stopping Reconciliation timer cause | Connection DOWN.", this);
             setTimer(TimerType.ReconciliationTimer, null);
         }
-
         setStateDeleteHoldDown();
     }
 
@@ -1176,12 +1163,11 @@ public class SxpConnection {
         if (getReconciliationTime() > 0) {
             ListenableScheduledFuture<?> ctDeleteHoldDown = getTimer(TimerType.DeleteHoldDownTimer);
             if (ctDeleteHoldDown != null && !ctDeleteHoldDown.isDone()) {
-                LOG.info("{} Starting Reconciliation timer.", this);
-                setTimer(TimerType.ReconciliationTimer, getReconciliationTime());
-
                 LOG.info("{} Stopping Delete Hold Down timer.", this);
                 setTimer(TimerType.DeleteHoldDownTimer, null);
             }
+            LOG.info("{} Starting Reconciliation timer.", this);
+            setTimer(TimerType.ReconciliationTimer, getReconciliationTime());
         }
     }
 
