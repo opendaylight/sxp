@@ -10,7 +10,7 @@ package org.opendaylight.sxp.util.time.node;
 
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 
 /**
  * RetryOpenTimerTask is triggered as long as there is one SXP connection on the device that is not up
@@ -32,7 +32,7 @@ public class RetryOpenTimerTask extends SxpTimerTask<Void> {
     }
 
     @Override public Void call() {
-        if (owner.isEnabled()) {
+        if (owner.isEnabled() && !owner.getAllOffConnections().isEmpty()) {
             LOG.debug(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
             owner.openConnections();
         }

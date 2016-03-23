@@ -19,6 +19,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.service.UpdateExportTask;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
+import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
@@ -28,9 +29,9 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimers;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimers;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
@@ -59,7 +60,6 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.*;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class, UpdateExportTask.class})
@@ -81,6 +81,7 @@ public class SxpConnectionTest {
                 when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(
                         mock(ListenableFuture.class));
                 sxpNode = PowerMockito.mock(SxpNode.class);
+                PowerMockito.when(sxpNode.getBindingSxpDatabase()).thenReturn(mock(SxpDatabaseInf.class));
                 PowerMockito.when(sxpNode.getHoldTimeMax()).thenReturn(120);
                 PowerMockito.when(sxpNode.getHoldTimeMin()).thenReturn(60);
                 PowerMockito.when(sxpNode.getHoldTimeMinAcceptable()).thenReturn(60);
@@ -104,8 +105,7 @@ public class SxpConnectionTest {
 
         @Test public void testCleanUpBindings() throws Exception {
                 sxpConnection.cleanUpBindings();
-                verify(sxpNode).cleanUpBindings(any(NodeId.class));
-                verify(sxpNode).setSvcBindingManagerNotify();
+                verify(sxpNode.getBindingSxpDatabase()).reconcileBindings(any(NodeId.class));
         }
 
         @Test public void testCloseChannelHandlerContext() throws Exception {
@@ -153,8 +153,9 @@ public class SxpConnectionTest {
 
         @Test public void testPurgeBindings() throws Exception {
                 sxpConnection.purgeBindings();
-                verify(sxpNode).setSvcBindingManagerNotify();
-                verify(sxpNode).purgeBindings(any(NodeId.class));
+                assertEquals(ConnectionState.Off,sxpConnection.getState());
+                verify(sxpNode.getWorker()).executeTaskInSequence(any(Callable.class),
+                        eq(ThreadsWorker.WorkerType.INBOUND), eq(sxpConnection));
         }
 
         @Test public void testSetDeleteHoldDownTimer() throws Exception {
@@ -197,9 +198,6 @@ public class SxpConnectionTest {
                 sxpConnection.setTimer(TimerType.KeepAliveTimer, 120);
                 sxpConnection.setTimer(TimerType.ReconciliationTimer, 120);
                 sxpConnection.setTimer(TimerType.HoldTimer, 120);
-                sxpConnection.pushUpdateMessageInbound(mock(Callable.class));
-                UpdateExportTask exportTask = PowerMockito.mock(UpdateExportTask.class);
-                sxpConnection.pushUpdateMessageOutbound(exportTask);
 
                 sxpConnection.markChannelHandlerContext(context,
                         SxpConnection.ChannelHandlerContextType.ListenerContext);
@@ -211,8 +209,6 @@ public class SxpConnectionTest {
                 assertNull(sxpConnection.getTimer(TimerType.ReconciliationTimer));
                 assertNull(sxpConnection.getTimer(TimerType.HoldTimer));
                 assertNotNull(sxpConnection.getTimer(TimerType.KeepAliveTimer));
-                assertNull(sxpConnection.pollUpdateMessageInbound());
-                assertNotNull(sxpConnection.pollUpdateMessageOutbound());
 
                 //Speaker Down
                 when(sxpConnection.getContextType(any(ChannelHandlerContext.class))).thenReturn(
@@ -222,17 +218,12 @@ public class SxpConnectionTest {
                 sxpConnection.setTimer(TimerType.ReconciliationTimer, 120);
                 sxpConnection.markChannelHandlerContext(context,
                         SxpConnection.ChannelHandlerContextType.ListenerContext);
-                sxpConnection.pushUpdateMessageInbound(mock(Callable.class));
-                sxpConnection.pushUpdateMessageOutbound(exportTask);
 
                 sxpConnection.setStateOff(context1);
                 assertNotNull(sxpConnection.getTimer(TimerType.DeleteHoldDownTimer));
                 assertNotNull(sxpConnection.getTimer(TimerType.ReconciliationTimer));
                 assertNotNull(sxpConnection.getTimer(TimerType.HoldTimer));
                 assertNull(sxpConnection.getTimer(TimerType.KeepAliveTimer));
-                assertNotNull(sxpConnection.pollUpdateMessageInbound());
-                assertNull(sxpConnection.pollUpdateMessageOutbound());
-
         }
 
         @Test public void testSetTimer() throws Exception {
@@ -257,26 +248,23 @@ public class SxpConnectionTest {
                 Connection connection = mockConnection(ConnectionMode.Listener, ConnectionState.On);
                 Connection connection1 = mockConnection(ConnectionMode.Speaker, ConnectionState.On);
 
+                when(worker.executeTaskInSequence(any(Callable.class), any(ThreadsWorker.WorkerType.class),
+                        any(SxpConnection.class))).thenReturn(mock(ListenableFuture.class))
+                        .thenReturn(mock(ListenableFuture.class));
+
                 sxpConnection = SxpConnection.create(sxpNode, connection);
                 sxpConnection.shutdown();
-                verify(sxpNode).purgeBindings(any(NodeId.class));
+                verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
+                        eq(ThreadsWorker.WorkerType.INBOUND), eq(sxpConnection));
                 assertEquals(ConnectionState.Off, sxpConnection.getState());
 
                 sxpConnection = SxpConnection.create(sxpNode, connection1);
-                ChannelHandlerContext context = mock(ChannelHandlerContext.class);
-                when(context.close()).thenReturn(mock(ChannelFuture.class));
-                sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.SpeakerContext);
                 sxpConnection.setTimer(TimerType.KeepAliveTimer, 50);
-                sxpConnection.pushUpdateMessageInbound(mock(Callable.class));
-                UpdateExportTask exportTask = PowerMockito.mock(UpdateExportTask.class);
-                sxpConnection.pushUpdateMessageOutbound(exportTask);
 
                 sxpConnection.shutdown();
-                verify(context).writeAndFlush(anyObject());
-                verify(exportTask).freeReferences();
+                verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
+                        eq(ThreadsWorker.WorkerType.OUTBOUND), eq(sxpConnection));
                 assertNull(sxpConnection.getTimer(TimerType.KeepAliveTimer));
-                assertNull(sxpConnection.pollUpdateMessageInbound());
-                assertNull(sxpConnection.pollUpdateMessageOutbound());
                 try {
                         sxpConnection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext);
                         fail();
@@ -562,10 +550,14 @@ public class SxpConnectionTest {
                 assertNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
 
                 sxpConnection.putFilter(getFilter(FilterType.Inbound, "TEST"));
-                verify(sxpNode,atLeastOnce()).setSvcBindingManagerNotify();
+                verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
+                        eq(ThreadsWorker.WorkerType.INBOUND));
                 sxpConnection.putFilter(getFilter(FilterType.InboundDiscarding, "TEST1"));
-                verify(sxpNode,atLeastOnce()).setSvcBindingManagerNotify();
+                verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
+                        eq(ThreadsWorker.WorkerType.INBOUND));
                 sxpConnection.putFilter(getFilter(FilterType.Outbound, "TEST2"));
+                verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
+                        eq(ThreadsWorker.WorkerType.OUTBOUND), eq(sxpConnection));
 
                 assertNotNull(sxpConnection.getFilter(FilterType.Inbound));
                 assertNotNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
@@ -602,11 +594,13 @@ public class SxpConnectionTest {
 
                 sxpConnection.removeFilter(FilterType.Inbound);
                 assertNull(sxpConnection.getFilter(FilterType.Inbound));
-                verify(sxpNode,atLeastOnce()).setSvcBindingManagerNotify();
+                verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
+                        eq(ThreadsWorker.WorkerType.OUTBOUND), eq(sxpConnection));
 
                 sxpConnection.removeFilter(FilterType.InboundDiscarding);
                 assertNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
-                verify(sxpNode,atLeastOnce()).setSvcBindingManagerNotify();
+                verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
+                        eq(ThreadsWorker.WorkerType.INBOUND));
 
                 sxpConnection.removeFilter(FilterType.Outbound);
                 assertNull(sxpConnection.getFilter(FilterType.Outbound));
@@ -631,8 +625,6 @@ public class SxpConnectionTest {
                 sxpConnection =
                         SxpConnection.create(sxpNode,
                                 mockConnection(ConnectionMode.Speaker, ConnectionState.AdministrativelyDown));
-                assertNotNull(sxpConnection.getInboundMonitor());
-                assertNotNull(sxpConnection.getOutboundMonitor());
                 assertFalse(sxpConnection.getCapabilities().isEmpty());
                 assertTrue(sxpConnection.getCapabilitiesRemote().isEmpty());
                 assertNotNull(sxpConnection.getConnection());
@@ -641,20 +633,6 @@ public class SxpConnectionTest {
                 assertEquals(-1, sxpConnection.getTimestampUpdateOrKeepAliveMessage());
                 sxpConnection.setUpdateOrKeepaliveMessageTimestamp();
                 assertNotEquals(-1, sxpConnection.getTimestampUpdateOrKeepAliveMessage());
-
-                assertEquals(-1, sxpConnection.getTimestampUpdateMessageExport());
-                sxpConnection.setUpdateMessageExportTimestamp();
-                assertNotEquals(-1, sxpConnection.getTimestampUpdateMessageExport());
-
-                assertFalse(sxpConnection.isUpdateAllExported());
-                sxpConnection.setUpdateAllExported();
-                assertTrue(sxpConnection.isUpdateAllExported());
-
-                assertFalse(sxpConnection.isUpdateExported());
-                sxpConnection.setUpdateExported();
-                assertTrue(sxpConnection.isUpdateExported());
-                sxpConnection.resetUpdateExported();
-                assertFalse(sxpConnection.isUpdateExported());
 
                 assertFalse(sxpConnection.isStatePendingOn());
                 sxpConnection.setStatePendingOn();
