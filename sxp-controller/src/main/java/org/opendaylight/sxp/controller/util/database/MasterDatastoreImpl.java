@@ -17,8 +17,8 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
@@ -49,12 +49,12 @@ public final class MasterDatastoreImpl extends MasterDatabase {
                 LogicalDatastoreType.CONFIGURATION);
     }
 
-    private InstanceIdentifier.InstanceIdentifierBuilder<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase> getIdentifierBuilder() {
+    private InstanceIdentifier.InstanceIdentifierBuilder<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase> getIdentifierBuilder() {
         return InstanceIdentifier.builder(NetworkTopology.class)
                 .child(Topology.class, new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME)))
                 .child(Node.class, new NodeKey(new NodeId(nodeId)))
                 .augmentation(SxpNodeIdentity.class)
-                .child(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase.class);
+                .child(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase.class);
     }
 
     private InstanceIdentifier.InstanceIdentifierBuilder<MasterDatabaseBinding> getIdentifierBuilder(
@@ -64,7 +64,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
 
     @Override synchronized public List<MasterDatabaseBinding> getBindings() {
         List<MasterDatabaseBinding> bindings = getLocalBindings();
-        org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase
+        org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase
                 database =
                 datastoreAccess.readSynchronous(getIdentifierBuilder().build(), LogicalDatastoreType.OPERATIONAL);
         if (database != null && database.getMasterDatabaseBinding() != null && !database.getMasterDatabaseBinding()
@@ -76,7 +76,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
 
     @Override synchronized public List<MasterDatabaseBinding> getLocalBindings() {
         List<MasterDatabaseBinding> bindings = new ArrayList<>();
-        org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase
+        org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase
                 database =
                 datastoreAccess.readSynchronous(getIdentifierBuilder().build(), LogicalDatastoreType.CONFIGURATION);
         if (database != null && database.getMasterDatabaseBinding() != null && !database.getMasterDatabaseBinding()
@@ -112,7 +112,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         if (bindings == null || bindings.isEmpty() || datastoreType == null) {
             return removed;
         }
-        org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase
+        org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase
                 database =
                 datastoreAccess.readSynchronous(getIdentifierBuilder().build(), datastoreType);
         if (database == null || database.getMasterDatabaseBinding() == null || database.getMasterDatabaseBinding()

@@ -14,7 +14,7 @@ import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 
 import java.util.concurrent.TimeUnit;
 

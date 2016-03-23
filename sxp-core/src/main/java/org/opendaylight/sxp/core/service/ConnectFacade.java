@@ -39,7 +39,7 @@ import org.opendaylight.tcpmd5.jni.NativeSupportUnavailableException;
 import org.opendaylight.tcpmd5.netty.MD5ChannelOption;
 import org.opendaylight.tcpmd5.netty.MD5NioServerSocketChannelFactory;
 import org.opendaylight.tcpmd5.netty.MD5NioSocketChannelFactory;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PasswordType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

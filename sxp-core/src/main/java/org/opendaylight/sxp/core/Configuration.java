@@ -8,23 +8,17 @@
 
 package org.opendaylight.sxp.core;
 
+import org.opendaylight.sxp.util.inet.NodeIdConv;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.CapabilitiesBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
-
-import org.opendaylight.sxp.util.inet.NodeIdConv;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.capabilities.fields.Capabilities;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.capabilities.fields.CapabilitiesBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.network.topology.topology.node.Timers;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.network.topology.topology.node.TimersBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.network.topology.topology.node.timers.ListenerProfileBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.network.topology.topology.node.timers.SpeakerProfileBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimers;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimersBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 
 public final class Configuration {
 
@@ -43,10 +37,6 @@ public final class Configuration {
     private static HashMap<String, SxpNode> nodes = new HashMap<>();
 
     public static final boolean SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS = true;
-
-    public static final boolean SET_COMPOSITION_UPDATE_MESSAGE_PEER_SEQUENCE_WITH_EACH_SGT = true;
-
-    private static final TimerDefaultValues TIMER_DEFAULT_VALUES = new TimerDefaultValues();
 
     public static final String TOPOLOGY_NAME = "sxp";
     
@@ -92,34 +82,6 @@ public final class Configuration {
         return capabilitiesBuilder.build();
     }
 
-    public static ConnectionTimers getConnectionTimersBoth() {
-        ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder();
-        connectionTimersBuilder.setHoldTimeMinAcceptable(45);
-        connectionTimersBuilder.setKeepAliveTime(getTimerDefault().getKeepAliveTimer());
-
-        connectionTimersBuilder.setReconciliationTime(120);
-        connectionTimersBuilder.setHoldTime(90);
-        connectionTimersBuilder.setHoldTimeMin(90);
-        connectionTimersBuilder.setHoldTimeMax(180);
-        return connectionTimersBuilder.build();
-    }
-
-    public static ConnectionTimers getConnectionTimersListener() {
-        ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder();
-        connectionTimersBuilder.setReconciliationTime(120);
-        connectionTimersBuilder.setHoldTime(90);
-        connectionTimersBuilder.setHoldTimeMin(90);
-        connectionTimersBuilder.setHoldTimeMax(180);
-        return connectionTimersBuilder.build();
-    }
-
-    public static ConnectionTimers getConnectionTimersSpeaker() {
-        ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder();
-        connectionTimersBuilder.setHoldTimeMinAcceptable(45);
-        connectionTimersBuilder.setKeepAliveTime(getTimerDefault().getKeepAliveTimer());
-        return connectionTimersBuilder.build();
-    }
-
     public static Constants getConstants() {
         return CONSTANTS;
     }
@@ -132,34 +94,12 @@ public final class Configuration {
         return nodes;
     }
 
-    public static Timers getNodeTimers() {
-        TimersBuilder timersBuilder = new TimersBuilder();
-        timersBuilder.setRetryOpenTime(5);
-
-        SpeakerProfileBuilder sprofileBuilder = new SpeakerProfileBuilder();
-        sprofileBuilder.setHoldTimeMinAcceptable(45);
-        sprofileBuilder.setKeepAliveTime(getTimerDefault().getKeepAliveTimer());
-        timersBuilder.setSpeakerProfile(sprofileBuilder.build());
-
-        ListenerProfileBuilder lprofileBuilder = new ListenerProfileBuilder();
-        lprofileBuilder.setHoldTime(90);
-        lprofileBuilder.setHoldTimeMin(90);
-        lprofileBuilder.setHoldTimeMax(180);
-        timersBuilder.setListenerProfile(lprofileBuilder.build());
-
-        return timersBuilder.build();
-    }
-
     public static SxpNode getRegisteredNode(String nodeId) {
         return nodes.get(nodeId);
     }
 
     public static Set<String> getRegisteredNodesIds() {
         return nodes.keySet();
-    }
-
-    public static TimerDefaultValues getTimerDefault() {
-        return TIMER_DEFAULT_VALUES;
     }
 
     public static boolean isNodesRegistered() {

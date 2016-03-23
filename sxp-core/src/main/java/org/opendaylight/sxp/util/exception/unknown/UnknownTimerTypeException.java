@@ -8,7 +8,7 @@
 
 package org.opendaylight.sxp.util.exception.unknown;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 
 public class UnknownTimerTypeException extends RuntimeException{
 

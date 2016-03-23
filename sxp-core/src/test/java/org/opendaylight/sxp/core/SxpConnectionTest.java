@@ -29,9 +29,9 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connection.fields.ConnectionTimers;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimers;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
@@ -176,10 +176,10 @@ public class SxpConnectionTest {
                 when(worker.scheduleTask(any(Callable.class), anyInt(), any(TimeUnit.class))).thenReturn(future);
 
                 sxpConnection.setReconciliationTimer();
-                assertNull(sxpConnection.getTimer(TimerType.ReconciliationTimer));
+                assertNotNull(sxpConnection.getTimer(TimerType.ReconciliationTimer));
                 sxpConnection.setTimer(TimerType.DeleteHoldDownTimer, 120);
                 sxpConnection.setReconciliationTimer();
-                assertNull(sxpConnection.getTimer(TimerType.ReconciliationTimer));
+                assertNotNull(sxpConnection.getTimer(TimerType.ReconciliationTimer));
                 when(future.isDone()).thenReturn(false);
                 sxpConnection.setReconciliationTimer();
                 assertNotNull(sxpConnection.getTimer(TimerType.ReconciliationTimer));

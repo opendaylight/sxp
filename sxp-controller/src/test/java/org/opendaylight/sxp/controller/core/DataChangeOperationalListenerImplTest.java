@@ -24,7 +24,7 @@ import org.junit.runner.RunWith;
 import org.opendaylight.sxp.controller.util.database.DatastoreValidator;
 import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;

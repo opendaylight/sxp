@@ -159,6 +159,9 @@ public class SxpLegacy implements Strategy {
         if (message instanceof OpenMessageLegacy) {
             OpenMessageLegacy _message = (OpenMessageLegacy) message;
             if (_message.getType().equals(MessageType.Open)) {
+                if(connection.isStateDeleteHoldDown()) {
+                    connection.setReconciliationTimer();
+                }
                 // The SXP-mode, if not configured explicitly within the device,
                 // is set to the opposite value of the one received in the OPEN
                 // message.

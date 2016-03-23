@@ -43,13 +43,16 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeerBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.PasswordType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.SxpNodeIdentity;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.TimerType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.network.topology.topology.node.Timers;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.Connections;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.connections.fields.connections.Connection;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.node.fields.Security;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PasswordType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.Timers;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.TimersBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.timers.ListenerProfileBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.timers.SpeakerProfileBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -90,7 +93,7 @@ public class SxpNodeTest {
                         mock(ListenableFuture.class));
                 when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(
                         mock(ListenableFuture.class));
-                timers = Configuration.getNodeTimers();
+                timers = getNodeTimers();
                 nodeIdentity = mock(SxpNodeIdentity.class);
                 when(nodeIdentity.getTimers()).thenReturn(timers);
                 when(nodeIdentity.getVersion()).thenReturn(Version.Version4);
@@ -106,8 +109,25 @@ public class SxpNodeTest {
                 node =
                         SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), nodeIdentity, databaseProvider,
                                 sxpDatabaseProvider, worker);
-                //PowerMockito.mockStatic(BindingDispatcher.class);
                 PowerMockito.field(SxpNode.class, "serverChannel").set(node, mock(Channel.class));
+        }
+
+        private Timers getNodeTimers() {
+                TimersBuilder timersBuilder = new TimersBuilder();
+                timersBuilder.setRetryOpenTime(5);
+
+                SpeakerProfileBuilder sprofileBuilder = new SpeakerProfileBuilder();
+                sprofileBuilder.setHoldTimeMinAcceptable(45);
+                sprofileBuilder.setKeepAliveTime(30);
+                timersBuilder.setSpeakerProfile(sprofileBuilder.build());
+
+                ListenerProfileBuilder lprofileBuilder = new ListenerProfileBuilder();
+                lprofileBuilder.setHoldTime(90);
+                lprofileBuilder.setHoldTimeMin(90);
+                lprofileBuilder.setHoldTimeMax(180);
+                timersBuilder.setListenerProfile(lprofileBuilder.build());
+
+                return timersBuilder.build();
         }
 
         private Connection mockConnection(ConnectionMode mode, ConnectionState state) {
