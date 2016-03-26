@@ -206,6 +206,9 @@ public final class Sxpv4 extends SxpLegacy {
         }
         LOG.info("{} Sent OPEN {}", connection, MessageFactory.toString(message));
         ctx.writeAndFlush(message);
+        if(connection.isStateDeleteHoldDown()) {
+            connection.setReconciliationTimer();
+        }
         connection.setStatePendingOn();
     }
 
@@ -254,9 +257,11 @@ public final class Sxpv4 extends SxpLegacy {
                     // Close the dual channel.
                     connection.closeChannelHandlerContextComplements(ctx);
 
-                } else if (connection.isStateDeleteHoldDown()) {
+                }
+                if (connection.isStateDeleteHoldDown()) {
                     // Replace the existing one.
                     connection.closeChannelHandlerContextComplements(ctx);
+                    connection.setReconciliationTimer();
                 } else if (connection.isStatePendingOn()) {
                     // Close the current channel.
                     connection.closeChannelHandlerContext(ctx);
