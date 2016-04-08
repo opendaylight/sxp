@@ -10,7 +10,6 @@ package org.opendaylight.sxp.util.filtering;
 
 import com.google.common.net.InetAddresses;
 import org.opendaylight.sxp.util.ArraysUtil;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.SgtMatch;
@@ -20,18 +19,20 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.fi
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.FilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.AclFilterEntries;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.PeerSequenceFilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.PrefixListFilterEntries;
 
 import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * Abstract Class representing Filter to filter Master/Sxp BindingIdentities
  *
  * @param <T> Type representing entries used inside filter
  */
-public abstract class SxpBindingFilter<T extends FilterEntries> {
+public abstract class SxpBindingFilter<T extends FilterEntries> implements Function<SxpBindingFields, Boolean> {
 
     protected final SxpFilter sxpFilter;
     private final String peerGroupName;
@@ -65,20 +66,19 @@ public abstract class SxpBindingFilter<T extends FilterEntries> {
         return peerGroupName;
     }
 
-    public <R extends SxpBindingFields> boolean filter(R binding) {
+    @Override public Boolean apply(SxpBindingFields binding) {
         //noinspection unchecked
-        return filter((T) sxpFilter.getFilterEntries(), binding.getSecurityGroupTag(), binding.getIpPrefix());
+        return filter((T) sxpFilter.getFilterEntries(), binding);
     }
 
     /**
      * Filters values against Match
      *
-     * @param t      Match against values are filtered
-     * @param sgt    Sgt value that will be compared
-     * @param prefix IpPrefix value that wil be compared
+     * @param t       Match against values are filtered
+     * @param binding Binding that will be compared
      * @return If values will be filtered out
      */
-    protected abstract boolean filter(T t, Sgt sgt, IpPrefix prefix);
+    protected abstract boolean filter(T t, SxpBindingFields binding);
 
     /**
      * Filters Sgt according to provided SgtMatch
@@ -132,6 +132,8 @@ public abstract class SxpBindingFilter<T extends FilterEntries> {
             return new AclFilter(new SxpFilterBuilder(filter).build(), peerGroupName);
         } else if (filter.getFilterEntries() instanceof PrefixListFilterEntries) {
             return new PrefixListFilter(new SxpFilterBuilder(filter).build(), peerGroupName);
+        } else if (filter.getFilterEntries() instanceof PeerSequenceFilterEntries) {
+            return new PeerSequenceFilter(new SxpFilterBuilder(filter).build(), peerGroupName);
         }
         throw new IllegalArgumentException("Undefined filter type " + filter);
     }

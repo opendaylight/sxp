@@ -12,11 +12,15 @@ import org.junit.Test;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.MaskRangeOperator;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.sgt.match.SgtMatchesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.AclFilterEntriesBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.PeerSequenceFilterEntriesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.PrefixListFilterEntriesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.acl.filter.entries.AclEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.acl.filter.entries.AclEntryBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.peer.sequence.filter.entries.PeerSequenceEntry;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.peer.sequence.filter.entries.PeerSequenceEntryBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.prefix.list.filter.entries.PrefixListEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.prefix.list.filter.entries.PrefixListEntryBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
@@ -44,6 +48,11 @@ public class SxpBindingFilterTest {
         assertEquals("TEST1", bindingFilter.getPeerGroupName());
         assertEquals(new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder(
                 getPrefixListFilter(FilterType.Inbound)).build(), bindingFilter.getSxpFilter());
+
+        bindingFilter = SxpBindingFilter.generateFilter(getPeerSequenceFilter(FilterType.Inbound), "TEST2");
+        assertEquals("TEST2", bindingFilter.getPeerGroupName());
+        assertEquals(new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder(
+                getPeerSequenceFilter(FilterType.Inbound)).build(), bindingFilter.getSxpFilter());
         try {
             SxpBindingFilter.generateFilter(null, null);
             fail();
@@ -56,6 +65,11 @@ public class SxpBindingFilterTest {
         }
         try {
             SxpBindingFilter.generateFilter(getPrefixListFilter(FilterType.Outbound), null);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        try {
+            SxpBindingFilter.generateFilter(getPeerSequenceFilter(FilterType.Outbound), null);
             fail();
         } catch (IllegalArgumentException e) {
         }
@@ -100,6 +114,22 @@ public class SxpBindingFilterTest {
         prefixListEntryBuilder.setSgtMatch(matchesBuilder.build());
         prefixListEntries.add(prefixListEntryBuilder.build());
         entriesBuilder.setPrefixListEntry(prefixListEntries);
+        builder.setFilterEntries(entriesBuilder.build());
+        return builder.build();
+    }
+
+    private SxpFilter getPeerSequenceFilter(FilterType type) {
+        SxpFilterBuilder builder = new SxpFilterBuilder();
+        builder.setFilterType(type);
+        PeerSequenceFilterEntriesBuilder entriesBuilder = new PeerSequenceFilterEntriesBuilder();
+        ArrayList<PeerSequenceEntry> prefixListEntries = new ArrayList<>();
+        PeerSequenceEntryBuilder peerSequenceEntryBuilder = new PeerSequenceEntryBuilder();
+        peerSequenceEntryBuilder.setEntrySeq(1);
+        peerSequenceEntryBuilder.setEntryType(FilterEntryType.Permit);
+        peerSequenceEntryBuilder.setPeerSequenceLength(10);
+        peerSequenceEntryBuilder.setPeerSequenceRange(MaskRangeOperator.Eq);
+        prefixListEntries.add(peerSequenceEntryBuilder.build());
+        entriesBuilder.setPeerSequenceEntry(prefixListEntries);
         builder.setFilterEntries(entriesBuilder.build());
         return builder.build();
     }

@@ -151,7 +151,7 @@ public class LegacyMessageFactory extends MessageFactory {
 
         if (addBindings != null && !addBindings.isEmpty()) {
             addBindings.stream().forEach(binding -> {
-                if (bindingFilter != null && bindingFilter.filter(binding))
+                if (bindingFilter != null && bindingFilter.apply(binding))
                     return;
                 switch (version) {
                     case Version3:

@@ -327,7 +327,7 @@ public class MessageFactory {
             Sgt sgt = null;
             PeerSequence peerSequence = null;
             for (T binding : addBindings) {
-                if (bindingFilter != null && bindingFilter.filter(binding))
+                if (bindingFilter != null && bindingFilter.apply(binding))
                     continue;
                 if ((!binding.getPeerSequence().equals(peerSequence) || !binding.getSecurityGroupTag().equals(sgt))) {
 

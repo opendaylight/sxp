@@ -129,6 +129,13 @@ module sxp-filter {
 					min-elements 1;
 				}
 			}
+			case peer-sequence-filter-entries {
+                list peer-sequence-entry {
+                    key "entry-seq";
+                    uses peer-sequence-entry;
+                    min-elements 1;
+                }
+            }
 		}
 	}
 
@@ -235,4 +242,27 @@ module sxp-filter {
 		}
 		uses sgt-match-fields;
 	}
+
+    grouping peer-sequence-entry {
+        leaf entry-type {
+            description "PERMIT/DENY";
+            type filter-entry-type;
+            mandatory true;
+            }
+        leaf entry-seq {
+            description "Specifying order of each entry.";
+            type uint16;
+            mandatory true;
+        }
+        leaf peer-sequence-length {
+            description "Length of sequence";
+            type uint16;
+            mandatory true;
+        }
+        leaf peer-sequence-range {
+            description "Range used on sequence";
+            type mask-range-operator;
+            mandatory true;
+        }
+    }
 }
