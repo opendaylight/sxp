@@ -11,7 +11,7 @@ package org.opendaylight.sxp.util.filtering;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.acl.entry.AclMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.acl.match.fields.Mask;
@@ -54,14 +54,14 @@ public final class AclFilter extends SxpBindingFilter<AclFilterEntries> {
         }
     }
 
-    @Override public boolean filter(AclFilterEntries aclFilterEntries, Sgt sgt, IpPrefix prefix) {
+    @Override public boolean filter(AclFilterEntries aclFilterEntries, SxpBindingFields binding) {
         if (aclFilterEntries.getAclEntry() == null || aclFilterEntries.getAclEntry().isEmpty()) {
             return true;
         }
         FilterEntryType entryType = FilterEntryType.Deny;
         for (AclEntry aclEntry : aclFilterEntries.getAclEntry()) {
-            boolean sgtTest = filterSgtMatch(aclEntry.getSgtMatch(), sgt),
-                    aclTest = filterAclMatch(aclEntry.getAclMatch(), prefix);
+            boolean sgtTest = filterSgtMatch(aclEntry.getSgtMatch(), binding.getSecurityGroupTag()),
+                    aclTest = filterAclMatch(aclEntry.getAclMatch(), binding.getIpPrefix());
             if (aclEntry.getSgtMatch() != null && aclEntry.getAclMatch() != null && sgtTest && aclTest) {
                 entryType = aclEntry.getEntryType();
                 break;
