@@ -121,7 +121,7 @@ public class AclFilterTest {
             bindingBuilder.setIpPrefix(new IpPrefix(Ipv4Prefix.getDefaultInstance(prefix)));
         }
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
-        return filter.filter(bindingBuilder.build());
+        return filter.apply(bindingBuilder.build());
     }
 
     @Test public void testFilterSgtOnly() throws Exception {

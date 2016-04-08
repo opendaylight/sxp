@@ -10,7 +10,7 @@ package org.opendaylight.sxp.util.filtering;
 
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.entry.PrefixListMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilter;
@@ -52,17 +52,17 @@ public class PrefixListFilter extends SxpBindingFilter<PrefixListFilterEntries> 
         }
     }
 
-    @Override public boolean filter(PrefixListFilterEntries prefixListFilterEntries, Sgt sgt, IpPrefix prefix) {
+    @Override public boolean filter(PrefixListFilterEntries prefixListFilterEntries, SxpBindingFields binding) {
         if (prefixListFilterEntries.getPrefixListEntry() == null || prefixListFilterEntries.getPrefixListEntry()
                 .isEmpty()) {
             return false;
         }
         FilterEntryType entryType = FilterEntryType.Deny;
-        int entryPriority = 0, sgtRank = prefix.getIpv6Prefix() == null ? 32 : 128;
+        int entryPriority = 0, sgtRank = binding.getIpPrefix().getIpv6Prefix() == null ? 32 : 128;
 
         for (PrefixListEntry prefixListEntry : prefixListFilterEntries.getPrefixListEntry()) {
-            boolean sgtTest = filterSgtMatch(prefixListEntry.getSgtMatch(), sgt);
-            int prefixTest = filterPrefixListMatch(prefixListEntry.getPrefixListMatch(), prefix),
+            boolean sgtTest = filterSgtMatch(prefixListEntry.getSgtMatch(), binding.getSecurityGroupTag());
+            int prefixTest = filterPrefixListMatch(prefixListEntry.getPrefixListMatch(), binding.getIpPrefix()),
                     priority = prefixTest + (sgtTest ? sgtRank : 0);
 
             if (priority >= entryPriority && prefixListEntry.getPrefixListMatch() != null
