@@ -118,7 +118,7 @@ public final class BindingHandler {
                             new Sgt(((SourceGroupTagTlvAttribute) MappingRecord.create(mappingRecord.getTlv())
                                     .get(TlvType.Sgt)).getSourceGroupTagTlvAttributes().getSgt()));
                     SxpDatabaseBinding binding = bindingBuilder.setIpPrefix(mappingRecord.getAddress()).build();
-                    if (filter == null || !filter.filter(binding)) {
+                    if (filter == null || !filter.apply(binding)) {
                         bindings.add(binding);
                     }
                     break;
@@ -174,7 +174,7 @@ public final class BindingHandler {
             }
             prefixes.stream().forEach(p -> {
                 SxpDatabaseBinding binding = bindingBuilder.setIpPrefix(p).build();
-                if (filter == null || !filter.filter(binding)) {
+                if (filter == null || !filter.apply(binding)) {
                     bindings.add(binding);
                 }
             });

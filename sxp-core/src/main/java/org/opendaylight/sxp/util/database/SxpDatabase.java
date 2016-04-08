@@ -189,7 +189,7 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
         List<SxpDatabaseBinding> active = database.getBindings(nodeId),
             filtered = new ArrayList<>();
         if (!active.isEmpty()) {
-            filtered.addAll(Collections2.filter(active, filter::filter));
+            filtered.addAll(Collections2.filter(active, filter::apply));
         }
         return filtered;
     }
