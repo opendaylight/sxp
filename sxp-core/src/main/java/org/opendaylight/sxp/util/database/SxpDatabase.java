@@ -8,7 +8,9 @@
 
 package org.opendaylight.sxp.util.database;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.time.TimeConv;
@@ -17,6 +19,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpB
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.BindingDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,34 +146,52 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
     }
 
     /**
-     * Finds replace for specified bindings from specified SxpDatabase
+     * Create Map consisting of NodeIds of remoter peers associated with Inbound filters applied to them
      *
-     * @param database SxpDatabase where to look for replacements
+     * @param node SxpNode containing Connections and filters
+     * @return Map of NodeId of remote peers and Inbound filters
+     */
+    private static Map<NodeId, SxpBindingFilter> getInboundFilters(SxpNode node) {
+        Map<NodeId, SxpBindingFilter> map = new HashMap<>();
+        node.getAllConnections().stream().forEach(c -> {
+            if (c.isModeListener()) {
+                map.put(c.getNodeIdRemote(), c.getFilter(FilterType.Inbound));
+            }
+        });
+        return map;
+    }
+
+    /**
+     * Finds replace for specified bindings from specified SxpNode
+     *
      * @param bindings List of bindings that needs replace
+     * @param node     SxpNode containing data about filters and SxpDatabase
      * @param <T>      Any type extending SxpBindingFields
      * @return List of replacements
      */
-    public static <T extends SxpBindingFields> List<SxpDatabaseBinding> getReplaceForBindings(
-        final SxpDatabaseInf database, List<T> bindings) {
-        if (database == null || bindings == null || bindings.isEmpty())
+    public static <T extends SxpBindingFields> List<SxpDatabaseBinding> getReplaceForBindings(List<T> bindings,
+            final SxpNode node) {
+        if (bindings == null || node == null || bindings.isEmpty())
             return new ArrayList<>();
-        Set<IpPrefix> prefixesForReplace =
-            bindings.stream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
+        Set<IpPrefix>
+                prefixesForReplace =
+                bindings.stream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
         Map<IpPrefix, SxpDatabaseBinding> prefixMap = new HashMap<>(bindings.size());
-        List<SxpDatabaseBinding> databaseBindings = database.getBindings();
-        databaseBindings.stream().forEach(b -> {
-            if (!prefixesForReplace.contains(b.getIpPrefix())) {
-                return;
-            }
-            SxpDatabaseBinding binding = prefixMap.get(b.getIpPrefix());
-            if (binding == null || b.getPeerSequence().getPeer().size() < binding.getPeerSequence()
-                .getPeer().size() || (
-                b.getPeerSequence().getPeer().size() == binding.getPeerSequence().getPeer().size()
-                    && TimeConv.toLong(b.getTimestamp()) > TimeConv
-                    .toLong(binding.getTimestamp()))) {
-                prefixMap.put(b.getIpPrefix(), b);
-            }
-        });
+
+        for (Map.Entry<NodeId, SxpBindingFilter> entry : getInboundFilters(node).entrySet()) {
+            Preconditions.checkNotNull(node.getBindingSxpDatabase()).getBindings(entry.getKey()).stream().forEach(b -> {
+                if (!prefixesForReplace.contains(b.getIpPrefix()) || entry.getValue() != null && entry.getValue()
+                        .apply(b)) {
+                    return;
+                }
+                SxpDatabaseBinding binding = prefixMap.get(b.getIpPrefix());
+                if (binding == null || b.getPeerSequence().getPeer().size() < binding.getPeerSequence().getPeer().size()
+                        || (b.getPeerSequence().getPeer().size() == binding.getPeerSequence().getPeer().size()
+                        && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
+                    prefixMap.put(b.getIpPrefix(), b);
+                }
+            });
+        }
         return new ArrayList<>(prefixMap.values());
     }
 
@@ -182,12 +203,13 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
      * @param filter   Filter according to which filtering will be held
      * @return List of bindings that do not match filter criteria
      */
-    public static List<SxpDatabaseBinding> filterDatabase(SxpDatabaseInf database, NodeId nodeId, SxpBindingFilter filter) {
+    public static List<SxpDatabaseBinding> filterDatabase(SxpDatabaseInf database, NodeId nodeId,
+            SxpBindingFilter filter) {
         if (nodeId == null || filter == null) {
             return new ArrayList<>();
         }
         List<SxpDatabaseBinding> active = database.getBindings(nodeId),
-            filtered = new ArrayList<>();
+                filtered = new ArrayList<>();
         if (!active.isEmpty()) {
             filtered.addAll(Collections2.filter(active, filter::apply));
         }
