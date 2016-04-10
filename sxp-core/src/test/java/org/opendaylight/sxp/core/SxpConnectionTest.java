@@ -592,17 +592,17 @@ public class SxpConnectionTest {
                 assertNotNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
                 assertNotNull(sxpConnection.getFilter(FilterType.Outbound));
 
-                sxpConnection.removeFilter(FilterType.Inbound);
+                sxpConnection.removeFilter(FilterType.Inbound, null);
                 assertNull(sxpConnection.getFilter(FilterType.Inbound));
                 verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
                         eq(ThreadsWorker.WorkerType.OUTBOUND), eq(sxpConnection));
 
-                sxpConnection.removeFilter(FilterType.InboundDiscarding);
+                sxpConnection.removeFilter(FilterType.InboundDiscarding, null);
                 assertNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
                 verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
                         eq(ThreadsWorker.WorkerType.INBOUND));
 
-                sxpConnection.removeFilter(FilterType.Outbound);
+                sxpConnection.removeFilter(FilterType.Outbound, null);
                 assertNull(sxpConnection.getFilter(FilterType.Outbound));
         }
 
