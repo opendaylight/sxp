@@ -29,6 +29,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.AclFilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
@@ -526,6 +527,7 @@ public class SxpConnectionTest {
                 when(bindingFilter.getPeerGroupName()).thenReturn(name);
                 SxpFilterBuilder builder = new SxpFilterBuilder();
                 builder.setFilterType(type);
+                builder.setFilterEntries(mock(AclFilterEntries.class));
                 when(bindingFilter.getSxpFilter()).thenReturn(builder.build());
                 return bindingFilter;
         }
@@ -592,17 +594,17 @@ public class SxpConnectionTest {
                 assertNotNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
                 assertNotNull(sxpConnection.getFilter(FilterType.Outbound));
 
-                sxpConnection.removeFilter(FilterType.Inbound);
+                sxpConnection.removeFilter(FilterType.Inbound, mock(AclFilterEntries.class));
                 assertNull(sxpConnection.getFilter(FilterType.Inbound));
                 verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
                         eq(ThreadsWorker.WorkerType.OUTBOUND), eq(sxpConnection));
 
-                sxpConnection.removeFilter(FilterType.InboundDiscarding);
+                sxpConnection.removeFilter(FilterType.InboundDiscarding, mock(AclFilterEntries.class));
                 assertNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
                 verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
                         eq(ThreadsWorker.WorkerType.INBOUND));
 
-                sxpConnection.removeFilter(FilterType.Outbound);
+                sxpConnection.removeFilter(FilterType.Outbound, mock(AclFilterEntries.class));
                 assertNull(sxpConnection.getFilter(FilterType.Outbound));
         }
 

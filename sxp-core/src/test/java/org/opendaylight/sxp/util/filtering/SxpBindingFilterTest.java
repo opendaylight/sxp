@@ -27,6 +27,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilterBuilder;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -132,5 +133,45 @@ public class SxpBindingFilterTest {
         entriesBuilder.setPeerSequenceEntry(prefixListEntries);
         builder.setFilterEntries(entriesBuilder.build());
         return builder.build();
+    }
+
+    @Test public void testMergeFilters() throws Exception {
+        List<SxpBindingFilter> filterList = new ArrayList<>();
+        filterList.add(SxpBindingFilter.generateFilter(getPrefixListFilter(FilterType.Outbound), "GROUP"));
+        assertEquals("GROUP", SxpBindingFilter.mergeFilters(filterList).getPeerGroupName());
+
+        filterList.add(SxpBindingFilter.generateFilter(getPrefixListFilter(FilterType.Outbound), "Peers"));
+        assertEquals("MultiGroup[ GROUP Peers ]", SxpBindingFilter.mergeFilters(filterList).getPeerGroupName());
+        filterList.clear();
+
+        filterList.add(SxpBindingFilter.generateFilter(getPrefixListFilter(FilterType.Outbound), "Peers"));
+        filterList.add(SxpBindingFilter.generateFilter(getPrefixListFilter(FilterType.Outbound), "GROUP"));
+        assertEquals("MultiGroup[ GROUP Peers ]", SxpBindingFilter.mergeFilters(filterList).getPeerGroupName());
+    }
+
+    @Test public void testCheckInCompatibility() throws Exception {
+        assertTrue(SxpBindingFilter.checkInCompatibility(getAclFilter(FilterType.Inbound),
+                getAclFilter(FilterType.Inbound)));
+        assertFalse(SxpBindingFilter.checkInCompatibility(getAclFilter(FilterType.Inbound),
+                getAclFilter(FilterType.Outbound)));
+
+        assertTrue(SxpBindingFilter.checkInCompatibility(getPrefixListFilter(FilterType.Inbound),
+                getAclFilter(FilterType.Inbound)));
+        assertFalse(SxpBindingFilter.checkInCompatibility(getPrefixListFilter(FilterType.Inbound),
+                getAclFilter(FilterType.Outbound)));
+
+        assertTrue(SxpBindingFilter.checkInCompatibility(getPrefixListFilter(FilterType.Inbound),
+                getAclFilter(FilterType.Inbound)));
+        assertTrue(SxpBindingFilter.checkInCompatibility(getAclFilter(FilterType.Inbound),
+                getPrefixListFilter(FilterType.Inbound)));
+        assertFalse(SxpBindingFilter.checkInCompatibility(getPrefixListFilter(FilterType.Inbound),
+                getAclFilter(FilterType.Outbound)));
+        assertFalse(SxpBindingFilter.checkInCompatibility(getAclFilter(FilterType.Inbound),
+                getPrefixListFilter(FilterType.Outbound)));
+
+        assertFalse(SxpBindingFilter.checkInCompatibility(getPeerSequenceFilter(FilterType.Inbound),
+                getAclFilter(FilterType.Inbound)));
+        assertFalse(SxpBindingFilter.checkInCompatibility(getPeerSequenceFilter(FilterType.Inbound),
+                getPrefixListFilter(FilterType.Inbound)));
     }
 }

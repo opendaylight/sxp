@@ -9,8 +9,8 @@
 package org.opendaylight.sxp.core;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.ChannelHandlerContext;
 import org.opendaylight.sxp.core.behavior.Context;
@@ -19,6 +19,8 @@ import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.SxpDatabase;
+import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
+import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.exception.connection.IncompatiblePeerModeException;
@@ -40,6 +42,7 @@ import org.opendaylight.sxp.util.time.connection.ReconcilationTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.FilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimersBuilder;
@@ -116,7 +119,8 @@ public class SxpConnection {
     protected SxpNode owner;
 
     protected HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(5);
-    private final Map<FilterType, SxpBindingFilter> bindingFilterMap = new HashMap<>();
+    private final Map<FilterType, Map<Class, SxpBindingFilter>> bindingFilterMap =
+        new HashMap<>(FilterType.values().length);
 
     /**
      * @param filterType Type of SxpBindingFilter to look for
@@ -124,7 +128,7 @@ public class SxpConnection {
      */
     public SxpBindingFilter getFilter(FilterType filterType) {
         synchronized (bindingFilterMap) {
-            return bindingFilterMap.get(filterType);
+            return SxpBindingFilter.mergeFilters(bindingFilterMap.get(filterType).values());
         }
     }
 
@@ -133,63 +137,50 @@ public class SxpConnection {
      *
      * @param filterType Type of SxpBindingFilter that was set
      */
-    private void updateFlagsForDatabase(final FilterType filterType, final boolean removed) {
-        if(!isStateOn()){
+    private void updateFlagsForDatabase(final FilterType filterType, boolean filterRemoved) {
+        if (!isStateOn() || filterType.equals(FilterType.Outbound) && !isModeSpeaker() ||
+                (filterType.equals(FilterType.Inbound) || filterType.equals(FilterType.InboundDiscarding))
+                        && !isModeListener()) {
             return;
         }
-        switch (filterType) {
-            case InboundDiscarding:
-                if (!removed) {
-                    owner.getWorker().executeTaskInSequence(() -> {
-                        synchronized (owner.getBindingSxpDatabase()) {
-                            List<SxpDatabaseBinding>
-                                    bindings = SxpDatabase
-                                .filterDatabase(owner.getBindingSxpDatabase(), getNodeIdRemote(),
-                                    getFilter(filterType));
-
-                            getOwner().getSvcBindingDispatcher()
-                                    .propagateUpdate(owner.getBindingMasterDatabase().deleteBindings(bindings), null,
-                                            owner.getAllOnSpeakerConnections());
-
-                            owner.getBindingSxpDatabase().deleteBindings(getNodeIdRemote(), bindings);
-                        }
-                        return null;
-                    }, ThreadsWorker.WorkerType.INBOUND);
+        final SxpDatabaseInf sxpDatabase = owner.getBindingSxpDatabase();
+        final MasterDatabaseInf masterDatabase = owner.getBindingMasterDatabase();
+        if (filterType.equals(FilterType.Outbound)) {
+            //Sends PurgeAll, All bindings in this order
+            List<SxpConnection> connections = new ArrayList<>();
+            connections.add(this);
+            owner.getWorker()
+                    .addListener(BindingDispatcher.sendPurgeAllMessage(this), () -> getOwner().getSvcBindingDispatcher()
+                            .propagateUpdate(null, masterDatabase.getBindings(), connections));
+        } else if (filterRemoved && filterType.equals(FilterType.Inbound)) {
+            //Adds all Bindings learned from peer to MasterDB and sends it to All Listeners
+            owner.getWorker().executeTaskInSequence(() -> {
+                synchronized (sxpDatabase) {
+                    getOwner().getSvcBindingDispatcher()
+                            .propagateUpdate(null,
+                                    masterDatabase.addBindings(sxpDatabase.getBindings(getNodeIdRemote())),
+                                    owner.getAllOnSpeakerConnections());
                 }
-                break;
-            case Inbound:
-                owner.getWorker().executeTaskInSequence(() -> {
-                    synchronized (owner.getBindingSxpDatabase()) {
-                        if (removed) {
-                            getOwner().getSvcBindingDispatcher()
-                                    .propagateUpdate(null, owner.getBindingMasterDatabase()
-                                                    .addBindings(owner.getBindingSxpDatabase().getBindings(getNodeIdRemote())),
-                                            owner.getAllOnSpeakerConnections());
-                        } else {
-                            getOwner().getSvcBindingDispatcher().propagateUpdate(
-                                owner.getBindingMasterDatabase().deleteBindings(SxpDatabase
-                                    .filterDatabase(owner.getBindingSxpDatabase(),
-                                        getNodeIdRemote(), getFilter(filterType))), null,
-                                owner.getAllOnSpeakerConnections());
-                        }
-                    }
-                    return null;
-                }, ThreadsWorker.WorkerType.INBOUND);
-                break;
-            case Outbound:
-                List<SxpConnection> connections = new ArrayList<>();
-                connections.add(this);
+                return null;
+            }, ThreadsWorker.WorkerType.INBOUND);
+        } else if (!filterRemoved) {
+            //Filters out Bindings from SXP database, removes it from Master and send update to all Listeners
+            owner.getWorker().executeTaskInSequence(() -> {
+                synchronized (sxpDatabase) {
+                    List<SxpDatabaseBinding>
+                            bindingsDelete =
+                            SxpDatabase.filterDatabase(sxpDatabase, getNodeIdRemote(), getFilter(filterType));
 
-                ListenableFuture task = BindingDispatcher.sendPurgeAllMessage(this);
-                owner.getWorker().addListener(task, () -> {
-                    if (!task.isCancelled()) {
-                        getOwner().getSvcBindingDispatcher()
-                                .propagateUpdate(null, owner.getBindingMasterDatabase().getBindings(), connections);
-                    } else {
-                        LOG.warn("Cannot proceed filter update", this);
+                    if (filterType.equals(FilterType.InboundDiscarding)) {
+                        sxpDatabase.deleteBindings(getNodeIdRemote(), bindingsDelete);
                     }
-                });
-                break;
+                    getOwner().getSvcBindingDispatcher()
+                            .propagateUpdate(masterDatabase.deleteBindings(bindingsDelete), masterDatabase.addBindings(
+                                    SxpDatabase.getReplaceForBindings(sxpDatabase, bindingsDelete, getOwner())),
+                                    owner.getAllOnSpeakerConnections());
+                }
+                return null;
+            }, ThreadsWorker.WorkerType.INBOUND);
         }
     }
 
@@ -201,8 +192,9 @@ public class SxpConnection {
     public void putFilter(SxpBindingFilter filter) {
         if (filter != null) {
             synchronized (bindingFilterMap) {
-                FilterType filterType = filter.getSxpFilter().getFilterType();
-                bindingFilterMap.put(filterType, filter);
+                FilterType filterType = Preconditions.checkNotNull(filter.getSxpFilter()).getFilterType();
+                bindingFilterMap.get(filterType)
+                        .put(Preconditions.checkNotNull(filter.getSxpFilter().getFilterEntries()).getClass(), filter);
                 updateFlagsForDatabase(filterType, false);
             }
         }
@@ -214,8 +206,8 @@ public class SxpConnection {
      */
     public String getGroupName(FilterType filterType) {
         synchronized (bindingFilterMap) {
-            return bindingFilterMap.get(filterType) != null ? bindingFilterMap.get(filterType)
-                    .getPeerGroupName() : null;
+            SxpBindingFilter filter = getFilter(filterType);
+            return filter != null ? filter.getPeerGroupName() : null;
         }
     }
 
@@ -225,9 +217,12 @@ public class SxpConnection {
      * @param filterType Type of SxpBindingFilter to be removed
      * @return Removed SxpBindingFilter
      */
-    public SxpBindingFilter removeFilter(FilterType filterType) {
+    public SxpBindingFilter removeFilter(FilterType filterType , FilterEntries entries) {
         synchronized (bindingFilterMap) {
-            SxpBindingFilter filter = bindingFilterMap.remove(filterType);
+            SxpBindingFilter
+                    filter =
+                    bindingFilterMap.get(Preconditions.checkNotNull(filterType))
+                            .remove(Preconditions.checkNotNull(entries).getClass());
             if (filter != null) {
                 updateFlagsForDatabase(filterType, true);
             }
@@ -257,7 +252,9 @@ public class SxpConnection {
             port = connection.getTcpPort().getValue();
         }
         this.destination = new InetSocketAddress(Search.getAddress(connection.getPeerAddress()), port);
-
+        for (FilterType filterType : FilterType.values()) {
+            bindingFilterMap.put(filterType, new HashMap<>());
+        }
         if (connection.getVersion() != null) {
             setBehaviorContexts(connection.getVersion());
         } else {

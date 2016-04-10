@@ -30,6 +30,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.TlvType;
@@ -265,7 +266,7 @@ public final class BindingHandler {
             List<SxpDatabaseBinding>
                     removed =
                     owner.getBindingSxpDatabase().deleteBindings(connection.getNodeIdRemote()),
-                    replace = SxpDatabase.getReplaceForBindings(owner.getBindingSxpDatabase(),removed);
+                    replace = SxpDatabase.getReplaceForBindings(owner.getBindingSxpDatabase(), removed, owner);
             connection.propagateUpdate(owner.getBindingMasterDatabase().deleteBindings(removed),
                     owner.getBindingMasterDatabase().addBindings(replace));
             return null;
@@ -288,13 +289,16 @@ public final class BindingHandler {
         }
 
         List<SxpDatabaseBinding> added = new ArrayList<>(), removed = new ArrayList<>(), replace = new ArrayList<>();
+        SxpBindingFilter filter = connection.getFilter(FilterType.Inbound);
         synchronized (sxpDatabase) {
             if (databaseDelete != null && !databaseDelete.isEmpty()) {
                 removed = sxpDatabase.deleteBindings(connection.getNodeIdRemote(), databaseDelete);
-                replace = SxpDatabase.getReplaceForBindings(sxpDatabase, removed);
+                replace = SxpDatabase.getReplaceForBindings(sxpDatabase, removed, connection.getOwner());
             }
             if (databaseAdd != null && !databaseAdd.isEmpty()) {
                 added = sxpDatabase.addBinding(connection.getNodeIdRemote(), databaseAdd);
+                if (filter != null)
+                    added.removeIf(filter);
             }
             added.addAll(replace);
             dispatcher.propagateUpdate(masterDatabase.deleteBindings(removed), masterDatabase.addBindings(added),

@@ -234,7 +234,7 @@ public final class SxpNode {
             if (group.getSxpFilter() != null) {
                 for (SxpFilter filter1 : group.getSxpFilter()) {
                     for (SxpFilter filter2 : peerGroup.getSxpFilter()) {
-                        if (filter1.getFilterType().equals(filter2.getFilterType())) {
+                        if (SxpBindingFilter.checkInCompatibility(filter1, filter2)) {
                             return peerGroup;
                         }
                     }
@@ -310,7 +310,7 @@ public final class SxpNode {
                 throw new IllegalArgumentException("PeerGroup filter overlaps with filter on other PeerGroup");
             }
             if (groupBuilder.getSxpFilter() == null) {
-                groupBuilder.setSxpFilter(new ArrayList<SxpFilter>());
+                groupBuilder.setSxpFilter(new ArrayList<>());
             } else {
                 Set<SxpBindingFilter> filters = new HashSet<>();
                 for (SxpFilter filter : peerGroup.getSxpFilter()) {
@@ -358,7 +358,7 @@ public final class SxpNode {
             List<SxpConnection> connections = getConnections(peerGroup);
             for (SxpConnection connection : connections) {
                 for (SxpFilter filter : peerGroup.getSxpFilter()) {
-                    connection.removeFilter(filter.getFilterType());
+                    connection.removeFilter(filter.getFilterType(), filter.getFilterEntries());
                 }
             }
             return peerGroup.build();
@@ -395,7 +395,7 @@ public final class SxpNode {
             SxpBindingFilter bindingFilter = SxpBindingFilter.generateFilter(sxpFilter, peerGroupName);
             List<SxpFilter> sxpFilters = peerGroup.getSxpFilter();
             for (SxpFilter filter : sxpFilters) {
-                if (sxpFilter.getFilterType().equals(filter.getFilterType())) {
+                if (SxpBindingFilter.checkInCompatibility(filter, sxpFilter)) {
                     LOG.warn("{} Filter of type {} already defined", this, sxpFilter.getFilterType());
                     return false;
                 }
@@ -431,7 +431,7 @@ public final class SxpNode {
             List<SxpFilter> sxpFilters = peerGroup.getSxpFilter();
             SxpFilter oldFilter = null;
             for (SxpFilter filter : sxpFilters) {
-                if (newFilter.getFilterType().equals(filter.getFilterType())) {
+                if (SxpBindingFilter.checkInCompatibility(filter, newFilter)) {
                     oldFilter = filter;
                     break;
                 }
@@ -453,7 +453,7 @@ public final class SxpNode {
     }
 
     /**
-     * Removes Filter from specified PeerGroup
+     * Removes last added Filter from specified PeerGroup
      *
      * @param peerGroupName Name of PeerGroup that contains filter
      * @param filterType    Type of Filter that will be removed
@@ -476,7 +476,7 @@ public final class SxpNode {
             if (filter != null) {
                 List<SxpConnection> connections = getConnections(peerGroup);
                 for (SxpConnection connection : connections) {
-                    connection.removeFilter(filterType);
+                    connection.removeFilter(filterType, filter.getFilterEntries());
                 }
                 sxpFilters.remove(filter);
             }
@@ -893,12 +893,9 @@ public final class SxpNode {
      * @param bindings MasterDatabase containing bindings that will be added
      */
     public List<MasterDatabaseBinding> putLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings) {
-        synchronized (getBindingMasterDatabase()) {
-            List<MasterDatabaseBinding> addedBindings = getBindingMasterDatabase().addLocalBindings(bindings);
-
-            svcBindingDispatcher.propagateUpdate(null, addedBindings, getAllOnSpeakerConnections());
-            return addedBindings;
-        }
+        List<MasterDatabaseBinding> addedBindings = getBindingMasterDatabase().addLocalBindings(bindings);
+        svcBindingDispatcher.propagateUpdate(null, addedBindings, getAllOnSpeakerConnections());
+        return addedBindings;
     }
 
     /**
@@ -907,10 +904,10 @@ public final class SxpNode {
      * @param bindings MasterDatabase containing bindings that will be removed
      */
     public List<MasterDatabaseBinding> removeLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings) {
-        synchronized (getBindingMasterDatabase()) {
+        synchronized (getBindingSxpDatabase()) {
             List<MasterDatabaseBinding> deletedBindings = getBindingMasterDatabase().deleteBindingsLocal(bindings);
             List<SxpDatabaseBinding> replacedBindings =
-                SxpDatabase.getReplaceForBindings(getBindingSxpDatabase(), deletedBindings);
+                    SxpDatabase.getReplaceForBindings(getBindingSxpDatabase(), deletedBindings, this);
 
             svcBindingDispatcher.propagateUpdate(deletedBindings, getBindingMasterDatabase().addBindings(replacedBindings),
                     getAllOnSpeakerConnections());
