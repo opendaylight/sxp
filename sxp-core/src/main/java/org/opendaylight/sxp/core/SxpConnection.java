@@ -9,6 +9,7 @@
 package org.opendaylight.sxp.core;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
@@ -40,6 +41,7 @@ import org.opendaylight.sxp.util.time.connection.ReconcilationTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.FilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimersBuilder;
@@ -116,7 +118,8 @@ public class SxpConnection {
     protected SxpNode owner;
 
     protected HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(5);
-    private final Map<FilterType, SxpBindingFilter> bindingFilterMap = new HashMap<>();
+    private final Map<FilterType, Map<Class, SxpBindingFilter>> bindingFilterMap =
+        new HashMap<>(FilterType.values().length);
 
     /**
      * @param filterType Type of SxpBindingFilter to look for
@@ -124,7 +127,7 @@ public class SxpConnection {
      */
     public SxpBindingFilter getFilter(FilterType filterType) {
         synchronized (bindingFilterMap) {
-            return bindingFilterMap.get(filterType);
+            return SxpBindingFilter.mergeFilters(bindingFilterMap.get(filterType).values());
         }
     }
 
@@ -201,8 +204,9 @@ public class SxpConnection {
     public void putFilter(SxpBindingFilter filter) {
         if (filter != null) {
             synchronized (bindingFilterMap) {
-                FilterType filterType = filter.getSxpFilter().getFilterType();
-                bindingFilterMap.put(filterType, filter);
+                FilterType filterType = Preconditions.checkNotNull(filter.getSxpFilter()).getFilterType();
+                bindingFilterMap.get(filterType)
+                        .put(Preconditions.checkNotNull(filter.getSxpFilter().getFilterEntries()).getClass(), filter);
                 updateFlagsForDatabase(filterType, false);
             }
         }
@@ -214,8 +218,8 @@ public class SxpConnection {
      */
     public String getGroupName(FilterType filterType) {
         synchronized (bindingFilterMap) {
-            return bindingFilterMap.get(filterType) != null ? bindingFilterMap.get(filterType)
-                    .getPeerGroupName() : null;
+            SxpBindingFilter filter = getFilter(filterType);
+            return filter != null ? filter.getPeerGroupName() : null;
         }
     }
 
@@ -225,9 +229,12 @@ public class SxpConnection {
      * @param filterType Type of SxpBindingFilter to be removed
      * @return Removed SxpBindingFilter
      */
-    public SxpBindingFilter removeFilter(FilterType filterType) {
+    public SxpBindingFilter removeFilter(FilterType filterType , FilterEntries entries) {
         synchronized (bindingFilterMap) {
-            SxpBindingFilter filter = bindingFilterMap.remove(filterType);
+            SxpBindingFilter
+                    filter =
+                    bindingFilterMap.get(Preconditions.checkNotNull(filterType))
+                            .remove(Preconditions.checkNotNull(entries).getClass());
             if (filter != null) {
                 updateFlagsForDatabase(filterType, true);
             }
@@ -257,7 +264,9 @@ public class SxpConnection {
             port = connection.getTcpPort().getValue();
         }
         this.destination = new InetSocketAddress(Search.getAddress(connection.getPeerAddress()), port);
-
+        for (FilterType filterType : FilterType.values()) {
+            bindingFilterMap.put(filterType, new HashMap<>());
+        }
         if (connection.getVersion() != null) {
             setBehaviorContexts(connection.getVersion());
         } else {
