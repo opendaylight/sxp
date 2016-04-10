@@ -9,9 +9,10 @@
 package org.opendaylight.sxp.util.database;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.opendaylight.sxp.core.SxpConnection;
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.filtering.PrefixListFilter;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
@@ -30,6 +31,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.fi
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.prefix.list.filter.entries.PrefixListEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.prefix.list.filter.entries.PrefixListEntryBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,13 +41,27 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-public class SxpDatabaseImplTest {
+@RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class}) public class SxpDatabaseImplTest {
 
     private static SxpDatabaseImpl database;
+    private static SxpNode node;
+    private static List<SxpConnection> sxpConnections = new ArrayList<>();
 
     @Before public void init() {
         database = new SxpDatabaseImpl();
+        node = PowerMockito.mock(SxpNode.class);
+        PowerMockito.when(node.getBindingSxpDatabase()).thenReturn(database);
+        PowerMockito.when(node.getAllConnections()).thenReturn(sxpConnections);
+    }
+
+    private SxpConnection mockConnection(String remoteId) {
+        SxpConnection connection = mock(SxpConnection.class);
+        when(connection.getNodeIdRemote()).thenReturn(NodeId.getDefaultInstance(remoteId));
+        when(connection.isModeListener()).thenReturn(true);
+        return connection;
     }
 
     private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, String... peers) {
@@ -91,13 +109,10 @@ public class SxpDatabaseImplTest {
 
     @Test public void testDeleteBindings() throws Exception {
         assertEquals(0, database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10")).size());
-        assertEquals(0,
-                database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), new ArrayList<>())
-                        .size());
+        assertEquals(0, database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), new ArrayList<>()).size());
 
         database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),
-                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"),
-                        getBinding("2.2.2.2/32", 200, "10.10.10.10"),
+                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("2.2.2.2/32", 200, "10.10.10.10"),
                         getBinding("1.1.1.1/32", 100, "10.10.10.10")));
 
         database.addBinding(NodeId.getDefaultInstance("20.20.20.20"),
@@ -108,9 +123,7 @@ public class SxpDatabaseImplTest {
                 mergeBindings(getBinding("25.2.2.6/32", 20, "30.30.30.30", "20.20.20.20", "10.10.10.10"),
                         getBinding("1.1.1.1/32", 10, "30.30.30.30")));
 
-        assertEquals(0,
-                database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), new ArrayList<>())
-                        .size());
+        assertEquals(0, database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), new ArrayList<>()).size());
         assertEquals(2, database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10")).size());
         assertEquals(0, database.getBindings(NodeId.getDefaultInstance("10.10.10.10")).size());
 
@@ -146,8 +159,7 @@ public class SxpDatabaseImplTest {
 
     @Test public void testGetReplaceForBindings() throws Exception {
         database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),
-                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"),
-                        getBinding("2.2.2.2/32", 200, "10.10.10.10"),
+                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("2.2.2.2/32", 200, "10.10.10.10"),
                         getBinding("1.1.1.1/32", 100, "10.10.10.10")));
 
         database.addBinding(NodeId.getDefaultInstance("20.20.20.20"),
@@ -158,19 +170,24 @@ public class SxpDatabaseImplTest {
                 mergeBindings(getBinding("25.2.2.6/32", 20, "30.30.30.30", "20.20.20.20", "10.10.10.10"),
                         getBinding("1.1.1.1/32", 10, "30.30.30.30")));
 
-        database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), mergeBindings(getBinding("2.2.2.2/32", 200)));
-        assertBindings(SxpDatabase.getReplaceForBindings(database, mergeBindings()), mergeBindings());
 
-        assertBindings(SxpDatabase.getReplaceForBindings(database, mergeBindings(getBinding("2.2.2.2/32", 200))),
+        sxpConnections.add(mockConnection("10.10.10.10"));
+        sxpConnections.add(mockConnection("20.20.20.20"));
+        sxpConnections.add(mockConnection("30.30.30.30"));
+
+        database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), mergeBindings(getBinding("2.2.2.2/32", 200)));
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(), node), mergeBindings());
+
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 200)), node),
                 mergeBindings(getBinding("2.2.2.2/32", 20)));
 
         database.deleteBindings(NodeId.getDefaultInstance("20.20.20.20"), mergeBindings(getBinding("2.2.2.2/32", 20)));
 
-        assertBindings(SxpDatabase.getReplaceForBindings(database, mergeBindings(getBinding("2.2.2.2/32", 20))),
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 20)), node),
                 mergeBindings(getBinding("2.2.2.2/32", 200)));
-        assertBindings(SxpDatabase.getReplaceForBindings(database, mergeBindings(getBinding("2.2.2.2/32", 254))),
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 254)), node),
                 mergeBindings(getBinding("2.2.2.2/32", 200)));
-        assertBindings(SxpDatabase.getReplaceForBindings(database, mergeBindings(getBinding("25.2.2.2/32", 20))),
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("25.2.2.2/32", 20)), node),
                 mergeBindings());
     }
 
@@ -186,10 +203,10 @@ public class SxpDatabaseImplTest {
                 mergeBindings(getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
                         getBinding("2.2.2.2/32", 200, "20.20.20.20")));
 
-        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 10, "10.10.10.10"),
-                getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
-                getBinding("2.2.2.2/32", 200, "20.20.20.20")));
+        assertBindings(database.getBindings(),
+                mergeBindings(getBinding("1.1.1.1/32", 10, "10.10.10.10"), getBinding("1.1.1.1/32", 100, "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 200, "20.20.20.20")));
 
         assertBindings(database.getBindings(NodeId.getDefaultInstance("10.10.10.10")),
                 mergeBindings(getBinding("1.1.1.1/32", 10, "10.10.10.10"),

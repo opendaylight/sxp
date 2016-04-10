@@ -8,10 +8,13 @@
 
 package org.opendaylight.sxp.util.filtering;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.common.net.InetAddresses;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilterFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.SgtMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.sgt.match.SgtMatches;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.sgt.match.SgtRange;
@@ -23,19 +26,27 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.fi
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.PrefixListFilterEntries;
 
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Abstract Class representing Filter to filter Master/Sxp BindingIdentities
  *
  * @param <T> Type representing entries used inside filter
  */
-public abstract class SxpBindingFilter<T extends FilterEntries> implements Function<SxpBindingFields, Boolean> {
+public abstract class SxpBindingFilter<T extends FilterEntries>
+        implements Function<SxpBindingFields, Boolean>, Predicate<SxpBindingFields> {
 
     protected final SxpFilter sxpFilter;
     private final String peerGroupName;
+
+    private SxpBindingFilter(String peerGroupName) {
+        this.sxpFilter = null;
+        this.peerGroupName = peerGroupName;
+    }
 
     /**
      * Parametric constructor for SxpFiltering logic
@@ -68,7 +79,11 @@ public abstract class SxpBindingFilter<T extends FilterEntries> implements Funct
 
     @Override public Boolean apply(SxpBindingFields binding) {
         //noinspection unchecked
-        return filter((T) sxpFilter.getFilterEntries(), binding);
+        return filter(sxpFilter != null ? (T) sxpFilter.getFilterEntries() : null, Preconditions.checkNotNull(binding));
+    }
+
+    @Override public boolean test(SxpBindingFields binding) {
+        return apply(binding);
     }
 
     /**
@@ -149,5 +164,41 @@ public abstract class SxpBindingFilter<T extends FilterEntries> implements Funct
 
     @Override public int hashCode() {
         return Objects.hash(sxpFilter.getFilterEntries());
+    }
+
+    public static SxpBindingFilter mergeFilters(final Collection<SxpBindingFilter> values) {
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+        if (values.size() == 1)
+            return Iterables.get(values, 0);
+        StringBuilder builder = new StringBuilder().append("MultiGroup[ ");
+        values.stream().map(SxpBindingFilter::getPeerGroupName).sorted().forEach(g -> builder.append(g).append(" "));
+        return new SxpBindingFilter(builder.append("]").toString()) {
+
+            protected boolean filter(FilterEntries filterEntries, SxpBindingFields binding) {
+                for (SxpBindingFilter filter : values) {
+                    if (filter.apply(binding))
+                        return true;
+                }
+                return false;
+            }
+        };
+    }
+
+    public static <F extends SxpFilterFields> boolean checkInCompatibility(F filter1, F filter2) {
+        if (filter1 == null || filter2 == null)
+            return false;
+        if (filter1 == filter2)
+            return true;
+        if (!Preconditions.checkNotNull(filter1.getFilterType()).equals(filter2.getFilterType()))
+            return false;
+        return Preconditions.checkNotNull(filter1.getFilterEntries())
+                .getClass()
+                .equals(Preconditions.checkNotNull(filter2.getFilterEntries()).getClass()) ||
+                filter1.getFilterEntries() instanceof AclFilterEntries
+                        && filter2.getFilterEntries() instanceof PrefixListFilterEntries ||
+                filter1.getFilterEntries() instanceof PrefixListFilterEntries
+                        && filter2.getFilterEntries() instanceof AclFilterEntries;
     }
 }

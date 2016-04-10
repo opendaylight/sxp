@@ -87,7 +87,6 @@ module sxp-filter {
 			}
 		}
 		list sxp-filter {
-			key "filter-type";
 			uses sxp-filter-fields;
 		}
 	}
