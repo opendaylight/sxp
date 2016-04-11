@@ -61,7 +61,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayDeque;
@@ -931,18 +930,7 @@ public class SxpConnection {
         } else if (isModeSpeaker() && message.getSxpMode().equals(ConnectionMode.Listener)) {
             setConnectionSpeakerPart(message);
             try {
-                CapabilitiesAttribute
-                        capabilitiesAttribute =
-                        (CapabilitiesAttribute) AttributeList.get(message.getAttribute(), AttributeType.Capabilities);
-
-                setCapabilitiesRemote(new ArrayList<>(
-                        Collections2.transform(capabilitiesAttribute.getCapabilitiesAttributes().getCapabilities(),
-                                new Function<Capabilities, CapabilityType>() {
-
-                                    @Nullable @Override public CapabilityType apply(Capabilities input) {
-                                        return input.getCode();
-                                    }
-                                })));
+                setCapabilitiesRemote(MessageFactory.decodeCapabilities(message));
             } catch (AttributeNotFoundException e) {
                 LOG.warn("{} No Capabilities received by remote peer.", this);
             }

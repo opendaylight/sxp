@@ -8,23 +8,15 @@
 
 package org.opendaylight.sxp.core.messaging;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.List;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opendaylight.sxp.util.exception.ErrorCodeDataLengthException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
+import org.opendaylight.sxp.util.exception.message.attribute.AttributeNotFoundException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.DatabaseAction;
@@ -58,8 +50,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class MessageFactoryTest {
 
@@ -460,5 +456,23 @@ public class MessageFactoryTest {
                 message.writeBytes(msg);
                 exception.expect(ErrorMessageException.class);
                 MessageFactory.parse(Version.Version4, message);
+        }
+
+        @Test public void testDecodeCapabilities() throws Exception {
+                List<CapabilityType>
+                        capabilityTypes =
+                        MessageFactory.decodeCapabilities((OpenMessage) MessageFactory.decodeOpen(
+                                new byte[] {0, 0, 0, 4, 0, 0, 0, 2, 80, 6, 6, 3, 0, 2, 0, 1, 0, 80, 7, 4, 0, 120, 0,
+                                        -106}));
+                assertTrue(capabilityTypes.contains(CapabilityType.SubnetBindings));
+                assertTrue(capabilityTypes.contains(CapabilityType.Ipv4Unicast));
+                assertTrue(capabilityTypes.contains(CapabilityType.Ipv6Unicast));
+                try {
+                        MessageFactory.decodeCapabilities((OpenMessage) MessageFactory.decodeOpen(
+                                new byte[] {0, 0, 0, 4, 0, 0, 0, 1, 80, 5, 4, -64, -88, 0, 1, 80, 7, 4, 0, 120, 0,
+                                        -106}));
+                        fail();
+                } catch (AttributeNotFoundException ignored) {
+                }
         }
 }
