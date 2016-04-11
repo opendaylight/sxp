@@ -223,9 +223,12 @@ public final class Sxpv4 extends SxpLegacy {
                             connection.markChannelHandlerContext(ctx, ChannelHandlerContextType.SpeakerContext);
                             connection.setConnectionSpeakerPart(_message);
                             try {
+                                connection.setCapabilitiesRemote(MessageFactory.decodeCapabilities(_message));
                                 ByteBuf response = composeOpenRespHoldTimeMessage(connection, _message, ConnectionMode.Speaker);
                                 LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
                                 ctx.writeAndFlush(response);
+                            } catch (AttributeNotFoundException e) {
+                                LOG.warn("{} No Capabilities received by remote peer.", this);
                             } catch (CapabilityLengthException | HoldTimeMinException | HoldTimeMaxException | AttributeVariantException e) {
                                 LOG.error("{} Error sending RESP shutting down connection {} ", this, connection, e);
                                 connection.setStateOff(ctx);

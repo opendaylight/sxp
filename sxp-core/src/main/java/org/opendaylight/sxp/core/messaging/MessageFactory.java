@@ -8,6 +8,10 @@
 
 package org.opendaylight.sxp.core.messaging;
 
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Collections2;
+import com.sun.istack.internal.Nullable;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import org.opendaylight.sxp.core.Configuration;
@@ -18,6 +22,7 @@ import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageBindingSourceException;
 import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
+import org.opendaylight.sxp.util.exception.message.attribute.AttributeNotFoundException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeVariantException;
 import org.opendaylight.sxp.util.exception.message.attribute.CapabilityLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.HoldTimeMaxException;
@@ -36,24 +41,28 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.PrefixGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.ErrorMessageBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorSubCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.KeepaliveMessageBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessageBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.SxpHeader;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.SxpPayload;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.CapabilitiesAttribute;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.capabilities.attribute.capabilities.attributes.Capabilities;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.ErrorMessageBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.KeepaliveMessageBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessageBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageBuilder;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -783,5 +792,27 @@ public class MessageFactory {
             throw new ErrorMessageException(ErrorCode.MessageHeaderError, new Exception(
                     "Message incorporated length is not consistent"));
         }
+    }
+
+    /**
+     * Decode Capabilities received from remote peer
+     *
+     * @param message Message containing capabilities
+     * @return List of capabilities
+     * @throws AttributeNotFoundException If no Capabilities were found
+     */
+    public static List<CapabilityType> decodeCapabilities(OpenMessage message) throws AttributeNotFoundException {
+        CapabilitiesAttribute
+                capabilitiesAttribute =
+                (CapabilitiesAttribute) AttributeList.get(Preconditions.checkNotNull(message).getAttribute(),
+                        AttributeType.Capabilities);
+        return new ArrayList<>(
+                Collections2.transform(capabilitiesAttribute.getCapabilitiesAttributes().getCapabilities(),
+                        new Function<Capabilities, CapabilityType>() {
+
+                            @Nullable @Override public CapabilityType apply(Capabilities input) {
+                                return input.getCode();
+                            }
+                        }));
     }
 }
