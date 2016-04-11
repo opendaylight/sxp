@@ -8,13 +8,12 @@
 
 package org.opendaylight.sxp.core;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Collections2;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.ChannelHandlerContext;
 import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.core.messaging.AttributeList;
+import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
@@ -54,17 +53,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Erro
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.CapabilitiesAttribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.HoldTimeAttribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.SxpNodeIdAttribute;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.capabilities.attribute.capabilities.attributes.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -836,18 +832,7 @@ public class SxpConnection {
         } else if (isModeSpeaker() && message.getSxpMode().equals(ConnectionMode.Listener)) {
             setConnectionSpeakerPart(message);
             try {
-                CapabilitiesAttribute
-                        capabilitiesAttribute =
-                        (CapabilitiesAttribute) AttributeList.get(message.getAttribute(), AttributeType.Capabilities);
-
-                setCapabilitiesRemote(new ArrayList<>(
-                        Collections2.transform(capabilitiesAttribute.getCapabilitiesAttributes().getCapabilities(),
-                                new Function<Capabilities, CapabilityType>() {
-
-                                    @Nullable @Override public CapabilityType apply(Capabilities input) {
-                                        return input.getCode();
-                                    }
-                                })));
+                setCapabilitiesRemote(MessageFactory.decodeCapabilities(message));
             } catch (AttributeNotFoundException e) {
                 LOG.warn("{} No Capabilities received by remote peer.", this);
             }

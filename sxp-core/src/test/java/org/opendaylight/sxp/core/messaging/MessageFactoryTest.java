@@ -16,6 +16,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opendaylight.sxp.util.exception.ErrorCodeDataLengthException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
+import org.opendaylight.sxp.util.exception.message.attribute.AttributeNotFoundException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.TimeConv;
@@ -440,5 +441,23 @@ public class MessageFactoryTest {
                 message.writeBytes(msg);
                 exception.expect(ErrorMessageException.class);
                 MessageFactory.parse(Version.Version4, message);
+        }
+
+        @Test public void testDecodeCapabilities() throws Exception {
+                List<CapabilityType>
+                        capabilityTypes =
+                        MessageFactory.decodeCapabilities((OpenMessage) MessageFactory.decodeOpen(
+                                new byte[] {0, 0, 0, 4, 0, 0, 0, 2, 80, 6, 6, 3, 0, 2, 0, 1, 0, 80, 7, 4, 0, 120, 0,
+                                        -106}));
+                assertTrue(capabilityTypes.contains(CapabilityType.SubnetBindings));
+                assertTrue(capabilityTypes.contains(CapabilityType.Ipv4Unicast));
+                assertTrue(capabilityTypes.contains(CapabilityType.Ipv6Unicast));
+                try {
+                        MessageFactory.decodeCapabilities((OpenMessage) MessageFactory.decodeOpen(
+                                new byte[] {0, 0, 0, 4, 0, 0, 0, 1, 80, 5, 4, -64, -88, 0, 1, 80, 7, 4, 0, 120, 0,
+                                        -106}));
+                        fail();
+                } catch (AttributeNotFoundException ignored) {
+                }
         }
 }

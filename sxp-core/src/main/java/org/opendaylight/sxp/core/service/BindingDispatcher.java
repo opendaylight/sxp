@@ -114,7 +114,8 @@ public final class BindingDispatcher {
         List<BiFunction<SxpConnection, SxpBindingFilter, ByteBuf>> partitions = new ArrayList<>();
         List<T> lastPartition = null;
         //Prefix Expansion for legacy versions
-        if (!connection.getCapabilitiesRemote().contains(CapabilityType.SubnetBindings)) {
+        if (connection.isVersion4() && !connection.getCapabilitiesRemote().contains(CapabilityType.SubnetBindings)
+                || connection.getVersion().getIntValue() < 3) {
             expandBindings(deleteBindings, expansionQuantity);
             expandBindings(addBindings, expansionQuantity);
         }
