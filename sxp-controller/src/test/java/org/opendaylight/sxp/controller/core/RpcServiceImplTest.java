@@ -97,8 +97,7 @@ public class RpcServiceImplTest {
                 when(node.getWorker()).thenReturn(new ThreadsWorker());
                 when(node.getPeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
                 when(node.removePeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
-                when(node.removeFilterFromPeerGroup(anyString(), any(FilterType.class))).thenReturn(
-                        mock(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class));
+                when(node.removeFilterFromPeerGroup(anyString(), any(FilterType.class))).thenReturn(true);
                 when(node.addPeerGroup(any(SxpPeerGroup.class))).thenReturn(true);
                 when(node.addFilterToPeerGroup(anyString(),
                         any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class)))

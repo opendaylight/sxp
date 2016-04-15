@@ -41,7 +41,9 @@ public class MasterDatabaseImpl extends MasterDatabase {
         List<MasterDatabaseBinding> added = new ArrayList<>();
         if (map == null || bindings == null || bindings.isEmpty())
             return added;
-        Map<IpPrefix, MasterDatabaseBinding> prefixMap = filterIncomingBindings(bindings, map::get);
+        Map<IpPrefix, MasterDatabaseBinding>
+                prefixMap =
+                filterIncomingBindings(bindings, map::get, p -> map.remove(p) != null);
         if (!prefixMap.isEmpty()) {
             map.putAll(prefixMap);
             added.addAll(prefixMap.values());

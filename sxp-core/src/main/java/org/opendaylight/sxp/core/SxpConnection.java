@@ -152,13 +152,16 @@ public class SxpConnection {
             //Adds all Bindings learned from peer to MasterDB and sends it to All Listeners
             owner.getWorker().executeTaskInSequence(() -> {
                 synchronized (sxpDatabase) {
+                    List<SxpDatabaseBinding> bindingsAdd = sxpDatabase.getBindings(getNodeIdRemote());
+                    if (getFilter(filterType) != null) {
+                        bindingsAdd.removeIf(getFilter(filterType));
+                    }
                     getOwner().getSvcBindingDispatcher()
-                            .propagateUpdate(null,
-                                    masterDatabase.addBindings(sxpDatabase.getBindings(getNodeIdRemote())),
+                            .propagateUpdate(null, masterDatabase.addBindings(bindingsAdd),
                                     owner.getAllOnSpeakerConnections());
                 }
                 return null;
-            }, ThreadsWorker.WorkerType.INBOUND);
+            }, ThreadsWorker.WorkerType.INBOUND, this);
         } else if (!filterRemoved) {
             //Filters out Bindings from SXP database, removes it from Master and send update to all Listeners
             owner.getWorker().executeTaskInSequence(() -> {
@@ -176,7 +179,7 @@ public class SxpConnection {
                                     owner.getAllOnSpeakerConnections());
                 }
                 return null;
-            }, ThreadsWorker.WorkerType.INBOUND);
+            }, ThreadsWorker.WorkerType.INBOUND, this);
         }
     }
 

@@ -507,8 +507,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     LOG.warn("{} exception | Parameter 'filter-type' not defined", msg);
                     return RpcResultBuilder.success(output.build()).build();
                 }
-                output.setResult(
-                        node.removeFilterFromPeerGroup(input.getPeerGroupName(), input.getFilterType()) != null);
+                output.setResult(node.removeFilterFromPeerGroup(input.getPeerGroupName(), input.getFilterType()));
                 return RpcResultBuilder.success(output.build()).build();
             }
         });

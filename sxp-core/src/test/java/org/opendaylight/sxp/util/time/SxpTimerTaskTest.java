@@ -71,7 +71,7 @@ import static org.mockito.Mockito.*;
 
                 when(sxpConnection.getTimestampUpdateOrKeepAliveMessage()).thenReturn(2 * System.currentTimeMillis());
                 timerTask.call();
-                verifyNoMoreInteractions(ctx);
+                verify(ctx, times(2)).writeAndFlush(any());
                 verify(sxpConnection, times(2)).setTimer(TimerType.KeepAliveTimer, timerTask.getPeriod());
 
                 when(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext)).thenReturn(false);

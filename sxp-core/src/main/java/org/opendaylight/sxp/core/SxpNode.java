@@ -430,7 +430,9 @@ public final class SxpNode {
             List<SxpFilter> sxpFilters = peerGroup.getSxpFilter();
             SxpFilter oldFilter = null;
             for (SxpFilter filter : sxpFilters) {
-                if (SxpBindingFilter.checkInCompatibility(filter, newFilter)) {
+                if (SxpBindingFilter.checkInCompatibility(filter, newFilter) && filter.getFilterEntries()
+                        .getClass()
+                        .equals(filter.getFilterEntries().getClass())) {
                     oldFilter = filter;
                     break;
                 }
@@ -456,30 +458,21 @@ public final class SxpNode {
      *
      * @param peerGroupName Name of PeerGroup that contains filter
      * @param filterType    Type of Filter that will be removed
-     * @return Removed SxpFilter
+     * @return If any filters were removed
      */
-    public SxpFilter removeFilterFromPeerGroup(String peerGroupName, FilterType filterType) {
+    public boolean removeFilterFromPeerGroup(String peerGroupName, FilterType filterType) {
         synchronized (peerGroupMap) {
             SxpPeerGroupBuilder peerGroup = peerGroupMap.get(peerGroupName);
             if (peerGroup == null || filterType == null) {
-                return null;
+                return false;
             }
-            SxpFilter filter = null;
-            List<SxpFilter> sxpFilters = peerGroup.getSxpFilter();
-            for (SxpFilter sxpFilter : sxpFilters) {
-                if (sxpFilter.getFilterType().equals(filterType)) {
-                    filter = sxpFilter;
-                    break;
-                }
-            }
-            if (filter != null) {
-                List<SxpConnection> connections = getConnections(peerGroup);
+            List<SxpConnection> connections = getConnections(peerGroup);
+            return peerGroup.getSxpFilter().removeIf(f -> {
                 for (SxpConnection connection : connections) {
-                    connection.removeFilter(filterType, filter.getFilterEntries());
+                    connection.removeFilter(filterType, f.getFilterEntries());
                 }
-                sxpFilters.remove(filter);
-            }
-            return filter;
+                return f.getFilterType().equals(filterType);
+            });
         }
     }
 

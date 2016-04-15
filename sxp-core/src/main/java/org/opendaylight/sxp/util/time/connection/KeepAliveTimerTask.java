@@ -16,8 +16,6 @@ import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFo
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * KeepAliveTimerTask is used by SXP speaker to send KEEPALIVE message
  * in order to indicate to the listener that the connection remains live.
@@ -43,17 +41,14 @@ public class KeepAliveTimerTask extends SxpTimerTask<Void> {
 
         if (connection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext) && connection.isModeSpeaker()
                 && connection.isVersion4()) {
-            if (connection.getTimestampUpdateOrKeepAliveMessage() + TimeUnit.SECONDS.toMillis(getPeriod())
-                    <= System.currentTimeMillis()) {
-                ByteBuf keepAlive = MessageFactory.createKeepalive();
-                try {
-                    LOG.info("{} Sent KEEPALIVE {}", connection, MessageFactory.toString(keepAlive));
-                    connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext)
-                            .writeAndFlush(keepAlive);
-                } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-                    LOG.warn("{} ERROR sending KEEPALIVE ", connection, e);
-                    keepAlive.release();
-                }
+            ByteBuf keepAlive = MessageFactory.createKeepalive();
+            try {
+                LOG.info("{} Sent KEEPALIVE {}", connection, MessageFactory.toString(keepAlive));
+                connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext)
+                        .writeAndFlush(keepAlive);
+            } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+                LOG.warn("{} ERROR sending KEEPALIVE ", connection, e);
+                keepAlive.release();
             }
             connection.setTimer(TimerType.KeepAliveTimer, getPeriod());
         }
