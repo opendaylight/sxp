@@ -131,9 +131,11 @@ public final class BindingDispatcher {
             int splitFactor = 0;
             if (lastPartition != null) {
                 splitFactor = getPartitionSize() - lastPartition.size();
-                partitions.set(partitions.size() - 1, generatePart(lastPartition, addBindings.subList(0, splitFactor)));
+                partitions.set(partitions.size() - 1, generatePart(lastPartition,
+                        splitFactor > addBindings.size() ? addBindings : addBindings.subList(0, splitFactor)));
             }
-            for (List<T> partition : Lists.partition(addBindings.subList(splitFactor, addBindings.size()),
+            for (List<T> partition : Lists.partition(
+                    addBindings.subList(splitFactor > addBindings.size() ? 0 : splitFactor, addBindings.size()),
                     getPartitionSize())) {
                 partitions.add(generatePart(null, partition));
             }

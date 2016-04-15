@@ -553,10 +553,10 @@ public class SxpConnectionTest {
 
                 sxpConnection.putFilter(getFilter(FilterType.Inbound, "TEST"));
                 verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
-                        eq(ThreadsWorker.WorkerType.INBOUND));
+                        eq(ThreadsWorker.WorkerType.INBOUND), eq(sxpConnection));
                 sxpConnection.putFilter(getFilter(FilterType.InboundDiscarding, "TEST1"));
                 verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
-                        eq(ThreadsWorker.WorkerType.INBOUND));
+                        eq(ThreadsWorker.WorkerType.INBOUND), eq(sxpConnection));
                 sxpConnection.putFilter(getFilter(FilterType.Outbound, "TEST2"));
                 verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
                         eq(ThreadsWorker.WorkerType.OUTBOUND), eq(sxpConnection));
@@ -602,7 +602,7 @@ public class SxpConnectionTest {
                 sxpConnection.removeFilter(FilterType.InboundDiscarding, mock(AclFilterEntries.class));
                 assertNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
                 verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
-                        eq(ThreadsWorker.WorkerType.INBOUND));
+                        eq(ThreadsWorker.WorkerType.INBOUND), eq(sxpConnection));
 
                 sxpConnection.removeFilter(FilterType.Outbound, mock(AclFilterEntries.class));
                 assertNull(sxpConnection.getFilter(FilterType.Outbound));

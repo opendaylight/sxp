@@ -98,7 +98,8 @@ public final class MasterDatastoreImpl extends MasterDatabase {
                     datastoreAccess.readSynchronous(getIdentifierBuilder(t).build(), LogicalDatastoreType.OPERATIONAL);
             return binding != null ? binding : datastoreAccess.readSynchronous(getIdentifierBuilder(t).build(),
                     LogicalDatastoreType.CONFIGURATION);
-        }).values());
+        }, p -> datastoreAccess.deleteSynchronous(getIdentifierBuilder(p).build(),
+                LogicalDatastoreType.OPERATIONAL)).values());
         if (!added.isEmpty()) {
             datastoreAccess.mergeSynchronous(getIdentifierBuilder().build(),
                     new MasterDatabaseBuilder().setMasterDatabaseBinding(added).build(), datastoreType);
