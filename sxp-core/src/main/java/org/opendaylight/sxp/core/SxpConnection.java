@@ -158,7 +158,7 @@ public class SxpConnection {
                                     owner.getAllOnSpeakerConnections());
                 }
                 return null;
-            }, ThreadsWorker.WorkerType.INBOUND);
+            }, ThreadsWorker.WorkerType.INBOUND, this);
         } else if (!filterRemoved) {
             //Filters out Bindings from SXP database, removes it from Master and send update to all Listeners
             owner.getWorker().executeTaskInSequence(() -> {
@@ -176,7 +176,7 @@ public class SxpConnection {
                                     owner.getAllOnSpeakerConnections());
                 }
                 return null;
-            }, ThreadsWorker.WorkerType.INBOUND);
+            }, ThreadsWorker.WorkerType.INBOUND, this);
         }
     }
 

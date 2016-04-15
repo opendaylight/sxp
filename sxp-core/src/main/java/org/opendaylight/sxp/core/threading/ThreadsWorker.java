@@ -10,6 +10,8 @@ package org.opendaylight.sxp.core.threading;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.*;
 import org.opendaylight.sxp.core.SxpConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -56,6 +58,8 @@ public class ThreadsWorker {
         }
     }
 
+
+    private static final Logger LOG = LoggerFactory.getLogger(ThreadsWorker.class.getName());
 
     private final ListeningScheduledExecutorService scheduledExecutorService;
     private final ListeningExecutorService executorService, executorServiceOutbound, executorServiceInbound;
@@ -112,6 +116,29 @@ public class ThreadsWorker {
         }
     }
 
+    private <T> Callable<T> checkAndWrap(Callable<T> callable) {
+        Preconditions.checkNotNull(callable);
+        return LOG.isDebugEnabled() ? () -> {
+            try {
+                return callable.call();
+            } catch (Exception e) {
+                LOG.error("{} error executing {}", this, callable);
+            }
+            return null;
+        } : callable;
+    }
+
+    private Runnable checkAndWrap(Runnable runnable) {
+        Preconditions.checkNotNull(runnable);
+        return LOG.isDebugEnabled() ? () -> {
+            try {
+                runnable.run();
+            } catch (Exception e) {
+                LOG.error("{} error executing {}", this, runnable);
+            }
+        } : runnable;
+    }
+
     /**
      * Schedule and execute task after specified period in ListeningScheduledExecutorService
      *
@@ -122,7 +149,7 @@ public class ThreadsWorker {
      * @throws NullPointerException If task is null
      */
     public <T> ListenableScheduledFuture<T> scheduleTask(Callable<T> task, int period, TimeUnit unit) {
-        return scheduledExecutorService.schedule(Preconditions.checkNotNull(task), period, unit);
+        return scheduledExecutorService.schedule(checkAndWrap(task), period, unit);
     }
 
     /**
@@ -134,7 +161,7 @@ public class ThreadsWorker {
      * @throws NullPointerException If task is null
      */
     public <T> ListenableFuture<T> executeTask(Callable<T> task, WorkerType type) {
-        return getExecutor(type).submit(Preconditions.checkNotNull(task));
+        return getExecutor(type).submit(checkAndWrap(task));
     }
 
     /**
@@ -145,7 +172,7 @@ public class ThreadsWorker {
      * @return ListenableFuture that can be used to extract result or cancel
      */
     public <T> ListenableFuture<T> executeTaskInSequence(final Callable<T> task, final WorkerType type) {
-        return executeTaskInSequence(Preconditions.checkNotNull(task), new QueueKey(type));
+        return executeTaskInSequence(checkAndWrap(task), new QueueKey(type));
     }
 
     /**
@@ -158,7 +185,7 @@ public class ThreadsWorker {
      */
     public <T> ListenableFuture<T> executeTaskInSequence(final Callable<T> task, final WorkerType type,
             final SxpConnection connection) {
-        return executeTaskInSequence(Preconditions.checkNotNull(task), new QueueKey(type, connection));
+        return executeTaskInSequence(checkAndWrap(task), new QueueKey(type, connection));
     }
 
     /**
@@ -196,7 +223,7 @@ public class ThreadsWorker {
      * @throws NullPointerException If task is null
      */
     public ListenableFuture executeTask(Runnable task, WorkerType type) {
-        return getExecutor(type).submit(Preconditions.checkNotNull(task));
+        return getExecutor(type).submit(checkAndWrap(task));
     }
 
     /**
@@ -207,7 +234,7 @@ public class ThreadsWorker {
      * @throws NullPointerException If task or listener is null
      */
     public void addListener(ListenableFuture task, Runnable listener) {
-        Preconditions.checkNotNull(task).addListener(Preconditions.checkNotNull(listener), executorService);
+        Preconditions.checkNotNull(task).addListener(checkAndWrap(listener), executorService);
     }
 
     /**
@@ -219,7 +246,7 @@ public class ThreadsWorker {
      */
     private <T> ListenableFuture<T> executeTaskInSequence(final Callable<T> task, final QueueKey key) {
         synchronized (dequeMap) {
-            if (dequeMap.get(key) == null) {
+            if (!dequeMap.containsKey(key)) {
                 dequeMap.put(key, new ArrayDeque<SettableListenableFuture>());
             }
         }
