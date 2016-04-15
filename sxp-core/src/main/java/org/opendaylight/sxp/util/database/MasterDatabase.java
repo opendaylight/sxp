@@ -30,14 +30,15 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
      * Pre filter bindings before adding to MasterDatabase
      *
      * @param bindings List of bindings that will be filtered
-     * @param function Function that will be used to find existing bindings in MasterDatabase
+     * @param get      Function that will be used to find existing bindings in MasterDatabase
+     * @param remove   Function that will be used to remove existing bindings from MasterDatabase
      * @param <T>      Any type extending SxpBindingFields
      * @return List of bindings that can be added to MasterDatabase
      */
     protected static <T extends SxpBindingFields> Map<IpPrefix, MasterDatabaseBinding> filterIncomingBindings(
-            List<T> bindings, Function<IpPrefix, MasterDatabaseBinding> function) {
+            List<T> bindings, Function<IpPrefix, MasterDatabaseBinding> get, Function<IpPrefix, Boolean> remove) {
         Map<IpPrefix, MasterDatabaseBinding> prefixMap = new HashMap<>();
-        if (function == null || bindings == null || bindings.isEmpty()) {
+        if (get == null || bindings == null || bindings.isEmpty()) {
             return prefixMap;
         }
         bindings.stream().forEach(b -> {
@@ -45,12 +46,13 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
                 return;
             MasterDatabaseBinding
                     binding =
-                    prefixMap.get(b.getIpPrefix()) == null ? function.apply(b.getIpPrefix()) : prefixMap.get(
+                    prefixMap.get(b.getIpPrefix()) == null ? get.apply(b.getIpPrefix()) : prefixMap.get(
                             b.getIpPrefix());
             if (binding == null || b.getPeerSequence().getPeer().size() < binding.getPeerSequence().getPeer().size()
                     || (b.getPeerSequence().getPeer().size() == binding.getPeerSequence().getPeer().size()
                     && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
                 prefixMap.put(b.getIpPrefix(), new MasterDatabaseBindingBuilder(b).build());
+                remove.apply(b.getIpPrefix());
             }
         });
         return prefixMap;
