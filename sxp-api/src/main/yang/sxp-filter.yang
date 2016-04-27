@@ -28,6 +28,14 @@ module sxp-filter {
 		}
 	}
 
+	typedef filter-name {
+		type enumeration {
+			enum access-list;
+			enum prefix-list;
+			enum peer-sequence;
+		}
+	}
+
 	typedef filter-entry-type {
 		description "Filter entry flag";
 		type enumeration {
@@ -87,6 +95,7 @@ module sxp-filter {
 			}
 		}
 		list sxp-filter {
+		    key "filter-type filter-name";
 			uses sxp-filter-fields;
 		}
 	}
@@ -111,6 +120,9 @@ module sxp-filter {
 			type filter-type;
 			mandatory true;
 		}
+		leaf filter-name {
+            type filter-name;
+        }
 		choice filter-entries {
 			description "Filter entries specifying filter.";
 			mandatory "true";
@@ -247,7 +259,7 @@ module sxp-filter {
             description "PERMIT/DENY";
             type filter-entry-type;
             mandatory true;
-            }
+        }
         leaf entry-seq {
             description "Specifying order of each entry.";
             type uint16;

@@ -45,7 +45,7 @@
                             <security>
                                 <password>password</password>
                             </security>
-                            <mapping-expanded>150</mapping-expanded>
+                            <mapping-expanded>0</mapping-expanded>
                             <description>ODL SXP Controller</description>
 
                             <!-- Binding format: prefix/length -->
