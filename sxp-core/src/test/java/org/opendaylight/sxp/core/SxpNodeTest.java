@@ -46,13 +46,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.Timers;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.TimersBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.timers.ListenerProfileBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.timers.SpeakerProfileBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.Timers;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.TimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -117,16 +115,12 @@ public class SxpNodeTest {
                 TimersBuilder timersBuilder = new TimersBuilder();
                 timersBuilder.setRetryOpenTime(5);
 
-                SpeakerProfileBuilder sprofileBuilder = new SpeakerProfileBuilder();
-                sprofileBuilder.setHoldTimeMinAcceptable(45);
-                sprofileBuilder.setKeepAliveTime(30);
-                timersBuilder.setSpeakerProfile(sprofileBuilder.build());
+                timersBuilder.setHoldTimeMinAcceptable(45);
+                timersBuilder.setKeepAliveTime(30);
 
-                ListenerProfileBuilder lprofileBuilder = new ListenerProfileBuilder();
-                lprofileBuilder.setHoldTime(90);
-                lprofileBuilder.setHoldTimeMin(90);
-                lprofileBuilder.setHoldTimeMax(180);
-                timersBuilder.setListenerProfile(lprofileBuilder.build());
+                timersBuilder.setHoldTime(90);
+                timersBuilder.setHoldTimeMin(90);
+                timersBuilder.setHoldTimeMax(180);
 
                 return timersBuilder.build();
         }
@@ -220,12 +214,12 @@ public class SxpNodeTest {
         @Test public void testSxpNodeGetters() throws Exception {
                 assertEquals((long) timers.getRetryOpenTime(), node.getRetryOpenTime());
                 assertEquals(150l, node.getExpansionQuantity());
-                assertEquals((long) timers.getListenerProfile().getHoldTime(), node.getHoldTime());
-                assertEquals((long) timers.getListenerProfile().getHoldTimeMax(), node.getHoldTimeMax());
-                assertEquals((long) timers.getListenerProfile().getHoldTimeMin(), node.getHoldTimeMin());
-                assertEquals((long) timers.getSpeakerProfile().getHoldTimeMinAcceptable(),
+                assertEquals((long) timers.getHoldTime(), node.getHoldTime());
+                assertEquals((long) timers.getHoldTimeMax(), node.getHoldTimeMax());
+                assertEquals((long) timers.getHoldTimeMin(), node.getHoldTimeMin());
+                assertEquals((long) timers.getHoldTimeMinAcceptable(),
                         node.getHoldTimeMinAcceptable());
-                assertEquals((long) timers.getSpeakerProfile().getKeepAliveTime(), node.getKeepAliveTime());
+                assertEquals((long) timers.getKeepAliveTime(), node.getKeepAliveTime());
                 assertEquals("NAME", node.getName());
                 assertEquals(NodeId.getDefaultInstance("127.0.0.1"), node.getNodeId());
                 assertEquals("default", node.getPassword());

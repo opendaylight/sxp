@@ -87,12 +87,8 @@ public class SxpLegacy implements Strategy {
         if (connection.isStateOn(type)) {
             switch (type) {
                 case ListenerContext:
-                    if (!connection.isPurgeAllMessageReceived()) {
-                        LOG.info(connection + " onChannelInactivation/setDeleteHoldDownTimer");
-                        connection.setDeleteHoldDownTimer();
-                    } else {
-                        connection.setStateOff(ctx);
-                    }
+                    LOG.info(connection + " onChannelInactivation/setDeleteHoldDownTimer");
+                    connection.setDeleteHoldDownTimer();
                     break;
                 case SpeakerContext:
                     ctx.writeAndFlush(MessageFactory.createPurgeAll());

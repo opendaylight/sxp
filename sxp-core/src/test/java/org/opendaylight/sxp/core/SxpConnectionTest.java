@@ -590,13 +590,5 @@ public class SxpConnectionTest {
                 assertFalse(sxpConnection.isStatePendingOn());
                 sxpConnection.setStatePendingOn();
                 assertTrue(sxpConnection.isStatePendingOn());
-
-                assertFalse(sxpConnection.isPurgeAllMessageReceived());
-                sxpConnection.setPurgeAllMessageReceived();
-                assertTrue(sxpConnection.isPurgeAllMessageReceived());
-
-                assertEquals(ConnectionMode.Speaker, sxpConnection.getMode());
-                sxpConnection.setMode(ConnectionMode.Listener);
-                assertEquals(ConnectionMode.Listener, sxpConnection.getMode());
         }
 }
