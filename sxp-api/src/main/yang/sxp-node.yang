@@ -34,13 +34,9 @@ module sxp-node {
 
     typedef timer-type {
         description "Timer types with their default values";
-
         type enumeration {
             enum delete-hold-down-timer;
             enum hold-timer;
-            enum hold-timer-max;
-            enum hold-timer-min;
-            enum hold-timer-min-acceptable;
             enum keep-alive-timer;
             enum reconciliation-timer;
             enum retry-open-timer;
@@ -53,7 +49,9 @@ module sxp-node {
 
     grouping security-fields {
         leaf password {
-            type string;
+            type string {
+                range "0..80";
+            }
             description "SXP password can be up to 80 ASCII characters";
         }
         leaf md5-digest {
@@ -84,32 +82,33 @@ module sxp-node {
         }
         leaf enabled {
             type boolean;
+            default "true";
             description "SXP protocol enabled/disabled";
         }
         leaf source-ip {
             type inet:ip-address;
-            default "127.0.0.1";
+            default "0.0.0.0";
             description "Default source IP address";
         }
         leaf tcp-port {
             type inet:port-number;
+            default "64999";
             description "Server port";
         }
         leaf version {
             type sxppt:version;
+            default "version4";
             description "Default global supported protocol version";
         }
-
-        uses capabilities-fields;
-
         leaf mapping-expanded {
-            type int32;
+            type int32 {
+                range "0..65635";
+            }
             description "Network mappings to be expanded <0-65635>";
         }
         leaf description {
             type string;
         }
-
         container security {
             uses security-fields;
         }
@@ -124,49 +123,44 @@ module sxp-node {
 
         container master-database {
             description "IP-SGT-Master database";
+            config true;
             uses sxpdb:master-database-fields;
         }
     }
 
-    grouping sxp-peer-fields {
-        leaf peer-address {
-            mandatory true;
-            type inet:ip-address;
-            description "Address of the connected peer";
-        }
+    grouping sxp-connection-peer-fields {
         leaf node-id {
+            config false;
             type sxppt:node-id;
             description "SXP node ID";
-        }
-        leaf tcp-port {
-            type inet:port-number;
-            description "Port of the connected peer";
-            default "64999";
-        }
-        leaf mode-remote {
-            mandatory true;
-            type sxppt:connection-mode;
-            description "Peer mode of the connection, i.e. uni-directional or bi-directional
-                        communication";
-        }
-        leaf version-remote {
-            type sxppt:version;
-            description "Peer version";
-        }
-    }
-
-    grouping sxp-connection-fields {
-        uses sxp-peer-fields;
-
-        leaf password {
-            type password-type;
-            description "Default password will be used";
         }
         leaf state {
             config false;
             type sxppt:connection-state;
             description "Current state of the connection";
             default "off";
+        }
+        leaf timestamp-update-or-keep-alive-message {
+            config false;
+            type ietf-yang:date-and-time;
+        }
+    }
+
+    grouping sxp-connection-fields {
+        leaf peer-address {
+            mandatory true;
+            type inet:ip-address;
+            description "Address of the connected peer";
+        }
+        leaf tcp-port {
+            mandatory true;
+            type inet:port-number;
+            description "Port of the connected peer";
+        }
+        leaf password {
+            type password-type;
+            description "Default password will be used";
+            default "default";
         }
         leaf mode {
             mandatory true;
@@ -175,12 +169,10 @@ module sxp-node {
                         communication";
         }
         leaf version {
+            mandatory true;
             type sxppt:version;
             description "Negotiated and running SXP version between peers";
         }
-
-        uses capabilities-fields;
-
         leaf description {
             type string;
             description "Description of the connection";
@@ -188,14 +180,6 @@ module sxp-node {
         container connection-timers {
             uses sxp-listener-time-settings-fields;
             uses sxp-speaker-time-settings-fields;
-        }
-
-        leaf purge-all-message-received {
-            type boolean;
-            default "false";
-        }
-        leaf timestamp-update-or-keep-alive-message {
-            type ietf-yang:date-and-time;
         }
     }
 
@@ -205,6 +189,8 @@ module sxp-node {
                 description "SXP connections to dedicated peers";
                 key "peer-address tcp-port";
                 uses sxp-connection-fields;
+                uses sxp-connection-peer-fields;
+                uses capabilities-fields;
             }
         }
     }
@@ -266,20 +252,23 @@ module sxp-node {
     // Global Configuration
     // ********************
 
-    augment /nt:network-topology/nt:topology/nt:node {
-        ext:augment-identifier "sxp-node-identity";
+    grouping sxp-node-identity-fields {
         uses sxp-node-fields;
-        uses sxp-databases-fields;
         uses sxp-connections-fields;
-
+        uses capabilities-fields;
         container timers {
             uses sxp-node-time-settings-fields;
-            container listener-profile {
-                uses sxp-listener-time-settings-fields;
-            }
-            container speaker-profile {
-                uses sxp-speaker-time-settings-fields;
-            }
+            uses sxp-listener-time-settings-fields;
+            uses sxp-speaker-time-settings-fields;
+        }
+    }
+
+    augment /nt:network-topology/nt:topology/nt:node {
+        ext:augment-identifier "sxp-node-identity";
+        uses sxp-node-identity-fields;
+        uses sxp-databases-fields;
+        container sxp-peer-groups {
+            uses sxpfl:sxp-peer-groups;
         }
     }
 }

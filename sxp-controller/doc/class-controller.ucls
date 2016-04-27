@@ -32,7 +32,7 @@
       <operations public="false" package="false" protected="false" private="false" static="true"/>    
     </display>  
   </class>  
-  <class id="4" language="java" name="org.opendaylight.sxp.controller.core.DataChangeConfigurationListenerImpl" 
+  <class id="4" language="java" name="org.opendaylight.sxp.controller.datachange.listeners.DataChangeConfigurationListenerImpl"
     project="sxp-controller" 
     file="/sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/DataChangeConfigurationListenerImpl.java" 
     binary="false" corner="BOTTOM_RIGHT">    
@@ -54,7 +54,7 @@
       <operations public="false" package="false" protected="false" private="false" static="true"/>    
     </display>  
   </class>  
-  <class id="6" language="java" name="org.opendaylight.sxp.controller.core.DataChangeOperationalListenerImpl" 
+  <class id="6" language="java" name="org.opendaylight.sxp.controller.datachange.listeners.DataChangeOperationalListenerImpl"
     project="sxp-controller" 
     file="/sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/DataChangeOperationalListenerImpl.java" 
     binary="false" corner="BOTTOM_RIGHT">    

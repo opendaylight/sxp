@@ -12,7 +12,7 @@
       <operations public="false" package="false" protected="false" private="false" static="true"/>    
     </display>  
   </class>  
-  <class id="2" language="java" name="org.opendaylight.sxp.controller.util.database.access.TransactionChainListenerImpl" 
+  <class id="2" language="java" name="TransactionChainListenerImpl"
     project="sxp-controller" 
     file="/sxp-controller/src/main/java/org/opendaylight/sxp/controller/util/database/access/TransactionChainListenerImpl.java" 
     binary="false" corner="BOTTOM_RIGHT">    
@@ -34,7 +34,7 @@
       <operations public="false" package="false" protected="false" private="false" static="true"/>    
     </display>  
   </class>  
-  <class id="4" language="java" name="org.opendaylight.sxp.controller.util.database.access.DatastoreAccess" 
+  <class id="4" language="java" name="org.opendaylight.sxp.controller.core.DatastoreAccess"
     project="sxp-controller" 
     file="/sxp-controller/src/main/java/org/opendaylight/sxp/controller/util/database/access/DatastoreAccess.java" 
     binary="false" corner="BOTTOM_RIGHT">    

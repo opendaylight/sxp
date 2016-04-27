@@ -184,13 +184,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws SocketAddressNotRecognizedException {
         SxpConnection connection;
-        try {
-            connection = owner.getConnection(ctx.channel().remoteAddress());
-        } catch (SocketAddressNotRecognizedException | UnknownSxpConnectionException e) {
-            LOG.warn(getLogMessage(owner, ctx, "Channel activation", e));
-            ctx.close();
-            return;
-        }
+        connection = owner.getConnection(ctx.channel().remoteAddress());
         // Connection is already functional, do not add new channel context.
         if (connection.isStateOn() && (!connection.isModeBoth() || connection.isBidirectionalBoth())) {
             ctx.close();
@@ -215,12 +209,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         SxpConnection connection;
-        try {
-            connection = owner.getConnection(ctx.channel().remoteAddress());
-        } catch (SocketAddressNotRecognizedException | UnknownSxpConnectionException e) {
-            LOG.warn(getLogMessage(owner, ctx, "Channel inactivation", e));
-            return;
-        }
+        connection = owner.getConnection(ctx.channel().remoteAddress());
         connection.getContext().executeChannelInactivationStrategy(ctx, connection);
         LOG.warn(getLogMessage(owner, ctx, "Channel inactivation"));
     }
@@ -228,14 +217,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
     @Override
     public void channelRead0(ChannelHandlerContext ctx, ByteBuf message) {
        // LOG.debug(getLogMessage(owner, ctx, "Input received", null) + ": {}", MessageFactory.toString(message));
-
-        SxpConnection connection;
-        try {
-            connection = owner.getConnection(ctx.channel().remoteAddress());
-        } catch (SocketAddressNotRecognizedException | UnknownSxpConnectionException e) {
-            LOG.warn(getLogMessage(owner, ctx, "Channel read0", e));
-            return;
-        }
+        SxpConnection connection = owner.getConnection(ctx.channel().remoteAddress());
         while (message.readableBytes() != 0) {
             // Execute selected strategy.
             try {
@@ -270,13 +252,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        SxpConnection connection;
-        try {
-            connection = owner.getConnection(ctx.channel().remoteAddress());
-        } catch (SocketAddressNotRecognizedException | UnknownSxpConnectionException e) {
-            LOG.warn(getLogMessage(owner, ctx, "Channel exception", e));
-            return;
-        }
+        SxpConnection connection = owner.getConnection(ctx.channel().remoteAddress());
         if (cause instanceof IOException) {
             LOG.debug("IO error {} shutting down connection {}", cause, connection);
             connection.setStateOff(ctx);

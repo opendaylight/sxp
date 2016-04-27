@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.core;
 
+import com.google.common.base.Preconditions;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.CapabilitiesBuilder;
@@ -23,8 +24,6 @@ import java.util.Set;
 public final class Configuration {
 
     private static final Constants CONSTANTS = new Constants();
-
-    public static final String CONTROLLER_NAME = "controller";
 
     public static final int DEFAULT_PREFIX_GROUP = 0;
 
@@ -86,10 +85,6 @@ public final class Configuration {
         return CONSTANTS;
     }
 
-    public static String getNextNodeName() {
-        return nodes.keySet().iterator().next();
-    }
-
     public static HashMap<String, SxpNode> getNodes() {
         return nodes;
     }
@@ -98,16 +93,12 @@ public final class Configuration {
         return nodes.get(nodeId);
     }
 
-    public static Set<String> getRegisteredNodesIds() {
-        return nodes.keySet();
-    }
-
-    public static boolean isNodesRegistered() {
-        return !nodes.keySet().isEmpty();
+    public static SxpNode unregister(String nodeId) {
+        return nodes.remove(Preconditions.checkNotNull(nodeId));
     }
 
     public static SxpNode register(SxpNode node) {
-        nodes.put(NodeIdConv.toString(node.getNodeId()), node);
+        nodes.put(NodeIdConv.toString(Preconditions.checkNotNull(node).getNodeId()), node);
         return node;
     }
 }
