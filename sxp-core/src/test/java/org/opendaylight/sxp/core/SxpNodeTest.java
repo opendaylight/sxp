@@ -110,6 +110,7 @@ public class SxpNodeTest {
                         SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), nodeIdentity, databaseProvider,
                                 sxpDatabaseProvider, worker);
                 PowerMockito.field(SxpNode.class, "serverChannel").set(node, mock(Channel.class));
+                PowerMockito.mockStatic(ConnectFacade.class);
         }
 
         private Timers getNodeTimers() {
@@ -136,6 +137,7 @@ public class SxpNodeTest {
                 when(connection.getPeerAddress()).thenReturn(new IpAddress(("127.0.0." + (++ip4Adrres)).toCharArray()));
                 when(connection.getState()).thenReturn(state);
                 when(connection.getPassword()).thenReturn(PasswordType.Default);
+                when(connection.getVersion()).thenReturn(Version.Version4);
                 return connection;
         }
 
@@ -377,7 +379,6 @@ public class SxpNodeTest {
 
         @Test public void testAddConnection() throws Exception {
                 PowerMockito.mockStatic(ConnectFacade.class);
-                node.addConnection(null);
                 assertEquals(0, node.getAllConnections().size());
 
                 List<SxpPeer> sxpPeers = new ArrayList<>();

@@ -99,6 +99,7 @@ public class SxpConnectionTest {
                 ConnectionTimers timers = mock(ConnectionTimers.class);
                 when(timers.getDeleteHoldDownTime()).thenReturn(120);
                 when(timers.getReconciliationTime()).thenReturn(60);
+                when(timers.getHoldTimeMinAcceptable()).thenReturn(10);
                 when(connection.getTcpPort()).thenReturn(new PortNumber(65001));
                 when(connection.getConnectionTimers()).thenReturn(timers);
                 return connection;
@@ -335,38 +336,6 @@ public class SxpConnectionTest {
 
                 attributes.add(getHoldTime(75, 130));
 
-                sxpConnection.setConnectionListenerPart(message);
-                assertEquals(Version.Version3, sxpConnection.getVersion());
-                assertEquals(ConnectionMode.Speaker, sxpConnection.getModeRemote());
-                assertEquals(75, sxpConnection.getHoldTime());
-                assertEquals(75, sxpConnection.getHoldTimeMin());
-                assertNotNull(sxpConnection.getTimer(TimerType.HoldTimer));
-
-                sxpConnection =
-                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On));
-                attributes.clear();
-
-                sxpConnection.setConnectionListenerPart(message);
-                assertNull(sxpConnection.getNodeIdRemote());
-                assertNull(sxpConnection.getTimer(TimerType.HoldTimer));
-                assertEquals(0, sxpConnection.getHoldTime());
-
-                sxpConnection =
-                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On));
-                attributes.clear();
-                attributes.add(getHoldTime(50, 130));
-
-                sxpConnection.setConnectionListenerPart(message);
-                assertNull(sxpConnection.getNodeIdRemote());
-                assertNull(sxpConnection.getTimer(TimerType.HoldTimer));
-                assertEquals(0, sxpConnection.getHoldTime());
-                assertEquals(50, sxpConnection.getHoldTimeMin());
-
-                sxpConnection =
-                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On));
-                attributes.clear();
-                attributes.add(getHoldTime(150, 180));
-
                 exception.expect(ErrorMessageException.class);
                 sxpConnection.setConnectionListenerPart(message);
         }
@@ -386,17 +355,6 @@ public class SxpConnectionTest {
                 attributes.clear();
                 attributes.add(getHoldTime(80, 180));
 
-                sxpConnection.setConnectionListenerPart(message);
-                assertEquals(Version.Version3, sxpConnection.getVersion());
-                assertEquals(ConnectionMode.Speaker, sxpConnection.getModeRemote());
-                assertEquals(60, sxpConnection.getHoldTime());
-                assertNotNull(sxpConnection.getTimer(TimerType.HoldTimer));
-
-                sxpConnection =
-                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On));
-                attributes.clear();
-                attributes.add(getHoldTime(150, 180));
-
                 exception.expect(ErrorMessageException.class);
                 sxpConnection.setConnectionListenerPart(message);
         }
@@ -413,7 +371,6 @@ public class SxpConnectionTest {
                 attributes.add(getHoldTime(75, 100));
 
                 sxpConnection.setConnectionSpeakerPart(message);
-                assertEquals(Version.Version3, sxpConnection.getVersion());
                 assertEquals(ConnectionMode.Listener, sxpConnection.getModeRemote());
                 assertEquals(25, sxpConnection.getKeepaliveTime());
                 assertEquals(75, sxpConnection.getHoldTimeMinAcceptable());
@@ -431,7 +388,7 @@ public class SxpConnectionTest {
                 sxpConnection =
                         SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On));
                 attributes.clear();
-                attributes.add(getHoldTime(10, 20));
+                attributes.add(getNodeId("1.1.1.1"));
 
                 exception.expect(ErrorMessageException.class);
                 sxpConnection.setConnectionSpeakerPart(message);
@@ -451,7 +408,6 @@ public class SxpConnectionTest {
                 attributes.add(getHoldTime(80, 100));
 
                 sxpConnection.setConnectionSpeakerPart(message);
-                assertEquals(Version.Version3, sxpConnection.getVersion());
                 assertEquals(ConnectionMode.Listener, sxpConnection.getModeRemote());
                 assertEquals((int) (80 / 3.0), sxpConnection.getKeepaliveTime());
                 assertNotNull(sxpConnection.getTimer(TimerType.KeepAliveTimer));
@@ -491,19 +447,14 @@ public class SxpConnectionTest {
 
         @Test public void testSetInetSocketAddresses() throws Exception {
                 SocketAddress socketAddress = new InetSocketAddress("0.0.0.0", 50);
-                sxpConnection.setInetSocketAddresses(socketAddress, socketAddress);
+                sxpConnection.setInetSocketAddresses(socketAddress);
                 assertNotNull(sxpConnection.getDestination());
                 assertNotNull(sxpConnection.getLocalAddress());
         }
 
         @Test public void testSetInetSocketAddressesException0() throws Exception {
                 exception.expect(SocketAddressNotRecognizedException.class);
-                sxpConnection.setInetSocketAddresses(mock(SocketAddress.class), new InetSocketAddress("0.0.0.0", 50));
-        }
-
-        @Test public void testSetInetSocketAddressesException1() throws Exception {
-                exception.expect(SocketAddressNotRecognizedException.class);
-                sxpConnection.setInetSocketAddresses(new InetSocketAddress("0.0.0.0", 50), mock(SocketAddress.class));
+                sxpConnection.setInetSocketAddresses(mock(SocketAddress.class));
         }
 
         @Test public void testGetContextType() throws Exception {

@@ -32,25 +32,22 @@ public final class Search {
      *
      * @return InetAddress that isn't virtual and is Up
      * @throws NoNetworkInterfacesException If there is no NetworkInterface available
-     * @throws SocketException              If an I/O error occurs
      */
-    public static InetAddress getBestLocalDeviceAddress() throws NoNetworkInterfacesException, SocketException {
+    public static InetAddress getBestLocalDeviceAddress() throws NoNetworkInterfacesException {
 
         List<InetAddress> inetAddresses = new ArrayList<>();
         List<NetworkInterface> networkInterfaces;
         try {
             networkInterfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+            for (NetworkInterface networkInterface : networkInterfaces) {
+                if (networkInterface.isUp() && !networkInterface.isVirtual()) {
+                    LOG.debug("[{}] {}", networkInterface.getName(), networkInterface.getDisplayName());
+                    inetAddresses.addAll(Collections.list(networkInterface.getInetAddresses()));
+                }
+            }
         } catch (SocketException e) {
             throw new NoNetworkInterfacesException();
         }
-
-        for (NetworkInterface networkInterface : networkInterfaces) {
-            if (networkInterface.isUp() && !networkInterface.isVirtual()) {
-                LOG.debug("[{}] {}", networkInterface.getName(), networkInterface.getDisplayName());
-                inetAddresses.addAll(Collections.list(networkInterface.getInetAddresses()));
-            }
-        }
-
         Collections.sort(inetAddresses, new InetAddressComparator());
         return inetAddresses.get(inetAddresses.size() > bestAddresPointer + 1 ?
                 inetAddresses.size() - bestAddresPointer++ : inetAddresses.size() - (bestAddresPointer = 1));
