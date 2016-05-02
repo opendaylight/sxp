@@ -98,7 +98,7 @@ import static org.mockito.Mockito.when;
                 verify(context, times(2)).executeChannelActivationStrategy(any(ChannelHandlerContext.class),
                         any(SxpConnection.class));
 
-                doThrow(new UnknownSxpConnectionException("")).when(sxpNode).getConnection(any(SocketAddress.class));
+                when(sxpNode.getConnection(any(SocketAddress.class))).thenReturn(null);
                 decoder.channelActive(channelHandlerContext);
                 verify(channelHandlerContext, times(2)).close();
         }
@@ -108,7 +108,7 @@ import static org.mockito.Mockito.when;
                 verify(context).executeChannelInactivationStrategy(any(ChannelHandlerContext.class),
                         any(SxpConnection.class));
 
-                doThrow(new UnknownSxpConnectionException("")).when(sxpNode).getConnection(any(SocketAddress.class));
+                when(sxpNode.getConnection(any(SocketAddress.class))).thenReturn(null);
                 decoder.channelInactive(channelHandlerContext);
                 verify(context).executeChannelInactivationStrategy(any(ChannelHandlerContext.class),
                         any(SxpConnection.class));

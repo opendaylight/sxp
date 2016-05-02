@@ -176,19 +176,19 @@ import static org.mockito.Mockito.when;
         sxpConnections.add(mockConnection("30.30.30.30"));
 
         database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), mergeBindings(getBinding("2.2.2.2/32", 200)));
-        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(), node), mergeBindings());
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(), database, SxpDatabase.getInboundFilters(node)), mergeBindings());
 
-        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 200)), node),
-                mergeBindings(getBinding("2.2.2.2/32", 20)));
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 200)), database,
+                SxpDatabase.getInboundFilters(node)), mergeBindings(getBinding("2.2.2.2/32", 20)));
 
         database.deleteBindings(NodeId.getDefaultInstance("20.20.20.20"), mergeBindings(getBinding("2.2.2.2/32", 20)));
 
-        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 20)), node),
-                mergeBindings(getBinding("2.2.2.2/32", 200)));
-        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 254)), node),
-                mergeBindings(getBinding("2.2.2.2/32", 200)));
-        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("25.2.2.2/32", 20)), node),
-                mergeBindings());
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 20)), database,
+                SxpDatabase.getInboundFilters(node)), mergeBindings(getBinding("2.2.2.2/32", 200)));
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 254)), database,
+                SxpDatabase.getInboundFilters(node)), mergeBindings(getBinding("2.2.2.2/32", 200)));
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("25.2.2.2/32", 20)), database,
+                SxpDatabase.getInboundFilters(node)), mergeBindings());
     }
 
     @Test public void testAddBinding() throws Exception {

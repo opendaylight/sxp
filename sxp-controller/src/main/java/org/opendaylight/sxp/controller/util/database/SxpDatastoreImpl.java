@@ -10,7 +10,7 @@ package org.opendaylight.sxp.controller.util.database;
 
 import com.google.common.base.Preconditions;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
+import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.BindingDatabase;
@@ -125,7 +125,7 @@ public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.S
 
     @Override
     protected boolean deleteBindings(NodeId nodeId, BindingDatabase.BindingType bindingType) {
-        return datastoreAccess.deleteSynchronous(getIdentifierBuilder(bindingType, nodeId).build(),
+        return datastoreAccess.checkAndDelete(getIdentifierBuilder(bindingType, nodeId).build(),
             LogicalDatastoreType.OPERATIONAL);
     }
 

@@ -15,7 +15,7 @@
   </prerequisites>
 
   <properties>
-    <karaf.localFeature>odl-sxp-all</karaf.localFeature>
+    <karaf.localFeature>odl-sxp-controller</karaf.localFeature>
   </properties>
 
   <dependencies>
@@ -55,10 +55,4 @@
       </plugin>
     </plugins>
   </build>
-  <!--scm>
-    <connection>scm:git:ssh://git.opendaylight.org:29418/sxp.git</connection>
-    <developerConnection>scm:git:ssh://git.opendaylight.org:29418/sxp.git</developerConnection>
-    <tag>HEAD</tag>
-    <url>https://git.opendaylight.org/gerrit/gitweb?p=sxp.git;a=summary</url>
-  </scm-->
 </project>

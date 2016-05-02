@@ -31,6 +31,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.sgt.match.SgtMatchesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.AclFilterEntriesBuilder;
@@ -46,13 +47,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.Timers;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.TimersBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.timers.ListenerProfileBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.timers.SpeakerProfileBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.Timers;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.TimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -102,6 +101,8 @@ public class SxpNodeTest {
                 when(nodeIdentity.getName()).thenReturn("NAME");
                 when(nodeIdentity.getSecurity()).thenReturn(security);
                 when(nodeIdentity.getMappingExpanded()).thenReturn(150);
+                when(nodeIdentity.getTcpPort()).thenReturn(new PortNumber(64999));
+                when(nodeIdentity.getSourceIp()).thenReturn(new IpAddress("127.1.1.1".toCharArray()));
                 when(nodeIdentity.getTcpPort()).thenReturn(PortNumber.getDefaultInstance("64999"));
 
                 databaseProvider = mock(MasterDatabaseInf.class);
@@ -117,16 +118,12 @@ public class SxpNodeTest {
                 TimersBuilder timersBuilder = new TimersBuilder();
                 timersBuilder.setRetryOpenTime(5);
 
-                SpeakerProfileBuilder sprofileBuilder = new SpeakerProfileBuilder();
-                sprofileBuilder.setHoldTimeMinAcceptable(45);
-                sprofileBuilder.setKeepAliveTime(30);
-                timersBuilder.setSpeakerProfile(sprofileBuilder.build());
+                timersBuilder.setHoldTimeMinAcceptable(45);
+                timersBuilder.setKeepAliveTime(30);
 
-                ListenerProfileBuilder lprofileBuilder = new ListenerProfileBuilder();
-                lprofileBuilder.setHoldTime(90);
-                lprofileBuilder.setHoldTimeMin(90);
-                lprofileBuilder.setHoldTimeMax(180);
-                timersBuilder.setListenerProfile(lprofileBuilder.build());
+                timersBuilder.setHoldTime(90);
+                timersBuilder.setHoldTimeMin(90);
+                timersBuilder.setHoldTimeMax(180);
 
                 return timersBuilder.build();
         }
@@ -220,12 +217,12 @@ public class SxpNodeTest {
         @Test public void testSxpNodeGetters() throws Exception {
                 assertEquals((long) timers.getRetryOpenTime(), node.getRetryOpenTime());
                 assertEquals(150l, node.getExpansionQuantity());
-                assertEquals((long) timers.getListenerProfile().getHoldTime(), node.getHoldTime());
-                assertEquals((long) timers.getListenerProfile().getHoldTimeMax(), node.getHoldTimeMax());
-                assertEquals((long) timers.getListenerProfile().getHoldTimeMin(), node.getHoldTimeMin());
-                assertEquals((long) timers.getSpeakerProfile().getHoldTimeMinAcceptable(),
+                assertEquals((long) timers.getHoldTime(), node.getHoldTime());
+                assertEquals((long) timers.getHoldTimeMax(), node.getHoldTimeMax());
+                assertEquals((long) timers.getHoldTimeMin(), node.getHoldTimeMin());
+                assertEquals((long) timers.getHoldTimeMinAcceptable(),
                         node.getHoldTimeMinAcceptable());
-                assertEquals((long) timers.getSpeakerProfile().getKeepAliveTime(), node.getKeepAliveTime());
+                assertEquals((long) timers.getKeepAliveTime(), node.getKeepAliveTime());
                 assertEquals("NAME", node.getName());
                 assertEquals(NodeId.getDefaultInstance("127.0.0.1"), node.getNodeId());
                 assertEquals("default", node.getPassword());
@@ -373,8 +370,7 @@ public class SxpNodeTest {
                 assertEquals(connection.getMode(), sxpConnection.getMode());
                 assertEquals(connection.getState(), sxpConnection.getState());
 
-                exception.expect(UnknownSxpConnectionException.class);
-                node.getConnection(getInetSocketAddress(new IpAddress("0.9.9.9".toCharArray())));
+                assertNull(node.getConnection(getInetSocketAddress(new IpAddress("0.9.9.9".toCharArray()))));
         }
 
         @Test public void testAddConnection() throws Exception {
@@ -427,6 +423,7 @@ public class SxpNodeTest {
         private SxpFilter getFilter(FilterType type) {
                 SxpFilterBuilder builder = new SxpFilterBuilder();
                 builder.setFilterType(type);
+                builder.setFilterSpecific(FilterSpecific.AccessOrPrefixList);
                 AclFilterEntriesBuilder aclFilterEntriesBuilder = new AclFilterEntriesBuilder();
                 ArrayList<AclEntry> aclEntries = new ArrayList<>();
                 AclEntryBuilder aclEntryBuilder = new AclEntryBuilder();
@@ -542,15 +539,15 @@ public class SxpNodeTest {
                 assertTrue(node.getPeerGroups().isEmpty());
                 node.addPeerGroup(getGroup("TEST", null, null));
                 node.addFilterToPeerGroup("TEST", getFilter(FilterType.Outbound));
-                node.removeFilterFromPeerGroup("TEST", FilterType.Inbound);
+                node.removeFilterFromPeerGroup("TEST", FilterType.Inbound, FilterSpecific.AccessOrPrefixList);
                 assertEquals(1, node.getPeerGroup("TEST").getSxpFilter().size());
-                node.removeFilterFromPeerGroup("TEST", FilterType.Outbound);
+                node.removeFilterFromPeerGroup("TEST", FilterType.Outbound, FilterSpecific.AccessOrPrefixList);
                 assertEquals(0, node.getPeerGroup("TEST").getSxpFilter().size());
 
                 node.addPeerGroup(getGroup("TEST2", getFilters(FilterType.Inbound, FilterType.Outbound), null));
                 assertEquals(2, node.getPeerGroup("TEST2").getSxpFilter().size());
-                node.removeFilterFromPeerGroup("TEST2", FilterType.Outbound);
-                node.removeFilterFromPeerGroup("TEST2", FilterType.Inbound);
+                node.removeFilterFromPeerGroup("TEST2", FilterType.Outbound, FilterSpecific.AccessOrPrefixList);
+                node.removeFilterFromPeerGroup("TEST2", FilterType.Inbound, FilterSpecific.AccessOrPrefixList);
                 assertEquals(0, node.getPeerGroup("TEST2").getSxpFilter().size());
         }
 
