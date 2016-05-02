@@ -30,9 +30,6 @@ import org.opendaylight.sxp.util.database.SxpDatabase;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
-import org.opendaylight.sxp.util.exception.connection.NoNetworkInterfacesException;
-import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownSxpConnectionException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
@@ -63,7 +60,6 @@ import javax.annotation.Nullable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -85,7 +81,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * SGT to which an endpoint belongs can be assigned statically or dynamically,
  * and the SGT can be used as a classifier in network policies.
  */
-public final class SxpNode {
+public class SxpNode {
 
     private static final Logger LOG = LoggerFactory.getLogger(SxpNode.class.getName());
 
@@ -98,11 +94,8 @@ public final class SxpNode {
      * @param nodeId ID of newly created Node
      * @param node   Node setup data
      * @return New instance of SxpNode
-     * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
-     * @throws SocketException              If IO error occurs
      */
-    public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node)
-            throws NoNetworkInterfacesException, SocketException {
+    public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node) {
         return createInstance(nodeId, node, new MasterDatabaseImpl(), new SxpDatabaseImpl());
     }
 
@@ -118,11 +111,9 @@ public final class SxpNode {
      * @param masterDatabase Data which will be added to Master-DB
      * @param sxpDatabase    Data which will be added to SXP-DB
      * @return New instance of SxpNode
-     * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
-     * @throws SocketException              If IO error occurs
      */
     public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseInf masterDatabase,
-            SxpDatabaseInf sxpDatabase) throws NoNetworkInterfacesException, SocketException {
+            SxpDatabaseInf sxpDatabase) {
         return createInstance(nodeId, node, masterDatabase, sxpDatabase, new ThreadsWorker());
     }
 
@@ -139,12 +130,9 @@ public final class SxpNode {
      * @param sxpDatabase    Data which will be added to SXP-DB
      * @param worker         Thread workers which will be executing task inside SxpNode
      * @return New instance of SxpNode
-     * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
-     * @throws SocketException              If IO error occurs
      */
     public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseInf masterDatabase,
-            SxpDatabaseInf sxpDatabase, ThreadsWorker worker)
-            throws NoNetworkInterfacesException, SocketException {
+            SxpDatabaseInf sxpDatabase, ThreadsWorker worker) {
         return new SxpNode(nodeId, node, masterDatabase, sxpDatabase, worker);
     }
 
@@ -180,11 +168,9 @@ public final class SxpNode {
      * @param masterDatabase Data which will be added to Master-DB
      * @param sxpDatabase    Data which will be added to SXP-DB
      * @param worker         Thread workers which will be executing task inside SxpNode
-     * @throws NoNetworkInterfacesException If there isn't available NetworkInterface
-     * @throws SocketException              If IO error occurs
      */
-    private SxpNode(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseInf masterDatabase,
-            SxpDatabaseInf sxpDatabase,ThreadsWorker worker) throws NoNetworkInterfacesException, SocketException {
+    protected SxpNode(NodeId nodeId, SxpNodeIdentity node, MasterDatabaseInf masterDatabase,
+            SxpDatabaseInf sxpDatabase,ThreadsWorker worker) {
         this.nodeBuilder = new SxpNodeIdentityBuilder(Preconditions.checkNotNull(node));
         this.nodeId = Preconditions.checkNotNull(nodeId);
         this.worker = Preconditions.checkNotNull(worker);
@@ -194,13 +180,13 @@ public final class SxpNode {
         this.svcBindingHandler = new BindingHandler(this, this.svcBindingDispatcher);
     }
 
-    protected SxpNodeIdentityBuilder getNodeBuilder() {
-        return nodeBuilder;
+    protected SxpNodeIdentity getNodeIdentity() {
+        return nodeBuilder.build();
     }
 
     protected void setSecurity(
             org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security security) {
-        getNodeBuilder().setSecurity(Preconditions.checkNotNull(security));
+        nodeBuilder.setSecurity(Preconditions.checkNotNull(security));
     }
 
     protected void addConnection(SxpConnection connection) {
@@ -369,7 +355,7 @@ public final class SxpNode {
             List<SxpConnection> connections = getConnections(peerGroup);
             for (SxpConnection connection : connections) {
                 for (SxpFilter filter : peerGroup.getSxpFilter()) {
-                    connection.removeFilter(filter.getFilterType(), filter.getFilterEntries());
+                    connection.removeFilter(filter.getFilterType(), filter.getFilterSpecific());
                 }
             }
             return peerGroup.build();
@@ -481,7 +467,7 @@ public final class SxpNode {
             List<SxpConnection> connections = getConnections(peerGroup);
             return peerGroup.getSxpFilter().removeIf(f -> {
                 for (SxpConnection connection : connections) {
-                    connection.removeFilter(filterType, f.getFilterEntries());
+                    connection.removeFilter(filterType, f.getFilterSpecific());
                 }
                 return f.getFilterType().equals(filterType);
             });
@@ -661,22 +647,16 @@ public final class SxpNode {
      *
      * @param socketAddress SocketAddress that is used by SxpConnection
      * @return SxpConnection if exists
-     * @throws SocketAddressNotRecognizedException If SocketAddress isn't instance of InetSocketAddress
-     * @throws UnknownSxpConnectionException       If cannot find any SxpConnection
      */
-    public SxpConnection getConnection(SocketAddress socketAddress)
-            throws SocketAddressNotRecognizedException, UnknownSxpConnectionException {
+    public SxpConnection getConnection(SocketAddress socketAddress) {
         if (!(socketAddress instanceof InetSocketAddress)) {
-            throw new SocketAddressNotRecognizedException(socketAddress);
+            return null;
         }
         InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
         synchronized (addressToSxpConnection) {
             SxpConnection connection = addressToSxpConnection.get(inetSocketAddress);
             if (connection == null) {
                 connection = getByAddress(inetSocketAddress);
-            }
-            if (connection == null) {
-                throw new UnknownSxpConnectionException("InetSocketAddress: " + inetSocketAddress);
             }
             return connection;
         }
@@ -686,70 +666,70 @@ public final class SxpNode {
      * @return Gets Bindings expansion quantity or zero if disabled
      */
     public int getExpansionQuantity() {
-        return getNodeBuilder().getMappingExpanded() != null ? getNodeBuilder().getMappingExpanded() : 0;
+        return getNodeIdentity().getMappingExpanded() != null ? getNodeIdentity().getMappingExpanded() : 0;
     }
 
     /**
      * @return Gets HoldTime value or zero if disabled
      */
     public int getHoldTime() {
-        if (getNodeBuilder().getTimers() == null || getNodeBuilder().getTimers().getListenerProfile() == null
-                || getNodeBuilder().getTimers().getListenerProfile().getHoldTime() == null) {
+        if (getNodeIdentity().getTimers() == null || getNodeIdentity().getTimers() == null
+                || getNodeIdentity().getTimers().getHoldTime() == null) {
             return 0;
         }
-        return getNodeBuilder().getTimers().getListenerProfile().getHoldTime();
+        return getNodeIdentity().getTimers().getHoldTime();
     }
 
     /**
      * @return Gets HoldTimeMax value or zero if disabled
      */
     public int getHoldTimeMax() {
-        if (getNodeBuilder().getTimers() == null || getNodeBuilder().getTimers().getListenerProfile() == null
-                || getNodeBuilder().getTimers().getListenerProfile().getHoldTimeMax() == null) {
+        if (getNodeIdentity().getTimers() == null || getNodeIdentity().getTimers() == null
+                || getNodeIdentity().getTimers().getHoldTimeMax() == null) {
             return 0;
         }
-        return getNodeBuilder().getTimers().getListenerProfile().getHoldTimeMax();
+        return getNodeIdentity().getTimers().getHoldTimeMax();
     }
 
     /**
      * @return Gets HoldTimeMin value or zero if disabled
      */
     public int getHoldTimeMin() {
-        if (getNodeBuilder().getTimers() == null || getNodeBuilder().getTimers().getListenerProfile() == null
-                || getNodeBuilder().getTimers().getListenerProfile().getHoldTimeMin() == null) {
+        if (getNodeIdentity().getTimers() == null || getNodeIdentity().getTimers() == null
+                || getNodeIdentity().getTimers().getHoldTimeMin() == null) {
             return 0;
         }
-        return getNodeBuilder().getTimers().getListenerProfile().getHoldTimeMin();
+        return getNodeIdentity().getTimers().getHoldTimeMin();
     }
 
     /**
      * @return Gets HoldTimeMinAcceptable value or zero if disabled
      */
     public int getHoldTimeMinAcceptable() {
-        if (getNodeBuilder().getTimers() == null || getNodeBuilder().getTimers().getSpeakerProfile() == null
-                || getNodeBuilder().getTimers().getSpeakerProfile().getHoldTimeMinAcceptable() == null) {
+        if (getNodeIdentity().getTimers() == null || getNodeIdentity().getTimers() == null
+                || getNodeIdentity().getTimers().getHoldTimeMinAcceptable() == null) {
             return 0;
         }
-        return getNodeBuilder().getTimers().getSpeakerProfile().getHoldTimeMinAcceptable();
+        return getNodeIdentity().getTimers().getHoldTimeMinAcceptable();
     }
 
     /**
      * @return Gets KeepAlive value or zero if disabled
      */
     public int getKeepAliveTime() {
-        if (getNodeBuilder().getTimers() == null || getNodeBuilder().getTimers().getSpeakerProfile() == null
-                || getNodeBuilder().getTimers().getSpeakerProfile().getKeepAliveTime() == null) {
+        if (getNodeIdentity().getTimers() == null || getNodeIdentity().getTimers() == null
+                || getNodeIdentity().getTimers().getKeepAliveTime() == null) {
             return 0;
         }
-        return getNodeBuilder().getTimers().getSpeakerProfile().getKeepAliveTime();
+        return getNodeIdentity().getTimers().getKeepAliveTime();
     }
 
     /**
      * @return Gets Name of Node
      */
     public String getName() {
-        return getNodeBuilder().getName() == null || getNodeBuilder().getName().isEmpty() ? NodeIdConv.toString(
-                nodeId) : getNodeBuilder().getName();
+        return getNodeIdentity().getName() == null || getNodeIdentity().getName().isEmpty() ? NodeIdConv.toString(
+                nodeId) : getNodeIdentity().getName();
     }
 
     /**
@@ -763,27 +743,27 @@ public final class SxpNode {
      * @return Gets Password used to connect to peers or null if disabled
      */
     public String getPassword() {
-        return getNodeBuilder().getSecurity() != null ? getNodeBuilder().getSecurity().getPassword() : null;
+        return getNodeIdentity().getSecurity() != null ? getNodeIdentity().getSecurity().getPassword() : null;
     }
 
     /**
      * @return Gets RetryOpen value or zero if disabled
      */
     public int getRetryOpenTime() {
-        if (getNodeBuilder().getTimers() == null || getNodeBuilder().getTimers().getRetryOpenTime() == null) {
+        if (getNodeIdentity().getTimers() == null || getNodeIdentity().getTimers().getRetryOpenTime() == null) {
             return 0;
         }
-        return getNodeBuilder().getTimers().getRetryOpenTime();
+        return getNodeIdentity().getTimers().getRetryOpenTime();
     }
 
     /**
      * @return Gets Node server port or -1 if dissabled
      */
     public int getServerPort() {
-        if (getNodeBuilder().getTcpPort() == null || getNodeBuilder().getTcpPort().getValue() == null) {
+        if (getNodeIdentity().getTcpPort() == null || getNodeIdentity().getTcpPort().getValue() == null) {
             return -1;
         }
-        return getNodeBuilder().getTcpPort().getValue();
+        return getNodeIdentity().getTcpPort().getValue();
     }
 
     /**
@@ -800,7 +780,7 @@ public final class SxpNode {
      * @return Gets Version of of Node
      */
     public Version getVersion() {
-        return getNodeBuilder().getVersion() != null ? getNodeBuilder().getVersion() : Version.Version4;
+        return getNodeIdentity().getVersion() != null ? getNodeIdentity().getVersion() : Version.Version4;
     }
 
     /**
@@ -917,8 +897,8 @@ public final class SxpNode {
             return securityBuilder.build();
         }
 
-        if (getNodeBuilder().getSecurity() != null && getNodeBuilder().getSecurity().getPassword() != null
-                && !getNodeBuilder().getSecurity().getPassword().isEmpty() && !getNodeBuilder().getSecurity()
+        if (getNodeIdentity().getSecurity() != null && getNodeIdentity().getSecurity().getPassword() != null
+                && !getNodeIdentity().getSecurity().getPassword().isEmpty() && !getNodeIdentity().getSecurity()
                 .getPassword()
                 .equals(security.getPassword())) {
             shutdownConnections();
@@ -991,7 +971,7 @@ public final class SxpNode {
     /**
      * Administratively shutdown.
      */
-    public synchronized void shutdown() {
+    public synchronized SxpNode shutdown() {
         // Wait until server channel ends its own initialization.
         while (serverChannelInit.get()) {
             try {
@@ -1007,12 +987,13 @@ public final class SxpNode {
             serverChannel.close();
             serverChannel = null;
         }
+        return this;
     }
 
     /**
      * Shutdown all Connections
      */
-    public synchronized void shutdownConnections() {
+    public void shutdownConnections() {
         synchronized (addressToSxpConnection) {
             for (SxpConnection connection : addressToSxpConnection.values()) {
                 if (!connection.isStateOff()) {
@@ -1027,19 +1008,23 @@ public final class SxpNode {
     /**
      * Start SxpNode
      */
-    public void start() throws NoNetworkInterfacesException {
+    public synchronized SxpNode start() {
         if (isEnabled() || serverChannelInit.getAndSet(true)) {
-            return;
+            return this;
         }
-        this.sourceIp =
-                getNodeBuilder().getSourceIp() == null ? Search.getBestLocalDeviceAddress() : InetAddresses.forString(
-                        Search.getAddress(getNodeBuilder().getSourceIp()));
+        this.sourceIp = InetAddresses.forString(Search.getAddress(getNodeIdentity().getSourceIp()));
         final SxpNode node = this;
         worker.executeTask(() -> {
-            if (getNodeBuilder().getMasterDatabase() != null && getBindingMasterDatabase().getLocalBindings().isEmpty()) {
-                putLocalBindingsMasterDatabase(getNodeBuilder().getMasterDatabase().getMasterDatabaseBinding());
+            SxpNodeIdentity identity = getNodeIdentity();
+            if (identity.getMasterDatabase() != null && getBindingMasterDatabase().getLocalBindings().isEmpty()) {
+                putLocalBindingsMasterDatabase(identity.getMasterDatabase().getMasterDatabaseBinding());
             }
-            setSecurity(setPassword(getNodeBuilder().getSecurity()));
+            if (identity.getSxpPeerGroups() != null && identity.getSxpPeerGroups().getSxpPeerGroup() != null) {
+                identity.getSxpPeerGroups()
+                        .getSxpPeerGroup()
+                        .forEach(g -> addPeerGroup(new SxpPeerGroupBuilder(g).build()));
+            }
+            setSecurity(setPassword(getNodeIdentity().getSecurity()));
             ConnectFacade.createServer(node, handlerFactoryServer).addListener(new ChannelFutureListener() {
 
                 @Override public void operationComplete(ChannelFuture channelFuture) throws Exception {
@@ -1047,7 +1032,7 @@ public final class SxpNode {
                         serverChannel = channelFuture.channel();
                         LOG.info(node + " Server created [" + getSourceIp().getHostAddress() + ":" + getServerPort()
                                 + "]");
-                        addConnections(getNodeBuilder().getConnections());
+                        addConnections(getNodeIdentity().getConnections());
                         node.setTimer(TimerType.RetryOpenTimer, node.getRetryOpenTime());
                     } else {
                         LOG.info(node + " Server [" + node.getSourceIp().getHostAddress() + ":" + getServerPort()
@@ -1057,6 +1042,7 @@ public final class SxpNode {
                 }
             });
         }, ThreadsWorker.WorkerType.DEFAULT);
+        return this;
     }
 
     private final AtomicInteger updateMD5counter = new AtomicInteger();
@@ -1090,7 +1076,7 @@ public final class SxpNode {
 
     @Override public String toString() {
         return "[" + (
-                getNodeBuilder().getName() != null && !getNodeBuilder().getName().isEmpty() ? getNodeBuilder().getName() + ":" : "")
+                getNodeIdentity().getName() != null && !getNodeIdentity().getName().isEmpty() ? getNodeIdentity().getName() + ":" : "")
                 + NodeIdConv.toString(nodeId) + "]";
     }
 }
