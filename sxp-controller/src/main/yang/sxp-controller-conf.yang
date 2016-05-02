@@ -6,7 +6,9 @@ module sxp-controller-conf {
 
     import config {prefix config; revision-date 2013-04-05;}
     import opendaylight-md-sal-binding {prefix mdsal; revision-date 2013-10-28;}
- 	import sxp-controller {prefix sxpctrl; revision-date "2014-10-02";}
+    import sxp-database { prefix sxpdb; revision-date "2016-03-08";}
+    import sxp-node { prefix sxpnd; revision-date "2016-03-08";}
+    import sxp-protocol { prefix sxppt; revision-date "2014-10-02"; }
 
     description
         "Module defines the base YANG definitions for ODL-SXP-aware network node configuration.";
@@ -58,8 +60,14 @@ module sxp-controller-conf {
             }
 
             container sxp-controller {
-                list sxp-node { 
-                    uses sxpctrl:sxp-node-configuration;
+                list sxp-node {
+                    leaf node-id {
+                        mandatory true;
+                        type sxppt:node-id;
+                        description "SXP node ID";
+                    }
+                    uses sxpnd:sxp-node-identity-fields;
+                    uses sxpdb:master-database-configuration;
                 }
             }
         }
