@@ -13,7 +13,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
-import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
@@ -34,7 +33,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.De
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteEntryInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteFilterInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeletePeerGroupInputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetBindingSgtsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetConnectionsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetNodeBindingsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupInputBuilder;
@@ -52,6 +50,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.acl.entry.AclMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.entry.PrefixListMatch;
@@ -97,7 +96,8 @@ public class RpcServiceImplTest {
                 when(node.getWorker()).thenReturn(new ThreadsWorker());
                 when(node.getPeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
                 when(node.removePeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
-                when(node.removeFilterFromPeerGroup(anyString(), any(FilterType.class))).thenReturn(true);
+                when(node.removeFilterFromPeerGroup(anyString(), any(FilterType.class),
+                        any(FilterSpecific.class))).thenReturn(true);
                 when(node.addPeerGroup(any(SxpPeerGroup.class))).thenReturn(true);
                 when(node.addFilterToPeerGroup(anyString(),
                         any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class)))
@@ -247,20 +247,6 @@ public class RpcServiceImplTest {
 
                 input.setSgt(null);
                 assertFalse(service.deleteEntry(input.build()).get().getResult().isResult());
-        }
-
-        @Test public void testGetBindingSgts() throws Exception {
-                GetBindingSgtsInputBuilder input = new GetBindingSgtsInputBuilder();
-                when(masterDatabase.getBindings()).thenReturn(
-                        mergeBindings(getBinding("1.1.1.1/32", 10), getBinding("0.0.0.0/32", 10),
-                                getBinding("5.5.5.5/32", 50), getBinding("0.0.0.0/32", 150)));
-                input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-
-                input.setIpPrefix(new IpPrefix(Ipv4Prefix.getDefaultInstance("0.0.0.0/32")));
-                assertFalse(service.getBindingSgts(input.build()).get().getResult().getSgt().isEmpty());
-
-                input.setIpPrefix(null);
-                assertNull(service.getBindingSgts(input.build()).get().getResult().getSgt());
         }
 
         @Test public void testGetConnections() throws Exception {

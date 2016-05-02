@@ -39,13 +39,274 @@
                             <!--name></name-->
                             <enabled>true</enabled>
                             <node-id>127.0.0.1</node-id>
-                            <source-ip>0.0.0.0</source-ip>
+                            <source-ip>127.0.0.1</source-ip>
                             <tcp-port>64999</tcp-port>
                             <version>version4</version>
                             <security>
                                 <password>password</password>
                             </security>
-                            <mapping-expanded>150</mapping-expanded>
+                            <mapping-expanded>0</mapping-expanded>
+                            <description>ODL SXP Controller</description>
+
+                            <!-- Binding format: prefix/length -->
+                            <master-database></master-database>
+
+                            <!-- Timers setup: 0 to disable specific timer usability -->
+                            <timers>
+                                <!-- Common -->
+                                <retry-open-time>5</retry-open-time>
+                                <!-- Speaker -->
+                                <hold-time-min-acceptable>120</hold-time-min-acceptable>
+                                <keep-alive-time>30</keep-alive-time>
+                                <!-- Listener -->
+                                <hold-time>90</hold-time>
+                                <hold-time-min>90</hold-time-min>
+                                <hold-time-max>180</hold-time-max>
+                            </timers>
+                        </sxp-node>
+                        <sxp-node>
+                            <!--name></name-->
+                            <enabled>true</enabled>
+                            <node-id>127.0.0.2</node-id>
+                            <source-ip>127.0.0.2</source-ip>
+                            <tcp-port>64999</tcp-port>
+                            <version>version4</version>
+                            <security>
+                                <password>password</password>
+                            </security>
+                            <mapping-expanded>0</mapping-expanded>
+                            <description>ODL SXP Controller</description>
+
+                            <!-- Binding format: prefix/length -->
+                            <master-database></master-database>
+
+                            <!-- Timers setup: 0 to disable specific timer usability -->
+                            <timers>
+                                <!-- Common -->
+                                <retry-open-time>5</retry-open-time>
+                                <!-- Speaker -->
+                                <hold-time-min-acceptable>120</hold-time-min-acceptable>
+                                <keep-alive-time>30</keep-alive-time>
+                                <!-- Listener -->
+                                <hold-time>90</hold-time>
+                                <hold-time-min>90</hold-time-min>
+                                <hold-time-max>180</hold-time-max>
+                            </timers>
+                        </sxp-node>
+                        <sxp-node>
+                            <!--name></name-->
+                            <enabled>true</enabled>
+                            <node-id>127.0.0.3</node-id>
+                            <source-ip>127.0.0.3</source-ip>
+                            <tcp-port>64999</tcp-port>
+                            <version>version4</version>
+                            <security>
+                                <password>password</password>
+                            </security>
+                            <mapping-expanded>0</mapping-expanded>
+                            <description>ODL SXP Controller</description>
+
+                            <!-- Binding format: prefix/length -->
+                            <master-database></master-database>
+
+                            <!-- Timers setup: 0 to disable specific timer usability -->
+                            <timers>
+                                <!-- Common -->
+                                <retry-open-time>5</retry-open-time>
+                                <!-- Speaker -->
+                                <hold-time-min-acceptable>120</hold-time-min-acceptable>
+                                <keep-alive-time>30</keep-alive-time>
+                                <!-- Listener -->
+                                <hold-time>90</hold-time>
+                                <hold-time-min>90</hold-time-min>
+                                <hold-time-max>180</hold-time-max>
+                            </timers>
+                        </sxp-node>
+                        <sxp-node>
+                            <!--name></name-->
+                            <enabled>true</enabled>
+                            <node-id>127.0.0.4</node-id>
+                            <source-ip>127.0.0.4</source-ip>
+                            <tcp-port>64999</tcp-port>
+                            <version>version4</version>
+                            <security>
+                                <password>password</password>
+                            </security>
+                            <mapping-expanded>0</mapping-expanded>
+                            <description>ODL SXP Controller</description>
+
+                            <!-- Binding format: prefix/length -->
+                            <master-database></master-database>
+
+                            <!-- Timers setup: 0 to disable specific timer usability -->
+                            <timers>
+                                <!-- Common -->
+                                <retry-open-time>5</retry-open-time>
+                                <!-- Speaker -->
+                                <hold-time-min-acceptable>120</hold-time-min-acceptable>
+                                <keep-alive-time>30</keep-alive-time>
+                                <!-- Listener -->
+                                <hold-time>90</hold-time>
+                                <hold-time-min>90</hold-time-min>
+                                <hold-time-max>180</hold-time-max>
+                            </timers>
+                        </sxp-node>
+                        <sxp-node>
+                            <!--name></name-->
+                            <enabled>true</enabled>
+                            <node-id>127.0.0.5</node-id>
+                            <source-ip>127.0.0.5</source-ip>
+                            <tcp-port>64999</tcp-port>
+                            <version>version4</version>
+                            <security>
+                                <password>password</password>
+                            </security>
+                            <mapping-expanded>0</mapping-expanded>
+                            <description>ODL SXP Controller</description>
+
+                            <!-- Binding format: prefix/length -->
+                            <master-database></master-database>
+
+                            <!-- Timers setup: 0 to disable specific timer usability -->
+                            <timers>
+                                <!-- Common -->
+                                <retry-open-time>5</retry-open-time>
+                                <!-- Speaker -->
+                                <hold-time-min-acceptable>120</hold-time-min-acceptable>
+                                <keep-alive-time>30</keep-alive-time>
+                                <!-- Listener -->
+                                <hold-time>90</hold-time>
+                                <hold-time-min>90</hold-time-min>
+                                <hold-time-max>180</hold-time-max>
+                            </timers>
+                        </sxp-node>
+                        <sxp-node>
+                            <!--name></name-->
+                            <enabled>true</enabled>
+                            <node-id>127.0.2.1</node-id>
+                            <source-ip>127.0.2.1</source-ip>
+                            <tcp-port>64999</tcp-port>
+                            <version>version4</version>
+                            <security>
+                                <password>password</password>
+                            </security>
+                            <mapping-expanded>0</mapping-expanded>
+                            <description>ODL SXP Controller</description>
+
+                            <!-- Binding format: prefix/length -->
+                            <master-database></master-database>
+
+                            <!-- Timers setup: 0 to disable specific timer usability -->
+                            <timers>
+                                <!-- Common -->
+                                <retry-open-time>5</retry-open-time>
+                                <!-- Speaker -->
+                                <hold-time-min-acceptable>120</hold-time-min-acceptable>
+                                <keep-alive-time>30</keep-alive-time>
+                                <!-- Listener -->
+                                <hold-time>90</hold-time>
+                                <hold-time-min>90</hold-time-min>
+                                <hold-time-max>180</hold-time-max>
+                            </timers>
+                        </sxp-node>
+                        <sxp-node>
+                            <!--name></name-->
+                            <enabled>true</enabled>
+                            <node-id>127.0.2.2</node-id>
+                            <source-ip>127.0.2.2</source-ip>
+                            <tcp-port>64999</tcp-port>
+                            <version>version4</version>
+                            <security>
+                                <password>password</password>
+                            </security>
+                            <mapping-expanded>0</mapping-expanded>
+                            <description>ODL SXP Controller</description>
+
+                            <!-- Binding format: prefix/length -->
+                            <master-database></master-database>
+
+                            <!-- Timers setup: 0 to disable specific timer usability -->
+                            <timers>
+                                <!-- Common -->
+                                <retry-open-time>5</retry-open-time>
+                                <!-- Speaker -->
+                                <hold-time-min-acceptable>120</hold-time-min-acceptable>
+                                <keep-alive-time>30</keep-alive-time>
+                                <!-- Listener -->
+                                <hold-time>90</hold-time>
+                                <hold-time-min>90</hold-time-min>
+                                <hold-time-max>180</hold-time-max>
+                            </timers>
+                        </sxp-node>
+                        <sxp-node>
+                            <!--name></name-->
+                            <enabled>true</enabled>
+                            <node-id>127.0.2.3</node-id>
+                            <source-ip>127.0.2.3</source-ip>
+                            <tcp-port>64999</tcp-port>
+                            <version>version4</version>
+                            <security>
+                                <password>password</password>
+                            </security>
+                            <mapping-expanded>0</mapping-expanded>
+                            <description>ODL SXP Controller</description>
+
+                            <!-- Binding format: prefix/length -->
+                            <master-database></master-database>
+
+                            <!-- Timers setup: 0 to disable specific timer usability -->
+                            <timers>
+                                <!-- Common -->
+                                <retry-open-time>5</retry-open-time>
+                                <!-- Speaker -->
+                                <hold-time-min-acceptable>120</hold-time-min-acceptable>
+                                <keep-alive-time>30</keep-alive-time>
+                                <!-- Listener -->
+                                <hold-time>90</hold-time>
+                                <hold-time-min>90</hold-time-min>
+                                <hold-time-max>180</hold-time-max>
+                            </timers>
+                        </sxp-node>
+                        <sxp-node>
+                            <!--name></name-->
+                            <enabled>true</enabled>
+                            <node-id>127.0.2.4</node-id>
+                            <source-ip>127.0.2.4</source-ip>
+                            <tcp-port>64999</tcp-port>
+                            <version>version4</version>
+                            <security>
+                                <password>password</password>
+                            </security>
+                            <mapping-expanded>0</mapping-expanded>
+                            <description>ODL SXP Controller</description>
+
+                            <!-- Binding format: prefix/length -->
+                            <master-database></master-database>
+
+                            <!-- Timers setup: 0 to disable specific timer usability -->
+                            <timers>
+                                <!-- Common -->
+                                <retry-open-time>5</retry-open-time>
+                                <!-- Speaker -->
+                                <hold-time-min-acceptable>120</hold-time-min-acceptable>
+                                <keep-alive-time>30</keep-alive-time>
+                                <!-- Listener -->
+                                <hold-time>90</hold-time>
+                                <hold-time-min>90</hold-time-min>
+                                <hold-time-max>180</hold-time-max>
+                            </timers>
+                        </sxp-node>
+                        <sxp-node>
+                            <!--name></name-->
+                            <enabled>true</enabled>
+                            <node-id>127.0.2.5</node-id>
+                            <source-ip>127.0.2.5</source-ip>
+                            <tcp-port>64999</tcp-port>
+                            <version>version4</version>
+                            <security>
+                                <password>password</password>
+                            </security>
+                            <mapping-expanded>0</mapping-expanded>
                             <description>ODL SXP Controller</description>
 
                             <!-- Binding format: prefix/length -->
