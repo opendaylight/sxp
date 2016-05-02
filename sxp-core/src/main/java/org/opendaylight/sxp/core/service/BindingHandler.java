@@ -53,6 +53,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -262,13 +263,15 @@ public final class BindingHandler {
      */
     public static ListenableFuture processPurgeAllMessage(final SxpConnection connection) {
         return Preconditions.checkNotNull(connection).getOwner().getWorker().executeTaskInSequence(() -> {
-            SxpNode owner = connection.getOwner();
-            List<SxpDatabaseBinding>
-                    removed =
-                    owner.getBindingSxpDatabase().deleteBindings(connection.getNodeIdRemote()),
-                    replace = SxpDatabase.getReplaceForBindings(removed, owner);
-            connection.propagateUpdate(owner.getBindingMasterDatabase().deleteBindings(removed),
-                    owner.getBindingMasterDatabase().addBindings(replace));
+            final SxpNode owner = connection.getOwner();
+            final Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(owner);
+            final SxpDatabaseInf sxpDatabase = owner.getBindingSxpDatabase();
+            synchronized (sxpDatabase) {
+                List<SxpDatabaseBinding> removed = sxpDatabase.deleteBindings(connection.getNodeIdRemote()),
+                        replace = SxpDatabase.getReplaceForBindings(removed, sxpDatabase, filterMap);
+                connection.propagateUpdate(owner.getBindingMasterDatabase().deleteBindings(removed),
+                        owner.getBindingMasterDatabase().addBindings(replace));
+            }
             return null;
         }, ThreadsWorker.WorkerType.INBOUND, connection);
     }
@@ -290,10 +293,12 @@ public final class BindingHandler {
 
         List<SxpDatabaseBinding> added = new ArrayList<>(), removed = new ArrayList<>(), replace = new ArrayList<>();
         SxpBindingFilter filter = connection.getFilter(FilterType.Inbound);
+        List<SxpConnection> sxpConnections = connection.getOwner().getAllOnSpeakerConnections();
+        Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(connection.getOwner());
         synchronized (sxpDatabase) {
             if (databaseDelete != null && !databaseDelete.isEmpty()) {
                 removed = sxpDatabase.deleteBindings(connection.getNodeIdRemote(), databaseDelete);
-                replace = SxpDatabase.getReplaceForBindings(removed, connection.getOwner());
+                replace = SxpDatabase.getReplaceForBindings(removed, sxpDatabase, filterMap);
             }
             if (databaseAdd != null && !databaseAdd.isEmpty()) {
                 added = sxpDatabase.addBinding(connection.getNodeIdRemote(), databaseAdd);
@@ -302,7 +307,7 @@ public final class BindingHandler {
             }
             added.addAll(replace);
             dispatcher.propagateUpdate(masterDatabase.deleteBindings(removed), masterDatabase.addBindings(added),
-                    connection.getOwner().getAllOnSpeakerConnections());
+                    sxpConnections);
         }
 
         if (!removed.isEmpty() || !added.isEmpty() || !replace.isEmpty()) {

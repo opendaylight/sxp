@@ -151,7 +151,7 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
      * @param node SxpNode containing Connections and filters
      * @return Map of NodeId of remote peers and Inbound filters
      */
-    private static Map<NodeId, SxpBindingFilter> getInboundFilters(SxpNode node) {
+    public static Map<NodeId, SxpBindingFilter> getInboundFilters(SxpNode node) {
         Map<NodeId, SxpBindingFilter> map = new HashMap<>();
         node.getAllConnections().stream().forEach(c -> {
             if (c.isModeListener()) {
@@ -165,32 +165,34 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
      * Finds replace for specified bindings from specified SxpNode
      *
      * @param bindings List of bindings that needs replace
-     * @param node     SxpNode containing data about filters and SxpDatabase
      * @param <T>      Any type extending SxpBindingFields
      * @return List of replacements
      */
     public static <T extends SxpBindingFields> List<SxpDatabaseBinding> getReplaceForBindings(List<T> bindings,
-            final SxpNode node) {
-        if (bindings == null || node == null || bindings.isEmpty())
+            final SxpDatabaseInf database,final Map<NodeId, SxpBindingFilter> filters) {
+        if (bindings == null || database == null || bindings.isEmpty())
             return new ArrayList<>();
         Set<IpPrefix>
                 prefixesForReplace =
                 bindings.stream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
         Map<IpPrefix, SxpDatabaseBinding> prefixMap = new HashMap<>(bindings.size());
-
-        for (Map.Entry<NodeId, SxpBindingFilter> entry : getInboundFilters(node).entrySet()) {
-            Preconditions.checkNotNull(node.getBindingSxpDatabase()).getBindings(entry.getKey()).stream().forEach(b -> {
-                if (!prefixesForReplace.contains(b.getIpPrefix()) || entry.getValue() != null && entry.getValue()
-                        .apply(b)) {
-                    return;
-                }
-                SxpDatabaseBinding binding = prefixMap.get(b.getIpPrefix());
-                if (binding == null || b.getPeerSequence().getPeer().size() < binding.getPeerSequence().getPeer().size()
-                        || (b.getPeerSequence().getPeer().size() == binding.getPeerSequence().getPeer().size()
-                        && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
-                    prefixMap.put(b.getIpPrefix(), b);
-                }
-            });
+        synchronized (database) {
+            for (Map.Entry<NodeId, SxpBindingFilter> entry : filters.entrySet()) {
+                Preconditions.checkNotNull(database).getBindings(entry.getKey()).stream().forEach(b -> {
+                    if (!prefixesForReplace.contains(b.getIpPrefix()) || entry.getValue() != null && entry.getValue()
+                            .apply(b)) {
+                        return;
+                    }
+                    SxpDatabaseBinding binding = prefixMap.get(b.getIpPrefix());
+                    if (binding == null || b.getPeerSequence().getPeer().size() < binding.getPeerSequence()
+                            .getPeer()
+                            .size() || (
+                            b.getPeerSequence().getPeer().size() == binding.getPeerSequence().getPeer().size()
+                                    && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
+                        prefixMap.put(b.getIpPrefix(), b);
+                    }
+                });
+            }
         }
         return new ArrayList<>(prefixMap.values());
     }

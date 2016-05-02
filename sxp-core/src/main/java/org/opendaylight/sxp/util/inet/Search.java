@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.util.inet;
 
+import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
 import org.opendaylight.sxp.util.exception.connection.NoNetworkInterfacesException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IetfInetUtil;
@@ -129,6 +130,7 @@ public final class Search {
      */
     public static String getAddress(
             org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress address) {
+        Preconditions.checkNotNull(address);
         if (address.getIpv4Address() != null) {
             return address.getIpv4Address().getValue();
         } else if (address.getIpv6Address() != null) {
