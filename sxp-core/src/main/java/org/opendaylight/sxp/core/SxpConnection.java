@@ -235,19 +235,20 @@ public class SxpConnection {
      * @param connection Connection that contains settings
      * @throws UnknownVersionException If version in provided values isn't supported
      */
-    private SxpConnection(SxpNode owner, Connection connection) throws UnknownVersionException {
+    protected SxpConnection(SxpNode owner, Connection connection) throws UnknownVersionException {
         this.owner = Preconditions.checkNotNull(owner);
         this.connectionBuilder = new ConnectionBuilder(Preconditions.checkNotNull(connection));
         this.remoteAddress =
-                new InetSocketAddress(Search.getAddress(connection.getPeerAddress()),
-                        connection.getTcpPort() != null ? connection.getTcpPort()
+                new InetSocketAddress(Search.getAddress(connectionBuilder.getPeerAddress()),
+                        connectionBuilder.getTcpPort() != null ? connectionBuilder.getTcpPort()
                                 .getValue() : Configuration.getConstants().getPort());
         for (FilterType filterType : FilterType.values()) {
             bindingFilterMap.put(filterType, new HashMap<>());
         }
         this.context =
-                new Context(owner, connection.getVersion() != null ? connection.getVersion() : owner.getVersion());
-        setCapabilities(Configuration.getCapabilities(getVersion()));
+                new Context(owner,
+                        connectionBuilder.getVersion() != null ? connectionBuilder.getVersion() : owner.getVersion());
+        connectionBuilder.setCapabilities(Configuration.getCapabilities(connectionBuilder.getVersion()));
     }
 
     protected synchronized void setTimers(ConnectionTimers build) {
@@ -266,10 +267,6 @@ public class SxpConnection {
         connectionBuilder.setVersion(Preconditions.checkNotNull(version));
     }
 
-    protected void resetPurgeAllMessageReceived() {
-        connectionBuilder.setPurgeAllMessageReceived(false);
-    }
-
     public synchronized Connection getConnection() {
         return connectionBuilder.build();
     }
@@ -282,28 +279,12 @@ public class SxpConnection {
     }
 
     /**
-     * Sets Mode of Connection
-     *
-     * @param mode ConnectionMode to be set
-     */
-    public void setMode(ConnectionMode mode) {
-        connectionBuilder.setMode(mode);
-    }
-
-    /**
      * Sets Id of Peer
      *
      * @param nodeId NodeId to be set
      */
     public void setNodeIdRemote(NodeId nodeId) {
         connectionBuilder.setNodeId(nodeId);
-    }
-
-    /**
-     * Set Flag PurgeAllReceived
-     */
-    public void setPurgeAllMessageReceived() {
-        connectionBuilder.setPurgeAllMessageReceived(true);
     }
 
     /**
@@ -733,14 +714,6 @@ public class SxpConnection {
     }
 
     /**
-     * @return If PurgeAll message was received
-     */
-    public boolean isPurgeAllMessageReceived() {
-        return getConnection().isPurgeAllMessageReceived()
-                == null ? false : getConnection().isPurgeAllMessageReceived();
-    }
-
-    /**
      * @return If State is DeleteHoldDown
      */
     public boolean isStateDeleteHoldDown() {
@@ -1102,7 +1075,6 @@ public class SxpConnection {
      * Set State to DeleteHoldDown and triggers cleanUp of Database
      */
     public void setStateDeleteHoldDown() {
-        resetPurgeAllMessageReceived();
         setState(ConnectionState.DeleteHoldDown);
         owner.getBindingSxpDatabase().setReconciliation(getNodeIdRemote());
     }
@@ -1114,7 +1086,6 @@ public class SxpConnection {
     public void setStateOff() {
         stopTimers();
         setState(ConnectionState.Off);
-        resetPurgeAllMessageReceived();
         getOwner().getWorker().cancelTasksInSequence(true, ThreadsWorker.WorkerType.INBOUND, this);
         getOwner().getWorker().cancelTasksInSequence(true, ThreadsWorker.WorkerType.OUTBOUND, this);
         closeChannelHandlerContexts();
@@ -1154,7 +1125,6 @@ public class SxpConnection {
         } else {
             switch (type) {
                 case ListenerContext:
-                    resetPurgeAllMessageReceived();
                     setTimer(TimerType.DeleteHoldDownTimer, 0);
                     setTimer(TimerType.ReconciliationTimer, 0);
                     setTimer(TimerType.HoldTimer, 0);

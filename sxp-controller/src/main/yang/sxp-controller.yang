@@ -19,27 +19,6 @@ module sxp-controller {
                 "Reviewed revision of SXP controller model";
     }
 
-    // ************************
-    // SXP Controller Groupings
-    // ************************
-
-    grouping sxp-node-configuration {
-        leaf node-id {
-            mandatory true;
-            type sxppt:node-id;
-            description "SXP node ID";
-        }
-        uses sxpnd:sxp-node-fields;
-        uses sxpdb:master-database-configuration;
-        uses sxpnd:sxp-connections-fields;
-
-        container timers {
-            uses sxpnd:sxp-speaker-time-settings-fields;
-            uses sxpnd:sxp-listener-time-settings-fields;
-            uses sxpnd:sxp-node-time-settings-fields;
-        }
-    }
-
     // **************
     // RPC Definition
     // **************
