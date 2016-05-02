@@ -10,7 +10,7 @@ package org.opendaylight.sxp.controller.util.database;
 
 import com.google.common.base.Preconditions;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
+import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.util.database.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
@@ -63,10 +63,15 @@ public final class MasterDatastoreImpl extends MasterDatabase {
     }
 
     @Override synchronized public List<MasterDatabaseBinding> getBindings() {
-        List<MasterDatabaseBinding> bindings = getLocalBindings();
+        List<MasterDatabaseBinding> bindings = new ArrayList<>();
         org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase
                 database =
-                datastoreAccess.readSynchronous(getIdentifierBuilder().build(), LogicalDatastoreType.OPERATIONAL);
+                datastoreAccess.readSynchronous(getIdentifierBuilder().build(), LogicalDatastoreType.CONFIGURATION);
+        if (database != null && database.getMasterDatabaseBinding() != null && !database.getMasterDatabaseBinding()
+                .isEmpty()) {
+            bindings.addAll(database.getMasterDatabaseBinding());
+        }
+        database = datastoreAccess.readSynchronous(getIdentifierBuilder().build(), LogicalDatastoreType.OPERATIONAL);
         if (database != null && database.getMasterDatabaseBinding() != null && !database.getMasterDatabaseBinding()
                 .isEmpty()) {
             bindings.addAll(database.getMasterDatabaseBinding());
@@ -82,6 +87,15 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         if (database != null && database.getMasterDatabaseBinding() != null && !database.getMasterDatabaseBinding()
                 .isEmpty()) {
             bindings.addAll(database.getMasterDatabaseBinding());
+        }
+
+        database = datastoreAccess.readSynchronous(getIdentifierBuilder().build(), LogicalDatastoreType.OPERATIONAL);
+        if (database != null && database.getMasterDatabaseBinding() != null && !database.getMasterDatabaseBinding()
+                .isEmpty()) {
+            database.getMasterDatabaseBinding().forEach(b -> {
+                if (b.getPeerSequence() == null)
+                    bindings.add(b);
+            });
         }
         return bindings;
     }

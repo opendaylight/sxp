@@ -13,7 +13,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
-import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
@@ -52,6 +51,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.acl.entry.AclMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.entry.PrefixListMatch;
@@ -97,7 +97,8 @@ public class RpcServiceImplTest {
                 when(node.getWorker()).thenReturn(new ThreadsWorker());
                 when(node.getPeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
                 when(node.removePeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
-                when(node.removeFilterFromPeerGroup(anyString(), any(FilterType.class))).thenReturn(true);
+                when(node.removeFilterFromPeerGroup(anyString(), any(FilterType.class),
+                        any(FilterSpecific.class))).thenReturn(true);
                 when(node.addPeerGroup(any(SxpPeerGroup.class))).thenReturn(true);
                 when(node.addFilterToPeerGroup(anyString(),
                         any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class)))
