@@ -19,24 +19,11 @@ module sxp-controller {
                 "Reviewed revision of SXP controller model";
     }
 
-    // ************************
-    // SXP Controller Groupings
-    // ************************
-
-    grouping sxp-node-configuration {
-        leaf node-id {
-            mandatory true;
-            type sxppt:node-id;
-            description "SXP node ID";
-        }
-        uses sxpnd:sxp-node-fields;
-        uses sxpdb:master-database-configuration;
-        uses sxpnd:sxp-connections-fields;
-
-        container timers {
-            uses sxpnd:sxp-speaker-time-settings-fields;
-            uses sxpnd:sxp-listener-time-settings-fields;
-            uses sxpnd:sxp-node-time-settings-fields;
+    typedef config-persistence {
+        description "If the COnfiguration will be preserved after shutdown";
+        type enumeration {
+            enum pernament;
+            enum operational;
         }
     }
 
@@ -62,6 +49,10 @@ module sxp-controller {
     rpc add-connection {
         description "Create a new connection for a specified node";
         input {
+            leaf config-persistence {
+                type config-persistence;
+                default "pernament";
+            }
             leaf requested-node {
                 mandatory false;
                 type sxppt:node-id;
@@ -105,6 +96,10 @@ module sxp-controller {
     rpc add-entry {
         description "Add a new IP-SGT binding into a node's master database";
         input {
+            leaf config-persistence {
+                type config-persistence;
+                default "pernament";
+            }
             leaf requested-node {
                 mandatory false;
                 type sxppt:node-id;
@@ -131,6 +126,10 @@ module sxp-controller {
     rpc update-entry {
         description "Update an IP-SGT binding in a node's master database";
         input {
+            leaf config-persistence {
+                type config-persistence;
+                default "pernament";
+            }
             leaf requested-node {
                 mandatory false;
                 type sxppt:node-id;
@@ -195,28 +194,6 @@ module sxp-controller {
         }
     }
 
-    rpc get-binding-sgts {
-        description "RPC returns the SGT for selected IP address";
-        input {
-            leaf requested-node {
-                mandatory false;
-                type sxppt:node-id;
-                description "Optional: SXP node ID";
-            }
-            leaf ip-prefix {
-                mandatory true;
-                type inet:ip-prefix;
-                description "Assigned IP address";
-            }
-        }
-        output {
-            leaf-list sgt {
-                type sxpdb:sgt;
-                description "Assigned source-group tag";
-            }
-        }
-    }
-
     rpc get-node-bindings {
         description "RPC returns IP-SGT bindings configuration of a specified
                 node";
@@ -242,6 +219,10 @@ module sxp-controller {
     rpc add-peer-group {
         description "Add new PeerGroup in specified Node";
         input {
+            leaf config-persistence {
+                type config-persistence;
+                default "pernament";
+            }
             leaf requested-node {
                 mandatory true;
                 type sxppt:node-id;
@@ -313,6 +294,10 @@ module sxp-controller {
     rpc add-filter {
         description "Add new filter to PeerGroup";
         input {
+            leaf config-persistence {
+                type config-persistence;
+                default "pernament";
+            }
             leaf requested-node {
                 mandatory true;
                 type sxppt:node-id;
@@ -349,6 +334,9 @@ module sxp-controller {
                 mandatory true;
                 type sxpfl:filter-type;
             }
+            leaf filter-specific {
+                type sxpfl:filter-specific;
+            }
         }
         output {
             leaf result {
@@ -360,6 +348,10 @@ module sxp-controller {
     rpc update-filter {
         description "Updates Filter in specified PeerGroup";
         input {
+            leaf config-persistence {
+                type config-persistence;
+                default "pernament";
+            }
             leaf requested-node {
                 mandatory true;
                 type sxppt:node-id;
