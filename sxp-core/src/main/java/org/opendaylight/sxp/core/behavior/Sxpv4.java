@@ -195,7 +195,7 @@ public final class Sxpv4 extends SxpLegacy {
     public void onChannelActivation(final ChannelHandlerContext ctx, SxpConnection connection) {
         ByteBuf message;
         try {
-            if (connection.isModeBoth() && !connection.isBidirectionalBoth()) {
+            if (connection.isModeBoth() && !connection.isStateOn()) {
                 message = composeOpenHoldTimeMessage(connection, OpenMessageType.Open, ConnectionMode.Listener);
             } else {
                 message = composeOpenHoldTimeMessage(connection, OpenMessageType.Open, connection.getMode());

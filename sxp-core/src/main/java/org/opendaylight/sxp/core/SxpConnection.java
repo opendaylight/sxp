@@ -40,8 +40,8 @@ import org.opendaylight.sxp.util.time.connection.KeepAliveTimerTask;
 import org.opendaylight.sxp.util.time.connection.ReconcilationTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.FilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
@@ -114,7 +114,7 @@ public class SxpConnection {
     private final SxpNode owner;
 
     protected HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(5);
-    private final Map<FilterType, Map<Class, SxpBindingFilter>> bindingFilterMap =
+    private final Map<FilterType, Map<FilterSpecific, SxpBindingFilter>> bindingFilterMap =
         new HashMap<>(FilterType.values().length);
 
     /**
@@ -192,7 +192,7 @@ public class SxpConnection {
             synchronized (bindingFilterMap) {
                 FilterType filterType = Preconditions.checkNotNull(filter.getSxpFilter()).getFilterType();
                 bindingFilterMap.get(filterType)
-                        .put(Preconditions.checkNotNull(filter.getSxpFilter().getFilterEntries()).getClass(), filter);
+                        .put(Preconditions.checkNotNull(filter.getSxpFilter().getFilterSpecific()), filter);
                 updateFlagsForDatabase(filterType, false);
             }
         }
@@ -211,21 +211,26 @@ public class SxpConnection {
 
     /**
      * Removed SxpBindingFilter from SxpConnection and reset appropriate flags
+     * if no subtype is specified remove all of specified type
      *
      * @param filterType Type of SxpBindingFilter to be removed
-     * @return Removed SxpBindingFilter
+     * @param specific   SubType of SxpBindingFilter to be removed
+     * @return Removed SxpBindingFilters
      */
-    public SxpBindingFilter removeFilter(FilterType filterType , FilterEntries entries) {
+    public List<SxpBindingFilter> removeFilter(FilterType filterType, FilterSpecific specific) {
+        List<SxpBindingFilter> filters = new ArrayList<>();
         synchronized (bindingFilterMap) {
-            SxpBindingFilter
-                    filter =
-                    bindingFilterMap.get(Preconditions.checkNotNull(filterType))
-                            .remove(Preconditions.checkNotNull(entries).getClass());
-            if (filter != null) {
+            if (specific == null) {
+                filters.addAll(bindingFilterMap.get(Preconditions.checkNotNull(filterType)).values());
+                bindingFilterMap.get(Preconditions.checkNotNull(filterType)).clear();
+            } else {
+                filters.add(bindingFilterMap.get(Preconditions.checkNotNull(filterType)).remove(specific));
+            }
+            if (!filters.isEmpty()) {
                 updateFlagsForDatabase(filterType, true);
             }
-            return filter;
         }
+        return filters;
     }
 
     /**
@@ -235,59 +240,50 @@ public class SxpConnection {
      * @param connection Connection that contains settings
      * @throws UnknownVersionException If version in provided values isn't supported
      */
-    private SxpConnection(SxpNode owner, Connection connection) throws UnknownVersionException {
+    protected SxpConnection(SxpNode owner, Connection connection) throws UnknownVersionException {
         this.owner = Preconditions.checkNotNull(owner);
         this.connectionBuilder = new ConnectionBuilder(Preconditions.checkNotNull(connection));
         this.remoteAddress =
-                new InetSocketAddress(Search.getAddress(connection.getPeerAddress()),
-                        connection.getTcpPort() != null ? connection.getTcpPort()
+                new InetSocketAddress(Search.getAddress(connectionBuilder.getPeerAddress()),
+                        connectionBuilder.getTcpPort() != null ? connectionBuilder.getTcpPort()
                                 .getValue() : Configuration.getConstants().getPort());
         for (FilterType filterType : FilterType.values()) {
             bindingFilterMap.put(filterType, new HashMap<>());
         }
-        this.context =
-                new Context(owner, connection.getVersion() != null ? connection.getVersion() : owner.getVersion());
-        setCapabilities(Configuration.getCapabilities(getVersion()));
+        Version version = connectionBuilder.getVersion() != null ? connectionBuilder.getVersion() : owner.getVersion();
+        this.context = new Context(owner, version);
+        connectionBuilder.setCapabilities(Configuration.getCapabilities(version));
     }
 
-    protected synchronized void setTimers(ConnectionTimers build) {
+    protected void setTimers(ConnectionTimers build) {
         connectionBuilder.setConnectionTimers(Preconditions.checkNotNull(build));
     }
 
-    protected synchronized void setState(ConnectionState state) {
+    protected void setState(ConnectionState state) {
         connectionBuilder.setState(Preconditions.checkNotNull(state));
     }
 
-    protected synchronized void setCapabilities(Capabilities capabilities) {
+    protected void setCapabilities(Capabilities capabilities) {
         connectionBuilder.setCapabilities(Preconditions.checkNotNull(capabilities));
     }
 
-    protected synchronized void setVersion(Version version) {
+    protected void setVersion(Version version) {
         connectionBuilder.setVersion(Preconditions.checkNotNull(version));
     }
 
-    protected void resetPurgeAllMessageReceived() {
-        connectionBuilder.setPurgeAllMessageReceived(false);
+    public Connection getConnection() {
+        return connectionBuilder.build();
     }
 
-    public synchronized Connection getConnection() {
-        return connectionBuilder.build();
+    protected void setConnection(Connection connection){
+        connectionBuilder = new ConnectionBuilder(Preconditions.checkNotNull(connection));
     }
 
     /**
      * Update KeepAlive TimeStamp
      */
-    public synchronized void setUpdateOrKeepaliveMessageTimestamp() {
+    public void setUpdateOrKeepaliveMessageTimestamp() {
         connectionBuilder.setTimestampUpdateOrKeepAliveMessage(TimeConv.toDt(System.currentTimeMillis()));
-    }
-
-    /**
-     * Sets Mode of Connection
-     *
-     * @param mode ConnectionMode to be set
-     */
-    public void setMode(ConnectionMode mode) {
-        connectionBuilder.setMode(mode);
     }
 
     /**
@@ -297,13 +293,6 @@ public class SxpConnection {
      */
     public void setNodeIdRemote(NodeId nodeId) {
         connectionBuilder.setNodeId(nodeId);
-    }
-
-    /**
-     * Set Flag PurgeAllReceived
-     */
-    public void setPurgeAllMessageReceived() {
-        connectionBuilder.setPurgeAllMessageReceived(true);
     }
 
     /**
@@ -365,7 +354,7 @@ public class SxpConnection {
      * Notifies to Delete Bindings with Flag CleanUp learned from this connection
      * and propagate this change to other connections
      */
-    public void cleanUpBindings() {
+    public synchronized void cleanUpBindings() {
         // Clean-up bindings within reconciliation: If the connection recovers
         // before the delete hold down timer expiration, a reconcile timer is
         // started to clean up old mappings that didn’t get informed to be
@@ -733,14 +722,6 @@ public class SxpConnection {
     }
 
     /**
-     * @return If PurgeAll message was received
-     */
-    public boolean isPurgeAllMessageReceived() {
-        return getConnection().isPurgeAllMessageReceived()
-                == null ? false : getConnection().isPurgeAllMessageReceived();
-    }
-
-    /**
      * @return If State is DeleteHoldDown
      */
     public boolean isStateDeleteHoldDown() {
@@ -758,7 +739,8 @@ public class SxpConnection {
      * @return If State is On
      */
     public boolean isStateOn() {
-        return getState().equals(ConnectionState.On);
+        return isModeBoth() ?
+                ConnectionState.On.equals(getState()) && isBidirectionalBoth() : ConnectionState.On.equals(getState());
     }
 
     /**
@@ -1102,7 +1084,6 @@ public class SxpConnection {
      * Set State to DeleteHoldDown and triggers cleanUp of Database
      */
     public void setStateDeleteHoldDown() {
-        resetPurgeAllMessageReceived();
         setState(ConnectionState.DeleteHoldDown);
         owner.getBindingSxpDatabase().setReconciliation(getNodeIdRemote());
     }
@@ -1114,7 +1095,6 @@ public class SxpConnection {
     public void setStateOff() {
         stopTimers();
         setState(ConnectionState.Off);
-        resetPurgeAllMessageReceived();
         getOwner().getWorker().cancelTasksInSequence(true, ThreadsWorker.WorkerType.INBOUND, this);
         getOwner().getWorker().cancelTasksInSequence(true, ThreadsWorker.WorkerType.OUTBOUND, this);
         closeChannelHandlerContexts();
@@ -1154,7 +1134,6 @@ public class SxpConnection {
         } else {
             switch (type) {
                 case ListenerContext:
-                    resetPurgeAllMessageReceived();
                     setTimer(TimerType.DeleteHoldDownTimer, 0);
                     setTimer(TimerType.ReconciliationTimer, 0);
                     setTimer(TimerType.HoldTimer, 0);

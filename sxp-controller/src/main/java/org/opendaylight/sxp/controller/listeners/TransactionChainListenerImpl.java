@@ -6,7 +6,7 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.sxp.controller.util.database.access;
+package org.opendaylight.sxp.controller.listeners;
 
 import org.opendaylight.controller.md.sal.common.api.data.AsyncTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionChain;
@@ -26,6 +26,7 @@ public class TransactionChainListenerImpl implements TransactionChainListener {
 
     @Override
     public void onTransactionChainSuccessful(TransactionChain<?, ?> transactionChain) {
-            LOG.trace("Transaction chain Success");
+            if (LOG.isTraceEnabled())
+                    LOG.trace("Transaction chain Success");
     }
 }

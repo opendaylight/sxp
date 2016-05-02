@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.core;
 
+import com.google.common.base.Preconditions;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.CapabilitiesBuilder;
@@ -18,13 +19,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
 public final class Configuration {
 
     private static final Constants CONSTANTS = new Constants();
-
-    public static final String CONTROLLER_NAME = "controller";
 
     public static final int DEFAULT_PREFIX_GROUP = 0;
 
@@ -49,7 +47,8 @@ public final class Configuration {
         System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
         // System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", new
         // SimpleDateFormat("yyMMdd'T'HH:mm:ss.SZ").toPattern());
-        System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", new SimpleDateFormat("yyMMdd HH:mm:ss").toPattern());
+        System.setProperty("org.slf4j.simpleLogger.dateTimeFormat",
+                new SimpleDateFormat("yyMMdd HH:mm:ss").toPattern());
         System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
         System.setProperty("org.slf4j.simpleLogger.showLogName", "false");
         System.setProperty("org.slf4j.simpleLogger.showShortLogName", "false");
@@ -86,28 +85,20 @@ public final class Configuration {
         return CONSTANTS;
     }
 
-    public static String getNextNodeName() {
-        return nodes.keySet().iterator().next();
-    }
-
     public static HashMap<String, SxpNode> getNodes() {
         return nodes;
     }
 
-    public static SxpNode getRegisteredNode(String nodeId) {
+    public synchronized static SxpNode getRegisteredNode(String nodeId) {
         return nodes.get(nodeId);
     }
 
-    public static Set<String> getRegisteredNodesIds() {
-        return nodes.keySet();
+    public synchronized static SxpNode unregister(String nodeId) {
+        return nodes.remove(Preconditions.checkNotNull(nodeId));
     }
 
-    public static boolean isNodesRegistered() {
-        return !nodes.keySet().isEmpty();
-    }
-
-    public static SxpNode register(SxpNode node) {
-        nodes.put(NodeIdConv.toString(node.getNodeId()), node);
+    public synchronized static SxpNode register(SxpNode node) {
+        nodes.put(NodeIdConv.toString(Preconditions.checkNotNull(node).getNodeId()), node);
         return node;
     }
 }
