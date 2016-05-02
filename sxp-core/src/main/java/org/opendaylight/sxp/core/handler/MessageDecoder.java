@@ -25,7 +25,6 @@ import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFo
 import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognizedException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownSxpConnectionException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -183,82 +182,79 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws SocketAddressNotRecognizedException {
-        SxpConnection connection;
-        try {
-            connection = owner.getConnection(ctx.channel().remoteAddress());
-        } catch (SocketAddressNotRecognizedException | UnknownSxpConnectionException e) {
-            LOG.warn(getLogMessage(owner, ctx, "Channel activation", e));
+        final SxpConnection connection = owner.getConnection(ctx.channel().remoteAddress());
+        if (connection == null) {
+            LOG.warn(getLogMessage(owner, ctx, "Channel activation"));
             ctx.close();
             return;
         }
-        // Connection is already functional, do not add new channel context.
-        if (connection.isStateOn() && (!connection.isModeBoth() || connection.isBidirectionalBoth())) {
-            ctx.close();
-            return;
-        }
-        if (profile.equals(Profile.Server)) {
-            // System.out.println("L" + ctx.channel().remoteAddress());
+        synchronized (connection) {
+            // Connection is already functional, do not add new channel context.
+            if (connection.isStateOn() && (!connection.isModeBoth() || connection.isBidirectionalBoth())) {
+                ctx.close();
+                return;
+            }
+            if (profile.equals(Profile.Server)) {
+                // System.out.println("L" + ctx.channel().remoteAddress());
+                connection.setInetSocketAddresses(ctx.channel().localAddress());
+                connection.addChannelHandlerContext(ctx);
+                return;
+            }
+
+            // System.out.println("R" + ctx.channel().remoteAddress());
             connection.setInetSocketAddresses(ctx.channel().localAddress());
             connection.addChannelHandlerContext(ctx);
-            return;
-        }
-
-        // System.out.println("R" + ctx.channel().remoteAddress());
-        connection.setInetSocketAddresses(ctx.channel().localAddress());
-        connection.addChannelHandlerContext(ctx);
-        if (!connection.isModeBoth() || !connection.isStateOn(ChannelHandlerContextType.ListenerContext))
-        {
-            connection.getContext().executeChannelActivationStrategy(ctx, connection);
+            if (!connection.isModeBoth() || !connection.isStateOn(ChannelHandlerContextType.ListenerContext)) {
+                connection.getContext().executeChannelActivationStrategy(ctx, connection);
+            }
         }
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        SxpConnection connection;
-        try {
-            connection = owner.getConnection(ctx.channel().remoteAddress());
-        } catch (SocketAddressNotRecognizedException | UnknownSxpConnectionException e) {
-            LOG.warn(getLogMessage(owner, ctx, "Channel inactivation", e));
+        LOG.warn(getLogMessage(owner, ctx, "Channel inactivation"));
+        final SxpConnection connection = owner.getConnection(ctx.channel().remoteAddress());
+        if (connection == null) {
             return;
         }
-        connection.getContext().executeChannelInactivationStrategy(ctx, connection);
-        LOG.warn(getLogMessage(owner, ctx, "Channel inactivation"));
+        synchronized (connection) {
+            connection.getContext().executeChannelInactivationStrategy(ctx, connection);
+        }
     }
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, ByteBuf message) {
        // LOG.debug(getLogMessage(owner, ctx, "Input received", null) + ": {}", MessageFactory.toString(message));
-
-        SxpConnection connection;
-        try {
-            connection = owner.getConnection(ctx.channel().remoteAddress());
-        } catch (SocketAddressNotRecognizedException | UnknownSxpConnectionException e) {
-            LOG.warn(getLogMessage(owner, ctx, "Channel read0", e));
+        final SxpConnection connection = owner.getConnection(ctx.channel().remoteAddress());
+        if (connection == null) {
+            LOG.warn(getLogMessage(owner, ctx, "Channel read0"));
             return;
         }
-        while (message.readableBytes() != 0) {
-            // Execute selected strategy.
-            try {
-                Notification notification = connection.getContext().executeParseInput(message);
-                connection.getContext().executeInputMessageStrategy(ctx, connection, notification);
-            } catch (ErrorMessageException messageValidationException) {
-                // Attributes validation: Low-level filter of non-valid
-                // messages.
-                Exception carriedException = messageValidationException.getCarriedException();
-                if (carriedException != null) {
-                    LOG.warn(getLogMessage(owner, ctx, "", carriedException));
+        synchronized (connection) {
+            while (message.readableBytes() != 0) {
+                // Execute selected strategy.
+                try {
+                    Notification notification = connection.getContext().executeParseInput(message);
+                    connection.getContext().executeInputMessageStrategy(ctx, connection, notification);
+                } catch (ErrorMessageException messageValidationException) {
+                    // Attributes validation: Low-level filter of non-valid
+                    // messages.
+                    Exception carriedException = messageValidationException.getCarriedException();
+                    if (carriedException != null) {
+                        LOG.warn(getLogMessage(owner, ctx, "", carriedException));
+                    }
+                    sendErrorMessage(ctx, messageValidationException, connection);
+                    connection.setStateOff(ctx);
+                    break;
+                } catch (ErrorMessageReceivedException | UpdateMessageConnectionStateException e) {
+                    // Filter of error messages.
+                    LOG.warn(getLogMessage(owner, ctx, "", e));
+                    connection.setStateOff(ctx);
+                    break;
+                } catch (Exception e) {
+                    LOG.warn(getLogMessage(owner, ctx, "Channel read") + ": {}", MessageFactory.toString(message), e);
+                    break;
                 }
-                sendErrorMessage(ctx, messageValidationException, connection);
-                connection.setStateOff(ctx);
-                break;
-            } catch (ErrorMessageReceivedException | UpdateMessageConnectionStateException e) {
-                // Filter of error messages.
-                LOG.warn(getLogMessage(owner, ctx, "", e));
-                connection.setStateOff(ctx);
-                break;
-            } catch (Exception e) {
-                LOG.warn(getLogMessage(owner, ctx, "Channel read") + ": {}", MessageFactory.toString(message), e);
-                break;
             }
         }
     }
@@ -270,19 +266,19 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        SxpConnection connection;
-        try {
-            connection = owner.getConnection(ctx.channel().remoteAddress());
-        } catch (SocketAddressNotRecognizedException | UnknownSxpConnectionException e) {
-            LOG.warn(getLogMessage(owner, ctx, "Channel exception", e));
+        final SxpConnection connection = owner.getConnection(ctx.channel().remoteAddress());
+        if (connection == null) {
+            LOG.warn(getLogMessage(owner, ctx, "Channel exception"));
             return;
         }
-        if (cause instanceof IOException) {
-            LOG.debug("IO error {} shutting down connection {}", cause, connection);
-            connection.setStateOff(ctx);
-            return;
+        synchronized (connection) {
+            if (cause instanceof IOException) {
+                LOG.debug("IO error {} shutting down connection {}", cause, connection);
+                connection.setStateOff(ctx);
+                return;
+            }
+            connection.getContext().executeExceptionCaughtStrategy(ctx, connection);
+            LOG.warn(getLogMessage(owner, ctx, "Channel exception"), cause);
         }
-        connection.getContext().executeExceptionCaughtStrategy(ctx, connection);
-        LOG.warn(getLogMessage(owner, ctx, "Channel exception"), cause);
     }
 }
