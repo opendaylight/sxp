@@ -27,6 +27,7 @@ import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.AclFilterEntries;
@@ -478,6 +479,7 @@ public class SxpConnectionTest {
                 when(bindingFilter.getPeerGroupName()).thenReturn(name);
                 SxpFilterBuilder builder = new SxpFilterBuilder();
                 builder.setFilterType(type);
+                builder.setFilterSpecific(FilterSpecific.AccessOrPrefixList);
                 builder.setFilterEntries(mock(AclFilterEntries.class));
                 when(bindingFilter.getSxpFilter()).thenReturn(builder.build());
                 return bindingFilter;
@@ -498,6 +500,8 @@ public class SxpConnectionTest {
 
         @Test public void testPutFilter() throws Exception {
                 sxpConnection = SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On));
+                sxpConnection.markChannelHandlerContext(mock(ChannelHandlerContext.class),
+                        SxpConnection.ChannelHandlerContextType.SpeakerContext);
                 assertNull(sxpConnection.getFilter(FilterType.Inbound));
                 assertNull(sxpConnection.getFilter(FilterType.Outbound));
                 assertNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
@@ -533,6 +537,8 @@ public class SxpConnectionTest {
 
         @Test public void testRemoveFilter() throws Exception {
                 sxpConnection = SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On));
+                sxpConnection.markChannelHandlerContext(mock(ChannelHandlerContext.class),
+                        SxpConnection.ChannelHandlerContextType.SpeakerContext);
                 assertNull(sxpConnection.getFilter(FilterType.Inbound));
                 assertNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
                 assertNull(sxpConnection.getFilter(FilterType.Outbound));
@@ -545,17 +551,17 @@ public class SxpConnectionTest {
                 assertNotNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
                 assertNotNull(sxpConnection.getFilter(FilterType.Outbound));
 
-                sxpConnection.removeFilter(FilterType.Inbound, mock(AclFilterEntries.class));
+                sxpConnection.removeFilter(FilterType.Inbound, FilterSpecific.AccessOrPrefixList);
                 assertNull(sxpConnection.getFilter(FilterType.Inbound));
                 verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
                         eq(ThreadsWorker.WorkerType.OUTBOUND), eq(sxpConnection));
 
-                sxpConnection.removeFilter(FilterType.InboundDiscarding, mock(AclFilterEntries.class));
+                sxpConnection.removeFilter(FilterType.InboundDiscarding, FilterSpecific.AccessOrPrefixList);
                 assertNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
                 verify(sxpNode.getWorker(), atLeastOnce()).executeTaskInSequence(any(Callable.class),
                         eq(ThreadsWorker.WorkerType.INBOUND), eq(sxpConnection));
 
-                sxpConnection.removeFilter(FilterType.Outbound, mock(AclFilterEntries.class));
+                sxpConnection.removeFilter(FilterType.Outbound, FilterSpecific.AccessOrPrefixList);
                 assertNull(sxpConnection.getFilter(FilterType.Outbound));
         }
 
@@ -590,13 +596,5 @@ public class SxpConnectionTest {
                 assertFalse(sxpConnection.isStatePendingOn());
                 sxpConnection.setStatePendingOn();
                 assertTrue(sxpConnection.isStatePendingOn());
-
-                assertFalse(sxpConnection.isPurgeAllMessageReceived());
-                sxpConnection.setPurgeAllMessageReceived();
-                assertTrue(sxpConnection.isPurgeAllMessageReceived());
-
-                assertEquals(ConnectionMode.Speaker, sxpConnection.getMode());
-                sxpConnection.setMode(ConnectionMode.Listener);
-                assertEquals(ConnectionMode.Listener, sxpConnection.getMode());
         }
 }

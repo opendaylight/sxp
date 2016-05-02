@@ -13,7 +13,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
+import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
@@ -94,7 +94,7 @@ import static org.mockito.Matchers.any;
             }
             return null;
         });
-        PowerMockito.when(access.deleteSynchronous(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
+        PowerMockito.when(access.checkAndDelete(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
                 .then(invocation -> {
                     InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
                     if (identifier.getTargetType() == BindingSource.class) {

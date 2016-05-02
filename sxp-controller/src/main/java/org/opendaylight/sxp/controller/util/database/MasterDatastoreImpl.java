@@ -10,7 +10,7 @@ package org.opendaylight.sxp.controller.util.database;
 
 import com.google.common.base.Preconditions;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
+import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.util.database.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
@@ -63,7 +63,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
     }
 
     @Override synchronized public List<MasterDatabaseBinding> getBindings() {
-        List<MasterDatabaseBinding> bindings = getLocalBindings();
+        List<MasterDatabaseBinding> bindings = new ArrayList<>();
         org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase
                 database =
                 datastoreAccess.readSynchronous(getIdentifierBuilder().build(), LogicalDatastoreType.OPERATIONAL);
@@ -75,14 +75,11 @@ public final class MasterDatastoreImpl extends MasterDatabase {
     }
 
     @Override synchronized public List<MasterDatabaseBinding> getLocalBindings() {
-        List<MasterDatabaseBinding> bindings = new ArrayList<>();
-        org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase
-                database =
-                datastoreAccess.readSynchronous(getIdentifierBuilder().build(), LogicalDatastoreType.CONFIGURATION);
-        if (database != null && database.getMasterDatabaseBinding() != null && !database.getMasterDatabaseBinding()
-                .isEmpty()) {
-            bindings.addAll(database.getMasterDatabaseBinding());
-        }
+        List<MasterDatabaseBinding> bindings = getBindings();
+        bindings.removeIf(
+                b -> b.getPeerSequence() == null || b.getPeerSequence().getPeer() == null || b.getPeerSequence()
+                        .getPeer()
+                        .isEmpty());
         return bindings;
     }
 
@@ -92,14 +89,10 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         if (bindings == null || bindings.isEmpty() || datastoreType == null) {
             return added;
         }
-        added.addAll(filterIncomingBindings(bindings, t -> {
-            MasterDatabaseBinding
-                    binding =
-                    datastoreAccess.readSynchronous(getIdentifierBuilder(t).build(), LogicalDatastoreType.OPERATIONAL);
-            return binding != null ? binding : datastoreAccess.readSynchronous(getIdentifierBuilder(t).build(),
-                    LogicalDatastoreType.CONFIGURATION);
-        }, p -> datastoreAccess.deleteSynchronous(getIdentifierBuilder(p).build(),
-                LogicalDatastoreType.OPERATIONAL)).values());
+        added.addAll(filterIncomingBindings(bindings,
+                t -> datastoreAccess.readSynchronous(getIdentifierBuilder(t).build(), LogicalDatastoreType.OPERATIONAL),
+                p -> datastoreAccess.deleteSynchronous(getIdentifierBuilder(p).build(),
+                        LogicalDatastoreType.OPERATIONAL)).values());
         if (!added.isEmpty()) {
             datastoreAccess.mergeSynchronous(getIdentifierBuilder().build(),
                     new MasterDatabaseBuilder().setMasterDatabaseBinding(added).build(), datastoreType);
