@@ -19,7 +19,6 @@
     <module>sxp-api</module>
     <module>sxp-controller</module>
     <module>sxp-core</module>
-    <!-- module>sxp-runtime</module -->
     <!-- Karaf -->
     <module>sxp-config</module>
     <module>features</module>
@@ -90,28 +89,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <!--plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>2.6</version>
-                <executions>
-                    <execution>
-                        <id>copy-resources</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>../target/configuration-initial</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>src/main/resources/configuration/initial</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin-->
 
         </plugins>
         <pluginManagement>
@@ -224,12 +201,6 @@
                 <artifactId>sxp-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>sxp-runtime</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
             <!-- yang model dependencies -->
             <dependency>
                 <groupId>org.opendaylight.mdsal.model</groupId>
