@@ -93,8 +93,8 @@ public class Sxpv4Test {
                 when(connection.getMode()).thenReturn(ConnectionMode.None);
                 when(connection.isBidirectionalBoth()).thenReturn(true);
                 sxpv4.onChannelActivation(channelHandlerContext, connection);
-                verify(channelHandlerContext, times(2)).writeAndFlush(any(ByteBuf.class));
-                verify(connection, times(2)).setStatePendingOn();
+                verify(channelHandlerContext, times(3)).writeAndFlush(any(ByteBuf.class));
+                verify(connection, times(3)).setStatePendingOn();
         }
 
         private List<Attribute> getHoldTime() {
