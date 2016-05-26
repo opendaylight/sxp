@@ -195,7 +195,7 @@ public final class Sxpv4 extends SxpLegacy {
     public void onChannelActivation(final ChannelHandlerContext ctx, SxpConnection connection) {
         ByteBuf message;
         try {
-            if (connection.isModeBoth() && !connection.isBidirectionalBoth()) {
+            if (connection.isModeBoth()) {
                 message = composeOpenHoldTimeMessage(connection, OpenMessageType.Open, ConnectionMode.Listener);
             } else {
                 message = composeOpenHoldTimeMessage(connection, OpenMessageType.Open, connection.getMode());
@@ -209,7 +209,8 @@ public final class Sxpv4 extends SxpLegacy {
         if(connection.isStateDeleteHoldDown()) {
             connection.setReconciliationTimer();
         }
-        connection.setStatePendingOn();
+        if (!connection.isStateOn())
+            connection.setStatePendingOn();
     }
 
     @Override

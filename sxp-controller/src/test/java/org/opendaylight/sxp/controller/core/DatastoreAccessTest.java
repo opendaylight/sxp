@@ -6,9 +6,10 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.sxp.controller.util.database.access;
+package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.CheckedFuture;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -19,9 +20,15 @@ import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.sxp.controller.listeners.TransactionChainListenerImpl;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev130712.network.topology.Topology;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev130712.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.*;
@@ -220,5 +227,89 @@ public class DatastoreAccessTest {
                 when(transaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenThrow(
                         ExecutionException.class);
                 assertNull(access.readSynchronous(identifier, LogicalDatastoreType.OPERATIONAL));
+        }
+
+        @Test public void testCheckAndPut() throws Exception {
+                WriteTransaction writeTransaction = mock(WriteTransaction.class);
+                ReadOnlyTransaction readOnlyTransaction = mock(ReadOnlyTransaction.class);
+                when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
+                when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
+
+                CheckedFuture future = mock(CheckedFuture.class);
+                Optional optional = mock(Optional.class);
+                when(future.get()).thenReturn(optional);
+                when(readOnlyTransaction.read(any(LogicalDatastoreType.class),
+                        any(InstanceIdentifier.class))).thenReturn(future);
+                when(writeTransaction.submit()).thenReturn(mock(CheckedFuture.class));
+
+                InstanceIdentifier identifier = InstanceIdentifier.create(DataObject.class);
+
+                when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
+                assertTrue(access.checkAndPut(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL,
+                        false));
+                assertFalse(
+                        access.checkAndPut(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL, true));
+
+                when(optional.isPresent()).thenReturn(true);
+                when(optional.get()).thenReturn(mock(DataObject.class));
+
+                assertTrue(
+                        access.checkAndPut(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL, true));
+                assertFalse(access.checkAndPut(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL,
+                        false));
+        }
+
+        @Test public void testCheckAndMerge() throws Exception {
+                WriteTransaction writeTransaction = mock(WriteTransaction.class);
+                ReadOnlyTransaction readOnlyTransaction = mock(ReadOnlyTransaction.class);
+                when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
+                when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
+
+                CheckedFuture future = mock(CheckedFuture.class);
+                Optional optional = mock(Optional.class);
+                when(future.get()).thenReturn(optional);
+                when(readOnlyTransaction.read(any(LogicalDatastoreType.class),
+                        any(InstanceIdentifier.class))).thenReturn(future);
+                when(writeTransaction.submit()).thenReturn(mock(CheckedFuture.class));
+
+                InstanceIdentifier identifier = InstanceIdentifier.create(DataObject.class);
+
+                when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
+                assertTrue(access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL,
+                        false));
+                assertFalse(
+                        access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL, true));
+
+                when(optional.isPresent()).thenReturn(true);
+                when(optional.get()).thenReturn(mock(DataObject.class));
+
+                assertTrue(
+                        access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL, true));
+                assertFalse(access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL,
+                        false));
+        }
+
+        @Test public void testCheckAndDelete() throws Exception {
+                WriteTransaction writeTransaction = mock(WriteTransaction.class);
+                ReadOnlyTransaction readOnlyTransaction = mock(ReadOnlyTransaction.class);
+                when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
+                when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
+
+                CheckedFuture future = mock(CheckedFuture.class);
+                Optional optional = mock(Optional.class);
+                when(future.get()).thenReturn(optional);
+                when(readOnlyTransaction.read(any(LogicalDatastoreType.class),
+                        any(InstanceIdentifier.class))).thenReturn(future);
+                when(writeTransaction.submit()).thenReturn(mock(CheckedFuture.class));
+
+                InstanceIdentifier identifier = InstanceIdentifier.create(DataObject.class);
+
+                when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
+                assertFalse(access.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+
+                when(optional.isPresent()).thenReturn(true);
+                when(optional.get()).thenReturn(mock(DataObject.class));
+
+                assertTrue(access.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
         }
 }

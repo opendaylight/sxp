@@ -17,11 +17,6 @@
     <repository>mvn:org.opendaylight.netconf/features-restconf/{{VERSION}}/xml/features</repository>
     <repository>mvn:org.opendaylight.odlparent/features-odlparent/{{VERSION}}/xml/features</repository>
 
-    <feature name='odl-sxp-all' version='${project.version}' description='OpenDaylight :: Sxp :: All'>
-        <feature version='${project.version}'>odl-sxp-api</feature>
-        <feature version='${project.version}'>odl-sxp-core</feature>
-        <feature version='${project.version}'>odl-sxp-controller</feature>
-    </feature>
     <feature name='odl-sxp-api' version='${project.version}' description='OpenDaylight :: Sxp :: Api'>
       <feature version='${mdsal.model.version}'>odl-mdsal-models</feature>
       <feature version='${yangtools.version}'>odl-yangtools-common</feature>
