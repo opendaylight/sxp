@@ -48,7 +48,7 @@ public final class BindingDispatcher {
 
     private final AtomicInteger partitionSize = new AtomicInteger(0);
     private final ThreadsWorker worker;
-    private final int expansionQuantity;
+    private final SxpNode owner;
 
     /**
      * Default constructor that sets SxpNode
@@ -57,8 +57,8 @@ public final class BindingDispatcher {
      */
     public BindingDispatcher(SxpNode owner) {
         Preconditions.checkNotNull(owner);
+        this.owner = Preconditions.checkNotNull(owner);
         worker = Preconditions.checkNotNull(owner.getWorker());
-        expansionQuantity = owner.getExpansionQuantity();
     }
 
     /**
@@ -116,8 +116,8 @@ public final class BindingDispatcher {
         //Prefix Expansion for legacy versions
         if (connection.isVersion4() && !connection.getCapabilitiesRemote().contains(CapabilityType.SubnetBindings)
                 || connection.getVersion().getIntValue() < 3) {
-            expandBindings(deleteBindings, expansionQuantity);
-            expandBindings(addBindings, expansionQuantity);
+            expandBindings(deleteBindings, owner.getExpansionQuantity());
+            expandBindings(addBindings, owner.getExpansionQuantity());
         }
         //Split Delete Bindings
         if (deleteBindings != null && !deleteBindings.isEmpty()) {
