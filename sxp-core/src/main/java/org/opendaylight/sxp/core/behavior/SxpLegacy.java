@@ -78,7 +78,8 @@ public class SxpLegacy implements Strategy {
         if(connection.isStateDeleteHoldDown()) {
             connection.setReconciliationTimer();
         }
-        connection.setStatePendingOn();
+        if (!connection.isStateOn())
+            connection.setStatePendingOn();
     }
 
     @Override
@@ -87,21 +88,15 @@ public class SxpLegacy implements Strategy {
         if (connection.isStateOn(type)) {
             switch (type) {
                 case ListenerContext:
-                    if (!connection.isPurgeAllMessageReceived()) {
-                        LOG.info(connection + " onChannelInactivation/setDeleteHoldDownTimer");
-                        connection.setDeleteHoldDownTimer();
-                    } else {
-                        connection.setStateOff(ctx);
-                    }
-                    break;
+                    LOG.info(connection + " onChannelInactivation/setDeleteHoldDownTimer");
+                    connection.setDeleteHoldDownTimer();
+                    return;
                 case SpeakerContext:
                     ctx.writeAndFlush(MessageFactory.createPurgeAll());
-                    connection.setStateOff(ctx);
                     break;
             }
-        } else if (connection.isStatePendingOn()) {
-            connection.setStateOff(ctx);
         }
+        connection.setStateOff(ctx);
     }
 
     @Override

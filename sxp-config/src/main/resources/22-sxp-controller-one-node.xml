@@ -12,7 +12,6 @@
                         binding:sxp-controller
                     </type>
                     <name>sxp-controller</name>
-
                     <binding-broker>
                         <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
                             binding:binding-broker-osgi-registry
@@ -33,38 +32,6 @@
                         </type>
                         <name>pingpong-binding-data-broker</name>
                     </data-broker>
-
-                    <sxp-controller>
-                        <sxp-node>
-                            <!--name></name-->
-                            <enabled>true</enabled>
-                            <node-id>127.0.0.1</node-id>
-                            <source-ip>0.0.0.0</source-ip>
-                            <tcp-port>64999</tcp-port>
-                            <version>version4</version>
-                            <security>
-                                <password>password</password>
-                            </security>
-                            <mapping-expanded>150</mapping-expanded>
-                            <description>ODL SXP Controller</description>
-
-                            <!-- Binding format: prefix/length -->
-                            <master-database></master-database>
-
-                            <!-- Timers setup: 0 to disable specific timer usability -->
-                            <timers>
-                                <!-- Common -->
-                                <retry-open-time>5</retry-open-time>
-                                <!-- Speaker -->
-                                <hold-time-min-acceptable>120</hold-time-min-acceptable>
-                                <keep-alive-time>30</keep-alive-time>
-                                <!-- Listener -->
-                                <hold-time>90</hold-time>
-                                <hold-time-min>90</hold-time-min>
-                                <hold-time-max>180</hold-time-max>
-                            </timers>
-                        </sxp-node>
-                    </sxp-controller>
                 </module>
             </modules>
         </data>

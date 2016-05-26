@@ -93,19 +93,14 @@ import static org.mockito.Mockito.*;
                 when(connection.getContextType(any(ChannelHandlerContext.class))).thenReturn(
                         SxpConnection.ChannelHandlerContextType.ListenerContext);
 
-                when(connection.isPurgeAllMessageReceived()).thenReturn(false);
                 sxpLegacy.onChannelInactivation(channelHandlerContext, connection);
                 verify(connection).setDeleteHoldDownTimer();
-
-                when(connection.isPurgeAllMessageReceived()).thenReturn(true);
-                sxpLegacy.onChannelInactivation(channelHandlerContext, connection);
-                verify(connection).setStateOff(any(ChannelHandlerContext.class));
 
                 when(connection.getContextType(any(ChannelHandlerContext.class))).thenReturn(
                         SxpConnection.ChannelHandlerContextType.SpeakerContext);
                 sxpLegacy.onChannelInactivation(channelHandlerContext, connection);
                 verify(channelHandlerContext).writeAndFlush(any(ByteBuf.class));
-                verify(connection, times(2)).setStateOff(any(ChannelHandlerContext.class));
+                verify(connection, times(1)).setStateOff(any(ChannelHandlerContext.class));
 
         }
 

@@ -13,7 +13,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.sxp.controller.util.database.access.DatastoreAccess;
+import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
@@ -49,48 +49,32 @@ public class MasterDatastoreImplTest {
     private static long time = System.currentTimeMillis();
     private static DatastoreAccess access;
     private static Map<IpPrefix, MasterDatabaseBinding> databaseBindings_Op = new HashMap<>();
-    private static Map<IpPrefix, MasterDatabaseBinding> databaseBindings_Conf = new HashMap<>();
 
     @BeforeClass public static void initClass() {
         access = PowerMockito.mock(DatastoreAccess.class);
         PowerMockito.when(access.mergeSynchronous(any(InstanceIdentifier.class), any(MasterDatabase.class),
                 any(LogicalDatastoreType.class))).then(invocation -> {
-            Map<IpPrefix, MasterDatabaseBinding>
-                    databaseBindings =
-                    invocation.getArguments()[2]
-                            == LogicalDatastoreType.OPERATIONAL ? databaseBindings_Op : databaseBindings_Conf;
-
             ((MasterDatabase) invocation.getArguments()[1]).getMasterDatabaseBinding().stream().forEach(b -> {
-                databaseBindings.put(b.getIpPrefix(), b);
+                databaseBindings_Op .put(b.getIpPrefix(), b);
             });
             return null;
         });
         PowerMockito.when(access.putSynchronous(any(InstanceIdentifier.class), any(MasterDatabase.class),
                 any(LogicalDatastoreType.class))).then(invocation -> {
-            Map<IpPrefix, MasterDatabaseBinding>
-                    databaseBindings =
-                    invocation.getArguments()[2]
-                            == LogicalDatastoreType.OPERATIONAL ? databaseBindings_Op : databaseBindings_Conf;
-
-            databaseBindings.clear();
+            databaseBindings_Op.clear();
             ((MasterDatabase) invocation.getArguments()[1]).getMasterDatabaseBinding().stream().forEach(b -> {
-                databaseBindings.put(b.getIpPrefix(), b);
+                databaseBindings_Op.put(b.getIpPrefix(), b);
             });
             return null;
         });
         PowerMockito.when(access.readSynchronous(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
                 .then(invocation -> {
-                    Map<IpPrefix, MasterDatabaseBinding>
-                            databaseBindings =
-                            invocation.getArguments()[1]
-                                    == LogicalDatastoreType.OPERATIONAL ? databaseBindings_Op : databaseBindings_Conf;
-
                     if (((InstanceIdentifier) invocation.getArguments()[0]).getTargetType() == MasterDatabase.class) {
                         return new MasterDatabaseBuilder().setMasterDatabaseBinding(
-                                new ArrayList<>(databaseBindings.values())).build();
+                                new ArrayList<>(databaseBindings_Op.values())).build();
                     } else if (((InstanceIdentifier) invocation.getArguments()[0]).getTargetType()
                             == MasterDatabaseBinding.class) {
-                        return databaseBindings.get(
+                        return databaseBindings_Op.get(
                                 ((MasterDatabaseBindingKey) ((InstanceIdentifier) invocation.getArguments()[0]).firstKeyOf(
                                         MasterDatabaseBinding.class)).getIpPrefix());
                     }
@@ -99,7 +83,6 @@ public class MasterDatastoreImplTest {
     }
 
     @Before public void init() {
-        databaseBindings_Conf.clear();
         databaseBindings_Op.clear();
         database = new MasterDatastoreImpl(access, "0.0.0.0");
     }
