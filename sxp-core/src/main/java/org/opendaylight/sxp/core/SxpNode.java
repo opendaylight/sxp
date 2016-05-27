@@ -1125,7 +1125,7 @@ public final class SxpNode {
      */
     public synchronized void shutdown() {
         // Wait until server channel ends its own initialization.
-        while (serverChannelInit.get()) {
+        while (serverChannelInit.getAndSet(true)) {
             try {
                 wait(THREAD_DELAY);
             } catch (InterruptedException e) {
@@ -1139,6 +1139,7 @@ public final class SxpNode {
             serverChannel.close();
             serverChannel = null;
         }
+        serverChannelInit.set(false);
         if (svcBindingDispatcher != null) {
             svcBindingDispatcher.cancel();
         }
@@ -1203,15 +1204,14 @@ public final class SxpNode {
 
     private void updateMD5keys(final SxpConnection connection) {
         if (serverChannel == null || !(connection.getPasswordType().equals(PasswordType.Default)
-                && getPassword() != null && !getPassword().isEmpty())) {
+                && getPassword() != null && !getPassword().isEmpty()) || !isEnabled() || serverChannelInit.getAndSet(
+                true)) {
             return;
         }
+        LOG.info("{} Updating MD5 keys", this);
         updateMD5counter.incrementAndGet();
         final SxpNode sxpNode = this;
-        if (isEnabled() && !serverChannelInit.getAndSet(true)) {
-            LOG.info("{} Updating MD5 keys", this);
-            serverChannel.close().addListener(createMD5updateListener(sxpNode));
-        }
+        serverChannel.close().addListener(createMD5updateListener(sxpNode));
     }
 
     private ChannelFutureListener createMD5updateListener(final SxpNode sxpNode) {
