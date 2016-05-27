@@ -960,7 +960,6 @@ public class SxpNode {
         setTimer(TimerType.RetryOpenTimer, 0);
         shutdownConnections();
         if (serverChannel != null) {
-            serverChannel.disconnect();
             serverChannel.close();
             serverChannel = null;
         }
