@@ -9,13 +9,11 @@
 package org.opendaylight.sxp.core.service;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -23,7 +21,6 @@ import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.RecvByteBufAllocator;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
@@ -39,7 +36,6 @@ import org.opendaylight.tcpmd5.jni.NativeSupportUnavailableException;
 import org.opendaylight.tcpmd5.netty.MD5ChannelOption;
 import org.opendaylight.tcpmd5.netty.MD5NioServerSocketChannelFactory;
 import org.opendaylight.tcpmd5.netty.MD5NioSocketChannelFactory;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PasswordType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,20 +48,9 @@ public class ConnectFacade {
     private static EventLoopGroup eventLoopGroup = null;
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectFacade.class.getName());
 
-    private static final Function<SxpConnection, InetAddress>
-            CONNECTION_ENTRY_TO_INET_ADDR =
-            new Function<SxpConnection, InetAddress>() {
-
-                @Override public InetAddress apply(final SxpConnection input) {
-                    return input.getDestination().getAddress();
-                }
-            };
-    private static final Predicate<SxpConnection> CONNECTION_ENTRY_WITH_PASSWORD = new Predicate<SxpConnection>() {
-
-        @Override public boolean apply(final SxpConnection input) {
-            return input.getPasswordType() == PasswordType.Default;
-        }
-    };
+    private static final Predicate<SxpConnection>
+            CONNECTION_ENTRY_WITH_PASSWORD =
+            input -> input.getPassword() != null && !input.getPassword().isEmpty();
 
     /**
      * Create new Connection to Peer
@@ -80,10 +65,10 @@ public class ConnectFacade {
             throws NativeSupportUnavailableException {
         Bootstrap bootstrap = new Bootstrap();
 
-        if (connection.getPasswordType().equals(PasswordType.Default) && node.getPassword() != null
-                && !node.getPassword().isEmpty()) {
-            bootstrap = customizeClientBootstrap(bootstrap, connection.getDestination().getAddress(),
-                    node.getPassword());
+        if (connection.getPassword() != null && !connection.getPassword().isEmpty()) {
+            bootstrap =
+                    customizeClientBootstrap(bootstrap, connection.getDestination().getAddress(),
+                            connection.getPassword());
         } else {
             bootstrap.channel(NioSocketChannel.class);
         }
@@ -125,18 +110,12 @@ public class ConnectFacade {
         }
 
         ServerBootstrap bootstrap = new ServerBootstrap();
-        if (node.getPassword() != null && !node.getPassword().isEmpty()) {
-            try {
-                final Collection<InetAddress>
-                        connectionsWithPassword =
-                        Collections2.transform(Collections2.filter(node.getAllConnections(), CONNECTION_ENTRY_WITH_PASSWORD),
-                                CONNECTION_ENTRY_TO_INET_ADDR);
-                bootstrap = customizeServerBootstrap(bootstrap, connectionsWithPassword, node.getPassword());
-            } catch (NativeSupportUnavailableException e) {
-                LOG.error(node + "Could not customize bootstrap " + e);
-            }
-        } else {
-            bootstrap.channel(NioServerSocketChannel.class);
+        try {
+            bootstrap =
+                    customizeServerBootstrap(bootstrap,
+                            Collections2.filter(node.getAllConnections(), CONNECTION_ENTRY_WITH_PASSWORD));
+        } catch (NativeSupportUnavailableException e) {
+            LOG.error(node + "Could not customize bootstrap " + e);
         }
         bootstrap.group(bossGroup, eventLoopGroup);
 
@@ -154,12 +133,7 @@ public class ConnectFacade {
             bootstrap.childHandler(channelInitializer);
         }
         ChannelFuture channelFuture = bootstrap.bind(node.getSourceIp(), node.getServerPort());
-        channelFuture.channel().closeFuture().addListener(new ChannelFutureListener() {
-
-            @Override public void operationComplete(ChannelFuture future) throws Exception {
-                bossGroup.shutdownGracefully();
-            }
-        });
+        channelFuture.channel().closeFuture().addListener(future -> bossGroup.shutdownGracefully());
         return channelFuture;
     }
 
@@ -190,19 +164,13 @@ public class ConnectFacade {
      *
      * @param bootstrap Bootstrap that will be customized
      * @param md5Peers  Addresses of connections using password
-     * @param password  Password
      * @return Bootstrap that uses TCP MD5
      * @throws NativeSupportUnavailableException If error occurs while initialising TCP MD5
      */
-    private static ServerBootstrap customizeServerBootstrap(ServerBootstrap bootstrap, Collection<InetAddress> md5Peers,
-            String password) throws NativeSupportUnavailableException {
+    private static ServerBootstrap customizeServerBootstrap(ServerBootstrap bootstrap, Collection<SxpConnection> md5Peers) throws NativeSupportUnavailableException {
         KeyMapping keyMapping = new KeyMapping();
-
-        // Every peer has to be configured with password separately
-        // Right now the configuration allows only for a single password to be shared by all peers with password set to Default
-        for (InetAddress inetAddress : md5Peers) {
-            keyMapping.put(inetAddress, password.getBytes(Charsets.US_ASCII));
-        }
+        md5Peers.forEach(
+                p -> keyMapping.put(p.getDestination().getAddress(), p.getPassword().getBytes(Charsets.US_ASCII)));
 
         KeyAccessFactory keyAccessFactory = NativeKeyAccessFactory.getInstance();
         MD5NioServerSocketChannelFactory md5NioServerSocketChannelFactory = new MD5NioServerSocketChannelFactory(

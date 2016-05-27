@@ -25,13 +25,6 @@ module sxp-node {
     // Common Types Definition
     // ***********************
 
-    typedef password-type {
-        type enumeration {
-            enum default;
-            enum none;
-        }
-    }
-
     typedef timer-type {
         description "Timer types with their default values";
         type enumeration {
@@ -46,20 +39,6 @@ module sxp-node {
     // ****************
     // Common Groupings
     // ****************
-
-    grouping security-fields {
-        leaf password {
-            type string {
-                range "0..80";
-            }
-            description "SXP password can be up to 80 ASCII characters";
-        }
-        leaf md5-digest {
-            config false;
-            type string;
-            description "16 bytes MD5 digest formed using the password as the key";
-        }
-    }
 
     grouping capabilities-fields {
         container capabilities {
@@ -106,11 +85,14 @@ module sxp-node {
             }
             description "Network mappings to be expanded <0-65635>";
         }
+        leaf password {
+            type string {
+                range "0..80";
+            }
+            description "SXP password can be up to 80 ASCII characters";
+        }
         leaf description {
             type string;
-        }
-        container security {
-            uses security-fields;
         }
     }
 
@@ -158,9 +140,10 @@ module sxp-node {
             description "Port of the connected peer";
         }
         leaf password {
-            type password-type;
-            description "Default password will be used";
-            default "default";
+            type string {
+                range "0..80";
+            }
+            description "SXP password can be up to 80 ASCII characters";
         }
         leaf mode {
             mandatory true;

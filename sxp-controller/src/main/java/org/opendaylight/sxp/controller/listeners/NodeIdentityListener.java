@@ -106,7 +106,7 @@ public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdent
                             } else {
                                 Configuration.getRegisteredNode(nodeId).shutdown();
                             }
-                        } else if (checkChange(c, d -> d.getSecurity().getPassword()) || checkChange(c,
+                        } else if (checkChange(c, SxpNodeFields::getPassword) || checkChange(c,
                                 SxpNodeFields::getVersion) || checkChange(c, SxpNodeFields::getTcpPort) || checkChange(
                                 c, SxpNodeFields::getSourceIp)) {
                             Configuration.getRegisteredNode(nodeId).shutdown().start();

@@ -24,7 +24,6 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
@@ -94,7 +93,7 @@ public class NodeIdentityListenerTest {
     private SxpNodeIdentity createIdentity(boolean enabled, String ip, int port, Version version) {
         SxpNodeIdentityBuilder builder = new SxpNodeIdentityBuilder();
         builder.setCapabilities(Configuration.getCapabilities(Version.Version4));
-        builder.setSecurity(new SecurityBuilder().build());
+        builder.setPassword("pass");
         builder.setEnabled(enabled);
         builder.setConnections(new ConnectionsBuilder().build());
         builder.setVersion(version);
