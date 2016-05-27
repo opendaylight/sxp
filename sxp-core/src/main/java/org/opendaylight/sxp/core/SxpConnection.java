@@ -42,7 +42,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpB
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimers;
@@ -410,12 +409,14 @@ public class SxpConnection {
     public void closeChannelHandlerContexts() {
         synchronized (initCtxs) {
             for (ChannelHandlerContext _ctx : initCtxs) {
+                _ctx.disconnect();
                 _ctx.close();
             }
             initCtxs.clear();
         }
         synchronized (ctxs) {
             for (ChannelHandlerContext _ctx : ctxs.values()) {
+                _ctx.disconnect();
                 _ctx.close();
             }
             ctxs.clear();
@@ -624,10 +625,10 @@ public class SxpConnection {
     }
 
     /**
-     * @return Gets Type of password used by connection
+     * @return Gets password used by connection
      */
-    public PasswordType getPasswordType() {
-        return getConnection().getPassword() != null ? getConnection().getPassword() : PasswordType.None;
+    public String getPassword() {
+        return getConnection().getPassword() != null ? getConnection().getPassword() : getOwner().getPassword();
     }
 
     /**

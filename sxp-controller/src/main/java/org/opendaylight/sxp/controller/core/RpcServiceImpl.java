@@ -97,7 +97,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.TimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
@@ -514,8 +513,6 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     identityBuilder.setMappingExpanded(0);
                 if (identityBuilder.getConnections() == null)
                     identityBuilder.setConnections(new ConnectionsBuilder().build());
-                if (identityBuilder.getSecurity() == null)
-                    identityBuilder.setSecurity(new SecurityBuilder().build());
                 if (identityBuilder.getTimers() == null)
                     identityBuilder.setTimers(new TimersBuilder().build());
 
