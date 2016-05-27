@@ -24,7 +24,6 @@ import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.ConnectFacade;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
-import org.opendaylight.sxp.util.Security;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
 import org.opendaylight.sxp.util.database.SxpDatabase;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
@@ -44,13 +43,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
@@ -183,11 +180,6 @@ public class SxpNode {
 
     protected SxpNodeIdentity getNodeIdentity() {
         return nodeBuilder.build();
-    }
-
-    protected void setSecurity(
-            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security security) {
-        nodeBuilder.setSecurity(Preconditions.checkNotNull(security));
     }
 
     protected void addConnection(SxpConnection connection) {
@@ -749,7 +741,7 @@ public class SxpNode {
      * @return Gets Password used to connect to peers or null if disabled
      */
     public String getPassword() {
-        return getNodeIdentity().getSecurity() != null ? getNodeIdentity().getSecurity().getPassword() : null;
+        return getNodeIdentity().getPassword();
     }
 
     /**
@@ -892,31 +884,6 @@ public class SxpNode {
     }
 
     /**
-     * Sets Security password used to connect
-     *
-     * @param security Security to be set
-     * @return Newly set Security
-     */
-    protected org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security setPassword(
-            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security security) {
-        SecurityBuilder securityBuilder = new SecurityBuilder();
-        if (security == null || security.getPassword() == null || security.getPassword().isEmpty()) {
-            securityBuilder.setPassword("");
-            return securityBuilder.build();
-        }
-
-        if (getNodeIdentity().getSecurity() != null && getNodeIdentity().getSecurity().getPassword() != null
-                && !getNodeIdentity().getSecurity().getPassword().isEmpty() && !getNodeIdentity().getSecurity()
-                .getPassword()
-                .equals(security.getPassword())) {
-            shutdownConnections();
-        }
-        securityBuilder.setPassword(security.getPassword());
-        securityBuilder.setMd5Digest(Security.getMD5s(security.getPassword()));
-        return securityBuilder.build();
-    }
-
-    /**
      * Sets SxpNode specific Timer
      *
      * @param timerType Type of Timer that will be set
@@ -1034,7 +1001,6 @@ public class SxpNode {
                         .getSxpPeerGroup()
                         .forEach(g -> addPeerGroup(new SxpPeerGroupBuilder(g).build()));
             }
-            setSecurity(setPassword(getNodeIdentity().getSecurity()));
             ConnectFacade.createServer(node, handlerFactoryServer).addListener(new ChannelFutureListener() {
 
                 @Override public void operationComplete(ChannelFuture channelFuture) throws Exception {
@@ -1058,8 +1024,7 @@ public class SxpNode {
     private final AtomicInteger updateMD5counter = new AtomicInteger();
 
     private void updateMD5keys(final SxpConnection connection) {
-        if (serverChannel == null || !(connection.getPasswordType().equals(PasswordType.Default)
-                && getPassword() != null && !getPassword().isEmpty())) {
+        if (serverChannel == null || connection.getPassword() == null || connection.getPassword().isEmpty()) {
             return;
         }
         updateMD5counter.incrementAndGet();

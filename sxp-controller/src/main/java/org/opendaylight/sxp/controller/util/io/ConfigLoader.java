@@ -31,7 +31,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabaseBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.TimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
@@ -103,10 +102,7 @@ public final class ConfigLoader {
         identityBuilder.setVersion(node.getVersion());
         identityBuilder.setTcpPort(node.getTcpPort());
         identityBuilder.setMappingExpanded(node.getMappingExpanded());
-        identityBuilder.setSecurity(
-                new SecurityBuilder().setPassword(Preconditions.checkNotNull(node.getSecurity()).getPassword())
-                        .build());
-
+        identityBuilder.setPassword(node.getPassword());
         identityBuilder.setConnections(parseConnections(node.getConnections()));
         identityBuilder.setSxpPeerGroups(new SxpPeerGroupsBuilder().build());
         identityBuilder.setDescription(node.getDescription());

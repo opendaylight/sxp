@@ -17,7 +17,6 @@ import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
@@ -65,14 +64,5 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode {
 
     @Override public void addConnection(Connection connection) {
         addConnection(new SxpDatastoreConnection(datastoreAccess, this, connection));
-    }
-
-    @Override protected Security setPassword(final Security security) {
-        Security nodeSecurity = super.setPassword(security);
-        if (datastoreAccess != null) {
-            datastoreAccess.checkAndMerge(getIdentifier(nodeId).child(Security.class), nodeSecurity,
-                    LogicalDatastoreType.OPERATIONAL, true);
-        }
-        return nodeSecurity;
     }
 }
