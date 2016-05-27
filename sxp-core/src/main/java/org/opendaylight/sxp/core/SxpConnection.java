@@ -368,7 +368,7 @@ public class SxpConnection {
      *
      * @param ctx ChannelHandlerContext to be closed
      */
-    public ChannelHandlerContextType closeChannelHandlerContext(ChannelHandlerContext ctx) {
+    public synchronized ChannelHandlerContextType closeChannelHandlerContext(ChannelHandlerContext ctx) {
         ChannelHandlerContextType type = ChannelHandlerContextType.None;
         synchronized (initCtxs) {
             initCtxs.remove(ctx);
@@ -393,7 +393,7 @@ public class SxpConnection {
      *
      * @param ctx ChannelHandlerContext ChannelHandlerContext to be marked
      */
-    public void closeChannelHandlerContextComplements(ChannelHandlerContext ctx) {
+    public synchronized void closeChannelHandlerContextComplements(ChannelHandlerContext ctx) {
         synchronized (initCtxs) {
             initCtxs.remove(ctx);
             for (ChannelHandlerContext _ctx : initCtxs) {
@@ -406,17 +406,15 @@ public class SxpConnection {
     /**
      * Close and remove all ChannelHandlerContext associated with this connection
      */
-    public void closeChannelHandlerContexts() {
+    public synchronized void closeChannelHandlerContexts() {
         synchronized (initCtxs) {
             for (ChannelHandlerContext _ctx : initCtxs) {
-                _ctx.disconnect();
                 _ctx.close();
             }
             initCtxs.clear();
         }
         synchronized (ctxs) {
             for (ChannelHandlerContext _ctx : ctxs.values()) {
-                _ctx.disconnect();
                 _ctx.close();
             }
             ctxs.clear();
@@ -780,13 +778,16 @@ public class SxpConnection {
      * @param ctx                       ChannelHandlerContext to be marked
      * @param channelHandlerContextType Type of mark
      */
-    public void markChannelHandlerContext(ChannelHandlerContext ctx,
+    public synchronized void markChannelHandlerContext(ChannelHandlerContext ctx,
             ChannelHandlerContextType channelHandlerContextType) {
         synchronized (initCtxs) {
             initCtxs.remove(ctx);
         }
         synchronized (ctxs) {
-            ctxs.put(channelHandlerContextType, ctx);
+            ChannelHandlerContext context = ctxs.put(channelHandlerContextType, ctx);
+            if (context != null) {
+                context.close();
+            }
         }
     }
 
@@ -1238,7 +1239,7 @@ public class SxpConnection {
      * Shutdown Connection and send PurgeAll if Speaker mode,
      * or purge learned Bindings if Listener mode
      */
-    public void shutdown() {
+    public synchronized void shutdown() {
         if (isModeListener()) {
             LOG.info("{} PURGE bindings ", this);
             purgeBindings();
