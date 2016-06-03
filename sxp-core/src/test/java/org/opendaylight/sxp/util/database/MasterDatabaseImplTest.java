@@ -191,7 +191,10 @@ import static org.junit.Assert.assertTrue;
                 getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("0:0:0:0:0:0:0:A/32", 15, "0.10.10.10"),
                 getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
 
-        assertEquals("MasterDatabaseImpl\n" + "\t2000 2.2.2.2/32\n" + "\t100 1.1.1.1/32\n" + "\t15 0:0:0:0:0:0:0:A/32\n"
-                + "\t2000 2.2.2.20/32\n", database.toString());
+        String value = database.toString();
+        assertTrue(value.contains("2000 2.2.2.2/32"));
+        assertTrue(value.contains("100 1.1.1.1/32"));
+        assertTrue(value.contains("15 0:0:0:0:0:0:0:A/32"));
+        assertTrue(value.contains("2000 2.2.2.20/32"));
     }
 }
