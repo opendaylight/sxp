@@ -44,7 +44,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
@@ -983,7 +982,7 @@ public class SxpNode {
      */
     public synchronized SxpNode shutdown() {
         // Wait until server channel ends its own initialization.
-        while (serverChannelInit.get()) {
+        while (serverChannelInit.getAndSet(true)) {
             try {
                 wait(THREAD_DELAY);
             } catch (InterruptedException e) {
@@ -992,12 +991,12 @@ public class SxpNode {
         }
         setTimer(TimerType.RetryOpenTimer, 0);
         shutdownConnections();
-
         if (serverChannel != null) {
             serverChannel.close();
             serverChannel = null;
         }
         LOG.info(this + " Server stopped");
+        serverChannelInit.set(false);
         return this;
     }
 
@@ -1035,7 +1034,6 @@ public class SxpNode {
                         .getSxpPeerGroup()
                         .forEach(g -> addPeerGroup(new SxpPeerGroupBuilder(g).build()));
             }
-            setSecurity(setPassword(getNodeIdentity().getSecurity()));
             ConnectFacade.createServer(node, handlerFactoryServer).addListener(new ChannelFutureListener() {
 
                 @Override public void operationComplete(ChannelFuture channelFuture) throws Exception {
@@ -1059,16 +1057,14 @@ public class SxpNode {
     private final AtomicInteger updateMD5counter = new AtomicInteger();
 
     private void updateMD5keys(final SxpConnection connection) {
-        if (serverChannel == null || !(connection.getPasswordType().equals(PasswordType.Default)
-                && getPassword() != null && !getPassword().isEmpty())) {
+        if (serverChannel == null || connection.getPassword() == null || connection.getPassword().isEmpty()
+                || !isEnabled() || serverChannelInit.getAndSet(true)) {
             return;
         }
+        LOG.info("{} Updating MD5 keys", this);
         updateMD5counter.incrementAndGet();
         final SxpNode sxpNode = this;
-        if (isEnabled() && !serverChannelInit.getAndSet(true)) {
-            LOG.info("{} Updating MD5 keys", this);
-            serverChannel.close().addListener(createMD5updateListener(sxpNode));
-        }
+        serverChannel.close().addListener(createMD5updateListener(sxpNode));
     }
 
     private ChannelFutureListener createMD5updateListener(final SxpNode sxpNode) {

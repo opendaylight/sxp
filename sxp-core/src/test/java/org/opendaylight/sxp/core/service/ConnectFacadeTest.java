@@ -18,7 +18,6 @@ import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.tcpmd5.netty.MD5ChannelOption;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PasswordType;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -26,10 +25,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -47,7 +43,7 @@ import static org.mockito.Mockito.when;
                 HandlerFactory handlerFactory = new HandlerFactory(MessageDecoder.createClientProfile(sxpNode));
 
                 SxpConnection connection = mock(SxpConnection.class);
-                when(connection.getPasswordType()).thenReturn(PasswordType.Default);
+                when(connection.getPassword()).thenReturn("passwd");
                 when(connection.getDestination()).thenReturn(new InetSocketAddress("0.0.0.0", 64999));
 
                 ChannelConfig
@@ -57,7 +53,7 @@ import static org.mockito.Mockito.when;
                 assertTrue(config.getOptions().containsKey(ChannelOption.TCP_NODELAY));
                 assertTrue(config.getOptions().containsKey(MD5ChannelOption.TCP_MD5SIG));
 
-                when(connection.getPasswordType()).thenReturn(PasswordType.None);
+                when(connection.getPassword()).thenReturn(null);
                 config = ConnectFacade.createClient(sxpNode, connection, handlerFactory).channel().config();
                 assertNotNull(config.getAllocator());
                 assertTrue(config.getOptions().containsKey(ChannelOption.TCP_NODELAY));
@@ -74,7 +70,7 @@ import static org.mockito.Mockito.when;
                 PowerMockito.when(sxpNode.getPassword()).thenReturn("");
                 config = ConnectFacade.createServer(sxpNode, handlerFactory).channel().config();
                 assertNotNull(config.getAllocator());
-                assertFalse(config.getOptions().containsKey(MD5ChannelOption.TCP_MD5SIG));
+                assertTrue(config.getOptions().containsKey(MD5ChannelOption.TCP_MD5SIG));
         }
 
 }

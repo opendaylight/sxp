@@ -23,7 +23,6 @@ import org.opendaylight.sxp.core.service.ConnectFacade;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
-import org.opendaylight.sxp.util.exception.unknown.UnknownSxpConnectionException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
@@ -44,7 +43,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeerBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
@@ -133,7 +131,7 @@ public class SxpNodeTest {
                 when(connection.getMode()).thenReturn(mode);
                 when(connection.getPeerAddress()).thenReturn(new IpAddress(("127.0.0." + (++ip4Adrres)).toCharArray()));
                 when(connection.getState()).thenReturn(state);
-                when(connection.getPassword()).thenReturn(PasswordType.Default);
+                when(connection.getPassword()).thenReturn("Default");
                 when(connection.getVersion()).thenReturn(Version.Version4);
                 return connection;
         }
@@ -280,26 +278,6 @@ public class SxpNodeTest {
                 PowerMockito.mockStatic(ConnectFacade.class);
                 argument.getValue().run();
                 PowerMockito.verifyStatic();
-        }
-
-        @Test public void testSetPassword() throws Exception {
-                when(worker.executeTaskInSequence(any(Callable.class), any(ThreadsWorker.WorkerType.class),
-                        any(SxpConnection.class))).thenReturn(mock(ListenableFuture.class))
-                        .thenReturn(mock(ListenableFuture.class));
-                Security security = mock(Security.class);
-                when(security.getPassword()).thenReturn("");
-
-                node.addConnection(mockConnection(ConnectionMode.Listener, ConnectionState.On));
-                node.addConnection(mockConnection(ConnectionMode.Speaker, ConnectionState.On));
-
-                assertEquals("", node.setPassword(security).getPassword());
-                when(security.getPassword()).thenReturn("cisco");
-                assertEquals(2, node.getAllOnConnections().size());
-                assertEquals("cisco", node.setPassword(security).getPassword());
-
-                when(security.getPassword()).thenReturn("cisco123");
-                assertEquals("07982c55db2b9985d3391f02e639db9c", node.setPassword(security).getMd5Digest());
-                assertEquals(2, node.getAllOffConnections().size());
         }
 
         @Test public void testSetTimer() throws Exception {
