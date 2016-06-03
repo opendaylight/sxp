@@ -62,30 +62,38 @@ public final class SettableListenableFuture<T> implements ListenableFuture<T> {
     }
 
     @Override synchronized public boolean isDone() {
-        return future == null ? canceled || done : future.isDone();
+        return future == null ? done || isCancelled() : future.isDone();
     }
 
     @Override synchronized public T get() throws InterruptedException, ExecutionException {
-        if (result == null && !isDone()) {
+        if (future == null) {
+            if (isDone()) {
+                return result;
+            }
             done = true;
-            result = future == null ? executor.submit(task).get() : future.get();
+            result = executor.submit(task).get();
             for (ListenerTuple listenerTuple : listeners) {
                 listenerTuple.execute();
             }
+            return result;
         }
-        return result;
+        return future.get();
     }
 
     @Override synchronized public T get(long l, TimeUnit timeUnit)
             throws InterruptedException, ExecutionException, TimeoutException {
-        if (!isDone()) {
+        if (future == null) {
+            if (isDone()) {
+                return result;
+            }
             done = true;
-            result = future == null ? executor.submit(task).get(l, timeUnit) : future.get(l, timeUnit);
+            result = executor.submit(task).get(l, timeUnit);
             for (ListenerTuple listenerTuple : listeners) {
                 listenerTuple.execute();
             }
+            return result;
         }
-        return result;
+        return future.get(l, timeUnit);
     }
 
     /**
