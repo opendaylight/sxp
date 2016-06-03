@@ -44,6 +44,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.Filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.FilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PasswordType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
@@ -100,19 +102,16 @@ public class SxpConnection {
         return new SxpConnection(owner, connection);
     }
 
-    private final List<CapabilityType> remoteCapabilityTypes = new ArrayList<>();
     private ConnectionBuilder connectionBuilder;
-
     private Context context;
 
     private final List<ChannelHandlerContext> initCtxs = new ArrayList<>(2);
     private final HashMap<ChannelHandlerContextType, ChannelHandlerContext> ctxs = new HashMap<>(2);
-
-    protected InetSocketAddress destination;
+    private final List<CapabilityType> remoteCapabilityTypes = new ArrayList<>();
 
     protected InetSocketAddress localAddress, remoteAddress;
 
-    protected SxpNode owner;
+    private final SxpNode owner;
 
     protected HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(5);
     private final Map<FilterType, Map<Class, SxpBindingFilter>> bindingFilterMap =
@@ -237,28 +236,74 @@ public class SxpConnection {
      * @throws UnknownVersionException If version in provided values isn't supported
      */
     private SxpConnection(SxpNode owner, Connection connection) throws UnknownVersionException {
-        this.owner = owner;
-        this.connectionBuilder = new ConnectionBuilder(connection);
-
-        if (connectionBuilder.getVersion() == null) {
-            connectionBuilder.setVersion(Version.Version4);
-        }
-        if (connectionBuilder.getState() == null || connectionBuilder.getState().equals(ConnectionState.Off)) {
-            setStateOff();
-        }
-        int port = Configuration.getConstants().getPort();
-        if (connection.getTcpPort() != null && connection.getTcpPort().getValue() > 0) {
-            port = connection.getTcpPort().getValue();
-        }
-        this.destination = new InetSocketAddress(Search.getAddress(connection.getPeerAddress()), port);
+        this.owner = Preconditions.checkNotNull(owner);
+        this.connectionBuilder = new ConnectionBuilder(Preconditions.checkNotNull(connection));
+        this.remoteAddress =
+                new InetSocketAddress(Search.getAddress(connection.getPeerAddress()),
+                        connection.getTcpPort() != null ? connection.getTcpPort()
+                                .getValue() : Configuration.getConstants().getPort());
         for (FilterType filterType : FilterType.values()) {
             bindingFilterMap.put(filterType, new HashMap<>());
         }
-        if (connection.getVersion() != null) {
-            setBehaviorContexts(connection.getVersion());
-        } else {
-            setBehaviorContexts(owner.getVersion());
-        }
+        this.context =
+                new Context(owner, connection.getVersion() != null ? connection.getVersion() : owner.getVersion());
+        setCapabilities(Configuration.getCapabilities(getVersion()));
+    }
+
+    protected synchronized void setTimers(ConnectionTimers build) {
+        connectionBuilder.setConnectionTimers(Preconditions.checkNotNull(build));
+    }
+
+    protected synchronized void setState(ConnectionState state) {
+        connectionBuilder.setState(Preconditions.checkNotNull(state));
+    }
+
+    protected synchronized void setCapabilities(Capabilities capabilities) {
+        connectionBuilder.setCapabilities(Preconditions.checkNotNull(capabilities));
+    }
+
+    protected synchronized void setVersion(Version version) {
+        connectionBuilder.setVersion(Preconditions.checkNotNull(version));
+    }
+
+    protected void resetPurgeAllMessageReceived() {
+        connectionBuilder.setPurgeAllMessageReceived(false);
+    }
+
+    public synchronized Connection getConnection() {
+        return connectionBuilder.build();
+    }
+
+    /**
+     * Update KeepAlive TimeStamp
+     */
+    public synchronized void setUpdateOrKeepaliveMessageTimestamp() {
+        connectionBuilder.setTimestampUpdateOrKeepAliveMessage(TimeConv.toDt(System.currentTimeMillis()));
+    }
+
+    /**
+     * Sets Mode of Connection
+     *
+     * @param mode ConnectionMode to be set
+     */
+    public void setMode(ConnectionMode mode) {
+        connectionBuilder.setMode(mode);
+    }
+
+    /**
+     * Sets Id of Peer
+     *
+     * @param nodeId NodeId to be set
+     */
+    public void setNodeIdRemote(NodeId nodeId) {
+        connectionBuilder.setNodeId(nodeId);
+    }
+
+    /**
+     * Set Flag PurgeAllReceived
+     */
+    public void setPurgeAllMessageReceived() {
+        connectionBuilder.setPurgeAllMessageReceived(true);
     }
 
     /**
@@ -418,10 +463,10 @@ public class SxpConnection {
      * @return Gets all supported getCapabilities
      */
     public List<CapabilityType> getCapabilities() {
-        if (connectionBuilder.getCapabilities() == null || connectionBuilder.getCapabilities().getCapability() == null) {
+        if (getConnection().getCapabilities() == null || getConnection().getCapabilities().getCapability() == null) {
             return new ArrayList<>();
         }
-        return connectionBuilder.getCapabilities().getCapability();
+        return getConnection().getCapabilities().getCapability();
     }
 
     /**
@@ -470,13 +515,6 @@ public class SxpConnection {
     }
 
     /**
-     * @return Gets Connection containing all setting o SxpConnection
-     */
-    public Connection getConnection() {
-        return connectionBuilder.build();
-    }
-
-    /**
      * @return Gets Context selecting logic
      */
     public Context getContext() {
@@ -487,7 +525,7 @@ public class SxpConnection {
      * @return Gets destination address
      */
     public InetSocketAddress getDestination() {
-        return destination;
+        return remoteAddress;
     }
 
     /**
@@ -501,87 +539,83 @@ public class SxpConnection {
      * @return Gets HoldTime value or zero if disabled
      */
     public int getHoldTime() {
-        if (connectionBuilder.getConnectionTimers() == null
-                || connectionBuilder.getConnectionTimers().getHoldTime() == null
-                || connectionBuilder.getConnectionTimers().getHoldTime() == null) {
-            return 0;
+        if (getConnection().getConnectionTimers() == null
+                || getConnection().getConnectionTimers().getHoldTime() == null) {
+            return getOwner().getHoldTime();
         }
-        return connectionBuilder.getConnectionTimers().getHoldTime();
+        return getConnection().getConnectionTimers().getHoldTime();
     }
 
     /**
      * @return Gets HoldTimeMax value or zero if disabled
      */
     public int getHoldTimeMax() {
-        if (connectionBuilder.getConnectionTimers() == null
-                || connectionBuilder.getConnectionTimers().getHoldTimeMax() == null
-                || connectionBuilder.getConnectionTimers().getHoldTimeMax() == null) {
-            return 0;
+        if (getConnection().getConnectionTimers() == null
+                || getConnection().getConnectionTimers().getHoldTimeMax() == null) {
+            return getOwner().getHoldTimeMax();
         }
-        return connectionBuilder.getConnectionTimers().getHoldTimeMax();
+        return getConnection().getConnectionTimers().getHoldTimeMax();
     }
 
     /**
      * @return Gets HoldTimeMin value or zero if disabled
      */
     public int getHoldTimeMin() {
-        if (connectionBuilder.getConnectionTimers() == null
-                || connectionBuilder.getConnectionTimers().getHoldTimeMin() == null
-                || connectionBuilder.getConnectionTimers().getHoldTimeMin() == null) {
-            return 0;
+        if (getConnection().getConnectionTimers() == null
+                || getConnection().getConnectionTimers().getHoldTimeMin() == null) {
+            return getOwner().getHoldTimeMin();
         }
-        return connectionBuilder.getConnectionTimers().getHoldTimeMin();
+        return getConnection().getConnectionTimers().getHoldTimeMin();
     }
 
     /**
      * @return Gets HoldTimeMinAcceptable value or zero if disabled
      */
     public int getHoldTimeMinAcceptable() {
-        if (connectionBuilder.getConnectionTimers() == null
-                || connectionBuilder.getConnectionTimers().getHoldTimeMinAcceptable() == null
-                || connectionBuilder.getConnectionTimers().getHoldTimeMinAcceptable() == null) {
-            return 0;
+        if (getConnection().getConnectionTimers() == null
+                || getConnection().getConnectionTimers().getHoldTimeMinAcceptable() == null) {
+            return getOwner().getHoldTimeMinAcceptable();
         }
-        return connectionBuilder.getConnectionTimers().getHoldTimeMinAcceptable();
+        return getConnection().getConnectionTimers().getHoldTimeMinAcceptable();
     }
 
     /**
      * @return Gets KeepAlive value or zero if disabled
      */
     public int getKeepaliveTime() {
-        if (connectionBuilder.getConnectionTimers() == null
-                || connectionBuilder.getConnectionTimers().getKeepAliveTime() == null
-                || connectionBuilder.getConnectionTimers().getKeepAliveTime() == null) {
-            return 0;
+        if (getConnection().getConnectionTimers() == null
+                || getConnection().getConnectionTimers().getKeepAliveTime() == null) {
+            return getOwner().getKeepAliveTime();
         }
-        return connectionBuilder.getConnectionTimers().getKeepAliveTime();
+        return getConnection().getConnectionTimers().getKeepAliveTime();
     }
 
     /**
      * @return Gets Mode of connection
      */
     public ConnectionMode getMode() {
-        if (connectionBuilder.getMode() == null) {
-            return ConnectionMode.None;
-        }
-        return connectionBuilder.getMode();
+        return getConnection().getMode() != null ? getConnection().getMode() : ConnectionMode.None;
     }
 
     /**
      * @return Gets Mode of Peer
      */
     public ConnectionMode getModeRemote() {
-        if (connectionBuilder.getModeRemote() == null) {
-            return ConnectionMode.None;
+        ConnectionMode mode = getMode();
+        switch (mode) {
+            case Speaker:
+                return ConnectionMode.Listener;
+            case Listener:
+                return ConnectionMode.Speaker;
         }
-        return connectionBuilder.getModeRemote();
+        return mode;
     }
 
     /**
      * @return Gets NodeId of Peer Node
      */
     public NodeId getNodeIdRemote() {
-        return connectionBuilder.getNodeId();
+        return getConnection().getNodeId();
     }
 
     /**
@@ -602,28 +636,25 @@ public class SxpConnection {
      * @return Gets Type of password used by connection
      */
     public PasswordType getPasswordType() {
-        if (connectionBuilder.getPassword() == null) {
-            return PasswordType.None;
-        }
-        return connectionBuilder.getPassword();
+        return getConnection().getPassword() != null ? getConnection().getPassword() : PasswordType.None;
     }
 
     /**
      * @return Gets Reconciliation timer period or zero if disabled
      */
     public int getReconciliationTime() {
-        if (connectionBuilder.getConnectionTimers() == null
-                || connectionBuilder.getConnectionTimers().getReconciliationTime() == null) {
+        if (getConnection().getConnectionTimers() == null
+                || getConnection().getConnectionTimers().getReconciliationTime() == null) {
             return 0;
         }
-        return connectionBuilder.getConnectionTimers().getReconciliationTime();
+        return getConnection().getConnectionTimers().getReconciliationTime();
     }
 
     /**
      * @return Gets current state of connection
      */
     public ConnectionState getState() {
-        return connectionBuilder.getState();
+        return getConnection().getState();
     }
 
     /**
@@ -640,21 +671,14 @@ public class SxpConnection {
      * @return Gets KeepAlive timestamp
      */
     public long getTimestampUpdateOrKeepAliveMessage() {
-        return TimeConv.toLong(connectionBuilder.getTimestampUpdateOrKeepAliveMessage());
+        return TimeConv.toLong(getConnection().getTimestampUpdateOrKeepAliveMessage());
     }
 
     /**
      * @return Gets connection version
      */
     public Version getVersion() {
-        return connectionBuilder.getVersion();
-    }
-
-    /**
-     * @return Gets Peer version
-     */
-    public Version getVersionRemote() {
-        return connectionBuilder.getVersionRemote();
+        return getConnection().getVersion();
     }
 
     /**
@@ -712,8 +736,8 @@ public class SxpConnection {
      * @return If PurgeAll message was received
      */
     public boolean isPurgeAllMessageReceived() {
-        return connectionBuilder.isPurgeAllMessageReceived() == null ? false : connectionBuilder
-                .isPurgeAllMessageReceived();
+        return getConnection().isPurgeAllMessageReceived()
+                == null ? false : getConnection().isPurgeAllMessageReceived();
     }
 
     /**
@@ -814,8 +838,8 @@ public class SxpConnection {
      * @throws UnknownVersionException If Version isn't supported
      */
     public void setBehaviorContexts(Version version) throws UnknownVersionException {
-        connectionBuilder.setCapabilities(Configuration.getCapabilities(version));
-        connectionBuilder.setVersion(version);
+        setCapabilities(Configuration.getCapabilities(version));
+        setVersion(version);
         context = new Context(owner, version);
     }
 
@@ -857,14 +881,6 @@ public class SxpConnection {
             throw new ErrorMessageException(ErrorCode.OpenMessageError,
                     new IncompatiblePeerModeException(getMode(), message.getSxpMode()));
         }
-        setModeRemote(message.getSxpMode());
-
-        // Set version.
-        Version newVersion = getVersion().getIntValue() <= message.getVersion().getIntValue() ? getVersion() : message
-                .getVersion();
-        setVersionRemote(message.getVersion());
-        setBehaviorContexts(newVersion);
-
         // Set counter-part NodeID [Purge-All purpose: remove bindings learned
         // from a specific node].
         try {
@@ -888,10 +904,6 @@ public class SxpConnection {
             return;
         }
 
-        if (isModeBoth()) {
-            setModeRemote(ConnectionMode.Both);
-        }
-
         // Peer parameters.
         int holdTimeMinAcc = attHoldTime.getHoldTimeAttributes().getHoldTimeMinValue();
         // Keep-alive mechanism is not used.
@@ -907,14 +919,8 @@ public class SxpConnection {
         // Global time settings: Default values have been pulled during node
         // creation TimeSettings.pullDefaults().
         if (holdTimeMin == 0 || holdTimeMax == 0) {
-            holdTimeMin = getOwner().getHoldTimeMin();
-            holdTimeMax = getOwner().getHoldTimeMax();
-
-            // Globally disabled
-            if (holdTimeMin == 0 || holdTimeMax == 0) {
-                disableKeepAliveMechanism("Minimum and maximum hold time values are globally disabled");
-                return;
-            }
+            disableKeepAliveMechanism("Minimum and maximum hold time values are globally disabled");
+            return;
         }
         // The negotiation succeeds?
         if (message.getType().equals(MessageType.Open)) {
@@ -951,14 +957,6 @@ public class SxpConnection {
             throw new ErrorMessageException(ErrorCode.OpenMessageError,
                     new IncompatiblePeerModeException(getMode(), message.getSxpMode()));
         }
-        setModeRemote(message.getSxpMode());
-
-        // Set version.
-        Version newVersion = getVersion().getIntValue() <= message.getVersion().getIntValue() ? getVersion() : message
-                .getVersion();
-        setVersionRemote(message.getVersion());
-        setBehaviorContexts(newVersion);
-
         // Set counter-part NodeID [Purge-All purpose: remove bindings learned
         // from a specific node].
         try {
@@ -980,10 +978,6 @@ public class SxpConnection {
             return;
         }
 
-        if (isModeBoth()) {
-            setModeRemote(ConnectionMode.Both);
-        }
-
         // Peer parameters.
         int holdTimeMin = attHoldTime.getHoldTimeAttributes().getHoldTimeMinValue();
         int holdTimeMax = attHoldTime.getHoldTimeAttributes().getHoldTimeMaxValue();
@@ -996,10 +990,6 @@ public class SxpConnection {
         // Local parameters.
         // Per-connection time settings: User (not)defined.
         int holdTimeMinAcc = getHoldTimeMinAcceptable();
-        // Global time settings.
-        if (holdTimeMinAcc == 0) {
-            holdTimeMinAcc = getOwner().getHoldTimeMinAcceptable();
-        }
         // Globally disabled
         if (holdTimeMinAcc == 0) {
             disableKeepAliveMechanism("Minimum acceptable hold time value is globally disabled");
@@ -1025,7 +1015,7 @@ public class SxpConnection {
      * Start DeleteHoldDown timer and if Reconciliation timer is started stop it
      */
     public void setDeleteHoldDownTimer() {
-        setTimer(TimerType.DeleteHoldDownTimer, connectionBuilder.getConnectionTimers().getDeleteHoldDownTime());
+        setTimer(TimerType.DeleteHoldDownTimer, getConnection().getConnectionTimers().getDeleteHoldDownTime());
         ListenableScheduledFuture<?> ctReconciliation = getTimer(TimerType.ReconciliationTimer);
         if (ctReconciliation != null && !ctReconciliation.isDone()) {
             LOG.info("{} Stopping Reconciliation timer cause | Connection DOWN.", this);
@@ -1041,9 +1031,9 @@ public class SxpConnection {
      */
     public void setHoldTime(int value) {
         ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder(
-                connectionBuilder.getConnectionTimers());
+                getConnection().getConnectionTimers());
         connectionTimersBuilder.setHoldTime(value);
-        connectionBuilder.setConnectionTimers(connectionTimersBuilder.build());
+        setTimers(connectionTimersBuilder.build());
     }
 
     /**
@@ -1053,9 +1043,9 @@ public class SxpConnection {
      */
     public void setHoldTimeMin(int value) {
         ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder(
-                connectionBuilder.getConnectionTimers());
+                getConnection().getConnectionTimers());
         connectionTimersBuilder.setHoldTimeMin(value);
-        connectionBuilder.setConnectionTimers(connectionTimersBuilder.build());
+        setTimers(connectionTimersBuilder.build());
     }
 
     /**
@@ -1065,28 +1055,23 @@ public class SxpConnection {
      */
     public void setHoldTimeMinAcceptable(int value) {
         ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder(
-                connectionBuilder.getConnectionTimers());
+                getConnection().getConnectionTimers());
         connectionTimersBuilder.setHoldTimeMinAcceptable(value);
-        connectionBuilder.setConnectionTimers(connectionTimersBuilder.build());
+        setTimers(connectionTimersBuilder.build());
     }
 
     /**
      * Sets addresses used to communicate
      *
      * @param localAddress  SocketAddress of local connection
-     * @param remoteAddress SocketAddress of Peer
      * @throws SocketAddressNotRecognizedException If parameters aren't instance of InetSocketAddress
      */
-    public void setInetSocketAddresses(SocketAddress localAddress, SocketAddress remoteAddress)
+    public void setInetSocketAddresses(SocketAddress localAddress)
             throws SocketAddressNotRecognizedException {
         if (!(localAddress instanceof InetSocketAddress)) {
             throw new SocketAddressNotRecognizedException(localAddress);
-        } else if (!(remoteAddress instanceof InetSocketAddress)) {
-            throw new SocketAddressNotRecognizedException(remoteAddress);
         }
-
         this.localAddress = (InetSocketAddress) localAddress;
-        this.remoteAddress = (InetSocketAddress) remoteAddress;
     }
 
     /**
@@ -1096,52 +1081,9 @@ public class SxpConnection {
      */
     public void setKeepaliveTime(int value) {
         ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder(
-                connectionBuilder.getConnectionTimers());
+                getConnection().getConnectionTimers());
         connectionTimersBuilder.setKeepAliveTime(value);
-        connectionBuilder.setConnectionTimers(connectionTimersBuilder.build());
-    }
-
-    /**
-     * Sets Mode of Connection
-     *
-     * @param mode ConnectionMode to be set
-     */
-    public void setMode(ConnectionMode mode) {
-        connectionBuilder.setMode(mode);
-    }
-
-    /**
-     * Sets Mode of Peer
-     *
-     * @param mode ConnectionMode to be set
-     */
-    public void setModeRemote(ConnectionMode mode) {
-        connectionBuilder.setModeRemote(mode);
-    }
-
-    /**
-     * Sets Id of Peer
-     *
-     * @param nodeId NodeId to be set
-     */
-    public void setNodeIdRemote(NodeId nodeId) {
-        connectionBuilder.setNodeId(nodeId);
-    }
-
-    /**
-     * Sets Node that Connection belong to
-     *
-     * @param owner SxpNode to be set as owner
-     */
-    public void setOwner(SxpNode owner) {
-        this.owner = owner;
-    }
-
-    /**
-     * Set Flag PurgeAllReceived
-     */
-    public void setPurgeAllMessageReceived() {
-        connectionBuilder.setPurgeAllMessageReceived(true);
+        setTimers(connectionTimersBuilder.build());
     }
 
     public void setReconciliationTimer() {
@@ -1160,8 +1102,8 @@ public class SxpConnection {
      * Set State to DeleteHoldDown and triggers cleanUp of Database
      */
     public void setStateDeleteHoldDown() {
-        connectionBuilder.setPurgeAllMessageReceived(false);
-        connectionBuilder.setState(ConnectionState.DeleteHoldDown);
+        resetPurgeAllMessageReceived();
+        setState(ConnectionState.DeleteHoldDown);
         owner.getBindingSxpDatabase().setReconciliation(getNodeIdRemote());
     }
 
@@ -1171,11 +1113,11 @@ public class SxpConnection {
      */
     public void setStateOff() {
         stopTimers();
-        connectionBuilder.setState(ConnectionState.Off);
+        setState(ConnectionState.Off);
+        resetPurgeAllMessageReceived();
         getOwner().getWorker().cancelTasksInSequence(true, ThreadsWorker.WorkerType.INBOUND, this);
         getOwner().getWorker().cancelTasksInSequence(true, ThreadsWorker.WorkerType.OUTBOUND, this);
         closeChannelHandlerContexts();
-        connectionBuilder.setPurgeAllMessageReceived(false);
     }
 
     /**
@@ -1212,7 +1154,7 @@ public class SxpConnection {
         } else {
             switch (type) {
                 case ListenerContext:
-                    connectionBuilder.setPurgeAllMessageReceived(false);
+                    resetPurgeAllMessageReceived();
                     setTimer(TimerType.DeleteHoldDownTimer, 0);
                     setTimer(TimerType.ReconciliationTimer, 0);
                     setTimer(TimerType.HoldTimer, 0);
@@ -1241,7 +1183,7 @@ public class SxpConnection {
      * notifies export of Bindings
      */
     public void setStateOn() {
-        connectionBuilder.setState(ConnectionState.On);
+        setState(ConnectionState.On);
         if (isModeSpeaker() || isModeBoth()) {
             getOwner().getWorker().executeTaskInSequence(() -> {
                 List<SxpConnection> sxpConnections = new ArrayList<>();
@@ -1257,7 +1199,7 @@ public class SxpConnection {
      * Set State to PendingOn
      */
     public void setStatePendingOn() {
-        connectionBuilder.setState(ConnectionState.PendingOn);
+        setState(ConnectionState.PendingOn);
     }
 
     /**
@@ -1310,22 +1252,6 @@ public class SxpConnection {
     }
 
     /**
-     * Update KeepAlive TimeStamp
-     */
-    public void setUpdateOrKeepaliveMessageTimestamp() {
-        connectionBuilder.setTimestampUpdateOrKeepAliveMessage(TimeConv.toDt(System.currentTimeMillis()));
-    }
-
-    /**
-     * Sets Connections version of Peer
-     *
-     * @param versionRemote Version to be set
-     */
-    public void setVersionRemote(Version versionRemote) {
-        connectionBuilder.setVersionRemote(versionRemote);
-    }
-
-    /**
      * Shutdown Connection and send PurgeAll if Speaker mode,
      * or purge learned Bindings if Listener mode
      */
@@ -1359,10 +1285,6 @@ public class SxpConnection {
                 + getMode().toString().charAt(0) + "v" + getVersion().getIntValue();
         if (getModeRemote() != null) {
             result += "/" + getModeRemote().toString().charAt(0);
-        }
-
-        if (getVersionRemote() != null) {
-            result += "v" + getVersionRemote().getIntValue();
         }
 
         if (getNodeIdRemote() != null) {

@@ -198,13 +198,13 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
         }
         if (profile.equals(Profile.Server)) {
             // System.out.println("L" + ctx.channel().remoteAddress());
-            connection.setInetSocketAddresses(ctx.channel().localAddress(), ctx.channel().remoteAddress());
+            connection.setInetSocketAddresses(ctx.channel().localAddress());
             connection.addChannelHandlerContext(ctx);
             return;
         }
 
         // System.out.println("R" + ctx.channel().remoteAddress());
-        connection.setInetSocketAddresses(ctx.channel().localAddress(), ctx.channel().remoteAddress());
+        connection.setInetSocketAddresses(ctx.channel().localAddress());
         connection.addChannelHandlerContext(ctx);
         if (!connection.isModeBoth() || !connection.isStateOn(ChannelHandlerContextType.ListenerContext))
         {

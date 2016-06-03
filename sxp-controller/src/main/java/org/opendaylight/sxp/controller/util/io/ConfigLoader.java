@@ -112,6 +112,8 @@ public class ConfigLoader {
                 LOG.info("{} SXP module created", node);
 
                 Configuration.register(node);
+                if (nodeConfiguration.getEnabled())
+                    node.start();
 
             } catch (Exception e) {
                 String name = nodeConfiguration.getNodeId() != null ? NodeIdConv

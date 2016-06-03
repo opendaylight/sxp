@@ -133,21 +133,12 @@ public class SxpLegacy implements Strategy {
      * Sets connection mode and NodeId of SxpConnection according to received message
      *
      * @param connection SxpConnection that will be updated
-     * @param mode       Mode received in message
      */
-    private void setConnectionMode(SxpConnection connection,ConnectionMode mode){
+    private void setNodeIdRemote(SxpConnection connection){
         try {
             connection.setNodeIdRemote(NodeIdConv.createNodeId(connection.getDestination().getAddress()));
         } catch (UnknownNodeIdException e) {
             LOG.error("{} Unknown message relevant peer node ID", connection);
-        }
-        connection.setModeRemote(mode);
-        if (connection.getMode() == null || connection.getMode().equals(ConnectionMode.None)) {
-            if (mode.equals(ConnectionMode.Speaker)) {
-                connection.setMode(ConnectionMode.Listener);
-            } else {
-                connection.setMode(ConnectionMode.Speaker);
-            }
         }
     }
 
@@ -165,7 +156,7 @@ public class SxpLegacy implements Strategy {
                 // The SXP-mode, if not configured explicitly within the device,
                 // is set to the opposite value of the one received in the OPEN
                 // message.
-                setConnectionMode(connection, _message.getSxpMode());
+                setNodeIdRemote(connection);
                 if (!checkModeMismatch(connection, _message, ctx)) {
                     // Close the dual channels.
                     connection.closeChannelHandlerContextComplements(ctx);
@@ -189,7 +180,7 @@ public class SxpLegacy implements Strategy {
                     throw new ErrorMessageException(ErrorCodeNonExtended.VersionMismatch,
                             new IncompatiblePeerVersionException(connection.getVersion(), _message.getVersion()));
                 }
-                setConnectionMode(connection, _message.getSxpMode());
+                setNodeIdRemote(connection);
                 if (!checkModeMismatch(connection, _message, ctx)) {
                     // Close the dual channels.
                     connection.closeChannelHandlerContextComplements(ctx);

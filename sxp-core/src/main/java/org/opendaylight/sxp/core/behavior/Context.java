@@ -104,7 +104,6 @@ public final class Context {
         // Version negotiation detection
         if (isOpenRespMessage(message)) {
             Version negotiatedVersion = extractVersion(message);
-            connection.setVersionRemote(negotiatedVersion);
             if (isVersionMismatch(negotiatedVersion)) {
                 // Update strategy according to version specified is Open Resp from remote
                 LOG.info("{} SXP version negotiated to {} from {}", connection, negotiatedVersion, version);
@@ -115,7 +114,6 @@ public final class Context {
             }
         } else if (isOpenMessage(message)) {
             Version messageVersion = extractVersion(message);
-            connection.setVersionRemote(messageVersion);
             if (!messageVersion.equals(version)) {
                 if (connection.getVersion().equals(Version.Version1)) {
                     MessageDecoder.sendErrorMessage(ctx,
