@@ -6,10 +6,11 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.sxp.controller.util.database.access;
+package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.opendaylight.controller.md.sal.binding.api.BindingTransactionChain;
@@ -19,6 +20,7 @@ import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
+import org.opendaylight.sxp.controller.listeners.TransactionChainListenerImpl;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
@@ -55,8 +57,8 @@ public final class DatastoreAccess {
         bindingTransactionChain = dataBroker.createTransactionChain(new TransactionChainListenerImpl());
     }
 
-    public <T extends DataObject> void checkParams(InstanceIdentifier<T> path,
-        LogicalDatastoreType logicalDatastoreType) {
+    private <T extends DataObject> void checkParams(InstanceIdentifier<T> path,
+            LogicalDatastoreType logicalDatastoreType) {
         Preconditions.checkNotNull(bindingTransactionChain);
         Preconditions.checkNotNull(logicalDatastoreType);
         Preconditions.checkNotNull(path);
@@ -96,7 +98,8 @@ public final class DatastoreAccess {
 
     public <T extends DataObject> ListenableFuture<Void> putListenable(InstanceIdentifier<T> path, T data,
             LogicalDatastoreType logicalDatastoreType) {
-        checkParams(path, logicalDatastoreType);Preconditions.checkNotNull(data);
+        checkParams(path, logicalDatastoreType);
+        Preconditions.checkNotNull(data);
         synchronized (bindingTransactionChain) {
             WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
             transaction.put(logicalDatastoreType, path, data);
@@ -114,7 +117,7 @@ public final class DatastoreAccess {
         }
     }
 
-    public <T extends DataObject> boolean deleteSynchronous(InstanceIdentifier<T> path,
+    @Deprecated public <T extends DataObject> boolean deleteSynchronous(InstanceIdentifier<T> path,
             LogicalDatastoreType logicalDatastoreType) {
         try {
             delete(path, logicalDatastoreType).get();
@@ -152,6 +155,68 @@ public final class DatastoreAccess {
             return result.isPresent() ? result.get() : null;
         } catch (InterruptedException | ExecutionException e) {
             return null;
+        }
+    }
+
+    private <T extends DataObject> boolean checkParentExist(final InstanceIdentifier<T> identifier,
+            final LogicalDatastoreType datastoreType) {
+        final InstanceIdentifier.PathArgument[]
+                arguments =
+                Iterables.toArray(identifier.getPathArguments(), InstanceIdentifier.PathArgument.class);
+        if (arguments.length < 2)
+            return true;
+        return readSynchronous(identifier.firstIdentifierOf(arguments[arguments.length - 2].getType()), datastoreType)
+                != null;
+    }
+
+    public <T extends DataObject> boolean checkAndPut(InstanceIdentifier<T> identifier, T data,
+            LogicalDatastoreType datastoreType, final boolean mustContains) {
+        Preconditions.checkNotNull(data);
+        checkParams(identifier, datastoreType);
+        synchronized (bindingTransactionChain) {
+            final boolean
+                    check =
+                    checkParentExist(identifier, datastoreType) && (mustContains ?
+                            readSynchronous(identifier, datastoreType) != null :
+                            readSynchronous(identifier, datastoreType) == null);
+            if (check) {
+                return putSynchronous(identifier, data, datastoreType);
+            }
+            return false;
+        }
+    }
+
+    public <T extends DataObject> boolean checkAndMerge(InstanceIdentifier<T> identifier, T data,
+            LogicalDatastoreType datastoreType, final boolean mustContains) {
+        Preconditions.checkNotNull(data);
+        checkParams(identifier, datastoreType);
+        synchronized (bindingTransactionChain) {
+            final boolean
+                    check =
+                    checkParentExist(identifier, datastoreType) && (mustContains ?
+                            readSynchronous(identifier, datastoreType) != null :
+                            readSynchronous(identifier, datastoreType) == null);
+            if (check) {
+                return mergeSynchronous(identifier, data, datastoreType);
+            }
+            return false;
+        }
+    }
+
+    public <T extends DataObject> boolean checkAndDelete(InstanceIdentifier<T> identifier,
+            LogicalDatastoreType datastoreType) {
+        checkParams(identifier, datastoreType);
+        synchronized (bindingTransactionChain) {
+            if (readSynchronous(identifier, datastoreType) != null) {
+                try {
+                    delete(identifier, datastoreType).get();
+                } catch (InterruptedException | ExecutionException e) {
+                    LOG.error("Error deleting {}", identifier, e);
+                    return false;
+                }
+                return true;
+            }
+            return false;
         }
     }
 }
