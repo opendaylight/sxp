@@ -13,10 +13,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
+import org.opendaylight.sxp.controller.core.RpcServiceImpl;
+import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
-import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
@@ -34,7 +35,8 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -46,20 +48,20 @@ public class ConnectionsListenerTest {
 
     private ConnectionsListener identityListener;
     private DatastoreAccess datastoreAccess;
-    private SxpNode sxpNode;
+    private SxpDatastoreNode sxpNode;
     private SxpConnection connection;
 
     @Before public void setUp() throws Exception {
         datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
         identityListener = new ConnectionsListener(datastoreAccess);
-        sxpNode = mock(SxpNode.class);
+        sxpNode = mock(SxpDatastoreNode.class);
         connection = mock(SxpConnection.class);
         when(sxpNode.getConnection(any(SocketAddress.class))).thenReturn(connection);
         when(sxpNode.shutdown()).thenReturn(sxpNode);
         PowerMockito.mockStatic(Configuration.class);
-        PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unregister(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(RpcServiceImpl.getNode(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(RpcServiceImpl.registerNode(any(SxpDatastoreNode.class))).thenReturn(sxpNode);
+        PowerMockito.when(RpcServiceImpl.unregisterNode(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.getConstants()).thenCallRealMethod();
     }
 

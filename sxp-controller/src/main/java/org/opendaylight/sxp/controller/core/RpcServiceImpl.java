@@ -130,6 +130,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
     private final DatastoreAccess datastoreAccess;
 
     private static final Logger LOG = LoggerFactory.getLogger(RpcServiceImpl.class.getName());
+    private static final Map<String, SxpDatastoreNode> datastoreNodeMap = new HashMap<>();
 
     private static String getNodeId(NodeId requestedNodeId) {
         return requestedNodeId != null ? NodeIdConv.toString(requestedNodeId) : null;
@@ -143,8 +144,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
     private <T> Future<RpcResult<T>> getResponse(String nodeId, final T response,
             Callable<RpcResult<T>> resultCallable) {
-        SxpNode node = Configuration.getRegisteredNode(nodeId);
-        if (nodeId == null || node == null) {
+        if (nodeId == null || !containsNode(nodeId)) {
             return new AbstractFuture<RpcResult<T>>() {
 
                 @Override public RpcResult<T> get() throws InterruptedException, ExecutionException {
@@ -152,8 +152,38 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 }
             };
         } else {
-            return node.getWorker().executeTaskInSequence(resultCallable, ThreadsWorker.WorkerType.DEFAULT);
+            return getNode(nodeId).getWorker().executeTaskInSequence(resultCallable, ThreadsWorker.WorkerType.DEFAULT);
         }
+    }
+
+    public static synchronized SxpDatastoreNode registerNode(SxpDatastoreNode node) {
+        String nodeId = getNodeId(Preconditions.checkNotNull(node).getNodeId());
+        if (datastoreNodeMap.containsKey(nodeId))
+            throw new IllegalArgumentException("Node with Id " + nodeId + " exist.");
+        datastoreNodeMap.put(nodeId, Preconditions.checkNotNull(node));
+        return node;
+    }
+
+    public static synchronized SxpDatastoreNode unregisterNode(String nodeId) {
+        if (datastoreNodeMap.containsKey(Preconditions.checkNotNull(nodeId)))
+            return datastoreNodeMap.remove(nodeId);
+        throw new IllegalArgumentException("Node with Id " + nodeId + " does not exist.");
+    }
+
+    public static synchronized SxpDatastoreNode getNode(String nodeId) {
+        if (datastoreNodeMap.containsKey(Preconditions.checkNotNull(nodeId)))
+            return datastoreNodeMap.get(nodeId);
+        throw new IllegalArgumentException("Node with Id " + nodeId + " does not exist.");
+    }
+
+    public static synchronized boolean containsNode(String nodeId) {
+        return datastoreNodeMap.containsKey(Preconditions.checkNotNull(nodeId));
+    }
+
+    public static synchronized DatastoreAccess getDatastoreAccess(String nodeId, DatastoreAccess default_) {
+        if (containsNode(Preconditions.checkNotNull(nodeId)))
+            return getNode(nodeId).getDatastoreAccess();
+        return default_;
     }
 
     private LogicalDatastoreType getDatastoreType(ConfigPersistence persistence) {
@@ -180,7 +210,8 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             LOG.info("RpcAddConnection event | {}", input.toString());
             Preconditions.checkNotNull(input.getConnections());
             Preconditions.checkNotNull(input.getConnections().getConnection()).forEach(c -> {
-                output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(Connections.class)
+                output.setResult(getDatastoreAccess(nodeId, datastoreAccess).checkAndPut(
+                        getIdentifier(nodeId).child(Connections.class)
                                 .child(Connection.class, new ConnectionKey(c.getPeerAddress(), c.getTcpPort())),
                         new ConnectionBuilder(c).setNodeId(null)
                                 .setState(null)
@@ -218,7 +249,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             bindingBuilder.setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
             bindings.add(bindingBuilder.build());
 
-            Configuration.getRegisteredNode(nodeId).putLocalBindingsMasterDatabase(bindings);
+            getNode(nodeId).putLocalBindingsMasterDatabase(bindings);
             output.setResult(true);
             return RpcResultBuilder.success(output.build()).build();
         });
@@ -233,9 +264,11 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             SxpFilterBuilder filter = new SxpFilterBuilder(input.getSxpFilter());
             filter.setFilterSpecific(getFilterSpecific(filter.getFilterEntries()));
             if (filter.getFilterSpecific() != null) {
-                output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpPeerGroups.class)
+                output.setResult(getDatastoreAccess(nodeId, datastoreAccess).checkAndPut(
+                        getIdentifier(nodeId).child(SxpPeerGroups.class)
                                 .child(SxpPeerGroup.class, new SxpPeerGroupKey(input.getPeerGroupName()))
-                                .child(SxpFilter.class, new SxpFilterKey(filter.getFilterSpecific(), filter.getFilterType())),
+                                .child(SxpFilter.class,
+                                        new SxpFilterKey(filter.getFilterSpecific(), filter.getFilterType())),
                         filter.build(), getDatastoreType(input.getConfigPersistence()), false));
             }
             return RpcResultBuilder.success(output.build()).build();
@@ -248,7 +281,8 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
         return getResponse(nodeId, output.build(), () -> {
             LOG.info("RpcAddPerGroup event | {}", input.toString());
-            output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpPeerGroups.class)
+            output.setResult(getDatastoreAccess(nodeId, datastoreAccess).checkAndPut(
+                    getIdentifier(nodeId).child(SxpPeerGroups.class)
                             .child(SxpPeerGroup.class, new SxpPeerGroupKey(input.getSxpPeerGroup().getName())),
                     new SxpPeerGroupBuilder(input.getSxpPeerGroup()).build(),
                     getDatastoreType(input.getConfigPersistence()), false));
@@ -269,17 +303,22 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                                                 Preconditions.checkNotNull(getNodeId(input.getNodeId())))))
                                 .build();
                 LOG.info("RpcDeleteNode event | {}", input.toString());
-                output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION));
-                output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL)
-                        || output.isResult());
+                output.setResult(
+                        getDatastoreAccess(getNodeId(input.getNodeId()), datastoreAccess).checkAndDelete(identifier,
+                                LogicalDatastoreType.CONFIGURATION));
+                output.setResult(
+                        getDatastoreAccess(getNodeId(input.getNodeId()), datastoreAccess).checkAndDelete(identifier,
+                                LogicalDatastoreType.OPERATIONAL) || output.isResult());
             }
             return RpcResultBuilder.success(output.build()).build();
         });
     }
 
     @Override public void close() {
+        datastoreNodeMap.values().forEach(SxpNode::shutdown);
+        datastoreNodeMap.clear();
+        datastoreAccess.close();
         executor.shutdown();
-        Configuration.getNodes().values().forEach(SxpNode::shutdown);
     }
 
     @Override public Future<RpcResult<DeleteConnectionOutput>> deleteConnection(final DeleteConnectionInput input) {
@@ -293,8 +332,9 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     getIdentifier(nodeId).child(Connections.class)
                             .child(Connection.class,
                                     new ConnectionKey(new IpAddress(input.getPeerAddress()), input.getTcpPort()));
-            output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
-                    || datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+            output.setResult(getDatastoreAccess(nodeId, datastoreAccess).checkAndDelete(identifier,
+                    LogicalDatastoreType.CONFIGURATION) || getDatastoreAccess(nodeId, datastoreAccess).checkAndDelete(
+                    identifier, LogicalDatastoreType.OPERATIONAL));
             return RpcResultBuilder.success(output.build()).build();
         });
     }
@@ -326,8 +366,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             }
 
             DeleteEntryOutputBuilder output1 = new DeleteEntryOutputBuilder();
-            output1.setResult(
-                    !Configuration.getRegisteredNode(nodeId).removeLocalBindingsMasterDatabase(bindings).isEmpty());
+            output1.setResult(!getNode(nodeId).removeLocalBindingsMasterDatabase(bindings).isEmpty());
             return RpcResultBuilder.success(output1.build()).build();
         });
     }
@@ -342,13 +381,15 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 final LogicalDatastoreType datastoreType;
                 SxpPeerGroup
                         group =
-                        datastoreAccess.readSynchronous(getIdentifier(nodeId).child(SxpPeerGroups.class)
+                        getDatastoreAccess(nodeId, datastoreAccess).readSynchronous(
+                                getIdentifier(nodeId).child(SxpPeerGroups.class)
                                         .child(SxpPeerGroup.class, new SxpPeerGroupKey(input.getPeerGroupName())),
                                 LogicalDatastoreType.CONFIGURATION);
                 if (group == null || group.getSxpFilter() == null || group.getSxpFilter().isEmpty()) {
                     datastoreType = LogicalDatastoreType.OPERATIONAL;
                     group =
-                            datastoreAccess.readSynchronous(getIdentifier(nodeId).child(SxpPeerGroups.class)
+                            getDatastoreAccess(nodeId, datastoreAccess).readSynchronous(
+                                    getIdentifier(nodeId).child(SxpPeerGroups.class)
                                             .child(SxpPeerGroup.class, new SxpPeerGroupKey(input.getPeerGroupName())),
                                     datastoreType);
                 } else {
@@ -360,9 +401,11 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
                 filters.forEach(f -> {
                     if (f.getFilterType().equals(input.getFilterType()))
-                        output.setResult(datastoreAccess.checkAndDelete(getIdentifier(nodeId).child(SxpPeerGroups.class)
+                        output.setResult(getDatastoreAccess(nodeId, datastoreAccess).checkAndDelete(
+                                getIdentifier(nodeId).child(SxpPeerGroups.class)
                                         .child(SxpPeerGroup.class, new SxpPeerGroupKey(input.getPeerGroupName()))
-                                        .child(SxpFilter.class, new SxpFilterKey(f.getFilterSpecific(), f.getFilterType())),
+                                        .child(SxpFilter.class,
+                                                new SxpFilterKey(f.getFilterSpecific(), f.getFilterType())),
                                 datastoreType));
                 });
             } else {
@@ -372,8 +415,9 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                                 .child(SxpPeerGroup.class, new SxpPeerGroupKey(input.getPeerGroupName()))
                                 .child(SxpFilter.class,
                                         new SxpFilterKey(input.getFilterSpecific(), input.getFilterType()));
-                output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
-                        || datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+                output.setResult(getDatastoreAccess(nodeId, datastoreAccess).checkAndDelete(identifier,
+                        LogicalDatastoreType.CONFIGURATION) || getDatastoreAccess(nodeId,
+                        datastoreAccess).checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
             }
             return RpcResultBuilder.success(output.build()).build();
         });
@@ -389,8 +433,9 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                     identifier =
                     getIdentifier(nodeId).child(SxpPeerGroups.class)
                             .child(SxpPeerGroup.class, new SxpPeerGroupKey(input.getPeerGroupName()));
-            output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
-                    || datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+            output.setResult(getDatastoreAccess(nodeId, datastoreAccess).checkAndDelete(identifier,
+                    LogicalDatastoreType.CONFIGURATION) || getDatastoreAccess(nodeId, datastoreAccess).checkAndDelete(
+                    identifier, LogicalDatastoreType.OPERATIONAL));
 
             return RpcResultBuilder.success(output.build()).build();
         });
@@ -407,8 +452,8 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             LOG.info("RpcGetConnectionsStatus event | {}", input.toString());
             Connections
                     connections =
-                    datastoreAccess.readSynchronous(getIdentifier(nodeId).child(Connections.class),
-                            LogicalDatastoreType.OPERATIONAL);
+                    getDatastoreAccess(nodeId, datastoreAccess).readSynchronous(
+                            getIdentifier(nodeId).child(Connections.class), LogicalDatastoreType.OPERATIONAL);
             if (connections != null && connections.getConnection() != null) {
                 output.setConnections(connections);
             }
@@ -428,8 +473,8 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             List<MasterDatabaseBinding> databaseBindings = new ArrayList<>();
             MasterDatabase
                     database =
-                    datastoreAccess.readSynchronous(getIdentifier(nodeId).child(MasterDatabase.class),
-                            LogicalDatastoreType.OPERATIONAL);
+                    getDatastoreAccess(nodeId, datastoreAccess).readSynchronous(
+                            getIdentifier(nodeId).child(MasterDatabase.class), LogicalDatastoreType.OPERATIONAL);
             if (database != null && database.getMasterDatabaseBinding() != null) {
                 databaseBindings.addAll(database.getMasterDatabaseBinding());
             }
@@ -471,7 +516,8 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             if (input.getPeerGroupName() != null) {
                 SxpPeerGroup
                         peerGroup =
-                        datastoreAccess.readSynchronous(getIdentifier(nodeId).child(SxpPeerGroups.class)
+                        getDatastoreAccess(nodeId, datastoreAccess).readSynchronous(
+                                getIdentifier(nodeId).child(SxpPeerGroups.class)
                                         .child(SxpPeerGroup.class, new SxpPeerGroupKey(input.getPeerGroupName())),
                                 LogicalDatastoreType.OPERATIONAL);
                 if (peerGroup != null) {
@@ -491,8 +537,9 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         return getResponse(nodeId, output.build(), () -> {
             LOG.info("RpcGetPeerGroups event | {}", input.toString());
             output.setSxpPeerGroup(Preconditions.checkNotNull(
-                    datastoreAccess.readSynchronous(getIdentifier(nodeId).child(SxpPeerGroups.class),
-                            LogicalDatastoreType.OPERATIONAL)).getSxpPeerGroup());
+                    getDatastoreAccess(nodeId, datastoreAccess).readSynchronous(
+                            getIdentifier(nodeId).child(SxpPeerGroups.class), LogicalDatastoreType.OPERATIONAL))
+                    .getSxpPeerGroup());
             return RpcResultBuilder.success(output.build()).build();
         });
     }
@@ -519,9 +566,10 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 if (identityBuilder.getTimers() == null)
                     identityBuilder.setTimers(new TimersBuilder().build());
 
-                ConfigLoader.initTopologyNode(nodeId, getDatastoreType(input.getConfigPersistence()), datastoreAccess);
-                output.setResult(datastoreAccess.checkAndPut(NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class,
-                        new NodeKey(
+                ConfigLoader.initTopologyNode(nodeId, getDatastoreType(input.getConfigPersistence()),
+                        getDatastoreAccess(nodeId, datastoreAccess));
+                output.setResult(getDatastoreAccess(nodeId, datastoreAccess).checkAndPut(
+                        NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class, new NodeKey(
                                 new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
                                         nodeId))).augmentation(SxpNodeIdentity.class), identityBuilder.build(),
                         getDatastoreType(input.getConfigPersistence()), false));
@@ -571,12 +619,10 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 bindingBuilder.setIpPrefix(newIpPrefix).setSecurityGroupTag(newSgt).setTimestamp(timestamp);
                 addedBindings.add(bindingBuilder.build());
 
-                Configuration.getRegisteredNode(nodeId).removeLocalBindingsMasterDatabase(deleteBindings);
+                getNode(nodeId).removeLocalBindingsMasterDatabase(deleteBindings);
 
                 UpdateEntryOutputBuilder output = new UpdateEntryOutputBuilder();
-                output.setResult(!Configuration.getRegisteredNode(nodeId)
-                        .putLocalBindingsMasterDatabase(addedBindings)
-                        .isEmpty());
+                output.setResult(!getNode(nodeId).putLocalBindingsMasterDatabase(addedBindings).isEmpty());
                 return RpcResultBuilder.success(output.build()).build();
             }
         });
@@ -591,9 +637,11 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             if (input.getSxpFilter() != null && input.getSxpFilter().getFilterType() != null) {
                 SxpFilterBuilder filter = new SxpFilterBuilder(input.getSxpFilter());
                 filter.setFilterSpecific(getFilterSpecific(filter.getFilterEntries()));
-                output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpPeerGroups.class)
+                output.setResult(getDatastoreAccess(nodeId, datastoreAccess).checkAndPut(
+                        getIdentifier(nodeId).child(SxpPeerGroups.class)
                                 .child(SxpPeerGroup.class, new SxpPeerGroupKey(input.getPeerGroupName()))
-                                .child(SxpFilter.class, new SxpFilterKey(filter.getFilterSpecific(), filter.getFilterType())),
+                                .child(SxpFilter.class,
+                                        new SxpFilterKey(filter.getFilterSpecific(), filter.getFilterType())),
                         filter.build(), getDatastoreType(input.getConfigPersistence()), true));
             }
             return RpcResultBuilder.success(output.build()).build();

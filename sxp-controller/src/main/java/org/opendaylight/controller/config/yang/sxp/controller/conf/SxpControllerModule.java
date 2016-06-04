@@ -14,7 +14,7 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.BindingAwareBroker.RpcRegistration;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.RpcServiceImpl;
-import org.opendaylight.sxp.controller.listeners.*;
+import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.ConnectionsListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.FilterListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.MasterBindingListener;
@@ -79,10 +79,11 @@ public class SxpControllerModule
             configLoader.load(getSxpController());
         }
         NodeIdentityListener listener = new NodeIdentityListener(datastoreAccess);
+        PeerGroupListener groupListener = new PeerGroupListener(datastoreAccess);
+        groupListener.addSubListener(new FilterListener(datastoreAccess));
         listener.addSubListener(new ConnectionsListener(datastoreAccess));
-        listener.addSubListener(new PeerGroupListener(datastoreAccess));
+        listener.addSubListener(groupListener);
         listener.addSubListener(new MasterBindingListener(datastoreAccess));
-        listener.addSubListener(new FilterListener(datastoreAccess));
 
         dataChangeListenerRegistrations.add(listener.register(dataBroker, LogicalDatastoreType.CONFIGURATION));
         dataChangeListenerRegistrations.add(listener.register(dataBroker, LogicalDatastoreType.OPERATIONAL));

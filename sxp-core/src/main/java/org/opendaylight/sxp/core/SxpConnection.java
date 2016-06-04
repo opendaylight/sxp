@@ -810,12 +810,13 @@ public class SxpConnection {
 
     public void purgeBindings() {
         // Get message relevant peer node ID.
-        BindingHandler.processPurgeAllMessage(this);
-        try {
-            setStateOff(getChannelHandlerContext(ChannelHandlerContextType.ListenerContext));
-        } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-            setStateOff();
-        }
+        getOwner().getWorker().addListener(BindingHandler.processPurgeAllMessage(this), () -> {
+            try {
+                setStateOff(getChannelHandlerContext(ChannelHandlerContextType.ListenerContext));
+            } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+                setStateOff();
+            }
+        });
     }
 
     /**
@@ -1242,7 +1243,7 @@ public class SxpConnection {
     public synchronized void shutdown() {
         if (isModeListener()) {
             LOG.info("{} PURGE bindings ", this);
-            purgeBindings();
+            BindingHandler.processPurgeAllMessage(this);
         } else if (isModeSpeaker() && isStateOn()) {
             try {
                 BindingDispatcher.sendPurgeAllMessage(this).get();

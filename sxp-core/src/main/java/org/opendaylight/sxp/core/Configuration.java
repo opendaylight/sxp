@@ -8,8 +8,6 @@
 
 package org.opendaylight.sxp.core;
 
-import com.google.common.base.Preconditions;
-import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.CapabilitiesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
@@ -17,7 +15,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public final class Configuration {
@@ -30,12 +27,10 @@ public final class Configuration {
 
     public static final boolean NETTY_LOGGER_HANDLER = false;
 
-    private static HashMap<String, SxpNode> nodes = new HashMap<>();
-
     public static final boolean SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS = true;
 
     public static final String TOPOLOGY_NAME = "sxp";
-    
+
     static {
         _initializeLogger();
     }
@@ -81,22 +76,5 @@ public final class Configuration {
 
     public static Constants getConstants() {
         return CONSTANTS;
-    }
-
-    public static HashMap<String, SxpNode> getNodes() {
-        return nodes;
-    }
-
-    public synchronized static SxpNode getRegisteredNode(String nodeId) {
-        return nodes.get(nodeId);
-    }
-
-    public synchronized static SxpNode unregister(String nodeId) {
-        return nodes.remove(Preconditions.checkNotNull(nodeId));
-    }
-
-    public synchronized static SxpNode register(SxpNode node) {
-        nodes.put(NodeIdConv.toString(Preconditions.checkNotNull(node).getNodeId()), node);
-        return node;
     }
 }
