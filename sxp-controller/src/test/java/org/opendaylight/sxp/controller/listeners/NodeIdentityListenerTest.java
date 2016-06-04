@@ -37,7 +37,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({Configuration.class, DatastoreAccess.class})
 public class NodeIdentityListenerTest {
@@ -47,11 +51,14 @@ public class NodeIdentityListenerTest {
     private SxpNode sxpNode;
 
     @Before public void setUp() throws Exception {
-        datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
+        datastoreAccess = mock(DatastoreAccess.class);
         identityListener = new NodeIdentityListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
         when(sxpNode.shutdown()).thenReturn(sxpNode);
         PowerMockito.mockStatic(Configuration.class);
+        PowerMockito.mockStatic(DatastoreAccess.class);
+        PowerMockito.when(DatastoreAccess.getInstance()).thenReturn(mock(DatastoreAccess.class));
+        PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(mock(DatastoreAccess.class));
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
         PowerMockito.when(Configuration.unregister(anyString())).thenReturn(sxpNode);

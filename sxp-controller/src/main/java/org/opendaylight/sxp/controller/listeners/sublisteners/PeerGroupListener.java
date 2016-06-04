@@ -10,9 +10,9 @@ package org.opendaylight.sxp.controller.listeners.sublisteners;
 
 import com.google.common.base.Preconditions;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
-import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
+import org.opendaylight.sxp.controller.listeners.spi.ListListener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpPeerGroupFields;
@@ -25,10 +25,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-public class PeerGroupListener extends ContainerListener<SxpPeerGroups, SxpPeerGroup> {
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
+
+public class PeerGroupListener extends ListListener<SxpNodeIdentity, SxpPeerGroups, SxpPeerGroup> {
 
     public PeerGroupListener(DatastoreAccess datastoreAccess) {
-        super(datastoreAccess);
+        super(datastoreAccess, SxpPeerGroups.class);
     }
 
     @Override protected void handleOperational(DataObjectModification<SxpPeerGroup> c,
@@ -51,7 +53,7 @@ public class PeerGroupListener extends ContainerListener<SxpPeerGroups, SxpPeerG
                     break;
                 }
             case SUBTREE_MODIFIED:
-                if (checkChange(c, SxpPeerGroupFields::getSxpPeers) && !checkPeersColapsing(c)) {
+                if (checkDifference(c, SxpPeerGroupFields::getSxpPeers) && !checkPeersColapsing(c)) {
                     sxpNode.removePeerGroup(Preconditions.checkNotNull(c.getDataBefore()).getName());
                     addGroupToNode(sxpNode, c, getIdentifier(c.getDataAfter(), identifier));
                 }
@@ -67,11 +69,6 @@ public class PeerGroupListener extends ContainerListener<SxpPeerGroups, SxpPeerG
         Preconditions.checkNotNull(d);
         Preconditions.checkNotNull(parentIdentifier);
         return parentIdentifier.child(SxpPeerGroups.class).child(SxpPeerGroup.class, new SxpPeerGroupKey(d.getName()));
-    }
-
-    @Override public DataObjectModification<SxpPeerGroups> getModifications(
-            DataTreeModification<SxpNodeIdentity> treeModification) {
-        return treeModification.getRootNode().getModifiedChildContainer(SxpPeerGroups.class);
     }
 
     private boolean checkPeersColapsing(DataObjectModification<SxpPeerGroup> c) {
