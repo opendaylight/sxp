@@ -120,28 +120,6 @@ public class DatastoreAccessTest {
                 access.put(null, null, LogicalDatastoreType.OPERATIONAL);
         }
 
-        @Test public void testPutListenable() throws Exception {
-                WriteTransaction transaction = mock(WriteTransaction.class);
-                when(transaction.submit()).thenReturn(mock(CheckedFuture.class));
-                InstanceIdentifier identifier = mock(InstanceIdentifier.class);
-                DataObject dataObject = mock(DataObject.class);
-
-                when(transactionChain.newWriteOnlyTransaction()).thenReturn(transaction);
-                assertNotNull(access.putListenable(identifier, dataObject, LogicalDatastoreType.OPERATIONAL));
-
-                verify(transaction).put(LogicalDatastoreType.OPERATIONAL, identifier, dataObject);
-
-                when(transactionChain.newWriteOnlyTransaction()).thenReturn(null);
-                exception.expect(NullPointerException.class);
-                access.putListenable(identifier, dataObject, LogicalDatastoreType.OPERATIONAL);
-        }
-
-        @Test public void testPutListenableException() throws Exception {
-                when(transactionChain.newWriteOnlyTransaction()).thenReturn(mock(WriteTransaction.class));
-                exception.expect(NullPointerException.class);
-                access.putListenable(null, null, LogicalDatastoreType.OPERATIONAL);
-        }
-
         @Test public void testRead() throws Exception {
                 ReadOnlyTransaction transaction = mock(ReadOnlyTransaction.class);
                 InstanceIdentifier identifier = mock(InstanceIdentifier.class);

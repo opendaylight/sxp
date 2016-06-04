@@ -96,7 +96,7 @@ public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdent
                         if (c.getRootNode().getDataBefore() == null) {
                             Configuration.register(
                                     new SxpDatastoreNode(NodeId.getDefaultInstance(Preconditions.checkNotNull(nodeId)),
-                                            datastoreAccess, c.getRootNode().getDataAfter())).start();
+                                            DatastoreAccess.getInstance(), c.getRootNode().getDataAfter())).start();
                             break;
                         } else if (c.getRootNode().getDataAfter() == null) {
                             Configuration.unregister(Preconditions.checkNotNull(nodeId)).shutdown();
@@ -122,7 +122,8 @@ public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdent
                         });
                         break;
                     case DELETE:
-                        Configuration.unregister(Preconditions.checkNotNull(nodeId)).shutdown();
+                        ((SxpDatastoreNode) Configuration.unregister(Preconditions.checkNotNull(nodeId))
+                                .shutdown()).close();
                         break;
                 }
             }
