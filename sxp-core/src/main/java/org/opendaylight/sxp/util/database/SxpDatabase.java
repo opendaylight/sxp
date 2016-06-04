@@ -140,6 +140,8 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
      * @return If binding will be ignored
      */
     private static <T extends SxpBindingFields> boolean ignoreBinding(T binding) {
+        if (binding == null)
+            return true;
         return binding.getIpPrefix().getIpv6Prefix() != null && "0:0:0:0:0:0:0:0/0".equals(
                 binding.getIpPrefix().getIpv6Prefix().getValue()) || (binding.getIpPrefix().getIpv4Prefix() != null
                 && "0.0.0.0/0".equals(binding.getIpPrefix().getIpv4Prefix().getValue()));

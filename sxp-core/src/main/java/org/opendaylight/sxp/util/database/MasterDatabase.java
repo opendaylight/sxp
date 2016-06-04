@@ -48,14 +48,19 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
                     binding =
                     prefixMap.get(b.getIpPrefix()) == null ? get.apply(b.getIpPrefix()) : prefixMap.get(
                             b.getIpPrefix());
-            if (binding == null || b.getPeerSequence().getPeer().size() < binding.getPeerSequence().getPeer().size()
-                    || (b.getPeerSequence().getPeer().size() == binding.getPeerSequence().getPeer().size()
-                    && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
+            if (binding == null || getPeerSequenceLength(b) < getPeerSequenceLength(binding) || (
+                    getPeerSequenceLength(b) == getPeerSequenceLength(binding)
+                            && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
                 prefixMap.put(b.getIpPrefix(), new MasterDatabaseBindingBuilder(b).build());
                 remove.apply(b.getIpPrefix());
             }
         });
         return prefixMap;
+    }
+
+    public static <T extends SxpBindingFields> int getPeerSequenceLength(T b) {
+        return b == null || b.getPeerSequence() == null
+                || b.getPeerSequence().getPeer() == null ? 0 : b.getPeerSequence().getPeer().size();
     }
 
     /**
@@ -66,6 +71,8 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
      * @return If binding will be ignored
      */
     private static <T extends SxpBindingFields> boolean ignoreBinding(T binding) {
+        if (binding == null)
+            return true;
         return binding.getIpPrefix().getIpv6Prefix() != null && "0:0:0:0:0:0:0:0/0".equals(
                 binding.getIpPrefix().getIpv6Prefix().getValue()) || (binding.getIpPrefix().getIpv4Prefix() != null
                 && "0.0.0.0/0".equals(binding.getIpPrefix().getIpv4Prefix().getValue()));
