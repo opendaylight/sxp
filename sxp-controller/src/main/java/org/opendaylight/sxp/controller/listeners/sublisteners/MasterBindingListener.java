@@ -9,19 +9,21 @@
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
-import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
+import org.opendaylight.sxp.controller.listeners.spi.ListListener;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-public class MasterBindingListener extends ContainerListener<MasterDatabase, MasterDatabaseBinding> {
+import java.util.List;
+
+public class MasterBindingListener extends ListListener<SxpNodeIdentity, MasterDatabase, MasterDatabaseBinding> {
 
     public MasterBindingListener(DatastoreAccess datastoreAccess) {
-        super(datastoreAccess);
+        super(datastoreAccess, MasterDatabase.class);
     }
 
     @Override protected void handleOperational(DataObjectModification<MasterDatabaseBinding> c,
@@ -35,14 +37,10 @@ public class MasterBindingListener extends ContainerListener<MasterDatabase, Mas
                 .child(MasterDatabaseBinding.class, new MasterDatabaseBindingKey(d.getIpPrefix()));
     }
 
-    @Override public void handleChange(DataObjectModification<MasterDatabase> modifiedChildContainer,
+    @Override public void handleChange(List<DataObjectModification<MasterDatabase>> modifiedChildContainer,
             LogicalDatastoreType logicalDatastoreType, InstanceIdentifier<SxpNodeIdentity> identifier) {
         //TODO implement Binding handling
         super.handleChange(modifiedChildContainer, logicalDatastoreType, identifier);
     }
 
-    @Override public DataObjectModification<MasterDatabase> getModifications(
-            DataTreeModification<SxpNodeIdentity> treeModification) {
-        return treeModification.getRootNode().getModifiedChildContainer(MasterDatabase.class);
-    }
 }

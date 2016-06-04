@@ -16,6 +16,7 @@ import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -53,6 +54,10 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode {
                 new SxpDatastoreImpl(datastoreAccess, NodeIdConv.toString(nodeId)), new ThreadsWorker());
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
         this.nodeId = NodeIdConv.toString(nodeId);
+    }
+
+    @Override protected void initConfiguration(SxpNodeIdentityBuilder identity) {
+        // This is handled by DataStore Listeners
     }
 
     @Override protected SxpNodeIdentity getNodeIdentity() {
