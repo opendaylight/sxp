@@ -9,6 +9,7 @@
 package org.opendaylight.sxp.util.database;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.SxpNode;
@@ -184,6 +185,14 @@ import static org.junit.Assert.assertTrue;
         assertEquals(0, database.getBindings().size());
     }
 
+    /**
+     * This test method verifies otput of toString() after adding several bindings.
+     *
+     * Currently ignored, since the test expects an exact order of items in the string,
+     * but the underlying implementation uses HashMap, which does not guarantee the order of values().
+     *
+     */
+    @Ignore
     @Test public void testToString() throws Exception {
         assertEquals("MasterDatabaseImpl\n", database.toString());
 

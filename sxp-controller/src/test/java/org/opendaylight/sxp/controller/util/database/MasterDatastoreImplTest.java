@@ -10,6 +10,7 @@ package org.opendaylight.sxp.controller.util.database;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -226,6 +227,14 @@ public class MasterDatastoreImplTest {
         assertEquals(0, database.getBindings().size());
     }
 
+    /**
+     * This test method verifies otput of toString() after adding several bindings.
+     *
+     * Currently ignored, since the test expects an exact order of items in the string,
+     * but the underlying implementation uses HashMap, which does not guarantee the order of values().
+     *
+     */
+    @Ignore
     @Test public void testToString() throws Exception {
         assertEquals("MasterDatastoreImpl\n", database.toString());
 
