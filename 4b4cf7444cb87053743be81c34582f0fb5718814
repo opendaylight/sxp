@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da5c1566_1b0a5f21",
+        "filename": "sxp-controller/src/test/java/org/opendaylight/sxp/controller/util/database/MasterDatastoreImplTest.java",
+        "patchSetId": 5
+      },
+      "lineNbr": 237,
+      "author": {
+        "id": 2046
+      },
+      "writtenOn": "2016-06-06T16:54:46Z",
+      "side": 1,
+      "message": "My first idea was to split the string on \u0027\\t\u0027, require the first item to match exactly, and put the remaining items into a Set (that should match the expected Set).",
+      "range": {
+        "startLine": 237,
+        "startChar": 19,
+        "endLine": 237,
+        "endChar": 33
+      },
+      "revId": "4b4cf7444cb87053743be81c34582f0fb5718814",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
