@@ -22,6 +22,30 @@
       "revId": "860c0b965ca8333ae7c9493dd34cdea572396122",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da5c1566_efeec18a",
+        "filename": "sxp-controller/src/test/java/org/opendaylight/sxp/controller/util/database/MasterDatastoreImplTest.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 240,
+      "author": {
+        "id": 3920
+      },
+      "writtenOn": "2016-06-07T10:38:18Z",
+      "side": 1,
+      "message": "Updated to make full check.",
+      "parentUuid": "da5c1566_cfbf7dcf",
+      "range": {
+        "startLine": 240,
+        "startChar": 29,
+        "endLine": 240,
+        "endChar": 33
+      },
+      "revId": "860c0b965ca8333ae7c9493dd34cdea572396122",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
     }
   ]
 }
