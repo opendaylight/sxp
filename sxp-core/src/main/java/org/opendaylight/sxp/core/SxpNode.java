@@ -36,7 +36,6 @@ import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
-import org.opendaylight.tcpmd5.jni.NativeSupportUnavailableException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
@@ -829,11 +828,7 @@ public class SxpNode {
      */
     public void openConnection(final SxpConnection connection) {
         if (Preconditions.checkNotNull(connection).isStateOff()) {
-            try {
-                ConnectFacade.createClient(this, connection, handlerFactoryClient);
-            } catch (NativeSupportUnavailableException e) {
-                LOG.warn(connection + " {}", e.getMessage());
-            }
+            ConnectFacade.createClient(this, connection, handlerFactoryClient);
         }
     }
 
@@ -992,7 +987,9 @@ public class SxpNode {
         setTimer(TimerType.RetryOpenTimer, 0);
         shutdownConnections();
         if (serverChannel != null) {
-            serverChannel.close();
+            ChannelFuture channelFuture = serverChannel.close();
+            if (channelFuture != null)
+                channelFuture.syncUninterruptibly();
             serverChannel = null;
         }
         LOG.info(this + " Server stopped");
@@ -1064,7 +1061,7 @@ public class SxpNode {
         LOG.info("{} Updating MD5 keys", this);
         updateMD5counter.incrementAndGet();
         final SxpNode sxpNode = this;
-        serverChannel.close().addListener(createMD5updateListener(sxpNode));
+        serverChannel.close().syncUninterruptibly().addListener(createMD5updateListener(sxpNode));
     }
 
     private ChannelFutureListener createMD5updateListener(final SxpNode sxpNode) {
