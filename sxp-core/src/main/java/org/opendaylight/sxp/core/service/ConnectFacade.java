@@ -19,33 +19,28 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.RecvByteBufAllocator;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.epoll.Epoll;
+import io.netty.channel.epoll.EpollChannelOption;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
+import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
-import org.opendaylight.tcpmd5.api.KeyAccessFactory;
-import org.opendaylight.tcpmd5.api.KeyMapping;
-import org.opendaylight.tcpmd5.jni.NativeKeyAccessFactory;
-import org.opendaylight.tcpmd5.jni.NativeSupportUnavailableException;
-import org.opendaylight.tcpmd5.netty.MD5ChannelOption;
-import org.opendaylight.tcpmd5.netty.MD5NioServerSocketChannelFactory;
-import org.opendaylight.tcpmd5.netty.MD5NioSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
-import java.util.Collection;
-import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ConnectFacade {
 
-    private static EventLoopGroup eventLoopGroup = null;
+    private static EventLoopGroup eventLoopGroup = new EpollEventLoopGroup();
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectFacade.class.getName());
 
     private static final Predicate<SxpConnection>
@@ -59,36 +54,29 @@ public class ConnectFacade {
      * @param connection SxpConnection containing connection details
      * @param hf         HandlerFactory providing handling of communication
      * @return ChannelFuture callback
-     * @throws NativeSupportUnavailableException If Security error occurs
      */
-    public static ChannelFuture createClient(SxpNode node, SxpConnection connection, final HandlerFactory hf)
-            throws NativeSupportUnavailableException {
-        Bootstrap bootstrap = new Bootstrap();
-
-        if (connection.getPassword() != null && !connection.getPassword().isEmpty()) {
-            bootstrap =
-                    customizeClientBootstrap(bootstrap, connection.getDestination().getAddress(),
-                            connection.getPassword());
-        } else {
-            bootstrap.channel(NioSocketChannel.class);
+    public static ChannelFuture createClient(SxpNode node, SxpConnection connection, final HandlerFactory hf) {
+        if (!Epoll.isAvailable()) {
+            throw new UnsupportedOperationException(Epoll.unavailabilityCause().getCause());
         }
+        Bootstrap bootstrap = new Bootstrap();
+        if (connection.getPassword() != null && !connection.getPassword().isEmpty()) {
+            Map<InetAddress, byte[]> keys = new HashMap<>();
+            keys.put(connection.getDestination().getAddress(), connection.getPassword().getBytes(Charsets.US_ASCII));
+            bootstrap.option(EpollChannelOption.TCP_MD5SIG, keys);
+        }
+        bootstrap.channel(EpollSocketChannel.class);
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, Configuration.NETTY_CONNECT_TIMEOUT_MILLIS);
-        RecvByteBufAllocator recvByteBufAllocator = new FixedRecvByteBufAllocator(Configuration.getConstants()
-                .getMessageLengthMax());
+        RecvByteBufAllocator
+                recvByteBufAllocator =
+                new FixedRecvByteBufAllocator(Configuration.getConstants().getMessageLengthMax());
         bootstrap.option(ChannelOption.RCVBUF_ALLOCATOR, recvByteBufAllocator);
         bootstrap.option(ChannelOption.TCP_NODELAY, true);
         bootstrap.localAddress(node.getSourceIp().getHostAddress(), 0);
-        if (eventLoopGroup == null) {
-            eventLoopGroup = new NioEventLoopGroup();
-        }
         bootstrap.group(eventLoopGroup);
-
         bootstrap.handler(new ChannelInitializer<SocketChannel>() {
-            @Override
-            protected void initChannel(SocketChannel ch) throws Exception {
-                if(Configuration.NETTY_HANDLER_TIMEOUT_MILLIS >0) {
-                    ch.pipeline().addLast(new ReadTimeoutHandler(Configuration.NETTY_HANDLER_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
-                }
+
+            @Override protected void initChannel(SocketChannel ch) throws Exception {
                 ch.pipeline().addLast(hf.getDecoders());
                 ch.pipeline().addLast(hf.getEncoders());
             }
@@ -103,22 +91,19 @@ public class ConnectFacade {
      * @param hf   HandlerFactory providing handling of communication
      * @return ChannelFuture callback
      */
-    public static ChannelFuture createServer(final SxpNode node,final HandlerFactory hf) {
-        final EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-        if (eventLoopGroup == null) {
-            eventLoopGroup = new NioEventLoopGroup();
+    public static ChannelFuture createServer(final SxpNode node, final HandlerFactory hf) {
+        if (!Epoll.isAvailable()) {
+            throw new UnsupportedOperationException(Epoll.unavailabilityCause().getCause());
         }
-
+        final EventLoopGroup bossGroup = new EpollEventLoopGroup(1);
+        Map<InetAddress, byte[]> keyMapping = new HashMap<>();
         ServerBootstrap bootstrap = new ServerBootstrap();
-        try {
-            bootstrap =
-                    customizeServerBootstrap(bootstrap,
-                            Collections2.filter(node.getAllConnections(), CONNECTION_ENTRY_WITH_PASSWORD));
-        } catch (NativeSupportUnavailableException e) {
-            LOG.error(node + "Could not customize bootstrap " + e);
-        }
+        Collections2.filter(node.getAllConnections(), CONNECTION_ENTRY_WITH_PASSWORD)
+                .forEach(p -> keyMapping.put(p.getDestination().getAddress(),
+                        p.getPassword().getBytes(Charsets.US_ASCII)));
+        bootstrap.channel(EpollServerSocketChannel.class);
+        bootstrap.option(EpollChannelOption.TCP_MD5SIG, keyMapping);
         bootstrap.group(bossGroup, eventLoopGroup);
-
         ChannelInitializer<SocketChannel> channelInitializer = new ChannelInitializer<SocketChannel>() {
 
             @Override protected void initChannel(SocketChannel ch) throws Exception {
@@ -126,7 +111,6 @@ public class ConnectFacade {
                 ch.pipeline().addLast(hf.getEncoders());
             }
         };
-
         if (Configuration.NETTY_LOGGER_HANDLER) {
             bootstrap.handler(new LoggingHandler(LogLevel.INFO)).childHandler(channelInitializer);
         } else {
@@ -135,50 +119,5 @@ public class ConnectFacade {
         ChannelFuture channelFuture = bootstrap.bind(node.getSourceIp(), node.getServerPort());
         channelFuture.channel().closeFuture().addListener(future -> bossGroup.shutdownGracefully());
         return channelFuture;
-    }
-
-    /**
-     * Creates custom bootstrap using TCP MD5 signature used for Peer connections
-     *
-     * @param bootstrap Bootstrap that will be customized
-     * @param inetHost  Address of node
-     * @param password  Password
-     * @return Bootstrap that uses TCP MD5
-     * @throws NativeSupportUnavailableException If error occurs while initialising TCP MD5
-     */
-    private static Bootstrap customizeClientBootstrap(Bootstrap bootstrap, InetAddress inetHost, String password)
-            throws NativeSupportUnavailableException {
-        KeyMapping keys = new KeyMapping();
-        keys.put(inetHost, password.getBytes(Charsets.US_ASCII));
-
-        KeyAccessFactory keyAccessFactory = NativeKeyAccessFactory.getInstance();
-        MD5NioSocketChannelFactory chf = new MD5NioSocketChannelFactory(keyAccessFactory);
-        bootstrap.channelFactory(chf);
-        bootstrap.option(MD5ChannelOption.TCP_MD5SIG, keys);
-        LOG.info("Customized client bootstrap");
-        return bootstrap;
-    }
-
-    /**
-     * Creates custom bootstrap using TCP MD5 signature used in Node
-     *
-     * @param bootstrap Bootstrap that will be customized
-     * @param md5Peers  Addresses of connections using password
-     * @return Bootstrap that uses TCP MD5
-     * @throws NativeSupportUnavailableException If error occurs while initialising TCP MD5
-     */
-    private static ServerBootstrap customizeServerBootstrap(ServerBootstrap bootstrap, Collection<SxpConnection> md5Peers) throws NativeSupportUnavailableException {
-        KeyMapping keyMapping = new KeyMapping();
-        md5Peers.forEach(
-                p -> keyMapping.put(p.getDestination().getAddress(), p.getPassword().getBytes(Charsets.US_ASCII)));
-
-        KeyAccessFactory keyAccessFactory = NativeKeyAccessFactory.getInstance();
-        MD5NioServerSocketChannelFactory md5NioServerSocketChannelFactory = new MD5NioServerSocketChannelFactory(
-                keyAccessFactory);
-
-        bootstrap.channelFactory(md5NioServerSocketChannelFactory);
-        bootstrap.option(MD5ChannelOption.TCP_MD5SIG, keyMapping);
-        LOG.info("Customized server bootstrap");
-        return bootstrap;
     }
 }
