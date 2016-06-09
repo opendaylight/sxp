@@ -75,10 +75,10 @@
     </build>
 
     <dependencies>
-    	<dependency>
+        <dependency>
             <groupId>org.opendaylight.controller</groupId>
             <artifactId>sal-binding-config</artifactId>
-        </dependency>    
+        </dependency>
         <dependency>
             <groupId>org.opendaylight.controller</groupId>
             <artifactId>sal-common-util</artifactId>
@@ -98,7 +98,7 @@
         <dependency>
             <groupId>org.opendaylight.mdsal.model</groupId>
             <artifactId>ietf-inet-types</artifactId>
-        </dependency>       
+        </dependency>
         <dependency>
             <groupId>org.opendaylight.mdsal.model</groupId>
             <artifactId>yang-ext</artifactId>

@@ -99,15 +99,15 @@
     </build>
 
     <dependencies>
-    	<dependency>
+        <dependency>
             <groupId>org.opendaylight.controller</groupId>
             <artifactId>config-api</artifactId>
         </dependency>
-       	<dependency>
+        <dependency>
             <groupId>org.opendaylight.controller</groupId>
             <artifactId>sal-binding-api</artifactId>
         </dependency>
-     	<dependency>
+        <dependency>
             <groupId>org.opendaylight.controller</groupId>
             <artifactId>sal-binding-config</artifactId>
         </dependency>
@@ -124,7 +124,7 @@
             <artifactId>yang-common</artifactId>
         </dependency>
         <dependency>
-        	<groupId>${project.groupId}</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>sxp-core</artifactId>
         </dependency>
         <dependency>
