@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da5c1566_ccb93830",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/service/ConnectFacade.java",
+        "patchSetId": 11
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 649
+      },
+      "writtenOn": "2016-06-10T12:30:08Z",
+      "side": 1,
+      "message": "don\u0027t use wildcard imports, it is against best practices.",
+      "range": {
+        "startLine": 16,
+        "startChar": 23,
+        "endLine": 16,
+        "endChar": 26
+      },
+      "revId": "f967090e7c0df4bcf64b62b755fba642db62e9ba",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
