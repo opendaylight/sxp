@@ -1,0 +1,8 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+1: Robert Varga <nite@hq.sk>
+Code-Review+2: Abdelilah Essiari <aessiari@cisco.com>
+Submitted-by: Martin Mihálek <mamihale@cisco.com>
+Submitted-at: Mon, 13 Jun 2016 22:58:51 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/30887
+Project: sxp
+Branch: refs/heads/master
