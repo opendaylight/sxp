@@ -16,9 +16,10 @@ import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
-import org.opendaylight.sxp.controller.listeners.sublisteners.ContainerListener;
+import org.opendaylight.sxp.controller.listeners.spi.Listener;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityFields;
@@ -30,32 +31,29 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static org.opendaylight.sxp.controller.listeners.sublisteners.ContainerListener.checkChange;
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
 
 public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdentity> {
 
-    protected static final Logger LOG = LoggerFactory.getLogger(ContainerListener.class.getName());
     public static final InstanceIdentifier<Topology>
             SUBSCRIBED_PATH =
             InstanceIdentifier.create(NetworkTopology.class)
                     .child(Topology.class, new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME)));
     protected final DatastoreAccess datastoreAccess;
-    private final List<ContainerListener> subListeners;
+    private final List<Listener> subListeners;
 
     public NodeIdentityListener(DatastoreAccess datastoreAccess) {
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
         subListeners = new ArrayList<>();
     }
 
-    public void addSubListener(ContainerListener<?, ?> listener) {
+    public void addSubListener(Listener<SxpNodeIdentity, ?> listener) {
         subListeners.add(Preconditions.checkNotNull(listener));
     }
 
@@ -97,23 +95,27 @@ public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdent
                             Configuration.register(
                                     new SxpDatastoreNode(NodeId.getDefaultInstance(Preconditions.checkNotNull(nodeId)),
                                             datastoreAccess, c.getRootNode().getDataAfter())).start();
+                            subListeners.forEach(l -> {
+                                l.handleChange(l.getModifications(c), c.getRootPath().getDatastoreType(),
+                                        c.getRootPath().getRootIdentifier());
+                            });
                             break;
                         } else if (c.getRootNode().getDataAfter() == null) {
                             Configuration.unregister(Preconditions.checkNotNull(nodeId)).shutdown();
                             break;
                         }
                     case SUBTREE_MODIFIED:
-                        if (checkChange(c, SxpNodeFields::isEnabled)) {
+                        if (checkDifference(c, SxpNodeFields::isEnabled)) {
                             if (Preconditions.checkNotNull(c.getRootNode().getDataAfter()).isEnabled()) {
                                 Configuration.getRegisteredNode(nodeId).start();
                             } else {
                                 Configuration.getRegisteredNode(nodeId).shutdown();
                             }
-                        } else if (checkChange(c, d -> d.getSecurity().getPassword()) || checkChange(c,
-                                SxpNodeFields::getVersion) || checkChange(c, SxpNodeFields::getTcpPort) || checkChange(
-                                c, SxpNodeFields::getSourceIp)) {
+                        } else if (checkDifference(c, d -> d.getSecurity().getPassword()) || checkDifference(c,
+                                SxpNodeFields::getVersion) || checkDifference(c, SxpNodeFields::getTcpPort)
+                                || checkDifference(c, SxpNodeFields::getSourceIp)) {
                             Configuration.getRegisteredNode(nodeId).shutdown().start();
-                        } else if (checkChange(c, SxpNodeIdentityFields::getTimers)) {
+                        } else if (checkDifference(c, SxpNodeIdentityFields::getTimers)) {
                             Configuration.getRegisteredNode(nodeId).shutdownConnections();
                         }
                         subListeners.forEach(l -> {
@@ -122,7 +124,7 @@ public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdent
                         });
                         break;
                     case DELETE:
-                        Configuration.unregister(Preconditions.checkNotNull(nodeId)).shutdown();
+                        SxpNode node = Configuration.unregister(Preconditions.checkNotNull(nodeId)).shutdown();
                         break;
                 }
             }

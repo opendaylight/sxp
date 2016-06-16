@@ -10,6 +10,10 @@ module sxp-controller {
     import sxp-filter { prefix sxpfl; revision-date "2015-09-11"; }
     import sxp-protocol { prefix sxppt; revision-date "2014-10-02"; }
 
+    organization "Cisco Systems, Inc.";
+
+    contact "Martin Mihalek <mamihale@cisco.com>";
+
     description
         "Module defines the base YANG definitions for ODL-SXP-aware network
         node.";
@@ -20,11 +24,11 @@ module sxp-controller {
     }
 
     typedef config-persistence {
-        description "If the COnfiguration will be preserved after shutdown";
         type enumeration {
             enum pernament;
             enum operational;
         }
+        description "If the Configuration will be preserved after shutdown";
     }
 
     // **************
@@ -32,34 +36,41 @@ module sxp-controller {
     // **************
 
     rpc get-connections {
-        description "Get all connections status of a specified node";
         input {
             leaf requested-node {
-                mandatory false;
                 type sxppt:node-id;
+                mandatory true;
                 description "Optional: SXP node ID";
             }
+            leaf domain-name {
+                type string;
+                default "global";
+            }
         }
-
+        description "Get all connections status of a specified node";
         output {
             uses sxpnd:sxp-connections-fields;
         }
     }
 
     rpc add-connection {
-        description "Create a new connection for a specified node";
         input {
             leaf config-persistence {
                 type config-persistence;
                 default "pernament";
             }
             leaf requested-node {
-                mandatory false;
                 type sxppt:node-id;
+                mandatory true;
                 description "Optional: SXP node ID";
+            }
+            leaf domain-name {
+                type string;
+                default "global";
             }
             uses sxpnd:sxp-connections-fields;
         }
+        description "Create a new connection for a specified node";
         output {
             leaf result {
                 type boolean;
@@ -71,19 +82,23 @@ module sxp-controller {
         description "Delete a connection of a specified node";
         input {
             leaf requested-node {
-                mandatory false;
                 type sxppt:node-id;
+                mandatory true;
                 description "Optional: SXP node ID";
             }
+            leaf domain-name {
+                type string;
+                default "global";
+            }
             leaf peer-address {
-                mandatory true;
                 type inet:ipv4-address;
+                mandatory true;
                 description "Address of the connected peer";
             }
             leaf tcp-port {
                 type inet:port-number;
-                description "Port of the connected peer";
                 default "64999";
+                description "Port of the connected peer";
             }
         }
         output {
@@ -94,6 +109,7 @@ module sxp-controller {
     }
 
     rpc add-entry {
+        status "deprecated";
         description "Add a new IP-SGT binding into a node's master database";
         input {
             leaf config-persistence {
@@ -101,18 +117,22 @@ module sxp-controller {
                 default "pernament";
             }
             leaf requested-node {
-                mandatory false;
                 type sxppt:node-id;
+                mandatory true;
                 description "Optional: SXP node ID";
             }
+            leaf domain-name {
+                type string;
+                default "global";
+            }
             leaf sgt {
-                mandatory true;
                 type sxpdb:sgt;
+                mandatory true;
                 description "Assigned source group tag";
             }
             leaf ip-prefix {
-                mandatory true;
                 type inet:ip-prefix;
+                mandatory true;
                 description "Assigned IP address";
             }
         }
@@ -124,6 +144,7 @@ module sxp-controller {
     }
 
     rpc update-entry {
+        status "deprecated";
         description "Update an IP-SGT binding in a node's master database";
         input {
             leaf config-persistence {
@@ -131,32 +152,36 @@ module sxp-controller {
                 default "pernament";
             }
             leaf requested-node {
-                mandatory false;
                 type sxppt:node-id;
+                mandatory true;
                 description "Optional: SXP node ID";
+            }
+            leaf domain-name {
+                type string;
+                default "global";
             }
 
             container original-binding {
                 leaf sgt {
-                    mandatory true;
                     type sxpdb:sgt;
+                    mandatory true;
                     description "Assigned source group tag";
                 }
                 leaf ip-prefix {
-                    mandatory true;
                     type inet:ip-prefix;
+                    mandatory true;
                     description "Assigned IP address";
                 }
             }
             container new-binding {
                 leaf sgt {
-                    mandatory true;
                     type sxpdb:sgt;
+                    mandatory true;
                     description "Assigned source group tag";
                 }
                 leaf ip-prefix {
-                    mandatory true;
                     type inet:ip-prefix;
+                    mandatory true;
                     description "Assigned IP address";
                 }
             }
@@ -169,16 +194,21 @@ module sxp-controller {
     }
 
     rpc delete-entry {
+        status "deprecated";
         description "Delete an IP-SGT binding in a node's master database";
         input {
             leaf requested-node {
-                mandatory false;
                 type sxppt:node-id;
+                mandatory true;
                 description "Optional: SXP node ID";
             }
+            leaf domain-name {
+                type string;
+                default "global";
+            }
             leaf sgt {
-                mandatory true;
                 type sxpdb:sgt;
+                mandatory true;
                 description "Assigned source group tag";
             }
             leaf-list ip-prefix {
@@ -199,16 +229,20 @@ module sxp-controller {
                 node";
         input {
             leaf requested-node {
-                mandatory true;
                 type sxppt:node-id;
+                mandatory true;
                 description "Node ID of the dedicated SXP source";
             }
+            leaf domain-name {
+                type string;
+                default "global";
+            }
             leaf bindings-range {
-                default local;
                 type enumeration {
                     enum local;
                     enum all;
                 }
+                default local;
             }
         }
         output {
@@ -224,8 +258,8 @@ module sxp-controller {
                 default "pernament";
             }
             leaf requested-node {
-                mandatory true;
                 type sxppt:node-id;
+                mandatory true;
                 description "Node ID of the dedicated SXP source";
             }
             uses sxpfl:sxp-peer-group;
@@ -241,13 +275,13 @@ module sxp-controller {
         description "Removes PeerGroup in specified node";
         input {
             leaf requested-node {
-                mandatory true;
                 type sxppt:node-id;
+                mandatory true;
                 description "Node ID of the dedicated SXP source";
             }
             leaf peer-group-name {
-                mandatory true;
                 type string;
+                mandatory true;
                 description "Name of PeerGroup that will be removed";
             }
         }
@@ -262,13 +296,13 @@ module sxp-controller {
         description "Gets PerGroup with specified name on node";
         input {
             leaf requested-node {
-                mandatory true;
                 type sxppt:node-id;
+                mandatory true;
                 description "Node ID of the dedicated SXP source";
             }
             leaf peer-group-name {
-                mandatory true;
                 type string;
+                mandatory true;
                 description "Name of peer group";
             }
         }
@@ -281,8 +315,8 @@ module sxp-controller {
         description "Gets all PeerGroups on specified node";
         input {
             leaf requested-node {
-                mandatory true;
                 type sxppt:node-id;
+                mandatory true;
                 description "Node ID of the dedicated SXP source";
             }
         }
@@ -299,13 +333,13 @@ module sxp-controller {
                 default "pernament";
             }
             leaf requested-node {
-                mandatory true;
                 type sxppt:node-id;
+                mandatory true;
                 description "Node ID of the dedicated SXP source";
             }
             leaf peer-group-name {
-                mandatory true;
                 type string;
+                mandatory true;
                 description "Name of PeerGroup where filter will be placed";
             }
             uses sxpfl:sxp-filter;
@@ -321,18 +355,18 @@ module sxp-controller {
         description "Removes filter from PeerGroup";
         input {
             leaf requested-node {
-                mandatory true;
                 type sxppt:node-id;
+                mandatory true;
                 description "Node ID of the dedicated SXP source";
             }
             leaf peer-group-name {
-                mandatory true;
                 type string;
+                mandatory true;
                 description "Name of PeerGroup from where filter will be removed";
             }
             leaf filter-type {
-                mandatory true;
                 type sxpfl:filter-type;
+                mandatory true;
             }
             leaf filter-specific {
                 type sxpfl:filter-specific;
@@ -353,13 +387,13 @@ module sxp-controller {
                 default "pernament";
             }
             leaf requested-node {
-                mandatory true;
                 type sxppt:node-id;
+                mandatory true;
                 description "Node ID of the dedicated SXP source";
             }
             leaf peer-group-name {
-                mandatory true;
                 type string;
+                mandatory true;
                 description "Name of PeerGroup where filter will be updated";
             }
             uses sxpfl:sxp-filter;
@@ -379,8 +413,8 @@ module sxp-controller {
                 default "pernament";
             }
             leaf node-id {
-                mandatory true;
                 type sxppt:node-id;
+                mandatory true;
                 description "SXP node ID";
             }
             uses sxpnd:sxp-node-identity-fields;
@@ -397,9 +431,141 @@ module sxp-controller {
         description "Delete a node from ODL";
         input {
             leaf node-id {
-                mandatory true;
                 type sxppt:node-id;
+                mandatory true;
                 description "SXP node ID";
+            }
+        }
+        output {
+            leaf result {
+                type boolean;
+            }
+        }
+    }
+
+    rpc add-domain {
+        description "Delete a node from ODL";
+        input {
+            leaf config-persistence {
+                type config-persistence;
+                default "pernament";
+            }
+            leaf node-id {
+                type sxppt:node-id;
+                mandatory true;
+                description "SXP node ID";
+            }
+            leaf domain-name {
+                type string;
+                mandatory true;
+            }
+            uses sxpnd:sxp-connections-fields;
+            uses sxpdb:master-database-configuration;
+        }
+        output {
+            leaf result {
+                type boolean;
+            }
+        }
+    }
+
+    rpc delete-domain {
+        description "Delete a node from ODL";
+        input {
+            leaf node-id {
+                type sxppt:node-id;
+                mandatory true;
+                description "SXP node ID";
+            }
+            leaf domain-name {
+                type string;
+                mandatory true;
+            }
+        }
+        output {
+            leaf result {
+                type boolean;
+            }
+        }
+    }
+
+    rpc add-bindings {
+        description "Delete a node from ODL";
+        input {
+            leaf config-persistence {
+                type config-persistence;
+                default "pernament";
+            }
+            leaf node-id {
+                type sxppt:node-id;
+                mandatory true;
+                description "SXP node ID";
+            }
+            uses sxpdb:master-database-configuration-fields;
+        }
+        output {
+            leaf result {
+                type boolean;
+            }
+        }
+    }
+
+    rpc delete-bindings {
+        description "Delete a node from ODL";
+        input {
+            leaf node-id {
+                type sxppt:node-id;
+                mandatory true;
+                description "SXP node ID";
+            }
+            uses sxpdb:master-database-configuration-fields;
+        }
+        output {
+            leaf result {
+                type boolean;
+            }
+        }
+    }
+
+    rpc add-domain-filter {
+        description "Add new filter to PeerGroup";
+        input {
+            leaf config-persistence {
+                type config-persistence;
+                default "pernament";
+            }
+            leaf requested-node {
+                type sxppt:node-id;
+                mandatory true;
+                description "Node ID of the dedicated SXP source";
+            }
+            leaf domain-name {
+                type string;
+                mandatory true;
+            }
+            uses sxpfl:sxp-domain-filter;
+        }
+        output {
+            leaf result {
+                type boolean;
+            }
+        }
+    }
+
+    rpc delete-domain-filter {
+        description "Removes filter from PeerGroup";
+        input {
+            leaf requested-node {
+                type sxppt:node-id;
+                mandatory true;
+                description "Node ID of the dedicated SXP source";
+            }
+            leaf domain-name {
+                type string;
+                mandatory true;
+            }
+            leaf filter-specific {
+                type sxpfl:filter-specific;
             }
         }
         output {

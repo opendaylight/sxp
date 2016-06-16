@@ -63,15 +63,20 @@ import java.util.stream.Collectors;
 public final class BindingHandler {
 
     protected static final Logger LOG = LoggerFactory.getLogger(BindingHandler.class.getName());
-    private final MasterDatabaseInf masterDatabase;
-    private final SxpDatabaseInf sxpDatabase;
+    private final SxpNode sxpNode;
     private final BindingDispatcher dispatcher;
 
     public BindingHandler(SxpNode node, BindingDispatcher dispatcher) {
-        Preconditions.checkNotNull(node);
+        this.sxpNode = Preconditions.checkNotNull(node);
         this.dispatcher = Preconditions.checkNotNull(dispatcher);
-        masterDatabase = Preconditions.checkNotNull(node.getBindingMasterDatabase());
-        sxpDatabase = Preconditions.checkNotNull(node.getBindingSxpDatabase());
+    }
+
+    private SxpDatabaseInf getSxpDatabase(String name) {
+        return sxpNode.getBindingSxpDatabase(name);
+    }
+
+    private MasterDatabaseInf getMasterDatabase(String name) {
+        return sxpNode.getBindingMasterDatabase(name);
     }
 
     /**
@@ -257,23 +262,34 @@ public final class BindingHandler {
     }
 
     /**
-     * Add Purge to inbound message queue and proced it
+     * Add Purge to inbound message queue and proceed it
      *
      * @param connection SxpConnection for which PurgeAll will be proceed
      */
     public static ListenableFuture processPurgeAllMessage(final SxpConnection connection) {
         return Preconditions.checkNotNull(connection).getOwner().getWorker().executeTaskInSequence(() -> {
-            final SxpNode owner = connection.getOwner();
-            final Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(owner);
-            final SxpDatabaseInf sxpDatabase = owner.getBindingSxpDatabase();
-            synchronized (sxpDatabase) {
-                List<SxpDatabaseBinding> removed = sxpDatabase.deleteBindings(connection.getNodeIdRemote()),
-                        replace = SxpDatabase.getReplaceForBindings(removed, sxpDatabase, filterMap);
-                connection.propagateUpdate(owner.getBindingMasterDatabase().deleteBindings(removed),
-                        owner.getBindingMasterDatabase().addBindings(replace));
-            }
+            processPurgeAllMessageSync(connection);
             return null;
         }, ThreadsWorker.WorkerType.INBOUND, connection);
+    }
+
+    /**
+     * Add Purge to inbound message queue and proceed it
+     *
+     * @param connection SxpConnection for which PurgeAll will be proceed
+     */
+    //TODO remove if necessary
+    public static void processPurgeAllMessageSync(final SxpConnection connection) {
+        final SxpNode owner = connection.getOwner();
+        final Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(owner);
+        final SxpDatabaseInf sxpDatabase = owner.getBindingSxpDatabase(connection.getDomainName());
+        synchronized (sxpDatabase) {
+            List<SxpDatabaseBinding> removed = sxpDatabase.deleteBindings(connection.getNodeIdRemote()),
+                    replace = SxpDatabase.getReplaceForBindings(removed, sxpDatabase, filterMap);
+            connection.propagateUpdate(
+                    owner.getBindingMasterDatabase(connection.getDomainName()).deleteBindings(removed),
+                    owner.getBindingMasterDatabase(connection.getDomainName()).addBindings(replace));
+        }
     }
 
     /**
@@ -284,8 +300,8 @@ public final class BindingHandler {
      * @param connection     SxpConnection on which bindings were received
      * @param <T>            Any type extending SxpBindingFields
      */
-    public <T extends SxpBindingFields> void processUpdate(List<T> databaseDelete,
-            List<T> databaseAdd, SxpConnection connection) {
+    public <T extends SxpBindingFields> void processUpdate(List<T> databaseDelete, List<T> databaseAdd,
+            SxpConnection connection) {
         // Loop detection.
         if (Preconditions.checkNotNull(connection).getCapabilities().contains(CapabilityType.LoopDetection)) {
             databaseAdd = loopDetection(connection.getOwnerId(), databaseAdd);
@@ -293,9 +309,13 @@ public final class BindingHandler {
 
         List<SxpDatabaseBinding> added = new ArrayList<>(), removed = new ArrayList<>(), replace = new ArrayList<>();
         SxpBindingFilter filter = connection.getFilter(FilterType.Inbound);
-        List<SxpConnection> sxpConnections = connection.getOwner().getAllOnSpeakerConnections();
+        List<SxpConnection>
+                sxpConnections =
+                connection.getOwner().getAllOnSpeakerConnections(connection.getDomainName());
         Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(connection.getOwner());
-        synchronized (sxpDatabase) {
+        SxpDatabaseInf sxpDatabase = getSxpDatabase(connection.getDomainName());
+        MasterDatabaseInf masterDatabase = getMasterDatabase(connection.getDomainName());
+        synchronized (getSxpDatabase(connection.getDomainName())) {
             if (databaseDelete != null && !databaseDelete.isEmpty()) {
                 removed = sxpDatabase.deleteBindings(connection.getNodeIdRemote(), databaseDelete);
                 replace = SxpDatabase.getReplaceForBindings(removed, sxpDatabase, filterMap);

@@ -25,7 +25,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomainsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpPeerGroupsBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
@@ -95,10 +98,15 @@ public final class ConfigLoader {
                 new SecurityBuilder().setPassword(Preconditions.checkNotNull(node.getSecurity()).getPassword())
                         .build());
 
-        identityBuilder.setConnections(parseConnections(node.getConnections()));
         identityBuilder.setSxpPeerGroups(new SxpPeerGroupsBuilder().build());
         identityBuilder.setDescription(node.getDescription());
-        identityBuilder.setMasterDatabase(parseMasterDatabase(node.getMasterDatabase()));
+        List<SxpDomain> domains = new ArrayList<>();
+        SxpDomainBuilder domain = new SxpDomainBuilder();
+        domain.setDomainName(org.opendaylight.sxp.core.SxpNode.DEFAULT_DOMAIN);
+        domain.setConnections(parseConnections(node.getConnections()));
+        domain.setMasterDatabase(parseMasterDatabase(node.getMasterDatabase()));
+        domains.add(domain.build());
+        identityBuilder.setSxpDomains(new SxpDomainsBuilder().setSxpDomain(domains).build());
         identityBuilder.setTimers(parseNodeTimers(node.getTimers()));
         return identityBuilder.build();
     }
@@ -190,5 +198,14 @@ public final class ConfigLoader {
             });
         }
         return databaseBuilder.build();
+    }
+
+    public static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections parseConnections(
+            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections connections) {
+        ConnectionsBuilder connectionsBuilder = new ConnectionsBuilder().setConnection(new ArrayList<>());
+        if (connections != null && connections.getConnection() != null) {
+            connectionsBuilder.setConnection(connections.getConnection());
+        }
+        return connectionsBuilder.build();
     }
 }

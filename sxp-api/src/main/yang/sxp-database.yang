@@ -8,6 +8,10 @@ module sxp-database {
     import ietf-yang-types { prefix ietf-yang; revision-date "2010-09-24"; }
     import sxp-protocol { prefix sxppt; revision-date "2014-10-02"; }
 
+    organization "Cisco Systems, Inc.";
+
+    contact "Martin Mihalek <mamihale@cisco.com>";
+
     description
         "Module defines the base YANG definitions for SXP databases.";
 
@@ -31,12 +35,12 @@ module sxp-database {
 
     grouping sxp-binding-fields {
         leaf ip-prefix {
-            mandatory true;
             type inet:ip-prefix;
+            mandatory true;
         }
         leaf security-group-tag {
-            mandatory true;
             type sgt;
+            mandatory true;
         }
         leaf timestamp {
             type ietf-yang:date-and-time;
@@ -112,9 +116,9 @@ module sxp-database {
             }
             leaf-list ip-prefix {
                 type inet:ip-prefix;
+                min-elements 1;
                 description "Assigned IPv4/IPv6 host IP or network address (prefix is less
                             than 32/64).";
-                min-elements 1;
             }
         }
     }
@@ -122,7 +126,6 @@ module sxp-database {
     grouping master-database-configuration {
         description "Standard configuration for SXP database";
         container master-database {
-            config true;
             uses master-database-configuration-fields;
         }
     }

@@ -126,7 +126,7 @@ public class ThreadsWorker {
      */
     private <T> Callable<T> checkAndWrap(Callable<T> callable) {
         Preconditions.checkNotNull(callable);
-        return LOG.isDebugEnabled() ? () -> {
+        return LOG.isInfoEnabled() ? () -> {
             try {
                 return callable.call();
             } catch (Exception e) {
