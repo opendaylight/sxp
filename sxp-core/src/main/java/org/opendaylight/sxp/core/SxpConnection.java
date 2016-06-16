@@ -97,8 +97,14 @@ public class SxpConnection {
      * @return SxpConnection created by specified values
      * @throws UnknownVersionException If version in provided values isn't supported
      */
-    public static SxpConnection create(SxpNode owner, Connection connection) throws UnknownVersionException {
-        return new SxpConnection(owner, connection);
+    public static SxpConnection create(SxpNode owner, Connection connection, String domain)
+            throws UnknownVersionException {
+        return new SxpConnection(owner, connection, domain);
+    }
+
+    public static SxpConnection create(SxpNode owner, Connection connection)
+            throws UnknownVersionException {
+        return new SxpConnection(owner, connection, SxpNode.DEFAULT_DOMAIN);
     }
 
     private ConnectionBuilder connectionBuilder;
@@ -111,6 +117,7 @@ public class SxpConnection {
     protected InetSocketAddress localAddress, remoteAddress;
 
     private final SxpNode owner;
+    protected final String domain;
 
     protected HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(5);
     private final Map<FilterType, Map<FilterSpecific, SxpBindingFilter>> bindingFilterMap =
@@ -138,8 +145,8 @@ public class SxpConnection {
                         && !isModeListener()) {
             return;
         }
-        final SxpDatabaseInf sxpDatabase = owner.getBindingSxpDatabase();
-        final MasterDatabaseInf masterDatabase = owner.getBindingMasterDatabase();
+        final SxpDatabaseInf sxpDatabase = owner.getBindingSxpDatabase(getDomainName());
+        final MasterDatabaseInf masterDatabase = owner.getBindingMasterDatabase(getDomainName());
         if (filterType.equals(FilterType.Outbound)) {
             //Sends PurgeAll, All bindings in this order
             List<SxpConnection> connections = new ArrayList<>();
@@ -157,7 +164,7 @@ public class SxpConnection {
                     }
                     getOwner().getSvcBindingDispatcher()
                             .propagateUpdate(null, masterDatabase.addBindings(bindingsAdd),
-                                    owner.getAllOnSpeakerConnections());
+                                    owner.getAllOnSpeakerConnections(getDomainName()));
                 }
                 return null;
             }, ThreadsWorker.WorkerType.INBOUND, this);
@@ -176,7 +183,7 @@ public class SxpConnection {
                     getOwner().getSvcBindingDispatcher()
                             .propagateUpdate(masterDatabase.deleteBindings(bindingsDelete), masterDatabase.addBindings(
                                     SxpDatabase.getReplaceForBindings(bindingsDelete, sxpDatabase, filterMap)),
-                                    owner.getAllOnSpeakerConnections());
+                                    owner.getAllOnSpeakerConnections(getDomainName()));
                 }
                 return null;
             }, ThreadsWorker.WorkerType.INBOUND, this);
@@ -241,8 +248,9 @@ public class SxpConnection {
      * @param connection Connection that contains settings
      * @throws UnknownVersionException If version in provided values isn't supported
      */
-    protected SxpConnection(SxpNode owner, Connection connection) throws UnknownVersionException {
+    protected SxpConnection(SxpNode owner, Connection connection, String domain) throws UnknownVersionException {
         this.owner = Preconditions.checkNotNull(owner);
+        this.domain = Preconditions.checkNotNull(domain);
         this.connectionBuilder = new ConnectionBuilder(Preconditions.checkNotNull(connection));
         this.remoteAddress =
                 new InetSocketAddress(Search.getAddress(connectionBuilder.getPeerAddress()),
@@ -336,7 +344,7 @@ public class SxpConnection {
 
     public <T extends SxpBindingFields> void propagateUpdate(List<T> deleteBindings, List<T> addBindings) {
         owner.getSvcBindingDispatcher()
-                .propagateUpdate(deleteBindings, addBindings, owner.getAllOnSpeakerConnections());
+                .propagateUpdate(deleteBindings, addBindings, owner.getAllOnSpeakerConnections(getDomainName()));
     }
 
     /**
@@ -360,7 +368,7 @@ public class SxpConnection {
         // before the delete hold down timer expiration, a reconcile timer is
         // started to clean up old mappings that didn’t get informed to be
         // removed because of the loss of connectivity.
-        context.getOwner().getBindingSxpDatabase().reconcileBindings(getNodeIdRemote());
+        context.getOwner().getBindingSxpDatabase(getDomainName()).reconcileBindings(getNodeIdRemote());
     }
 
     /**
@@ -649,6 +657,13 @@ public class SxpConnection {
     }
 
     /**
+     * @return Domain to which Connection belongs
+     */
+    public String getDomainName() {
+        return domain;
+    }
+
+    /**
      * Gets SxpConnection specific Timer
      *
      * @param timerType Type of Timer
@@ -810,12 +825,13 @@ public class SxpConnection {
 
     public void purgeBindings() {
         // Get message relevant peer node ID.
-        BindingHandler.processPurgeAllMessage(this);
-        try {
-            setStateOff(getChannelHandlerContext(ChannelHandlerContextType.ListenerContext));
-        } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-            setStateOff();
-        }
+        getOwner().getWorker().addListener(BindingHandler.processPurgeAllMessage(this), () -> {
+            try {
+                setStateOff(getChannelHandlerContext(ChannelHandlerContextType.ListenerContext));
+            } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+                setStateOff();
+            }
+        });
     }
 
     /**
@@ -1090,7 +1106,7 @@ public class SxpConnection {
      */
     public void setStateDeleteHoldDown() {
         setState(ConnectionState.DeleteHoldDown);
-        owner.getBindingSxpDatabase().setReconciliation(getNodeIdRemote());
+        owner.getBindingSxpDatabase(getDomainName()).setReconciliation(getNodeIdRemote());
     }
 
     /**
@@ -1173,7 +1189,8 @@ public class SxpConnection {
                 List<SxpConnection> sxpConnections = new ArrayList<>();
                 sxpConnections.add(this);
                 owner.getSvcBindingDispatcher()
-                        .propagateUpdate(null, getOwner().getBindingMasterDatabase().getBindings(), sxpConnections);
+                        .propagateUpdate(null, getOwner().getBindingMasterDatabase(getDomainName()).getBindings(),
+                                sxpConnections);
                 return null;
             }, ThreadsWorker.WorkerType.OUTBOUND, this);
         }
@@ -1242,7 +1259,7 @@ public class SxpConnection {
     public synchronized void shutdown() {
         if (isModeListener()) {
             LOG.info("{} PURGE bindings ", this);
-            purgeBindings();
+            BindingHandler.processPurgeAllMessage(this);
         } else if (isModeSpeaker() && isStateOn()) {
             try {
                 BindingDispatcher.sendPurgeAllMessage(this).get();

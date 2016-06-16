@@ -6,6 +6,10 @@ module sxp-protocol {
 
     import ietf-inet-types { prefix inet; revision-date "2010-09-24"; }
 
+    organization "Cisco Systems, Inc.";
+
+    contact "Martin Mihalek <mamihale@cisco.com>";
+
     description
         "Module defines the SXP protocol according to its IETF I-D specification
         http://tools.ietf.org/html/draft-smith-kandula-sxp-00";
@@ -489,12 +493,12 @@ module sxp-protocol {
     typedef tlv-type {
         type enumeration {
             enum sgt {
-                description "Type = 1, Length = 2, Value = SGT";
                 value 1;
+                description "Type = 1, Length = 2, Value = SGT";
             }
             enum prefix-length {
-                description "Type = 2, Length = 1, Value = Prefix length of the IP address";
                 value 2;
+                description "Type = 2, Length = 1, Value = Prefix length of the IP address";
             }
         }
     }

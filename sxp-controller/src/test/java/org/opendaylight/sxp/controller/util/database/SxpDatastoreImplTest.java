@@ -143,7 +143,7 @@ import static org.mockito.Matchers.any;
     @Before public void init() {
         databaseBindings_Reconciled.clear();
         databaseBindings_Active.clear();
-        database = new SxpDatastoreImpl(access, "0.0.0.0");
+        database = new SxpDatastoreImpl(access, "0.0.0.0", "DOMAIN");
     }
 
     private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, String... peers) {

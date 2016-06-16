@@ -14,8 +14,9 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.BindingAwareBroker.RpcRegistration;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.RpcServiceImpl;
-import org.opendaylight.sxp.controller.listeners.*;
+import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.ConnectionsListener;
+import org.opendaylight.sxp.controller.listeners.sublisteners.DomainListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.FilterListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.MasterBindingListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.PeerGroupListener;
@@ -69,7 +70,7 @@ public class SxpControllerModule
         return false;
     }
 
-    @Override public java.lang.AutoCloseable createInstance() {
+    @SuppressWarnings("unchecked") @Override public java.lang.AutoCloseable createInstance() {
         final DataBroker dataBroker = getDataBrokerDependency();
         DatastoreAccess datastoreAccess = DatastoreAccess.getInstance(dataBroker);
         ConfigLoader configLoader = new ConfigLoader(datastoreAccess);
@@ -79,10 +80,11 @@ public class SxpControllerModule
             configLoader.load(getSxpController());
         }
         NodeIdentityListener listener = new NodeIdentityListener(datastoreAccess);
-        listener.addSubListener(new ConnectionsListener(datastoreAccess));
-        listener.addSubListener(new PeerGroupListener(datastoreAccess));
-        listener.addSubListener(new MasterBindingListener(datastoreAccess));
-        listener.addSubListener(new FilterListener(datastoreAccess));
+        listener.addSubListener(
+                new DomainListener(datastoreAccess).addSubListener(new ConnectionsListener(datastoreAccess))
+                        .addSubListener(new MasterBindingListener(datastoreAccess)));
+        listener.addSubListener(
+                new PeerGroupListener(datastoreAccess).addSubListener(new FilterListener(datastoreAccess)));
 
         dataChangeListenerRegistrations.add(listener.register(dataBroker, LogicalDatastoreType.CONFIGURATION));
         dataChangeListenerRegistrations.add(listener.register(dataBroker, LogicalDatastoreType.OPERATIONAL));

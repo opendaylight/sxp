@@ -74,6 +74,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -96,6 +97,7 @@ public class BindingHandlerTest {
 
                 worker = mock(ThreadsWorker.class);
                 when(connection.getOwner()).thenReturn(sxpNode);
+                when(connection.getDomainName()).thenReturn("default");
                 when(connection.getNodeIdRemote()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
                 when(connection.getOwnerId()).thenReturn(NodeId.getDefaultInstance("1.1.1.1"));
                 PowerMockito.when(sxpNode.getWorker()).thenReturn(worker);
@@ -106,8 +108,8 @@ public class BindingHandlerTest {
                         new InetSocketAddress(InetAddress.getByName("1.1.1.1"), 5));
                 sxpDatabaseInf = new SxpDatabaseImpl();
                 masterDatabaseInf = new MasterDatabaseImpl();
-                PowerMockito.when(sxpNode.getBindingSxpDatabase()).thenReturn(sxpDatabaseInf);
-                PowerMockito.when(sxpNode.getBindingMasterDatabase()).thenReturn(masterDatabaseInf);
+                PowerMockito.when(sxpNode.getBindingSxpDatabase(anyString())).thenReturn(sxpDatabaseInf);
+                PowerMockito.when(sxpNode.getBindingMasterDatabase(anyString())).thenReturn(masterDatabaseInf);
                 handler = new BindingHandler(sxpNode, PowerMockito.mock(BindingDispatcher.class));
         }
 

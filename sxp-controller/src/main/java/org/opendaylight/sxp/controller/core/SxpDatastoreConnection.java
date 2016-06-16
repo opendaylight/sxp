@@ -17,6 +17,9 @@ import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
@@ -34,9 +37,10 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
     private DatastoreAccess datastoreAccess;
     private String nodeId = null;
 
-    public SxpDatastoreConnection(DatastoreAccess datastoreAccess, SxpNode owner, Connection connection)
+    public SxpDatastoreConnection(DatastoreAccess datastoreAccess, SxpNode owner, Connection connection, String domain)
             throws UnknownVersionException {
-        super(Preconditions.checkNotNull(owner), Preconditions.checkNotNull(connection));
+        super(Preconditions.checkNotNull(owner), Preconditions.checkNotNull(connection),
+                Preconditions.checkNotNull(domain));
         this.address = new IpAddress(Preconditions.checkNotNull(connection.getPeerAddress()));
         this.port = new PortNumber(Preconditions.checkNotNull(connection.getTcpPort()));
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
@@ -52,6 +56,8 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
 
     private InstanceIdentifier<Connection> getIdentifier() {
         return SxpDatastoreNode.getIdentifier(getNodeId())
+                .child(SxpDomains.class)
+                .child(SxpDomain.class, new SxpDomainKey(domain))
                 .child(Connections.class)
                 .child(Connection.class, new ConnectionKey(address, port));
     }
