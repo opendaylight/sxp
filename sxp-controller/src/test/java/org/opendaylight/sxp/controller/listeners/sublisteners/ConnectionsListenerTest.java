@@ -20,6 +20,9 @@ import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
@@ -34,7 +37,8 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -73,9 +77,11 @@ public class ConnectionsListenerTest {
         return modification;
     }
 
-    private InstanceIdentifier<SxpNodeIdentity> getIdentifier() {
+    private InstanceIdentifier<SxpDomain> getIdentifier() {
         return NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class, new NodeKey(new NodeId("0.0.0.0")))
-                .augmentation(SxpNodeIdentity.class);
+                .augmentation(SxpNodeIdentity.class)
+                .child(SxpDomains.class)
+                .child(SxpDomain.class, new SxpDomainKey("GLOBAL"));
     }
 
     private Connection getConnection(String ip, ConnectionState state, int port) {
@@ -89,7 +95,7 @@ public class ConnectionsListenerTest {
     @Test public void testHandleOperational_1() throws Exception {
         identityListener.handleOperational(getObjectModification(DataObjectModification.ModificationType.WRITE, null,
                 getConnection("1.1.1.1", ConnectionState.Off, 56)), getIdentifier());
-        verify(sxpNode).addConnection(any(Connection.class));
+        verify(sxpNode).addConnection(any(Connection.class), anyString());
     }
 
     @Test public void testHandleOperational_2() throws Exception {

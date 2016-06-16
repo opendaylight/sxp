@@ -84,7 +84,7 @@ public class MasterDatastoreImplTest {
 
     @Before public void init() {
         databaseBindings_Op.clear();
-        database = new MasterDatastoreImpl(access, "0.0.0.0");
+        database = new MasterDatastoreImpl(access, "0.0.0.0", "DOMAIN");
     }
 
     private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, String... peers) {

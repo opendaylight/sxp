@@ -188,25 +188,23 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
             ctx.close();
             return;
         }
-        synchronized (connection) {
-            // Connection is already functional, do not add new channel context.
-            if (connection.isStateOn() && (!connection.isModeBoth() || connection.isBidirectionalBoth())) {
-                ctx.close();
-                return;
-            }
-            if (profile.equals(Profile.Server)) {
-                // System.out.println("L" + ctx.channel().remoteAddress());
-                connection.setInetSocketAddresses(ctx.channel().localAddress());
-                connection.addChannelHandlerContext(ctx);
-                return;
-            }
-
-            // System.out.println("R" + ctx.channel().remoteAddress());
+        // Connection is already functional, do not add new channel context.
+        if (connection.isStateOn() && (!connection.isModeBoth() || connection.isBidirectionalBoth())) {
+            ctx.close();
+            return;
+        }
+        if (profile.equals(Profile.Server)) {
+            // System.out.println("L" + ctx.channel().remoteAddress());
             connection.setInetSocketAddresses(ctx.channel().localAddress());
             connection.addChannelHandlerContext(ctx);
-            if (!connection.isModeBoth() || !connection.isStateOn(ChannelHandlerContextType.ListenerContext)) {
-                connection.getContext().executeChannelActivationStrategy(ctx, connection);
-            }
+            return;
+        }
+
+        // System.out.println("R" + ctx.channel().remoteAddress());
+        connection.setInetSocketAddresses(ctx.channel().localAddress());
+        connection.addChannelHandlerContext(ctx);
+        if (!connection.isModeBoth() || !connection.isStateOn(ChannelHandlerContextType.ListenerContext)) {
+            connection.getContext().executeChannelActivationStrategy(ctx, connection);
         }
     }
 
@@ -217,9 +215,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
         if (connection == null) {
             return;
         }
-        synchronized (connection) {
-            connection.getContext().executeChannelInactivationStrategy(ctx, connection);
-        }
+        connection.getContext().executeChannelInactivationStrategy(ctx, connection);
     }
 
     @Override
@@ -230,31 +226,29 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
             LOG.warn(getLogMessage(owner, ctx, "Channel read0"));
             return;
         }
-        synchronized (connection) {
-            while (message.readableBytes() != 0) {
-                // Execute selected strategy.
-                try {
-                    Notification notification = connection.getContext().executeParseInput(message);
-                    connection.getContext().executeInputMessageStrategy(ctx, connection, notification);
-                } catch (ErrorMessageException messageValidationException) {
-                    // Attributes validation: Low-level filter of non-valid
-                    // messages.
-                    Exception carriedException = messageValidationException.getCarriedException();
-                    if (carriedException != null) {
-                        LOG.warn(getLogMessage(owner, ctx, "", carriedException));
-                    }
-                    sendErrorMessage(ctx, messageValidationException, connection);
-                    connection.setStateOff(ctx);
-                    break;
-                } catch (ErrorMessageReceivedException | UpdateMessageConnectionStateException e) {
-                    // Filter of error messages.
-                    LOG.warn(getLogMessage(owner, ctx, "", e));
-                    connection.setStateOff(ctx);
-                    break;
-                } catch (Exception e) {
-                    LOG.warn(getLogMessage(owner, ctx, "Channel read") + ": {}", MessageFactory.toString(message), e);
-                    break;
+        while (message.readableBytes() != 0) {
+            // Execute selected strategy.
+            try {
+                Notification notification = connection.getContext().executeParseInput(message);
+                connection.getContext().executeInputMessageStrategy(ctx, connection, notification);
+            } catch (ErrorMessageException messageValidationException) {
+                // Attributes validation: Low-level filter of non-valid
+                // messages.
+                Exception carriedException = messageValidationException.getCarriedException();
+                if (carriedException != null) {
+                    LOG.warn(getLogMessage(owner, ctx, "", carriedException));
                 }
+                sendErrorMessage(ctx, messageValidationException, connection);
+                connection.setStateOff(ctx);
+                break;
+            } catch (ErrorMessageReceivedException | UpdateMessageConnectionStateException e) {
+                // Filter of error messages.
+                LOG.warn(getLogMessage(owner, ctx, "", e));
+                connection.setStateOff(ctx);
+                break;
+            } catch (Exception e) {
+                LOG.warn(getLogMessage(owner, ctx, "Channel read") + ": {}", MessageFactory.toString(message), e);
+                break;
             }
         }
     }
@@ -271,14 +265,12 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
             LOG.warn(getLogMessage(owner, ctx, "Channel exception"));
             return;
         }
-        synchronized (connection) {
-            if (cause instanceof IOException) {
-                LOG.debug("IO error {} shutting down connection {}", cause, connection);
-                connection.setStateOff(ctx);
-                return;
-            }
-            connection.getContext().executeExceptionCaughtStrategy(ctx, connection);
-            LOG.warn(getLogMessage(owner, ctx, "Channel exception"), cause);
+        if (cause instanceof IOException) {
+            LOG.debug("IO error {} shutting down connection {}", cause, connection);
+            connection.setStateOff(ctx);
+            return;
         }
+        connection.getContext().executeExceptionCaughtStrategy(ctx, connection);
+        LOG.warn(getLogMessage(owner, ctx, "Channel exception"), cause);
     }
 }

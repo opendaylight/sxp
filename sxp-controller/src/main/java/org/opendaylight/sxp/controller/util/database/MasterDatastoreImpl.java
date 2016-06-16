@@ -18,6 +18,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpB
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
@@ -36,17 +39,18 @@ import java.util.Map;
 public final class MasterDatastoreImpl extends MasterDatabase {
 
     private final DatastoreAccess datastoreAccess;
-    private final String nodeId;
+    private final String nodeId,domain;
 
-    public MasterDatastoreImpl(DatastoreAccess datastoreAccess, String nodeId) {
+    public MasterDatastoreImpl(DatastoreAccess datastoreAccess, String nodeId, String domain) {
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
         this.nodeId = Preconditions.checkNotNull(nodeId);
-        datastoreAccess.putSynchronous(getIdentifierBuilder().build(),
+        this.domain = Preconditions.checkNotNull(domain);
+        datastoreAccess.checkAndPut(getIdentifierBuilder().build(),
                 new MasterDatabaseBuilder().setMasterDatabaseBinding(new ArrayList<>()).build(),
-                LogicalDatastoreType.OPERATIONAL);
-        datastoreAccess.mergeSynchronous(getIdentifierBuilder().build(),
+                LogicalDatastoreType.OPERATIONAL, false);
+        datastoreAccess.checkAndPut(getIdentifierBuilder().build(),
                 new MasterDatabaseBuilder().setMasterDatabaseBinding(new ArrayList<>()).build(),
-                LogicalDatastoreType.CONFIGURATION);
+                LogicalDatastoreType.CONFIGURATION, false);
     }
 
     private InstanceIdentifier.InstanceIdentifierBuilder<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase> getIdentifierBuilder() {
@@ -54,6 +58,8 @@ public final class MasterDatastoreImpl extends MasterDatabase {
                 .child(Topology.class, new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME)))
                 .child(Node.class, new NodeKey(new NodeId(nodeId)))
                 .augmentation(SxpNodeIdentity.class)
+                .child(SxpDomains.class)
+                .child(SxpDomain.class, new SxpDomainKey(domain))
                 .child(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase.class);
     }
 
@@ -91,7 +97,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         }
         added.addAll(filterIncomingBindings(bindings,
                 t -> datastoreAccess.readSynchronous(getIdentifierBuilder(t).build(), LogicalDatastoreType.OPERATIONAL),
-                p -> datastoreAccess.deleteSynchronous(getIdentifierBuilder(p).build(),
+                p -> datastoreAccess.checkAndDelete(getIdentifierBuilder(p).build(),
                         LogicalDatastoreType.OPERATIONAL)).values());
         if (!added.isEmpty()) {
             datastoreAccess.mergeSynchronous(getIdentifierBuilder().build(),

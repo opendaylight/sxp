@@ -17,6 +17,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.opendaylight.sxp.core.service.UpdateExportTask;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
@@ -29,8 +30,8 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.AclFilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
@@ -83,7 +84,7 @@ public class SxpConnectionTest {
                 when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(
                         mock(ListenableFuture.class));
                 sxpNode = PowerMockito.mock(SxpNode.class);
-                PowerMockito.when(sxpNode.getBindingSxpDatabase()).thenReturn(mock(SxpDatabaseInf.class));
+                PowerMockito.when(sxpNode.getBindingSxpDatabase(anyString())).thenReturn(mock(SxpDatabaseInf.class));
                 PowerMockito.when(sxpNode.getHoldTimeMax()).thenReturn(120);
                 PowerMockito.when(sxpNode.getHoldTimeMin()).thenReturn(60);
                 PowerMockito.when(sxpNode.getHoldTimeMinAcceptable()).thenReturn(60);
@@ -108,7 +109,7 @@ public class SxpConnectionTest {
 
         @Test public void testCleanUpBindings() throws Exception {
                 sxpConnection.cleanUpBindings();
-                verify(sxpNode.getBindingSxpDatabase()).reconcileBindings(any(NodeId.class));
+                verify(sxpNode.getBindingSxpDatabase(anyString())).reconcileBindings(any(NodeId.class));
         }
 
         @Test public void testCloseChannelHandlerContext() throws Exception {
@@ -155,10 +156,13 @@ public class SxpConnectionTest {
         }
 
         @Test public void testPurgeBindings() throws Exception {
+                ArgumentCaptor<Runnable> argument = ArgumentCaptor.forClass(Runnable.class);
                 sxpConnection.purgeBindings();
-                assertEquals(ConnectionState.Off,sxpConnection.getState());
+                verify(sxpNode.getWorker()).addListener(any(ListenableFuture.class), argument.capture());
                 verify(sxpNode.getWorker()).executeTaskInSequence(any(Callable.class),
                         eq(ThreadsWorker.WorkerType.INBOUND), eq(sxpConnection));
+                argument.getValue().run();
+                assertEquals(ConnectionState.Off,sxpConnection.getState());
         }
 
         @Test public void testSetDeleteHoldDownTimer() throws Exception {

@@ -32,10 +32,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntriesBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.acl.filter.entries.AclEntry;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.acl.filter.entries.AclEntryBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.sgt.match.SgtMatchesBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.AclFilterEntriesBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.acl.filter.entries.AclEntry;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.acl.filter.entries.AclEntryBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
@@ -109,7 +109,6 @@ public class SxpNodeTest {
                         SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), nodeIdentity, databaseProvider,
                                 sxpDatabaseProvider, worker);
                 PowerMockito.field(SxpNode.class, "serverChannel").set(node, mock(Channel.class));
-                PowerMockito.mockStatic(ConnectFacade.class);
         }
 
         private Timers getNodeTimers() {
@@ -316,14 +315,10 @@ public class SxpNodeTest {
         }
 
         @Test public void testStart() throws Exception {
-                PowerMockito.mockStatic(ConnectFacade.class);
-                when(nodeIdentity.getMasterDatabase()).thenReturn(null);
-
                 node.start();
-                verify(worker).executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class));
-
-                node.start();
-                verify(worker).executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class));
+                assertTrue(node.isEnabled());
+                node.shutdown();
+                assertFalse(node.isEnabled());
         }
 
         @Test public void testPutLocalBindingsMasterDatabase() throws Exception {

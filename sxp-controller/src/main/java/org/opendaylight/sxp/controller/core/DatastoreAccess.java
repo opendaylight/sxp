@@ -19,6 +19,7 @@ import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
+import org.opendaylight.controller.md.sal.common.api.data.TransactionChainListener;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
 import org.opendaylight.sxp.controller.listeners.TransactionChainListenerImpl;
 import org.opendaylight.yangtools.yang.binding.DataObject;
@@ -28,33 +29,29 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutionException;
 
-public final class DatastoreAccess {
+public final class DatastoreAccess implements AutoCloseable {
+
+    private static final Logger LOG = LoggerFactory.getLogger(DatastoreAccess.class.getName());
+    private static final TransactionChainListener chainListener = new TransactionChainListenerImpl();
 
     private final BindingTransactionChain bindingTransactionChain;
-    private static final Logger LOG = LoggerFactory.getLogger(DatastoreAccess.class.getName());
-
-    // TODO: this effectively prevents us from releasing the DataBroker, which may cause problems
-    private static volatile DatastoreAccess INSTANCE = null;
+    private boolean closed = false;
 
     public static DatastoreAccess getInstance(DataBroker dataBroker) {
-        // Storing in local variable prevents multiple volatile reads
-        DatastoreAccess local = INSTANCE;
-        if (local == null) {
-            synchronized (DatastoreAccess.class) {
-                local = INSTANCE;
-                if (local == null) {
-                    local = new DatastoreAccess(dataBroker);
-                    INSTANCE = local;
-                }
-            }
-        }
+        return new DatastoreAccess(Preconditions.checkNotNull(dataBroker));
+    }
 
-        return local;
+    public static DatastoreAccess getInstance(DatastoreAccess datastoreAccess) {
+        return new DatastoreAccess(Preconditions.checkNotNull(datastoreAccess).bindingTransactionChain);
     }
 
     private DatastoreAccess(DataBroker dataBroker) {
         Preconditions.checkNotNull(dataBroker);
-        bindingTransactionChain = dataBroker.createTransactionChain(new TransactionChainListenerImpl());
+        bindingTransactionChain = dataBroker.createTransactionChain(chainListener);
+    }
+
+    private DatastoreAccess(BindingTransactionChain bindingTransactionChain) {
+        this.bindingTransactionChain = Preconditions.checkNotNull(bindingTransactionChain);
     }
 
     private <T extends DataObject> void checkParams(InstanceIdentifier<T> path,
@@ -67,6 +64,8 @@ public final class DatastoreAccess {
     public <T extends DataObject> ListenableFuture<Void> delete(InstanceIdentifier<T> path,
             LogicalDatastoreType logicalDatastoreType) {
         checkParams(path, logicalDatastoreType);
+        if (LOG.isDebugEnabled())
+            LOG.warn("Delete {} {}", logicalDatastoreType, path.getTargetType());
         synchronized (bindingTransactionChain) {
             WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
             transaction.delete(logicalDatastoreType, path);
@@ -78,6 +77,8 @@ public final class DatastoreAccess {
             InstanceIdentifier<T> path, T data, LogicalDatastoreType logicalDatastoreType) {
         checkParams(path, logicalDatastoreType);
         Preconditions.checkNotNull(data);
+        if (LOG.isDebugEnabled())
+            LOG.warn("Merge {} {}", logicalDatastoreType, path.getTargetType());
         synchronized (bindingTransactionChain) {
             WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
             transaction.merge(logicalDatastoreType, path, data);
@@ -89,17 +90,8 @@ public final class DatastoreAccess {
             T data, LogicalDatastoreType logicalDatastoreType) {
         checkParams(path, logicalDatastoreType);
         Preconditions.checkNotNull(data);
-        synchronized (bindingTransactionChain) {
-            WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
-            transaction.put(logicalDatastoreType, path, data);
-            return transaction.submit();
-        }
-    }
-
-    public <T extends DataObject> ListenableFuture<Void> putListenable(InstanceIdentifier<T> path, T data,
-            LogicalDatastoreType logicalDatastoreType) {
-        checkParams(path, logicalDatastoreType);
-        Preconditions.checkNotNull(data);
+        if (LOG.isDebugEnabled())
+            LOG.warn("Put {} {}", logicalDatastoreType, path.getTargetType());
         synchronized (bindingTransactionChain) {
             WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
             transaction.put(logicalDatastoreType, path, data);
@@ -117,44 +109,60 @@ public final class DatastoreAccess {
         }
     }
 
-    @Deprecated public <T extends DataObject> boolean deleteSynchronous(InstanceIdentifier<T> path,
+    @Deprecated public synchronized <T extends DataObject> boolean deleteSynchronous(InstanceIdentifier<T> path,
             LogicalDatastoreType logicalDatastoreType) {
-        try {
-            delete(path, logicalDatastoreType).get();
-        } catch (InterruptedException | ExecutionException e) {
-            LOG.error("Error deleting {}", path, e);
+        if (closed)
             return false;
+        synchronized (bindingTransactionChain) {
+            try {
+                delete(path, logicalDatastoreType).get();
+            } catch (InterruptedException | ExecutionException e) {
+                LOG.error("Error deleting {}", path, e);
+                return false;
+            }
+            return true;
         }
-        return true;
     }
 
-    public <T extends DataObject> boolean mergeSynchronous(InstanceIdentifier<T> path, T data,
+    public synchronized <T extends DataObject> boolean mergeSynchronous(InstanceIdentifier<T> path, T data,
             LogicalDatastoreType logicalDatastoreType) {
-        try {
-            merge(path, data, logicalDatastoreType).get();
-        } catch (InterruptedException | ExecutionException e) {
+        if (closed)
             return false;
+        synchronized (bindingTransactionChain) {
+            try {
+                merge(path, data, logicalDatastoreType).get();
+            } catch (InterruptedException | ExecutionException e) {
+                return false;
+            }
+            return true;
         }
-        return true;
     }
 
-    public <T extends DataObject> boolean putSynchronous(InstanceIdentifier<T> path, T data,
+    public synchronized <T extends DataObject> boolean putSynchronous(InstanceIdentifier<T> path, T data,
             LogicalDatastoreType logicalDatastoreType) {
-        try {
-            put(path, data, logicalDatastoreType).get();
-        } catch (InterruptedException | ExecutionException e) {
+        if (closed)
             return false;
+        synchronized (bindingTransactionChain) {
+            try {
+                put(path, data, logicalDatastoreType).get();
+            } catch (InterruptedException | ExecutionException e) {
+                return false;
+            }
+            return true;
         }
-        return true;
     }
 
-    public <T extends DataObject> T readSynchronous(InstanceIdentifier<T> path,
+    public synchronized <T extends DataObject> T readSynchronous(InstanceIdentifier<T> path,
             LogicalDatastoreType logicalDatastoreType) {
-        try {
-            Optional<T> result = read(path, logicalDatastoreType).get();
-            return result.isPresent() ? result.get() : null;
-        } catch (InterruptedException | ExecutionException e) {
+        if (closed)
             return null;
+        synchronized (bindingTransactionChain) {
+            try {
+                Optional<T> result = read(path, logicalDatastoreType).get();
+                return result.isPresent() ? result.get() : null;
+            } catch (InterruptedException | ExecutionException e) {
+                return null;
+            }
         }
     }
 
@@ -169,11 +177,13 @@ public final class DatastoreAccess {
                 != null;
     }
 
-    public <T extends DataObject> boolean checkAndPut(InstanceIdentifier<T> identifier, T data,
+    public synchronized <T extends DataObject> boolean checkAndPut(InstanceIdentifier<T> identifier, T data,
             LogicalDatastoreType datastoreType, final boolean mustContains) {
         Preconditions.checkNotNull(data);
-        checkParams(identifier, datastoreType);
+        if (closed)
+            return false;
         synchronized (bindingTransactionChain) {
+            checkParams(identifier, datastoreType);
             final boolean
                     check =
                     checkParentExist(identifier, datastoreType) && (mustContains ?
@@ -186,11 +196,13 @@ public final class DatastoreAccess {
         }
     }
 
-    public <T extends DataObject> boolean checkAndMerge(InstanceIdentifier<T> identifier, T data,
+    public synchronized <T extends DataObject> boolean checkAndMerge(InstanceIdentifier<T> identifier, T data,
             LogicalDatastoreType datastoreType, final boolean mustContains) {
-        Preconditions.checkNotNull(data);
-        checkParams(identifier, datastoreType);
+        if (closed)
+            return false;
         synchronized (bindingTransactionChain) {
+            Preconditions.checkNotNull(data);
+            checkParams(identifier, datastoreType);
             final boolean
                     check =
                     checkParentExist(identifier, datastoreType) && (mustContains ?
@@ -203,10 +215,12 @@ public final class DatastoreAccess {
         }
     }
 
-    public <T extends DataObject> boolean checkAndDelete(InstanceIdentifier<T> identifier,
+    public synchronized <T extends DataObject> boolean checkAndDelete(InstanceIdentifier<T> identifier,
             LogicalDatastoreType datastoreType) {
-        checkParams(identifier, datastoreType);
+        if (closed)
+            return false;
         synchronized (bindingTransactionChain) {
+            checkParams(identifier, datastoreType);
             if (readSynchronous(identifier, datastoreType) != null) {
                 try {
                     delete(identifier, datastoreType).get();
@@ -218,5 +232,14 @@ public final class DatastoreAccess {
             }
             return false;
         }
+    }
+
+    public synchronized void closeOperations() {
+        closed = true;
+    }
+
+    @Override public synchronized void close() {
+        closeOperations();
+        bindingTransactionChain.close();
     }
 }

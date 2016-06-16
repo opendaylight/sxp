@@ -9,7 +9,6 @@
 package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.CheckedFuture;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -21,19 +20,20 @@ import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.listeners.TransactionChainListenerImpl;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev130712.network.topology.Topology;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev130712.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DatastoreAccessTest {
 
@@ -54,7 +54,7 @@ public class DatastoreAccessTest {
         @Test public void testGetInstance() throws Exception {
                 DatastoreAccess datastoreAccess = DatastoreAccess.getInstance(dataBroker);
                 assertNotNull(datastoreAccess);
-                assertEquals(datastoreAccess, DatastoreAccess.getInstance(dataBroker));
+                assertNotEquals(datastoreAccess, DatastoreAccess.getInstance(dataBroker));
         }
 
         @Test public void testDelete() throws Exception {
@@ -118,28 +118,6 @@ public class DatastoreAccessTest {
                 when(transactionChain.newWriteOnlyTransaction()).thenReturn(mock(WriteTransaction.class));
                 exception.expect(NullPointerException.class);
                 access.put(null, null, LogicalDatastoreType.OPERATIONAL);
-        }
-
-        @Test public void testPutListenable() throws Exception {
-                WriteTransaction transaction = mock(WriteTransaction.class);
-                when(transaction.submit()).thenReturn(mock(CheckedFuture.class));
-                InstanceIdentifier identifier = mock(InstanceIdentifier.class);
-                DataObject dataObject = mock(DataObject.class);
-
-                when(transactionChain.newWriteOnlyTransaction()).thenReturn(transaction);
-                assertNotNull(access.putListenable(identifier, dataObject, LogicalDatastoreType.OPERATIONAL));
-
-                verify(transaction).put(LogicalDatastoreType.OPERATIONAL, identifier, dataObject);
-
-                when(transactionChain.newWriteOnlyTransaction()).thenReturn(null);
-                exception.expect(NullPointerException.class);
-                access.putListenable(identifier, dataObject, LogicalDatastoreType.OPERATIONAL);
-        }
-
-        @Test public void testPutListenableException() throws Exception {
-                when(transactionChain.newWriteOnlyTransaction()).thenReturn(mock(WriteTransaction.class));
-                exception.expect(NullPointerException.class);
-                access.putListenable(null, null, LogicalDatastoreType.OPERATIONAL);
         }
 
         @Test public void testRead() throws Exception {
