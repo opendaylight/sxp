@@ -13,9 +13,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
+import org.opendaylight.sxp.controller.core.RpcServiceImpl;
+import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.core.Configuration;
-import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.AclFilterEntriesBuilder;
@@ -23,8 +24,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.fi
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroupBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroupKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpPeerGroups;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
@@ -33,34 +35,33 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.nio.file.attribute.AclEntryFlag;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(PowerMockRunner.class) @PrepareForTest({Configuration.class, DatastoreAccess.class})
+@RunWith(PowerMockRunner.class) @PrepareForTest({RpcServiceImpl.class, DatastoreAccess.class})
 public class FilterListenerTest {
 
     private FilterListener identityListener;
     private DatastoreAccess datastoreAccess;
-    private SxpNode sxpNode;
+    private SxpDatastoreNode sxpNode;
 
     @Before public void setUp() throws Exception {
         datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
         identityListener = new FilterListener(datastoreAccess);
-        sxpNode = mock(SxpNode.class);
+        sxpNode = mock(SxpDatastoreNode.class);
         when(sxpNode.shutdown()).thenReturn(sxpNode);
-        PowerMockito.mockStatic(Configuration.class);
-        PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unregister(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.getConstants()).thenCallRealMethod();
+        PowerMockito.mockStatic(RpcServiceImpl.class);
+        PowerMockito.when(RpcServiceImpl.getNode(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(RpcServiceImpl.registerNode(any(SxpDatastoreNode.class))).thenReturn(sxpNode);
+        PowerMockito.when(RpcServiceImpl.unregisterNode(anyString())).thenReturn(sxpNode);
     }
 
     private DataObjectModification<SxpFilter> getObjectModification(
@@ -73,9 +74,11 @@ public class FilterListenerTest {
         return modification;
     }
 
-    private InstanceIdentifier<SxpNodeIdentity> getIdentifier() {
+    private InstanceIdentifier<SxpPeerGroup> getIdentifier() {
         return NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class, new NodeKey(new NodeId("0.0.0.0")))
-                .augmentation(SxpNodeIdentity.class);
+                .augmentation(SxpNodeIdentity.class)
+                .child(SxpPeerGroups.class)
+                .child(SxpPeerGroup.class, new SxpPeerGroupKey("GROUP"));
     }
 
     private SxpFilter getSxpFilter(int entries) {

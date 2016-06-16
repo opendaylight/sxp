@@ -16,6 +16,7 @@ import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -27,7 +28,7 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode {
+public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implements AutoCloseable {
 
     public static InstanceIdentifier<SxpNodeIdentity> getIdentifier(final String nodeId) {
         return InstanceIdentifier.builder(NetworkTopology.class)
@@ -55,6 +56,14 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode {
         this.nodeId = NodeIdConv.toString(nodeId);
     }
 
+    public DatastoreAccess getDatastoreAccess() {
+        return datastoreAccess;
+    }
+
+    @Override protected void initConfiguration(SxpNodeIdentityBuilder identity) {
+        // This is handled by DataStore Listeners
+    }
+
     @Override protected SxpNodeIdentity getNodeIdentity() {
         SxpNodeIdentity
                 identity =
@@ -74,5 +83,10 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode {
                     LogicalDatastoreType.OPERATIONAL, true);
         }
         return nodeSecurity;
+    }
+
+    @Override public void close() {
+        shutdown();
+        datastoreAccess.close();
     }
 }

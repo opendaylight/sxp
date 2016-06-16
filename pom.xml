@@ -38,10 +38,10 @@
         <!-- Plugin Versions -->
         <maven.shade.plugin.version>2.3</maven.shade.plugin.version>
 
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
-        <java.version.source>1.7</java.version.source>
-        <java.version.target>1.7</java.version.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <java.version.source>1.8</java.version.source>
+        <java.version.target>1.8</java.version.target>
 
         <yangtools.version>1.0.0-SNAPSHOT</yangtools.version>
         <yangtools.feature.version>1.0.0-SNAPSHOT</yangtools.feature.version>
@@ -258,13 +258,6 @@
                 <groupId>org.opendaylight.controller</groupId>
                 <artifactId>sal-common-util</artifactId>
                 <version>${mdsal.version}</version>
-            </dependency>
-
-            <!-- utils dependencies -->
-            <dependency>
-                <groupId>org.eclipse.swt</groupId>
-                <artifactId>org.eclipse.swt.win32.win32.x86_64</artifactId>
-                <version>${swt.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

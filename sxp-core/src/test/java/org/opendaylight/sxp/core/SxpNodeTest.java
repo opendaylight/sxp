@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.ConnectFacade;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
@@ -109,7 +110,6 @@ public class SxpNodeTest {
                         SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), nodeIdentity, databaseProvider,
                                 sxpDatabaseProvider, worker);
                 PowerMockito.field(SxpNode.class, "serverChannel").set(node, mock(Channel.class));
-                PowerMockito.mockStatic(ConnectFacade.class);
         }
 
         private Timers getNodeTimers() {
@@ -316,14 +316,11 @@ public class SxpNodeTest {
         }
 
         @Test public void testStart() throws Exception {
-                PowerMockito.mockStatic(ConnectFacade.class);
                 when(nodeIdentity.getMasterDatabase()).thenReturn(null);
-
                 node.start();
-                verify(worker).executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class));
-
-                node.start();
-                verify(worker).executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class));
+                assertTrue(node.isEnabled());
+                node.shutdown();
+                assertFalse(node.isEnabled());
         }
 
         @Test public void testPutLocalBindingsMasterDatabase() throws Exception {

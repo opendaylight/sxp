@@ -17,6 +17,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.opendaylight.sxp.core.service.UpdateExportTask;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
@@ -155,10 +156,13 @@ public class SxpConnectionTest {
         }
 
         @Test public void testPurgeBindings() throws Exception {
+                ArgumentCaptor<Runnable> argument = ArgumentCaptor.forClass(Runnable.class);
                 sxpConnection.purgeBindings();
-                assertEquals(ConnectionState.Off,sxpConnection.getState());
+                verify(sxpNode.getWorker()).addListener(any(ListenableFuture.class), argument.capture());
                 verify(sxpNode.getWorker()).executeTaskInSequence(any(Callable.class),
                         eq(ThreadsWorker.WorkerType.INBOUND), eq(sxpConnection));
+                argument.getValue().run();
+                assertEquals(ConnectionState.Off,sxpConnection.getState());
         }
 
         @Test public void testSetDeleteHoldDownTimer() throws Exception {

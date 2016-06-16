@@ -10,10 +10,10 @@ package org.opendaylight.sxp.controller.listeners.sublisteners;
 
 import com.google.common.base.Preconditions;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
-import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
-import org.opendaylight.sxp.core.Configuration;
-import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.controller.core.RpcServiceImpl;
+import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
+import org.opendaylight.sxp.controller.listeners.spi.ListListener;
 import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpConnectionFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpConnectionPeerFields;
@@ -27,16 +27,18 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import java.net.InetSocketAddress;
 
-public class ConnectionsListener extends ContainerListener<Connections, Connection> {
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
+
+public class ConnectionsListener extends ListListener<SxpNodeIdentity, Connections, Connection> {
 
     public ConnectionsListener(DatastoreAccess datastoreAccess) {
-        super(datastoreAccess);
+        super(datastoreAccess, Connections.class);
     }
 
     @Override protected void handleOperational(DataObjectModification<Connection> c,
             InstanceIdentifier<SxpNodeIdentity> identifier) {
         final String nodeId = identifier.firstKeyOf(Node.class).getNodeId().getValue();
-        SxpNode sxpNode = Configuration.getRegisteredNode(nodeId);
+        SxpDatastoreNode sxpNode = RpcServiceImpl.getNode(nodeId);
         if (sxpNode == null) {
             LOG.error("Operational Modification {} {} could not get SXPNode {}", getClass(), c.getModificationType(),
                     nodeId);
@@ -53,12 +55,12 @@ public class ConnectionsListener extends ContainerListener<Connections, Connecti
                     break;
                 }
             case SUBTREE_MODIFIED:
-                if (checkChange(c, SxpConnectionFields::getTcpPort) || (
-                        (checkChange(c, SxpConnectionFields::getVersion) || checkChange(c,
-                                SxpConnectionFields::getConnectionTimers)) && !checkChange(c,
+                if (checkDifference(c, SxpConnectionFields::getTcpPort) || (
+                        (checkDifference(c, SxpConnectionFields::getVersion) || checkDifference(c,
+                                SxpConnectionFields::getConnectionTimers)) && !checkDifference(c,
                                 SxpConnectionPeerFields::getState) && ConnectionState.On.equals(
-                                c.getDataAfter().getState())) || checkChange(c, SxpConnectionFields::getPassword)
-                        || checkChange(c, SxpConnectionFields::getPeerAddress)) {
+                                c.getDataAfter().getState())) || checkDifference(c, SxpConnectionFields::getPassword)
+                        || checkDifference(c, SxpConnectionFields::getPeerAddress)) {
                     sxpNode.getConnection(getConnection(c.getDataBefore())).shutdown();
                 }
                 break;
@@ -74,11 +76,6 @@ public class ConnectionsListener extends ContainerListener<Connections, Connecti
         Preconditions.checkNotNull(parentIdentifier);
         return parentIdentifier.child(Connections.class)
                 .child(Connection.class, new ConnectionKey(d.getPeerAddress(), d.getTcpPort()));
-    }
-
-    @Override public DataObjectModification<Connections> getModifications(
-            DataTreeModification<SxpNodeIdentity> treeModification) {
-        return treeModification.getRootNode().getModifiedChildContainer(Connections.class);
     }
 
     private InetSocketAddress getConnection(Connection connection) {

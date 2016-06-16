@@ -41,7 +41,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
     public MasterDatastoreImpl(DatastoreAccess datastoreAccess, String nodeId) {
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
         this.nodeId = Preconditions.checkNotNull(nodeId);
-        datastoreAccess.putSynchronous(getIdentifierBuilder().build(),
+        datastoreAccess.mergeSynchronous(getIdentifierBuilder().build(),
                 new MasterDatabaseBuilder().setMasterDatabaseBinding(new ArrayList<>()).build(),
                 LogicalDatastoreType.OPERATIONAL);
         datastoreAccess.mergeSynchronous(getIdentifierBuilder().build(),

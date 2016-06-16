@@ -9,6 +9,7 @@
 package org.opendaylight.sxp.core;
 
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.ChannelHandlerContext;
 import org.opendaylight.sxp.core.behavior.Context;
@@ -808,14 +809,17 @@ public class SxpConnection {
         }
     }
 
-    public void purgeBindings() {
+    public ListenableFuture purgeBindings() {
         // Get message relevant peer node ID.
-        BindingHandler.processPurgeAllMessage(this);
-        try {
-            setStateOff(getChannelHandlerContext(ChannelHandlerContextType.ListenerContext));
-        } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-            setStateOff();
-        }
+        ListenableFuture future = BindingHandler.processPurgeAllMessage(this);
+        getOwner().getWorker().addListener(future, () -> {
+            try {
+                setStateOff(getChannelHandlerContext(ChannelHandlerContextType.ListenerContext));
+            } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+                setStateOff();
+            }
+        });
+        return future;
     }
 
     /**
@@ -1242,7 +1246,7 @@ public class SxpConnection {
     public synchronized void shutdown() {
         if (isModeListener()) {
             LOG.info("{} PURGE bindings ", this);
-            purgeBindings();
+            BindingHandler.processPurgeAllMessage(this);
         } else if (isModeSpeaker() && isStateOn()) {
             try {
                 BindingDispatcher.sendPurgeAllMessage(this).get();
