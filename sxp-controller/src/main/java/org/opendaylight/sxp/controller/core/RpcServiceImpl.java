@@ -22,9 +22,18 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.DateAndTime;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainFilterInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainFilterOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainFilterOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddEntryInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddEntryOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddEntryOutputBuilder;
@@ -38,9 +47,18 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ad
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddPeerGroupOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddPeerGroupOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.ConfigPersistence;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingsOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainFilterInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainFilterOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainFilterOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteEntryInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteEntryOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteEntryOutputBuilder;
@@ -77,10 +95,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.FilterEntries;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.AclFilterEntries;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.PeerSequenceFilterEntries;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.fields.filter.entries.PrefixListFilterEntries;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.FilterEntries;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntries;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.PeerSequenceFilterEntries;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.PrefixListFilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilterKey;
@@ -89,14 +107,20 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroupKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomainsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpPeerGroups;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpPeerGroupsBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.DomainFiltersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.TimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -180,7 +204,9 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             LOG.info("RpcAddConnection event | {}", input.toString());
             Preconditions.checkNotNull(input.getConnections());
             Preconditions.checkNotNull(input.getConnections().getConnection()).forEach(c -> {
-                output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(Connections.class)
+                output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
+                                .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
+                                .child(Connections.class)
                                 .child(Connection.class, new ConnectionKey(c.getPeerAddress(), c.getTcpPort())),
                         new ConnectionBuilder(c).setNodeId(null)
                                 .setState(null)
@@ -189,6 +215,16 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             });
             return RpcResultBuilder.success(output.build()).build();
         });
+    }
+
+    @Override public Future<RpcResult<DeleteDomainFilterOutput>> deleteDomainFilter(DeleteDomainFilterInput input) {
+        //TODO implement
+        return getResponse(null, new DeleteDomainFilterOutputBuilder().setResult(false).build(), null);
+    }
+
+    @Override public Future<RpcResult<AddDomainFilterOutput>> addDomainFilter(AddDomainFilterInput input) {
+        //TODO implement
+        return getResponse(null, new AddDomainFilterOutputBuilder().setResult(false).build(), null);
     }
 
     @Override public Future<RpcResult<AddEntryOutput>> addEntry(final AddEntryInput input) {
@@ -208,7 +244,6 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 LOG.warn("RpcAddEntry exception | Parameter 'sgt' not defined");
                 return RpcResultBuilder.success(output.build()).build();
             }
-
             DateAndTime timestamp = TimeConv.toDt(System.currentTimeMillis());
             List<MasterDatabaseBinding> bindings = new ArrayList<>();
 
@@ -218,7 +253,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             bindingBuilder.setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
             bindings.add(bindingBuilder.build());
 
-            Configuration.getRegisteredNode(nodeId).putLocalBindingsMasterDatabase(bindings);
+            Configuration.getRegisteredNode(nodeId).putLocalBindingsMasterDatabase(bindings, input.getDomainName());
             output.setResult(true);
             return RpcResultBuilder.success(output.build()).build();
         });
@@ -277,9 +312,35 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
+    @Override public Future<RpcResult<DeleteBindingsOutput>> deleteBindings(DeleteBindingsInput input) {
+        final String nodeId = getNodeId(input.getNodeId());
+        final DeleteBindingsOutputBuilder output = new DeleteBindingsOutputBuilder().setResult(false);
+
+        return getResponse(nodeId, output.build(), () -> {
+            LOG.info("RpcDeleteBindings event | {}", input.toString());
+            if (input.getBinding() != null && !input.getBinding().isEmpty()) {
+                List<MasterDatabaseBinding> bindings = new ArrayList<>();
+                MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
+                bindingBuilder.setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
+                bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
+                input.getBinding().forEach(g -> {
+                    if (g.getIpPrefix() != null)
+                        g.getIpPrefix()
+                                .forEach(p -> bindings.add(
+                                        bindingBuilder.setSecurityGroupTag(g.getSgt()).setIpPrefix(p).build()));
+                });
+                output.setResult(!Configuration.getRegisteredNode(nodeId)
+                        .removeLocalBindingsMasterDatabase(bindings, input.getDomainName())
+                        .isEmpty());
+            }
+            return RpcResultBuilder.success(output.build()).build();
+        });
+    }
+
     @Override public void close() {
         executor.shutdown();
         Configuration.getNodes().values().forEach(SxpNode::shutdown);
+        datastoreAccess.close();
     }
 
     @Override public Future<RpcResult<DeleteConnectionOutput>> deleteConnection(final DeleteConnectionInput input) {
@@ -290,7 +351,9 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             LOG.info("RpcDeleteConnection event | {}", input.toString());
             InstanceIdentifier
                     identifier =
-                    getIdentifier(nodeId).child(Connections.class)
+                    getIdentifier(nodeId).child(SxpDomains.class)
+                            .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
+                            .child(Connections.class)
                             .child(Connection.class,
                                     new ConnectionKey(new IpAddress(input.getPeerAddress()), input.getTcpPort()));
             output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
@@ -326,8 +389,9 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             }
 
             DeleteEntryOutputBuilder output1 = new DeleteEntryOutputBuilder();
-            output1.setResult(
-                    !Configuration.getRegisteredNode(nodeId).removeLocalBindingsMasterDatabase(bindings).isEmpty());
+            output1.setResult(!Configuration.getRegisteredNode(nodeId)
+                    .removeLocalBindingsMasterDatabase(bindings, input.getDomainName())
+                    .isEmpty());
             return RpcResultBuilder.success(output1.build()).build();
         });
     }
@@ -396,6 +460,22 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
+    @Override public Future<RpcResult<DeleteDomainOutput>> deleteDomain(DeleteDomainInput input) {
+        final String nodeId = getNodeId(input.getNodeId());
+        final DeleteDomainOutputBuilder output = new DeleteDomainOutputBuilder().setResult(false);
+        return getResponse(nodeId, output.build(), () -> {
+            LOG.info("RpcDeleteDomain event | {}", input.toString());
+            InstanceIdentifier
+                    identifier =
+                    getIdentifier(nodeId).child(SxpDomains.class)
+                            .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()));
+            output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
+                    || datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+
+            return RpcResultBuilder.success(output.build()).build();
+        });
+    }
+
     @Override public Future<RpcResult<GetConnectionsOutput>> getConnections(final GetConnectionsInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final ConnectionsBuilder connectionsBuilder = new ConnectionsBuilder();
@@ -407,8 +487,9 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             LOG.info("RpcGetConnectionsStatus event | {}", input.toString());
             Connections
                     connections =
-                    datastoreAccess.readSynchronous(getIdentifier(nodeId).child(Connections.class),
-                            LogicalDatastoreType.OPERATIONAL);
+                    datastoreAccess.readSynchronous(getIdentifier(nodeId).child(SxpDomains.class)
+                            .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
+                            .child(Connections.class), LogicalDatastoreType.OPERATIONAL);
             if (connections != null && connections.getConnection() != null) {
                 output.setConnections(connections);
             }
@@ -428,8 +509,9 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             List<MasterDatabaseBinding> databaseBindings = new ArrayList<>();
             MasterDatabase
                     database =
-                    datastoreAccess.readSynchronous(getIdentifier(nodeId).child(MasterDatabase.class),
-                            LogicalDatastoreType.OPERATIONAL);
+                    datastoreAccess.readSynchronous(getIdentifier(nodeId).child(SxpDomains.class)
+                            .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
+                            .child(MasterDatabase.class), LogicalDatastoreType.OPERATIONAL);
             if (database != null && database.getMasterDatabaseBinding() != null) {
                 databaseBindings.addAll(database.getMasterDatabaseBinding());
             }
@@ -501,30 +583,86 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         final AddNodeOutputBuilder output = new AddNodeOutputBuilder().setResult(false);
         return executor.submit(() -> {
             if (input.getNodeId() != null) {
-                LOG.info("RpcDeleteNode event | {}", input.toString());
+                LOG.info("RpcAddNode event | {}", input.toString());
                 final String nodeId = getNodeId(input.getNodeId());
                 SxpNodeIdentityBuilder identityBuilder = new SxpNodeIdentityBuilder(input);
-                identityBuilder.setSxpPeerGroups(new SxpPeerGroupsBuilder().build());
-                identityBuilder.setMasterDatabase(ConfigLoader.parseMasterDatabase(input.getMasterDatabase()));
                 if (identityBuilder.getTcpPort() == null)
                     identityBuilder.setTcpPort(new PortNumber(64999));
                 if (identityBuilder.getVersion() == null)
                     identityBuilder.setVersion(Version.Version4);
                 if (identityBuilder.getMappingExpanded() == null)
                     identityBuilder.setMappingExpanded(0);
-                if (identityBuilder.getConnections() == null)
-                    identityBuilder.setConnections(new ConnectionsBuilder().build());
+                if (identityBuilder.getSxpDomains() == null || identityBuilder.getSxpDomains().getSxpDomain() == null)
+                    identityBuilder.setSxpDomains(new SxpDomainsBuilder().setSxpDomain(new ArrayList<>()).build());
+                if (identityBuilder.getSxpDomains().getSxpDomain().isEmpty() || identityBuilder.getSxpDomains()
+                        .getSxpDomain()
+                        .stream()
+                        .noneMatch(d -> SxpNode.DEFAULT_DOMAIN.equals(d.getDomainName()))) {
+                    identityBuilder.getSxpDomains()
+                            .getSxpDomain()
+                            .add(new SxpDomainBuilder().setConnections(
+                                    new ConnectionsBuilder().setConnection(new ArrayList<>()).build())
+                                    .setDomainName(org.opendaylight.sxp.core.SxpNode.DEFAULT_DOMAIN)
+                                    .setMasterDatabase(ConfigLoader.parseMasterDatabase(input.getMasterDatabase()))
+                                    .build());
+                }
+                if (identityBuilder.getSxpPeerGroups() == null)
+                    identityBuilder.setSxpPeerGroups(new SxpPeerGroupsBuilder().build());
                 if (identityBuilder.getSecurity() == null)
                     identityBuilder.setSecurity(new SecurityBuilder().build());
                 if (identityBuilder.getTimers() == null)
                     identityBuilder.setTimers(new TimersBuilder().build());
-
                 ConfigLoader.initTopologyNode(nodeId, getDatastoreType(input.getConfigPersistence()), datastoreAccess);
                 output.setResult(datastoreAccess.checkAndPut(NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class,
                         new NodeKey(
                                 new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
                                         nodeId))).augmentation(SxpNodeIdentity.class), identityBuilder.build(),
                         getDatastoreType(input.getConfigPersistence()), false));
+            }
+            return RpcResultBuilder.success(output.build()).build();
+        });
+    }
+
+    @Override public Future<RpcResult<AddDomainOutput>> addDomain(AddDomainInput input) {
+        final String nodeId = getNodeId(input.getNodeId());
+        final AddDomainOutputBuilder output = new AddDomainOutputBuilder().setResult(false);
+
+        return getResponse(nodeId, output.build(), () -> {
+            LOG.info("RpcDomain event | {}", input.toString());
+            if (input.getDomainName() != null) {
+                SxpDomainBuilder builder = new SxpDomainBuilder();
+                builder.setDomainName(input.getDomainName());
+                builder.setMasterDatabase(ConfigLoader.parseMasterDatabase(input.getMasterDatabase()));
+                builder.setConnections(ConfigLoader.parseConnections(input.getConnections()));
+                builder.setDomainFilters(new DomainFiltersBuilder().build());
+                output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
+                                .child(SxpDomain.class, new SxpDomainKey(input.getDomainName())), builder.build(),
+                        getDatastoreType(input.getConfigPersistence()), false));
+            }
+            return RpcResultBuilder.success(output.build()).build();
+        });
+    }
+
+    @Override public Future<RpcResult<AddBindingsOutput>> addBindings(AddBindingsInput input) {
+        final String nodeId = getNodeId(input.getNodeId());
+        final AddBindingsOutputBuilder output = new AddBindingsOutputBuilder().setResult(false);
+
+        return getResponse(nodeId, output.build(), () -> {
+            LOG.info("RpcAddBindings event | {}", input.toString());
+            if (input.getBinding() != null && !input.getBinding().isEmpty()) {
+                List<MasterDatabaseBinding> bindings = new ArrayList<>();
+                MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
+                bindingBuilder.setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
+                bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
+                input.getBinding().forEach(g -> {
+                    if (g.getIpPrefix() != null)
+                        g.getIpPrefix()
+                                .forEach(p -> bindings.add(
+                                        bindingBuilder.setSecurityGroupTag(g.getSgt()).setIpPrefix(p).build()));
+                });
+                output.setResult(!Configuration.getRegisteredNode(nodeId)
+                        .putLocalBindingsMasterDatabase(bindings, input.getDomainName())
+                        .isEmpty());
             }
             return RpcResultBuilder.success(output.build()).build();
         });
@@ -571,11 +709,12 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 bindingBuilder.setIpPrefix(newIpPrefix).setSecurityGroupTag(newSgt).setTimestamp(timestamp);
                 addedBindings.add(bindingBuilder.build());
 
-                Configuration.getRegisteredNode(nodeId).removeLocalBindingsMasterDatabase(deleteBindings);
+                Configuration.getRegisteredNode(nodeId)
+                        .removeLocalBindingsMasterDatabase(deleteBindings, input.getDomainName());
 
                 UpdateEntryOutputBuilder output = new UpdateEntryOutputBuilder();
                 output.setResult(!Configuration.getRegisteredNode(nodeId)
-                        .putLocalBindingsMasterDatabase(addedBindings)
+                        .putLocalBindingsMasterDatabase(addedBindings, input.getDomainName())
                         .isEmpty());
                 return RpcResultBuilder.success(output.build()).build();
             }

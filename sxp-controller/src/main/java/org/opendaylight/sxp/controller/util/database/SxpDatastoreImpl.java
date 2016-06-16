@@ -24,6 +24,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.SxpDatabaseBindingsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.SxpDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.SxpDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -42,11 +45,12 @@ import java.util.Set;
 public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.SxpDatabase {
 
     private final DatastoreAccess datastoreAccess;
-    private final String nodeId;
+    private final String nodeId,domain;
 
-    public SxpDatastoreImpl(DatastoreAccess datastoreAccess, String nodeId) {
+    public SxpDatastoreImpl(DatastoreAccess datastoreAccess, String nodeId, String domain) {
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
         this.nodeId = Preconditions.checkNotNull(nodeId);
+        this.domain = Preconditions.checkNotNull(domain);
         List<BindingDatabase> databases = new ArrayList<>();
         databases.add(
             new BindingDatabaseBuilder().setBindingType(BindingDatabase.BindingType.ActiveBindings)
@@ -61,13 +65,16 @@ public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.S
             LogicalDatastoreType.OPERATIONAL);
     }
 
-
     private InstanceIdentifier.InstanceIdentifierBuilder<SxpDatabase> getIdentifierBuilder() {
         return InstanceIdentifier.builder(NetworkTopology.class)
-            .child(Topology.class, new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME)))
-            .child(Node.class, new NodeKey(
-                new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
-                    nodeId))).augmentation(SxpNodeIdentity.class).child(SxpDatabase.class);
+                .child(Topology.class, new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME)))
+                .child(Node.class, new NodeKey(
+                        new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
+                                nodeId)))
+                .augmentation(SxpNodeIdentity.class)
+                .child(SxpDomains.class)
+                .child(SxpDomain.class, new SxpDomainKey(domain))
+                .child(SxpDatabase.class);
     }
 
     private InstanceIdentifier.InstanceIdentifierBuilder<BindingDatabase> getIdentifierBuilder(

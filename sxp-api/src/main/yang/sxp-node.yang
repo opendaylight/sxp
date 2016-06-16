@@ -12,6 +12,10 @@ module sxp-node {
     import sxp-filter { prefix sxpfl; revision-date "2015-09-11"; }
     import yang-ext { prefix ext; revision-date "2013-07-09"; }
 
+    organization "Cisco Systems, Inc.";
+
+    contact "Martin Mihalek <mamihale@cisco.com>";
+
     description
         "Module defines the base YANG definitions for SXP-aware network
         node.";
@@ -26,7 +30,6 @@ module sxp-node {
     // ***********************
 
     typedef timer-type {
-        description "Timer types with their default values";
         type enumeration {
             enum delete-hold-down-timer;
             enum hold-timer;
@@ -34,6 +37,7 @@ module sxp-node {
             enum reconciliation-timer;
             enum retry-open-timer;
         }
+        description "Timer types with their default values";
     }
 
     // ****************
@@ -42,14 +46,12 @@ module sxp-node {
 
     grouping security-fields {
         leaf password {
-            type string {
-                range "0..80";
-            }
+            type string;
             description "SXP password can be up to 80 ASCII characters";
         }
         leaf md5-digest {
-            config false;
             type string;
+            config false;
             description "16 bytes MD5 digest formed using the password as the key";
         }
     }
@@ -109,62 +111,59 @@ module sxp-node {
 
     grouping sxp-databases-fields {
         container sxp-database {
-            description "SXP database";
             config false;
             uses sxpdb:sxp-database-fields;
+            description "SXP database";
         }
 
         container master-database {
-            description "IP-SGT-Master database";
-            config true;
             uses sxpdb:master-database-fields;
+            description "IP-SGT-Master database";
         }
     }
 
     grouping sxp-connection-peer-fields {
         leaf node-id {
-            config false;
             type sxppt:node-id;
+            config false;
             description "SXP node ID";
         }
         leaf state {
-            config false;
             type sxppt:connection-state;
-            description "Current state of the connection";
             default "off";
+            config false;
+            description "Current state of the connection";
         }
         leaf timestamp-update-or-keep-alive-message {
-            config false;
             type ietf-yang:date-and-time;
+            config false;
         }
     }
 
     grouping sxp-connection-fields {
         leaf peer-address {
-            mandatory true;
             type inet:ip-address;
+            mandatory true;
             description "Address of the connected peer";
         }
         leaf tcp-port {
-            mandatory true;
             type inet:port-number;
+            mandatory true;
             description "Port of the connected peer";
         }
         leaf password {
-            type string {
-                range "0..80";
-            }
+            type string;
             description "SXP password can be up to 80 ASCII characters";
         }
         leaf mode {
-            mandatory true;
             type sxppt:connection-mode;
+            mandatory true;
             description "Mode of the connection, i.e. uni-directional or bi-directional
                         communication";
         }
         leaf version {
-            mandatory true;
             type sxppt:version;
+            mandatory true;
             description "Negotiated and running SXP version between peers";
         }
         leaf description {
@@ -180,11 +179,11 @@ module sxp-node {
     grouping sxp-connections-fields {
         container connections {
             list connection {
-                description "SXP connections to dedicated peers";
                 key "peer-address tcp-port";
                 uses sxp-connection-fields;
                 uses sxp-connection-peer-fields;
                 uses capabilities-fields;
+                description "SXP connections to dedicated peers";
             }
         }
     }
@@ -194,7 +193,7 @@ module sxp-node {
             type uint16;
             default 120;
             description "Retry Open Timer: Default timer value is 120 sec. If zero, timer
-                        won’t be used.";
+                        won't be used.";
         }
     }
 
@@ -202,14 +201,14 @@ module sxp-node {
         leaf delete-hold-down-time {
             type uint16;
             default 120;
-            description "Delete Hold-down Timer: Default timer value is 120 sec. and it’s
+            description "Delete Hold-down Timer: Default timer value is 120 sec. and it's
                         not configurable.";
         }
         leaf reconciliation-time {
             type uint16;
             default 120;
             description "Reconciliation Timer: Default timer value is 120 sec. If zero,
-                        timer won’t be used.";
+                        timer won't be used.";
         }
         leaf hold-time {
             type uint16;
@@ -218,12 +217,12 @@ module sxp-node {
                         configurable. The actual value used for a connection is negotiated.";
         }
         leaf hold-time-min {
-            default 90;
             type uint16;
+            default 90;
         }
         leaf hold-time-max {
-            default 180;
             type uint16;
+            default 180;
         }
     }
 
@@ -242,13 +241,26 @@ module sxp-node {
         }
     }
 
+    grouping sxp-domain-fields {
+        leaf domain-name {
+            type string;
+        }
+        uses sxp-databases-fields;
+        uses sxp-connections-fields;
+        container domain-filters {
+            list domain-filter {
+                key "filter-specific";
+                uses sxpfl:sxp-domain-filter-fields;
+            }
+        }
+    }
+
     // ********************
     // Global Configuration
     // ********************
 
     grouping sxp-node-identity-fields {
         uses sxp-node-fields;
-        uses sxp-connections-fields;
         uses capabilities-fields;
         container timers {
             uses sxp-node-time-settings-fields;
@@ -260,7 +272,12 @@ module sxp-node {
     augment /nt:network-topology/nt:topology/nt:node {
         ext:augment-identifier "sxp-node-identity";
         uses sxp-node-identity-fields;
-        uses sxp-databases-fields;
+        container sxp-domains {
+            list sxp-domain {
+                key "domain-name";
+                uses sxp-domain-fields;
+            }
+        }
         container sxp-peer-groups {
             uses sxpfl:sxp-peer-groups;
         }

@@ -10,6 +10,10 @@ module sxp-controller-conf {
     import sxp-node { prefix sxpnd; revision-date "2016-03-08";}
     import sxp-protocol { prefix sxppt; revision-date "2014-10-02"; }
 
+    organization "Cisco Systems, Inc.";
+
+    contact "Martin Mihalek <mamihale@cisco.com>";
+
     description
         "Module defines the base YANG definitions for ODL-SXP-aware network node configuration.";
 
@@ -61,12 +65,14 @@ module sxp-controller-conf {
 
             container sxp-controller {
                 list sxp-node {
+                    key "node-id";
                     leaf node-id {
-                        mandatory true;
                         type sxppt:node-id;
+                        mandatory true;
                         description "SXP node ID";
                     }
                     uses sxpnd:sxp-node-identity-fields;
+                    uses sxpnd:sxp-connections-fields;
                     uses sxpdb:master-database-configuration;
                 }
             }

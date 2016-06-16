@@ -14,8 +14,12 @@ import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
+import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
+import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -27,7 +31,7 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode {
+public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implements AutoCloseable {
 
     public static InstanceIdentifier<SxpNodeIdentity> getIdentifier(final String nodeId) {
         return InstanceIdentifier.builder(NetworkTopology.class)
@@ -39,6 +43,11 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode {
                 .build();
     }
 
+    public static SxpDatastoreNode createInstance(NodeId nodeId, DatastoreAccess datastoreAccess,
+            SxpNodeIdentity node) {
+        return new SxpDatastoreNode(nodeId, datastoreAccess, node);
+    }
+
     private final DatastoreAccess datastoreAccess;
     private final String nodeId;
 
@@ -47,12 +56,24 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode {
      *
      * @param node Node setup data
      */
-    public SxpDatastoreNode(NodeId nodeId, DatastoreAccess datastoreAccess, SxpNodeIdentity node) {
-        super(Preconditions.checkNotNull(nodeId), Preconditions.checkNotNull(node),
-                new MasterDatastoreImpl(Preconditions.checkNotNull(datastoreAccess), NodeIdConv.toString(nodeId)),
-                new SxpDatastoreImpl(datastoreAccess, NodeIdConv.toString(nodeId)), new ThreadsWorker());
+    protected SxpDatastoreNode(NodeId nodeId, DatastoreAccess datastoreAccess, SxpNodeIdentity node) {
+        super(Preconditions.checkNotNull(nodeId), Preconditions.checkNotNull(node), new ThreadsWorker());
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
         this.nodeId = NodeIdConv.toString(nodeId);
+    }
+
+    @Override public boolean addDomain(SxpDomain domain) {
+        Preconditions.checkNotNull(domain);
+        Preconditions.checkNotNull(domain.getDomainName());
+        synchronized (sxpDomains) {
+            if (!sxpDomains.containsKey(domain.getDomainName()))
+                sxpDomains.put(domain.getDomainName(), new org.opendaylight.sxp.core.SxpDomain(domain.getDomainName(),
+                        new SxpDatastoreImpl(datastoreAccess, nodeId, domain.getDomainName()),
+                        new MasterDatastoreImpl(datastoreAccess, nodeId, domain.getDomainName())));
+            else
+                return false;
+        }
+        return true;
     }
 
     @Override protected SxpNodeIdentity getNodeIdentity() {
@@ -63,8 +84,9 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode {
         return identity != null ? identity : super.getNodeIdentity();
     }
 
-    @Override public void addConnection(Connection connection) {
-        addConnection(new SxpDatastoreConnection(datastoreAccess, this, connection));
+    @Override public void addConnection(Connection connection, String domain) {
+        addConnection(new SxpDatastoreConnection(datastoreAccess, this, Preconditions.checkNotNull(connection),
+                Preconditions.checkNotNull(domain)));
     }
 
     @Override protected Security setPassword(final Security security) {
@@ -74,5 +96,10 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode {
                     LogicalDatastoreType.OPERATIONAL, true);
         }
         return nodeSecurity;
+    }
+
+    @Override public void close() {
+        datastoreAccess.closeOperations();
+        shutdown();
     }
 }

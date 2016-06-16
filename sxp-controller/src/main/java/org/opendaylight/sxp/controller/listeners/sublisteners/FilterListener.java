@@ -10,32 +10,30 @@ package org.opendaylight.sxp.controller.listeners.sublisteners;
 
 import com.google.common.base.Preconditions;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
-import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
+import org.opendaylight.sxp.controller.listeners.spi.ContainerListener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilterFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilterKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroupKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpPeerGroups;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-public class FilterListener extends ContainerListener<SxpPeerGroups, SxpFilter> {
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
 
-    private String groupName;
+public class FilterListener extends ContainerListener<SxpPeerGroup, SxpFilter> {
 
     public FilterListener(DatastoreAccess datastoreAccess) {
-        super(datastoreAccess);
+        super(datastoreAccess, SxpFilter.class);
     }
 
-    @Override protected void handleOperational(DataObjectModification<SxpFilter> c,
-            InstanceIdentifier<SxpNodeIdentity> identifier) {
-        final String nodeId = identifier.firstKeyOf(Node.class).getNodeId().getValue();
+    @Override
+    protected void handleOperational(DataObjectModification<SxpFilter> c, InstanceIdentifier<SxpPeerGroup> identifier) {
+        final String nodeId = identifier.firstKeyOf(Node.class).getNodeId().getValue(),
+                groupName = identifier.firstKeyOf(SxpPeerGroup.class).getName();
         SxpNode sxpNode = Configuration.getRegisteredNode(nodeId);
         if (sxpNode == null) {
             LOG.error("Operational Modification {} {} could not get SXPNode {}", getClass(), c.getModificationType(),
@@ -54,7 +52,7 @@ public class FilterListener extends ContainerListener<SxpPeerGroups, SxpFilter> 
                     break;
                 }
             case SUBTREE_MODIFIED:
-                if (checkChange(c, SxpFilterFields::getFilterEntries)) {
+                if (checkDifference(c, SxpFilterFields::getFilterEntries)) {
                     sxpNode.removeFilterFromPeerGroup(groupName,
                             Preconditions.checkNotNull(c.getDataBefore()).getFilterType(),
                             Preconditions.checkNotNull(c.getDataBefore()).getFilterSpecific());
@@ -69,45 +67,9 @@ public class FilterListener extends ContainerListener<SxpPeerGroups, SxpFilter> 
         }
     }
 
-    @Override public void handleChange(DataObjectModification<SxpPeerGroups> modifiedChildContainer_,
-            LogicalDatastoreType logicalDatastoreType, InstanceIdentifier<SxpNodeIdentity> identifier) {
-        if (modifiedChildContainer_ != null) {
-            modifiedChildContainer_.getModifiedChildren().forEach(m -> {
-                if (m.getDataType().equals(SxpPeerGroup.class)) {
-                    //noinspection unchecked
-                    DataObjectModification<SxpPeerGroup> g = (DataObjectModification<SxpPeerGroup>) m;
-                    groupName =
-                            g.getDataAfter() != null ? g.getDataAfter().getName() :
-                                    g.getDataBefore() != null ? g.getDataBefore().getName() : null;
-                    g.getModifiedChildren().forEach(sm -> {
-                        if (sm.getDataType().equals(SxpFilter.class)) {
-                            switch (logicalDatastoreType) {
-                                case OPERATIONAL:
-                                    //noinspection unchecked
-                                    handleOperational((DataObjectModification<SxpFilter>) sm, identifier);
-                                    break;
-                                case CONFIGURATION:
-                                    //noinspection unchecked
-                                    handleConfig((DataObjectModification<SxpFilter>) sm, identifier);
-                                    break;
-                            }
-                        }
-                    });
-                }
-            });
-        }
-    }
-
     @Override protected InstanceIdentifier<SxpFilter> getIdentifier(SxpFilter d,
-            InstanceIdentifier<SxpNodeIdentity> parentIdentifier) {
-        return parentIdentifier.child(SxpPeerGroups.class)
-                .child(SxpPeerGroup.class, new SxpPeerGroupKey(groupName))
-                .child(SxpFilter.class, new SxpFilterKey(d.getFilterSpecific(), d.getFilterType()));
-    }
-
-    @Override public DataObjectModification<SxpPeerGroups> getModifications(
-            DataTreeModification<SxpNodeIdentity> treeModification) {
-        return treeModification.getRootNode().getModifiedChildContainer(SxpPeerGroups.class);
+            InstanceIdentifier<SxpPeerGroup> parentIdentifier) {
+        return parentIdentifier.child(SxpFilter.class, new SxpFilterKey(d.getFilterSpecific(), d.getFilterType()));
     }
 
     private void addFilterToGroup(final SxpNode sxpNode, DataObjectModification<SxpFilter> c, final String groupName,
@@ -117,4 +79,5 @@ public class FilterListener extends ContainerListener<SxpPeerGroups, SxpFilter> 
                 datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL);
         }
     }
+
 }

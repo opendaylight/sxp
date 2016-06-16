@@ -130,7 +130,7 @@ public class ThreadsWorker {
             try {
                 return callable.call();
             } catch (Exception e) {
-                LOG.error("{} error executing {}", this, callable);
+                LOG.error("{} error executing {}", this, callable, e);
             }
             return null;
         } : callable;
