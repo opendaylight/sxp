@@ -32,6 +32,52 @@
                         </type>
                         <name>pingpong-binding-data-broker</name>
                     </data-broker>
+                    <!--> Custom SXP initial node, uncomment to enable start of node<-->
+                    <!--sxp-controller>
+                        <sxp-node>
+                            <enabled>true</enabled>
+                            <node-id>1.1.1.1</node-id>
+                            <source-ip>0.0.0.0</source-ip>
+                            <tcp-port>64999</tcp-port>
+                            <version>version4</version>
+                            <security>
+                                <password></password>
+                            </security>
+                            <mapping-expanded>150</mapping-expanded>
+                            <description>ODL SXP Controller</description>
+                            <connections>
+                                <connection>
+                                    <peer-address>10.10.11.1</peer-address>
+                                    <tcp-port>64999</tcp-port>
+                                    <password>passwd</password>
+                                    <mode>listener</mode>
+                                    <version>version4</version>
+                                    <description>Connection from 3750</description>
+                                    <connection-timers>
+                                        <reconciliation-time>120</reconciliation-time>
+                                        <hold-time>90</hold-time>
+                                        <hold-time-min>90</hold-time-min>
+                                        <hold-time-max>180</hold-time-max>
+                                    </connection-timers>
+                                </connection>
+                            </connections>
+                            <master-database>
+                                <binding>
+                                    <sgt>65000</sgt>
+                                    <ip-prefix>172.168.1.0/28</ip-prefix>
+                                    <ip-prefix>173.168.1.20/32</ip-prefix>
+                                </binding>
+                            </master-database>
+                            <timers>
+                                <retry-open-time>5</retry-open-time>
+                                <hold-time-min-acceptable>120</hold-time-min-acceptable>
+                                <keep-alive-time>30</keep-alive-time>
+                                <hold-time>90</hold-time>
+                                <hold-time-min>90</hold-time-min>
+                                <hold-time-max>180</hold-time-max>
+                            </timers>
+                        </sxp-node>
+                    </sxp-controller-->
                 </module>
             </modules>
         </data>
