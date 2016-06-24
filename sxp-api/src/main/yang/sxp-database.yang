@@ -4,8 +4,8 @@ module sxp-database {
     namespace "urn:opendaylight:sxp:database";
     prefix "sxpdb";
 
-    import ietf-inet-types { prefix inet; revision-date "2010-09-24"; }
-    import ietf-yang-types { prefix ietf-yang; revision-date "2010-09-24"; }
+    import ietf-inet-types { prefix inet; revision-date "2013-07-15"; }
+    import ietf-yang-types { prefix ietf-yang; revision-date "2013-07-15"; }
     import sxp-protocol { prefix sxppt; revision-date "2014-10-02"; }
 
     organization "Cisco Systems, Inc.";

@@ -11,8 +11,8 @@ package org.opendaylight.sxp.util.inet;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
 import org.opendaylight.sxp.util.exception.connection.NoNetworkInterfacesException;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IetfInetUtil;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IetfInetUtil;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.slf4j.Logger;
@@ -129,7 +129,7 @@ public final class Search {
      * @return String representation of IpAddress
      */
     public static String getAddress(
-            org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress address) {
+            org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress address) {
         Preconditions.checkNotNull(address);
         if (address.getIpv4Address() != null) {
             return address.getIpv4Address().getValue();

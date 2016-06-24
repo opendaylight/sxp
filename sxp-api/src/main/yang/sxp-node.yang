@@ -4,8 +4,8 @@ module sxp-node {
     namespace "urn:opendaylight:sxp:node";
     prefix "sxpnd";
 
-    import ietf-inet-types { prefix inet; revision-date "2010-09-24"; }
-    import ietf-yang-types { prefix ietf-yang; revision-date "2010-09-24"; }
+    import ietf-inet-types { prefix inet; revision-date "2013-07-15"; }
+    import ietf-yang-types { prefix ietf-yang; revision-date "2013-07-15"; }
     import network-topology { prefix nt; revision-date "2013-10-21"; }
     import sxp-database { prefix sxpdb; revision-date "2016-03-08"; }
     import sxp-protocol { prefix sxppt; revision-date "2014-10-02"; }

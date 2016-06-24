@@ -14,7 +14,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeNotFoundException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeVariantException;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeVariant;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.FlagsFields;
