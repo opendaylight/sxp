@@ -19,7 +19,7 @@ import java.util.List;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 
 public final class IpPrefixConv {
 

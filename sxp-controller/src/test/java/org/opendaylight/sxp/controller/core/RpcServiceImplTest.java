@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -23,12 +22,12 @@ import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Prefix;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Prefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv6Prefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionInputBuilder;
@@ -113,7 +112,7 @@ public class RpcServiceImplTest {
     private static DatastoreAccess datastoreAccess;
     private MasterDatabaseInf masterDatabase;
 
-    @BeforeClass public static void initClass() throws Exception {
+    @Before public void init() throws ExecutionException, InterruptedException {
         node = PowerMockito.mock(SxpNode.class);
         datastoreAccess = mock(DatastoreAccess.class);
         when(datastoreAccess.checkAndDelete(any(InstanceIdentifier.class), any(LogicalDatastoreType.class))).thenReturn(
@@ -141,9 +140,6 @@ public class RpcServiceImplTest {
                 .thenReturn(
                         mock(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class));
         Configuration.register(node);
-    }
-
-    @Before public void init() throws ExecutionException, InterruptedException {
         service = new RpcServiceImpl(datastoreAccess);
         masterDatabase = mock(MasterDatastoreImpl.class);
         when(node.getBindingMasterDatabase()).thenReturn(masterDatabase);
@@ -576,6 +572,8 @@ public class RpcServiceImplTest {
     }
 
     @Test public void testDeleteBindings() throws Exception {
+        when(node.removeLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(
+                Collections.singletonList(mock(MasterDatabaseBinding.class)));
         RpcResult<DeleteBindingsOutput>
                 result =
                 service.deleteBindings(new DeleteBindingsInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
@@ -611,7 +609,8 @@ public class RpcServiceImplTest {
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
-        assertTrue(result.getResult().isResult());
+        Boolean aBoolean = result.getResult().isResult();
+        assertTrue(aBoolean);
     }
 
     @Test public void testDeleteDomain() throws Exception {
@@ -670,6 +669,8 @@ public class RpcServiceImplTest {
     }
 
     @Test public void testAddBindings() throws Exception {
+        when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(
+                Collections.singletonList(mock(MasterDatabaseBinding.class)));
         RpcResult<AddBindingsOutput>
                 result =
                 service.addBindings(new AddBindingsInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
@@ -704,6 +705,7 @@ public class RpcServiceImplTest {
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
-        assertTrue(result.getResult().isResult());
+        Boolean aBoolean = result.getResult().isResult();
+        assertTrue(aBoolean);
     }
 }

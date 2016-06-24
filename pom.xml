@@ -51,8 +51,8 @@
         <restconf.version>1.4.0-SNAPSHOT</restconf.version>
 
         <!-- Yang Module Versions -->
-        <ietf-inet-types.version>2010.09.24.9-SNAPSHOT</ietf-inet-types.version>
-        <ietf-yang-types.version>2010.09.24.9-SNAPSHOT</ietf-yang-types.version>
+        <ietf-yang-types.version>2013.07.15.9-SNAPSHOT</ietf-yang-types.version>
+        <ietf-inet-types.version>1.1.0-SNAPSHOT</ietf-inet-types.version>
         <yang-ext.version>2013.09.07.9-SNAPSHOT</yang-ext.version>
         <yang-nt.version>2013.10.21.9-SNAPSHOT</yang-nt.version>
 
@@ -204,12 +204,12 @@
             <!-- yang model dependencies -->
             <dependency>
                 <groupId>org.opendaylight.mdsal.model</groupId>
-                <artifactId>ietf-inet-types</artifactId>
+                <artifactId>ietf-inet-types-2013-07-15</artifactId>
                 <version>${ietf-inet-types.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opendaylight.mdsal.model</groupId>
-                <artifactId>ietf-yang-types</artifactId>
+                <artifactId>ietf-yang-types-20130715</artifactId>
                 <version>${ietf-yang-types.version}</version>
             </dependency>
             <dependency>
