@@ -11,6 +11,15 @@ package org.opendaylight.sxp.core;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.ChannelHandlerContext;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.core.messaging.AttributeList;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
@@ -65,16 +74,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
 /**
  * SxpConnection class represent SxpPeer and contains logic for maintaining communication
  */
@@ -94,17 +93,19 @@ public class SxpConnection {
      *
      * @param owner      SxpNode to be set as owner
      * @param connection Connection that contains settings
+     * @param domain     Sxp Domain where Connections contains
      * @return SxpConnection created by specified values
      * @throws UnknownVersionException If version in provided values isn't supported
      */
     public static SxpConnection create(SxpNode owner, Connection connection, String domain)
             throws UnknownVersionException {
-        return new SxpConnection(owner, connection, domain);
+        SxpConnection sxpConnection = new SxpConnection(owner, connection, domain);
+        sxpConnection.setCapabilities(Configuration.getCapabilities(sxpConnection.getVersion()));
+        return sxpConnection;
     }
 
-    public static SxpConnection create(SxpNode owner, Connection connection)
-            throws UnknownVersionException {
-        return new SxpConnection(owner, connection, SxpNode.DEFAULT_DOMAIN);
+    public static SxpConnection create(SxpNode owner, Connection connection) throws UnknownVersionException {
+        return create(owner, connection, SxpNode.DEFAULT_DOMAIN);
     }
 
     private ConnectionBuilder connectionBuilder;
@@ -259,9 +260,9 @@ public class SxpConnection {
         for (FilterType filterType : FilterType.values()) {
             bindingFilterMap.put(filterType, new HashMap<>());
         }
-        Version version = connectionBuilder.getVersion() != null ? connectionBuilder.getVersion() : owner.getVersion();
-        this.context = new Context(owner, version);
-        connectionBuilder.setCapabilities(Configuration.getCapabilities(version));
+        this.context =
+                new Context(owner,
+                        connectionBuilder.getVersion() != null ? connectionBuilder.getVersion() : owner.getVersion());
     }
 
     protected void setTimers(ConnectionTimers build) {
@@ -284,7 +285,7 @@ public class SxpConnection {
         return connectionBuilder.build();
     }
 
-    protected void setConnection(Connection connection){
+    protected void setConnection(Connection connection) {
         connectionBuilder = new ConnectionBuilder(Preconditions.checkNotNull(connection));
     }
 
@@ -1066,7 +1067,7 @@ public class SxpConnection {
     /**
      * Sets addresses used to communicate
      *
-     * @param localAddress  SocketAddress of local connection
+     * @param localAddress SocketAddress of local connection
      * @throws SocketAddressNotRecognizedException If parameters aren't instance of InetSocketAddress
      */
     public void setInetSocketAddresses(SocketAddress localAddress)
@@ -1128,7 +1129,7 @@ public class SxpConnection {
      * @param ctx ChannelHandlerContext  to be tested
      * @return Type of ChannelHandlerContext in this connection
      */
-    public ChannelHandlerContextType getContextType(ChannelHandlerContext ctx){
+    public ChannelHandlerContextType getContextType(ChannelHandlerContext ctx) {
         ChannelHandlerContextType type = ChannelHandlerContextType.None;
         synchronized (ctxs) {
             for (Map.Entry<ChannelHandlerContextType, ChannelHandlerContext> e : ctxs.entrySet()) {

@@ -34,28 +34,43 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
 
     private final PortNumber port;
     private final IpAddress address;
-    private DatastoreAccess datastoreAccess;
-    private String nodeId = null;
+    private final DatastoreAccess datastoreAccess;
+    private final String nodeId;
 
-    public SxpDatastoreConnection(DatastoreAccess datastoreAccess, SxpNode owner, Connection connection, String domain)
+    /**
+     * Creates SxpDatastoreConnection using provided values
+     *
+     * @param datastoreAccess Handle used to read and write from Datastore
+     * @param owner           SxpNode to be set as owner
+     * @param connection      Connection that contains settings
+     * @param domain          Sxp Domain where Connections contains
+     * @return SxpConnection created by specified values
+     * @throws UnknownVersionException If version in provided values isn't supported
+     */
+    public static SxpDatastoreConnection create(DatastoreAccess datastoreAccess, SxpNode owner, Connection connection,
+            String domain) throws UnknownVersionException {
+        SxpDatastoreConnection
+                datastoreConnection =
+                new SxpDatastoreConnection(datastoreAccess, owner, connection, domain);
+        datastoreConnection.setCapabilities(Configuration.getCapabilities(datastoreConnection.getVersion()));
+        return datastoreConnection;
+    }
+
+    private SxpDatastoreConnection(DatastoreAccess datastoreAccess, SxpNode owner, Connection connection, String domain)
             throws UnknownVersionException {
         super(Preconditions.checkNotNull(owner), Preconditions.checkNotNull(connection),
                 Preconditions.checkNotNull(domain));
         this.address = new IpAddress(Preconditions.checkNotNull(connection.getPeerAddress()));
         this.port = new PortNumber(Preconditions.checkNotNull(connection.getTcpPort()));
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
-        setCapabilities(Configuration.getCapabilities(
-                connection.getVersion() != null ? connection.getVersion() : owner.getVersion()));
+        this.nodeId = NodeIdConv.toString(getOwnerId());
     }
 
-    private synchronized String getNodeId() {
-        if (nodeId == null)
-            nodeId = NodeIdConv.toString(getOwnerId());
-        return nodeId;
-    }
-
+    /**
+     * @return InstanceIdentifier pointing to specific Connection
+     */
     private InstanceIdentifier<Connection> getIdentifier() {
-        return SxpDatastoreNode.getIdentifier(getNodeId())
+        return SxpDatastoreNode.getIdentifier(nodeId)
                 .child(SxpDomains.class)
                 .child(SxpDomain.class, new SxpDomainKey(domain))
                 .child(Connections.class)

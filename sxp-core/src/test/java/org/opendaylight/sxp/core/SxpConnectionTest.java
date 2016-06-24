@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.opendaylight.controller.md.sal.common.api.data.*;
 import org.opendaylight.sxp.core.service.UpdateExportTask;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
@@ -26,6 +27,7 @@ import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognized
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
+import org.opendaylight.sxp.util.time.*;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
@@ -33,7 +35,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.Filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimers;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.*;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.*;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
@@ -49,6 +52,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.hold.time.attribute.HoldTimeAttributesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.sxp.node.id.attribute.SxpNodeIdAttributesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
+import org.opendaylight.yangtools.yang.binding.*;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -600,5 +604,44 @@ public class SxpConnectionTest {
                 assertFalse(sxpConnection.isStatePendingOn());
                 sxpConnection.setStatePendingOn();
                 assertTrue(sxpConnection.isStatePendingOn());
+        }
+
+        @Test public void testSetTimers() throws Exception {
+                ConnectionTimers
+                        timers =
+                        new ConnectionTimersBuilder().setHoldTime(60)
+                                .setHoldTimeMax(180)
+                                .setHoldTimeMinAcceptable(90)
+                                .build();
+                sxpConnection.setTimers(timers);
+                assertEquals(60, sxpConnection.getHoldTime());
+                assertEquals(180, sxpConnection.getHoldTimeMax());
+                assertEquals(90, sxpConnection.getHoldTimeMinAcceptable());
+        }
+
+        @Test public void testSetCapabilities() throws Exception {
+                Capabilities capabilities = Configuration.getCapabilities(Version.Version4);
+                sxpConnection.setCapabilities(capabilities);
+                assertFalse(sxpConnection.getCapabilitiesRemote().contains(CapabilityType.Ipv4Unicast));
+                assertFalse(sxpConnection.getCapabilitiesRemote().contains(CapabilityType.Ipv6Unicast));
+                assertFalse(sxpConnection.getCapabilitiesRemote().contains(CapabilityType.LoopDetection));
+                assertFalse(sxpConnection.getCapabilitiesRemote().contains(CapabilityType.SubnetBindings));
+                assertFalse(sxpConnection.getCapabilitiesRemote().contains(CapabilityType.SxpCapabilityExchange));
+        }
+
+        @Test public void testSetVersion() throws Exception {
+                sxpConnection.setVersion(Version.Version1);
+                assertEquals(Version.Version1, sxpConnection.getVersion());
+        }
+
+        @Test public void testSetState() throws Exception {
+                sxpConnection.setState(ConnectionState.DeleteHoldDown);
+                assertEquals(ConnectionState.DeleteHoldDown, sxpConnection.getState());
+        }
+
+        @Test public void testSetNodeIdRemote() throws Exception {
+                NodeId nodeId = new NodeId("1.1.1.1");
+                sxpConnection.setNodeIdRemote(nodeId);
+                assertEquals(nodeId, sxpConnection.getNodeIdRemote());
         }
 }

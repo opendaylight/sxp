@@ -10,6 +10,15 @@ package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
@@ -136,16 +145,6 @@ import org.opendaylight.yangtools.yang.common.RpcResult;
 import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
 
@@ -465,13 +464,14 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         final DeleteDomainOutputBuilder output = new DeleteDomainOutputBuilder().setResult(false);
         return getResponse(nodeId, output.build(), () -> {
             LOG.info("RpcDeleteDomain event | {}", input.toString());
-            InstanceIdentifier
-                    identifier =
-                    getIdentifier(nodeId).child(SxpDomains.class)
-                            .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()));
-            output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
-                    || datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
-
+            if (input.getDomainName() != null) {
+                InstanceIdentifier
+                        identifier =
+                        getIdentifier(nodeId).child(SxpDomains.class)
+                                .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()));
+                output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
+                        || datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+            }
             return RpcResultBuilder.success(output.build()).build();
         });
     }

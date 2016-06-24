@@ -9,6 +9,8 @@
 package org.opendaylight.sxp.controller.listeners.spi;
 
 import com.google.common.base.Preconditions;
+import java.util.ArrayList;
+import java.util.List;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -19,35 +21,48 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * ListListener class represent logic that handles changes on container List Childs
+ *
+ * @param <P> Parent type
+ * @param <C> Container type that contains List
+ * @param <O> List entry type
+ */
 public abstract class ListListener<P extends DataObject, C extends ChildOf<? super P>, O extends ChildOf<? super C>>
         implements Listener<P, C> {
 
     protected static final Logger LOG = LoggerFactory.getLogger(ListListener.class.getName());
-
-    private final List<Listener> subListeners = new ArrayList<>();
     protected final DatastoreAccess datastoreAccess;
     protected final Class<C> container;
+    private final List<Listener> subListeners = new ArrayList<>();
 
     protected ListListener(DatastoreAccess datastoreAccess, Class<C> container) {
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
         this.container = Preconditions.checkNotNull(container);
     }
 
-    public Listener addSubListener(Listener listener) {
+    @Override public Listener addSubListener(Listener listener) {
         subListeners.add(Preconditions.checkNotNull(listener));
         return this;
     }
 
+    /**
+     * @param c          Container modification object
+     * @param identifier InstanceIdentifier pointing to Parent of Container
+     */
     protected abstract void handleOperational(DataObjectModification<O> c, final InstanceIdentifier<P> identifier);
 
+    /**
+     * Mirrors changes into Operational Datastore
+     *
+     * @param c          Container modification object
+     * @param identifier InstanceIdentifier pointing to Parent of Container
+     */
     protected void handleConfig(DataObjectModification<O> c, final InstanceIdentifier<P> identifier) {
         LOG.trace("Config Modification {} {}", getClass(), c.getModificationType());
         switch (c.getModificationType()) {
             case WRITE:
-                if (c.getDataAfter() != null)
+                if (c.getDataAfter() != null && c.getDataBefore() == null)
                     datastoreAccess.putSynchronous(getIdentifier(c.getDataAfter(), identifier), c.getDataAfter(),
                             LogicalDatastoreType.OPERATIONAL);
             case SUBTREE_MODIFIED:
@@ -60,8 +75,14 @@ public abstract class ListListener<P extends DataObject, C extends ChildOf<? sup
         }
     }
 
+    /**
+     * @param d                Data used for building InstanceIdentifier
+     * @param parentIdentifier InstanceIdentifier of Parent
+     * @return InstanceIdentifier pointing to child with specified values
+     */
     protected abstract InstanceIdentifier<O> getIdentifier(O d, InstanceIdentifier<P> parentIdentifier);
 
+    @Override
     public void handleChange(List<DataObjectModification<C>> modifiedChilds, LogicalDatastoreType logicalDatastoreType,
             InstanceIdentifier<P> identifier) {
         if (modifiedChilds != null && !modifiedChilds.isEmpty()) {
@@ -89,12 +110,13 @@ public abstract class ListListener<P extends DataObject, C extends ChildOf<? sup
         }
     }
 
-    public List<DataObjectModification<C>> getModifications(DataTreeModification<P> treeModification) {
+    @Override public List<DataObjectModification<C>> getModifications(DataTreeModification<P> treeModification) {
         List<DataObjectModification<C>> modifications = new ArrayList<>();
         modifications.add(treeModification.getRootNode().getModifiedChildContainer(container));
         return modifications;
     }
 
+    @Override
     public List<DataObjectModification<C>> getObjectModifications(DataObjectModification<P> objectModification) {
         List<DataObjectModification<C>> modifications = new ArrayList<>();
         modifications.add(objectModification.getModifiedChildContainer(container));

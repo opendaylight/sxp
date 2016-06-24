@@ -199,14 +199,10 @@ public class SxpNode {
         }
         synchronized (sxpDomains) {
             if (!sxpDomains.containsKey(connection.getDomainName())) {
+                LOG.warn("{} Domain {} does not exist", this, connection.getDomainName());
                 return;
             }
-            SxpDomain domain = sxpDomains.get(connection.getDomainName());
-            if (domain.hasConnection(connection.getDestination())) {
-                throw new IllegalArgumentException(
-                        "Connection " + connection + " with destination " + connection.getDestination() + " exist.");
-            }
-            domain.putConnection(connection);
+            sxpDomains.get(connection.getDomainName()).putConnection(connection);
         }
         updateMD5keys(connection);
     }
@@ -482,6 +478,12 @@ public class SxpNode {
         }
     }
 
+    /**
+     * Adds Domain into SxpNode if there is no other domain with omitting name
+     *
+     * @param domain SXpDomain initializer
+     * @return If Domain was added
+     */
     public boolean addDomain(
             org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain domain) {
         Preconditions.checkNotNull(domain);
@@ -495,13 +497,19 @@ public class SxpNode {
         return true;
     }
 
+    /**
+     * Remove Domain from SxpNode if there is not domain with specified name thrown IllegalArgumentException
+     *
+     * @param domainName Nme assigned to domain that will be removed
+     * @return SxpDomain that was removed
+     */
     public SxpDomain removeDomain(String domainName) {
         synchronized (sxpDomains) {
             if (sxpDomains.containsKey(Preconditions.checkNotNull(domainName)) && sxpDomains.get(domainName)
                     .getConnections()
                     .isEmpty())
                 return sxpDomains.remove(Preconditions.checkNotNull(domainName));
-            throw new IllegalStateException("Domain " + domainName + "contains data Cannot remove");
+            throw new IllegalStateException("Domain " + domainName + "cannot be removed.");
         }
     }
 

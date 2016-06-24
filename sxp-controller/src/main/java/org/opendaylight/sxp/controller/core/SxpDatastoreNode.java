@@ -14,10 +14,7 @@ import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
@@ -31,8 +28,15 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
+/**
+ * SxpDatastoreNode class represent Sxp aware entity that reflect its current stare to Operational Datastore
+ */
 public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implements AutoCloseable {
 
+    /**
+     * @param nodeId Id representing Node in Topology
+     * @return InstanceIdentifier pointing to specific node
+     */
     public static InstanceIdentifier<SxpNodeIdentity> getIdentifier(final String nodeId) {
         return InstanceIdentifier.builder(NetworkTopology.class)
                 .child(Topology.class, new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME)))
@@ -43,6 +47,15 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
                 .build();
     }
 
+    /**
+     * Create new instance of SxpNode with empty databases
+     * and default ThreadWorkers
+     *
+     * @param nodeId          ID of newly created Node
+     * @param datastoreAccess Handle used for writing and reading from Datastore
+     * @param node            Node setup data
+     * @return New instance of SxpNode
+     */
     public static SxpDatastoreNode createInstance(NodeId nodeId, DatastoreAccess datastoreAccess,
             SxpNodeIdentity node) {
         return new SxpDatastoreNode(nodeId, datastoreAccess, node);
@@ -85,7 +98,7 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
     }
 
     @Override public void addConnection(Connection connection, String domain) {
-        addConnection(new SxpDatastoreConnection(datastoreAccess, this, Preconditions.checkNotNull(connection),
+        addConnection(SxpDatastoreConnection.create(datastoreAccess, this, Preconditions.checkNotNull(connection),
                 Preconditions.checkNotNull(domain)));
     }
 

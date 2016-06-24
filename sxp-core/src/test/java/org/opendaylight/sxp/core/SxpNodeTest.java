@@ -12,6 +12,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,9 +48,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.*;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.*;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.*;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.Timers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.TimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
@@ -61,8 +65,6 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -536,5 +538,42 @@ public class SxpNodeTest {
                 assertNull(node.updateFilterInPeerGroup("TEST", getFilter(FilterType.Outbound)));
                 assertEquals(filter, node.updateFilterInPeerGroup("TEST", getFilter(FilterType.Inbound)));
                 assertEquals(1, node.getPeerGroup("TEST").getSxpFilter().size());
+        }
+
+        @Test public void testGetNodeIdentity() throws Exception {
+                assertNotNull(node.getNodeIdentity());
+        }
+
+        private org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain getDomain(
+                String name, Connections connections) {
+                SxpDomainBuilder builder = new SxpDomainBuilder();
+                builder.setDomainName(name);
+                builder.setConnections(connections);
+                return builder.build();
+        }
+
+        @Test public void testAddDomain() throws Exception {
+                assertTrue(node.addDomain(getDomain("private",null)));
+                assertFalse(node.addDomain(getDomain("private",null)));
+                assertTrue(node.addDomain(getDomain("test",null)));
+        }
+
+        @Test public void testRemoveDomain() throws Exception {
+                node.addDomain(getDomain("private", new ConnectionsBuilder().setConnection(
+                        Collections.singletonList(mockConnection(ConnectionMode.Listener, ConnectionState.On)))
+                        .build()));
+                node.addDomain(getDomain("test", null));
+
+                assertNotNull(node.removeDomain("test"));
+                exception.expect(IllegalStateException.class);
+                assertNotNull(node.removeDomain("private"));
+        }
+
+        @Test public void testSetPassword() throws Exception {
+                assertEquals("test", node.setPassword(new SecurityBuilder().setPassword("test").build()).getPassword());
+        }
+
+        @Test public void testToString() throws Exception {
+                assertEquals("[NAME:127.0.0.1]", node.toString());
         }
 }

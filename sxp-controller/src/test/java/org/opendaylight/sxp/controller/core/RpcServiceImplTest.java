@@ -8,6 +8,10 @@
 
 package org.opendaylight.sxp.controller.core;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -25,8 +29,12 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddEntryInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddFilterInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddFilterOutput;
@@ -34,8 +42,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ad
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddNodeOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddPeerGroupInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddPeerGroupOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingsInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteEntryInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteFilterInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteFilterOutput;
@@ -60,6 +72,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.up
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
@@ -81,12 +94,14 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -107,7 +122,6 @@ public class RpcServiceImplTest {
                 any(LogicalDatastoreType.class), anyBoolean())).thenReturn(true);
         when(datastoreAccess.checkAndMerge(any(InstanceIdentifier.class), any(DataObject.class),
                 any(LogicalDatastoreType.class), anyBoolean())).thenReturn(true);
-        ;
 
         when(node.getNodeId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
         ArrayList<SxpPeerGroup> sxpPeerGroups = new ArrayList<>();
@@ -554,6 +568,138 @@ public class RpcServiceImplTest {
                         .setSxpFilter(new SxpFilterBuilder().setFilterType(FilterType.InboundDiscarding)
                                 .setFilterSpecific(FilterSpecific.AccessOrPrefixList)
                                 .build())
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertTrue(result.getResult().isResult());
+    }
+
+    @Test public void testDeleteBindings() throws Exception {
+        RpcResult<DeleteBindingsOutput>
+                result =
+                service.deleteBindings(new DeleteBindingsInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.deleteBindings(
+                        new DeleteBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0")).setBinding(null).build())
+                        .get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.deleteBindings(new DeleteBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                        .setBinding(new ArrayList<>())
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.deleteBindings(new DeleteBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                        .setBinding(Collections.singletonList(new BindingBuilder().setSgt(new Sgt(112))
+                                .setIpPrefix(Collections.singletonList(new IpPrefix("1.1.1.1/32".toCharArray())))
+                                .build()))
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertTrue(result.getResult().isResult());
+    }
+
+    @Test public void testDeleteDomain() throws Exception {
+        RpcResult<DeleteDomainOutput>
+                result =
+                service.deleteDomain(new DeleteDomainInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.deleteDomain(
+                        new DeleteDomainInputBuilder().setNodeId(new NodeId("0.0.0.0")).setDomainName(null).build())
+                        .get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.deleteDomain(
+                        new DeleteDomainInputBuilder().setNodeId(new NodeId("0.0.0.0")).setDomainName("dom").build())
+                        .get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertTrue(result.getResult().isResult());
+    }
+
+    @Test public void testAddDomain() throws Exception {
+        RpcResult<AddDomainOutput>
+                result =
+                service.addDomain(new AddDomainInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.addDomain(
+                        new AddDomainInputBuilder().setNodeId(new NodeId("0.0.0.0")).setDomainName(null).build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.addDomain(
+                        new AddDomainInputBuilder().setNodeId(new NodeId("0.0.0.0")).setDomainName("dom").build())
+                        .get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertTrue(result.getResult().isResult());
+    }
+
+    @Test public void testAddBindings() throws Exception {
+        RpcResult<AddBindingsOutput>
+                result =
+                service.addBindings(new AddBindingsInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.addBindings(
+                        new AddBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0")).setBinding(null).build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.addBindings(new AddBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                        .setBinding(new ArrayList<>())
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.addBindings(new AddBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                        .setBinding(Collections.singletonList(new BindingBuilder().setSgt(new Sgt(112))
+                                .setIpPrefix(Collections.singletonList(new IpPrefix("1.1.1.1/32".toCharArray())))
+                                .build()))
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
