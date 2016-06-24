@@ -4,7 +4,7 @@ module sxp-protocol {
     namespace "urn:opendaylight:sxp:protocol";
     prefix "sxppt";
 
-    import ietf-inet-types { prefix inet; revision-date "2010-09-24"; }
+    import ietf-inet-types { prefix inet; revision-date "2013-07-15"; }
 
     organization "Cisco Systems, Inc.";
 

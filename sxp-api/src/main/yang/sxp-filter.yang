@@ -4,7 +4,7 @@ module sxp-filter {
     namespace "urn:opendaylight:sxp:filter";
     prefix "sxpfl";
 
-    import ietf-inet-types {prefix inet; revision-date "2010-09-24";}
+    import ietf-inet-types {prefix inet; revision-date "2013-07-15";}
     import sxp-database {prefix sxpdb; revision-date "2016-03-08";}
 
     organization "Cisco Systems, Inc.";

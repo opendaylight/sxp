@@ -4,7 +4,7 @@ module sxp-controller {
     namespace "urn:opendaylight:sxp:controller";
     prefix "sxpctrl";
 
-    import ietf-inet-types { prefix inet; revision-date "2010-09-24"; }
+    import ietf-inet-types { prefix inet; revision-date "2013-07-15"; }
     import sxp-database { prefix sxpdb; revision-date "2016-03-08"; }
     import sxp-node { prefix sxpnd; revision-date "2016-03-08"; }
     import sxp-filter { prefix sxpfl; revision-date "2015-09-11"; }
