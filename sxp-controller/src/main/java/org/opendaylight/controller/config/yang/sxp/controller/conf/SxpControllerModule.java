@@ -8,6 +8,8 @@
 
 package org.opendaylight.controller.config.yang.sxp.controller.conf;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -16,6 +18,7 @@ import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.RpcServiceImpl;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.ConnectionsListener;
+import org.opendaylight.sxp.controller.listeners.sublisteners.DomainFilterListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.DomainListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.FilterListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.MasterBindingListener;
@@ -30,9 +33,6 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyKey;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class SxpControllerModule
         extends org.opendaylight.controller.config.yang.sxp.controller.conf.AbstractSxpControllerModule {
@@ -82,7 +82,8 @@ public class SxpControllerModule
         NodeIdentityListener listener = new NodeIdentityListener(datastoreAccess);
         listener.addSubListener(
                 new DomainListener(datastoreAccess).addSubListener(new ConnectionsListener(datastoreAccess))
-                        .addSubListener(new MasterBindingListener(datastoreAccess)));
+                        .addSubListener(new MasterBindingListener(datastoreAccess))
+                        .addSubListener(new DomainFilterListener(datastoreAccess)));
         listener.addSubListener(
                 new PeerGroupListener(datastoreAccess).addSubListener(new FilterListener(datastoreAccess)));
 

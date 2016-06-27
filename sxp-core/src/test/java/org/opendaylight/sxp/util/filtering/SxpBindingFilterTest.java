@@ -13,6 +13,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.MaskRangeOperator;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilterFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntriesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.PeerSequenceFilterEntriesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.PrefixListFilterEntriesBuilder;
@@ -41,21 +42,22 @@ public class SxpBindingFilterTest {
 
     @Test public void testGenerateFilter() throws Exception {
         SxpBindingFilter bindingFilter = SxpBindingFilter.generateFilter(getAclFilter(FilterType.Inbound), "TEST");
-        assertEquals("TEST", bindingFilter.getPeerGroupName());
+        assertEquals("TEST", bindingFilter.getIdentifier());
         assertEquals(new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder(
                 getAclFilter(FilterType.Inbound)).build(), bindingFilter.getSxpFilter());
 
         bindingFilter = SxpBindingFilter.generateFilter(getPrefixListFilter(FilterType.Inbound), "TEST1");
-        assertEquals("TEST1", bindingFilter.getPeerGroupName());
+        assertEquals("TEST1", bindingFilter.getIdentifier());
         assertEquals(new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder(
                 getPrefixListFilter(FilterType.Inbound)).build(), bindingFilter.getSxpFilter());
 
         bindingFilter = SxpBindingFilter.generateFilter(getPeerSequenceFilter(FilterType.Inbound), "TEST2");
-        assertEquals("TEST2", bindingFilter.getPeerGroupName());
+        assertEquals("TEST2", bindingFilter.getIdentifier());
         assertEquals(new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder(
                 getPeerSequenceFilter(FilterType.Inbound)).build(), bindingFilter.getSxpFilter());
+        SxpFilter filter = null;
         try {
-            SxpBindingFilter.generateFilter(null, null);
+            SxpBindingFilter.generateFilter(filter, null);
             fail();
         } catch (IllegalArgumentException e) {
         }
@@ -75,7 +77,7 @@ public class SxpBindingFilterTest {
         } catch (IllegalArgumentException e) {
         }
         try {
-            SxpBindingFilter.generateFilter(null, "NAME");
+            SxpBindingFilter.generateFilter(filter, "NAME");
             fail();
         } catch (IllegalArgumentException e) {
         }
@@ -136,17 +138,17 @@ public class SxpBindingFilterTest {
     }
 
     @Test public void testMergeFilters() throws Exception {
-        List<SxpBindingFilter> filterList = new ArrayList<>();
+        List<SxpBindingFilter<?,? extends SxpFilterFields>> filterList = new ArrayList<>();
         filterList.add(SxpBindingFilter.generateFilter(getPrefixListFilter(FilterType.Outbound), "GROUP"));
-        assertEquals("GROUP", SxpBindingFilter.mergeFilters(filterList).getPeerGroupName());
+        assertEquals("GROUP", SxpBindingFilter.mergeFilters(filterList).getIdentifier());
 
         filterList.add(SxpBindingFilter.generateFilter(getPrefixListFilter(FilterType.Outbound), "Peers"));
-        assertEquals("MultiGroup[ GROUP Peers ]", SxpBindingFilter.mergeFilters(filterList).getPeerGroupName());
+        assertEquals("MultiGroup[ GROUP Peers ]", SxpBindingFilter.mergeFilters(filterList).getIdentifier());
         filterList.clear();
 
         filterList.add(SxpBindingFilter.generateFilter(getPrefixListFilter(FilterType.Outbound), "Peers"));
         filterList.add(SxpBindingFilter.generateFilter(getPrefixListFilter(FilterType.Outbound), "GROUP"));
-        assertEquals("MultiGroup[ GROUP Peers ]", SxpBindingFilter.mergeFilters(filterList).getPeerGroupName());
+        assertEquals("MultiGroup[ GROUP Peers ]", SxpBindingFilter.mergeFilters(filterList).getIdentifier());
     }
 
     @Test public void testCheckInCompatibility() throws Exception {
