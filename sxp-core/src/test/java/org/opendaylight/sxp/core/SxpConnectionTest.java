@@ -39,6 +39,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntries;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
@@ -496,9 +497,9 @@ public class SxpConnectionTest {
                         sxpConnection.getContextType(context));
         }
 
-        private SxpBindingFilter getFilter(FilterType type, String name) {
-                SxpBindingFilter bindingFilter = mock(SxpBindingFilter.class);
-                when(bindingFilter.getPeerGroupName()).thenReturn(name);
+        private SxpBindingFilter<?,SxpFilter> getFilter(FilterType type, String name) {
+                SxpBindingFilter<?,SxpFilter> bindingFilter = mock(SxpBindingFilter.class);
+                when(bindingFilter.getIdentifier()).thenReturn(name);
                 SxpFilterBuilder builder = new SxpFilterBuilder();
                 builder.setFilterType(type);
                 builder.setFilterSpecific(FilterSpecific.AccessOrPrefixList);

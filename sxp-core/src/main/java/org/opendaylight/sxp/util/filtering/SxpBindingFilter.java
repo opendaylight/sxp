@@ -11,9 +11,18 @@ package org.opendaylight.sxp.util.filtering;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.net.InetAddresses;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntriesFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpDomainFilterFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilterFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.FilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntries;
@@ -22,59 +31,52 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.SgtMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.sgt.match.SgtMatches;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.sgt.match.SgtRange;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilter;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.domain.filter.SxpDomainFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
-
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 /**
  * Abstract Class representing Filter to filter Master/Sxp BindingIdentities
  *
  * @param <T> Type representing entries used inside filter
  */
-public abstract class SxpBindingFilter<T extends FilterEntries>
+public abstract class SxpBindingFilter<T extends FilterEntries, R extends FilterEntriesFields>
         implements Function<SxpBindingFields, Boolean>, Predicate<SxpBindingFields> {
 
-    protected final SxpFilter sxpFilter;
-    private final String peerGroupName;
+    protected final R sxpFilter;
+    private final String identifier;
 
-    private SxpBindingFilter(String peerGroupName) {
+    private SxpBindingFilter(String identifier) {
         this.sxpFilter = null;
-        this.peerGroupName = peerGroupName;
+        this.identifier = identifier;
     }
 
     /**
      * Parametric constructor for SxpFiltering logic
      *
-     * @param filter        SxpFilter containing rules for filtering
-     * @param peerGroupName name of PeerGroup in which filter is assigned
+     * @param filter     SxpFilter containing rules for filtering
+     * @param identifier name of PeerGroup in which filter is assigned
      * @throws IllegalArgumentException If SxpFilter fields are not set
      */
-    protected SxpBindingFilter(SxpFilter filter, String peerGroupName) {
-        if (filter.getFilterType() == null || filter.getFilterEntries() == null) {
+    protected SxpBindingFilter(R filter, String identifier) {
+        if (filter.getFilterEntries() == null) {
             throw new IllegalArgumentException("Filter fields aren't set properly " + filter);
         }
         sxpFilter = filter;
-        this.peerGroupName = peerGroupName;
+        this.identifier = identifier;
     }
 
     /**
      * @return assigned SxpFilter
      */
-    public SxpFilter getSxpFilter() {
+    public R getSxpFilter() {
         return sxpFilter;
     }
 
     /**
      * @return Name of PeerGroup where filter is assigned
      */
-    public String getPeerGroupName() {
-        return peerGroupName;
+    public String getIdentifier() {
+        return identifier;
     }
 
     @Override public Boolean apply(SxpBindingFields binding) {
@@ -134,8 +136,7 @@ public abstract class SxpBindingFilter<T extends FilterEntries>
      * @return Logic for binding filtering
      * @throws IllegalArgumentException If entries of Filter are not supported or other parameters are wrong
      */
-    public static SxpBindingFilter generateFilter(
-            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter filter,
+    public static <T extends SxpFilterFields> SxpBindingFilter<?, ? extends SxpFilterFields> generateFilter(T filter,
             String peerGroupName) throws IllegalArgumentException {
         if (peerGroupName == null) {
             throw new IllegalArgumentException("PeerGroup name cannot be null");
@@ -144,11 +145,43 @@ public abstract class SxpBindingFilter<T extends FilterEntries>
             throw new IllegalArgumentException("Filter cannot be null");
         }
         if (filter.getFilterEntries() instanceof AclFilterEntries) {
-            return new AclFilter(new SxpFilterBuilder(filter).build(), peerGroupName);
+            return new AclFilter<>(new SxpFilterBuilder(filter).build(), peerGroupName);
         } else if (filter.getFilterEntries() instanceof PrefixListFilterEntries) {
-            return new PrefixListFilter(new SxpFilterBuilder(filter).build(), peerGroupName);
+            return new PrefixListFilter<>(new SxpFilterBuilder(filter).build(), peerGroupName);
         } else if (filter.getFilterEntries() instanceof PeerSequenceFilterEntries) {
-            return new PeerSequenceFilter(new SxpFilterBuilder(filter).build(), peerGroupName);
+            return new PeerSequenceFilter<>(new SxpFilterBuilder(filter).build(), peerGroupName);
+        }
+        throw new IllegalArgumentException("Undefined filter type " + filter);
+    }
+
+    /**
+     * Generate wrapper for SxpFilter containing logic and
+     * sort entries in SxlFilter according their sequence
+     *
+     * @param filter     SxpFilter used for filtering
+     * @param domainName Name of Domain where filter is assigned
+     * @return Logic for binding filtering
+     * @throws IllegalArgumentException If entries of Filter are not supported or other parameters are wrong
+     */
+    public static <T extends SxpDomainFilterFields> SxpBindingFilter<?, ? extends SxpDomainFilterFields> generateFilter(
+            T filter, String domainName) throws IllegalArgumentException {
+        if (domainName == null) {
+            throw new IllegalArgumentException("Domain name cannot be null");
+        }
+        if (filter == null) {
+            throw new IllegalArgumentException("Filter cannot be null");
+        }
+        if (filter.getFilterEntries() instanceof AclFilterEntries) {
+            return new AclFilter<>(new SxpDomainFilterBuilder(Preconditions.checkNotNull(filter)).setFilterSpecific(
+                    FilterSpecific.AccessOrPrefixList).build(), domainName);
+        } else if (filter.getFilterEntries() instanceof PrefixListFilterEntries) {
+            return new PrefixListFilter<>(
+                    new SxpDomainFilterBuilder(Preconditions.checkNotNull(filter)).setFilterSpecific(
+                            FilterSpecific.AccessOrPrefixList).build(), domainName);
+        } else if (filter.getFilterEntries() instanceof PeerSequenceFilterEntries) {
+            return new PeerSequenceFilter<>(
+                    new SxpDomainFilterBuilder(Preconditions.checkNotNull(filter)).setFilterSpecific(
+                            FilterSpecific.PeerSequence).build(), domainName);
         }
         throw new IllegalArgumentException("Undefined filter type " + filter);
     }
@@ -158,22 +191,33 @@ public abstract class SxpBindingFilter<T extends FilterEntries>
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        SxpBindingFilter<?> that = (SxpBindingFilter<?>) o;
-        return Objects.equals(sxpFilter.getFilterType(), that.sxpFilter.getFilterType());
+        SxpBindingFilter that = (SxpBindingFilter) o;
+        if (sxpFilter instanceof SxpDomainFilterFields && that.sxpFilter instanceof SxpDomainFilterFields) {
+            return Objects.equals(((SxpDomainFilterFields) sxpFilter).getFilterSpecific(),
+                    ((SxpDomainFilterFields) that.sxpFilter).getFilterSpecific());
+        } else if (sxpFilter instanceof SxpFilterFields && that.sxpFilter instanceof SxpFilterFields) {
+            return Objects.equals(((SxpFilterFields) sxpFilter).getFilterType(),
+                    ((SxpFilterFields) that.sxpFilter).getFilterType()) && Objects.equals(
+                    ((SxpFilterFields) sxpFilter).getFilterSpecific(),
+                    ((SxpFilterFields) that.sxpFilter).getFilterSpecific());
+        }
+        return false;
     }
 
     @Override public int hashCode() {
         return Objects.hash(sxpFilter.getFilterEntries());
     }
 
-    public static SxpBindingFilter mergeFilters(final Collection<SxpBindingFilter> values) {
+    public static SxpBindingFilter<?, ? extends SxpFilterFields> mergeFilters(
+            final Collection<SxpBindingFilter<?, ? extends SxpFilterFields>> values) {
         if (values == null || values.isEmpty()) {
             return null;
         }
         if (values.size() == 1)
             return Iterables.get(values, 0);
         StringBuilder builder = new StringBuilder().append("MultiGroup[ ");
-        values.stream().map(SxpBindingFilter::getPeerGroupName).sorted().forEach(g -> builder.append(g).append(" "));
+        values.stream().map(SxpBindingFilter::getIdentifier).sorted().forEach(g -> builder.append(g).append(" "));
+        //noinspection unchecked
         return new SxpBindingFilter(builder.append("]").toString()) {
 
             protected boolean filter(FilterEntries filterEntries, SxpBindingFields binding) {
@@ -201,4 +245,5 @@ public abstract class SxpBindingFilter<T extends FilterEntries>
                 filter1.getFilterEntries() instanceof PrefixListFilterEntries
                         && filter2.getFilterEntries() instanceof AclFilterEntries;
     }
+
 }
