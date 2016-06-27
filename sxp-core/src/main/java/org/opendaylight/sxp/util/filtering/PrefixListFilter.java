@@ -8,23 +8,22 @@
 
 package org.opendaylight.sxp.util.filtering;
 
+import java.util.BitSet;
+import java.util.Collections;
+import java.util.Comparator;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntriesFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.PrefixListFilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.prefix.list.filter.entries.PrefixListEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.entry.PrefixListMatch;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilter;
-
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.Comparator;
 
 /**
  * PrefixList Filter logic based on Most specific Match that supports SGT matching
  */
-public class PrefixListFilter extends SxpBindingFilter<PrefixListFilterEntries> {
+public class PrefixListFilter<T extends FilterEntriesFields> extends SxpBindingFilter<PrefixListFilterEntries, T> {
 
     /**
      * Creates PrefixList Filter that filters Bindings according to specified PrefixList
@@ -33,7 +32,7 @@ public class PrefixListFilter extends SxpBindingFilter<PrefixListFilterEntries> 
      * @param peerGroupName PeerGroupName of Group containing specified filter
      * @throws IllegalArgumentException If no filter entries are defined or type of entries is not supported by this implementation
      */
-    public PrefixListFilter(SxpFilter filter, String peerGroupName) {
+    public PrefixListFilter(T filter, String peerGroupName) {
         super(filter, peerGroupName);
         if (filter.getFilterEntries() == null) {
             throw new IllegalArgumentException("Filter Entries not defined");

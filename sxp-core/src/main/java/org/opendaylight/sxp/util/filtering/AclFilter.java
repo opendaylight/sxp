@@ -12,6 +12,7 @@ import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntriesFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.acl.entry.AclMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.acl.match.fields.Mask;
@@ -26,7 +27,7 @@ import java.util.Comparator;
 /**
  * AclFilter logic based on First Match that support SGT matching
  */
-public final class AclFilter extends SxpBindingFilter<AclFilterEntries> {
+public final class AclFilter<T extends FilterEntriesFields> extends SxpBindingFilter<AclFilterEntries,T> {
 
     /**
      * Creates AclFilter that filters Bindings according to specified ACL
@@ -35,7 +36,7 @@ public final class AclFilter extends SxpBindingFilter<AclFilterEntries> {
      * @param peerGroupName PeerGroupName of Group containing specified filter
      * @throws IllegalArgumentException If no filter entries are defined or type of entries is not supported by this implementation
      */
-    public AclFilter(SxpFilter filter, String peerGroupName) {
+    public AclFilter(T filter, String peerGroupName) {
         super(filter, peerGroupName);
         if (filter.getFilterEntries() == null) {
             throw new IllegalArgumentException("Filter Entries not defined");

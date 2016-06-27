@@ -54,6 +54,7 @@ import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilterFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
@@ -63,6 +64,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeI
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -309,7 +311,7 @@ public class SxpNode {
             if (groupBuilder.getSxpFilter() == null) {
                 groupBuilder.setSxpFilter(new ArrayList<>());
             } else {
-                Set<SxpBindingFilter> filters = new HashSet<>();
+                Set<SxpBindingFilter<?, ? extends SxpFilterFields>> filters = new HashSet<>();
                 for (SxpFilter filter : peerGroup.getSxpFilter()) {
                     filters.add(SxpBindingFilter.generateFilter(filter, peerGroup.getName()));
                 }
@@ -320,9 +322,7 @@ public class SxpNode {
                 }
                 List<SxpConnection> connections = getConnections(groupBuilder);
                 for (SxpConnection connection : connections) {
-                    for (SxpBindingFilter filter : filters) {
-                        connection.putFilter(filter);
-                    }
+                    filters.forEach(connection::putFilter);
                 }
             }
             peerGroupMap.put(peerGroup.getName(), groupBuilder);
@@ -389,7 +389,9 @@ public class SxpNode {
                 LOG.warn("{} Cannot add Filter | Due to null parameters", this);
                 return false;
             }
-            SxpBindingFilter bindingFilter = SxpBindingFilter.generateFilter(sxpFilter, peerGroupName);
+            SxpBindingFilter<?, ? extends SxpFilterFields>
+                    bindingFilter =
+                    SxpBindingFilter.generateFilter(sxpFilter, peerGroupName);
             List<SxpFilter> sxpFilters = peerGroup.getSxpFilter();
             for (SxpFilter filter : sxpFilters) {
                 if (SxpBindingFilter.checkInCompatibility(filter, sxpFilter)) {
@@ -508,9 +510,30 @@ public class SxpNode {
             if (sxpDomains.containsKey(Preconditions.checkNotNull(domainName)) && sxpDomains.get(domainName)
                     .getConnections()
                     .isEmpty())
-                return sxpDomains.remove(Preconditions.checkNotNull(domainName));
+                return sxpDomains.remove(domainName);
             throw new IllegalStateException("Domain " + domainName + "cannot be removed.");
         }
+    }
+
+    public SxpDomain getDomain(String name) {
+        synchronized (sxpDomains) {
+            if (sxpDomains.containsKey(Preconditions.checkNotNull(name)))
+                return sxpDomains.get(name);
+            throw new IllegalStateException("Domain " + name+ "cannot be removed.");
+        }
+    }
+
+    public boolean addFilterToDomain(String domain, DomainFilter filter) {
+        Preconditions.checkNotNull(filter);
+        if (filter.getDomains() == null || filter.getDomains().getDomain() == null || filter.getDomains()
+                .getDomain()
+                .isEmpty() || filter.getFilterSpecific() == null || filter.getFilterEntries() == null)
+            return false;
+        return getDomain(domain).addFilter(filter.getFilterSpecific(), SxpBindingFilter.generateFilter(filter, domain));
+    }
+
+    public SxpBindingFilter removeFilterFromDomain(String domain, FilterSpecific specific) {
+        return getDomain(domain).removeFilter(Preconditions.checkNotNull(specific));
     }
 
     /**

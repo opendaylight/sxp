@@ -50,6 +50,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpB
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilterFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimers;
@@ -120,14 +122,15 @@ public class SxpConnection {
     protected final String domain;
 
     protected HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(5);
-    private final Map<FilterType, Map<FilterSpecific, SxpBindingFilter>> bindingFilterMap =
-        new HashMap<>(FilterType.values().length);
+    private final Map<FilterType, Map<FilterSpecific, SxpBindingFilter<?,? extends SxpFilterFields>>>
+            bindingFilterMap =
+            new HashMap<>(FilterType.values().length);
 
     /**
      * @param filterType Type of SxpBindingFilter to look for
      * @return Filter with specified type or null if connection doesnt have one
      */
-    public SxpBindingFilter getFilter(FilterType filterType) {
+    public SxpBindingFilter<?, ? extends SxpFilterFields> getFilter(FilterType filterType) {
         synchronized (bindingFilterMap) {
             return SxpBindingFilter.mergeFilters(bindingFilterMap.get(filterType).values());
         }
@@ -195,7 +198,7 @@ public class SxpConnection {
      *
      * @param filter SxpBindingFilter to be set
      */
-    public void putFilter(SxpBindingFilter filter) {
+    public void putFilter(SxpBindingFilter<?, ? extends SxpFilterFields> filter) {
         if (filter != null) {
             synchronized (bindingFilterMap) {
                 FilterType filterType = Preconditions.checkNotNull(filter.getSxpFilter()).getFilterType();
@@ -213,7 +216,7 @@ public class SxpConnection {
     public String getGroupName(FilterType filterType) {
         synchronized (bindingFilterMap) {
             SxpBindingFilter filter = getFilter(filterType);
-            return filter != null ? filter.getPeerGroupName() : null;
+            return filter != null ? filter.getIdentifier() : null;
         }
     }
 
@@ -225,8 +228,9 @@ public class SxpConnection {
      * @param specific   SubType of SxpBindingFilter to be removed
      * @return Removed SxpBindingFilters
      */
-    public List<SxpBindingFilter> removeFilter(FilterType filterType, FilterSpecific specific) {
-        List<SxpBindingFilter> filters = new ArrayList<>();
+    public List<SxpBindingFilter<?, ? extends SxpFilterFields>> removeFilter(FilterType filterType,
+            FilterSpecific specific) {
+        List<SxpBindingFilter<?, ? extends SxpFilterFields>> filters = new ArrayList<>();
         synchronized (bindingFilterMap) {
             if (specific == null) {
                 filters.addAll(bindingFilterMap.get(Preconditions.checkNotNull(filterType)).values());
