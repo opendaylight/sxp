@@ -129,7 +129,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.DomainFilters;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.DomainFiltersBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilter;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilterBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilterKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.TimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -217,13 +221,42 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
     }
 
     @Override public Future<RpcResult<DeleteDomainFilterOutput>> deleteDomainFilter(DeleteDomainFilterInput input) {
-        //TODO implement
-        return getResponse(null, new DeleteDomainFilterOutputBuilder().setResult(false).build(), null);
+        final String nodeId = getNodeId(input.getRequestedNode());
+        final DeleteDomainFilterOutputBuilder output = new DeleteDomainFilterOutputBuilder().setResult(false);
+
+        return getResponse(nodeId, output.build(), () -> {
+            LOG.info("RpcDeleteDomainFilter event | {}", input.toString());
+            if (input.getDomainName() != null && input.getFilterSpecific() != null) {
+                InstanceIdentifier
+                        identifier =
+                        getIdentifier(nodeId).child(SxpDomains.class)
+                                .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
+                                .child(DomainFilters.class)
+                                .child(DomainFilter.class, new DomainFilterKey(input.getFilterSpecific()));
+                output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
+                        || datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+            }
+            return RpcResultBuilder.success(output.build()).build();
+        });
     }
 
     @Override public Future<RpcResult<AddDomainFilterOutput>> addDomainFilter(AddDomainFilterInput input) {
-        //TODO implement
-        return getResponse(null, new AddDomainFilterOutputBuilder().setResult(false).build(), null);
+        final String nodeId = getNodeId(input.getRequestedNode());
+        final AddDomainFilterOutputBuilder output = new AddDomainFilterOutputBuilder().setResult(false);
+
+        return getResponse(nodeId, output.build(), () -> {
+            LOG.info("RpcAddDomainFilter event | {}", input.toString());
+            if (input.getDomainName() != null && input.getSxpDomainFilter() != null) {
+                DomainFilterBuilder filter = new DomainFilterBuilder(input.getSxpDomainFilter());
+                filter.setFilterSpecific(getFilterSpecific(filter.getFilterEntries()));
+                output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
+                                .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
+                                .child(DomainFilters.class)
+                                .child(DomainFilter.class, new DomainFilterKey(filter.getFilterSpecific())), filter.build(),
+                        getDatastoreType(input.getConfigPersistence()), false));
+            }
+            return RpcResultBuilder.success(output.build()).build();
+        });
     }
 
     @Override public Future<RpcResult<AddEntryOutput>> addEntry(final AddEntryInput input) {
@@ -604,6 +637,8 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                                     new ConnectionsBuilder().setConnection(new ArrayList<>()).build())
                                     .setDomainName(org.opendaylight.sxp.core.SxpNode.DEFAULT_DOMAIN)
                                     .setMasterDatabase(ConfigLoader.parseMasterDatabase(input.getMasterDatabase()))
+                                    .setDomainFilters(
+                                            new DomainFiltersBuilder().setDomainFilter(new ArrayList<>()).build())
                                     .build());
                 }
                 if (identityBuilder.getSxpPeerGroups() == null)
@@ -634,7 +669,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 builder.setDomainName(input.getDomainName());
                 builder.setMasterDatabase(ConfigLoader.parseMasterDatabase(input.getMasterDatabase()));
                 builder.setConnections(ConfigLoader.parseConnections(input.getConnections()));
-                builder.setDomainFilters(new DomainFiltersBuilder().build());
+                builder.setDomainFilters(new DomainFiltersBuilder().setDomainFilter(new ArrayList<>()).build());
                 output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
                                 .child(SxpDomain.class, new SxpDomainKey(input.getDomainName())), builder.build(),
                         getDatastoreType(input.getConfigPersistence()), false));
