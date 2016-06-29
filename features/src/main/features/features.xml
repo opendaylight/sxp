@@ -23,7 +23,7 @@
     </feature>
     <feature name='odl-sxp-core' version='${project.version}' description='OpenDaylight :: Sxp :: Core'>
         <feature version='${project.version}'>odl-sxp-api</feature>
-        <feature version='[4.0.37,4.1.0)'>odl-netty</feature>
+        <feature version='[4.0.37,5.0.0)'>odl-netty</feature>
         <bundle>mvn:org.opendaylight.sxp/sxp-core/{{VERSION}}</bundle>
     </feature>
     <feature name='odl-sxp-controller' version='${project.version}' description='OpenDaylight :: Sxp :: Controller'>
