@@ -516,7 +516,7 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 databaseBindings.addAll(database.getMasterDatabaseBinding());
             }
             if (GetNodeBindingsInput.BindingsRange.Local.equals(input.getBindingsRange())) {
-                databaseBindings.removeIf(b -> b.getPeerSequence() == null || b.getPeerSequence().getPeer() == null || b
+                databaseBindings.removeIf(b -> b.getPeerSequence() != null && b.getPeerSequence().getPeer() != null && !b
                         .getPeerSequence()
                         .getPeer()
                         .isEmpty());

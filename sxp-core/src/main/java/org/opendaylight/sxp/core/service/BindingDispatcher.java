@@ -13,6 +13,12 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
@@ -27,13 +33,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpB
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
 
 import static org.opendaylight.sxp.util.inet.Search.expandBindings;
 
@@ -190,16 +189,28 @@ public final class BindingDispatcher {
      * @param connection SxpConnection for which PurgeAll will be send
      */
     public static ListenableFuture<Boolean> sendPurgeAllMessage(final SxpConnection connection) {
-        return Preconditions.checkNotNull(connection).getOwner().getWorker().executeTaskInSequence(() -> {
-            try {
-                LOG.info("{} Sending PurgeAll {}", connection, connection.getNodeIdRemote());
-                connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext)
-                        .writeAndFlush(MessageFactory.createPurgeAll());
-                return true;
-            } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-                LOG.error(connection + " Cannot send PURGE ALL message | {} | ", e.getClass().getSimpleName());
-                return false;
-            }
-        }, ThreadsWorker.WorkerType.OUTBOUND, connection);
+        return Preconditions.checkNotNull(connection)
+                .getOwner()
+                .getWorker()
+                .executeTaskInSequence(() -> sendPurgeAllMessageSync(connection), ThreadsWorker.WorkerType.OUTBOUND,
+                        connection);
+    }
+
+    /**
+     * Add PurgeAll to queue and afterwards sends it
+     *
+     * @param connection SxpConnection for which PurgeAll will be send
+     */
+    public static boolean sendPurgeAllMessageSync(final SxpConnection connection) {
+        try {
+            LOG.info("{} Sending PurgeAll {}", connection, connection.getNodeIdRemote());
+            connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext)
+                    .writeAndFlush(MessageFactory.createPurgeAll());
+            return true;
+        } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
+            LOG.error(connection + " Cannot send PURGE ALL message | {} | ", e.getClass().getSimpleName());
+            return false;
+        }
+
     }
 }

@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.core.messaging.AttributeList;
@@ -1260,13 +1259,9 @@ public class SxpConnection {
     public synchronized void shutdown() {
         if (isModeListener()) {
             LOG.info("{} PURGE bindings ", this);
-            BindingHandler.processPurgeAllMessage(this);
+            BindingHandler.processPurgeAllMessageSync(this);
         } else if (isModeSpeaker() && isStateOn()) {
-            try {
-                BindingDispatcher.sendPurgeAllMessage(this).get();
-            } catch (InterruptedException | ExecutionException e) {
-                LOG.error(this + " Shutdown connection | {} | ", e.getClass().getSimpleName());
-            }
+            BindingDispatcher.sendPurgeAllMessageSync(this);
         }
         setStateOff();
     }

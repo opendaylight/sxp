@@ -10,6 +10,9 @@ package org.opendaylight.sxp.core.service;
 
 import com.google.common.base.Preconditions;
 import io.netty.buffer.ByteBuf;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
@@ -18,10 +21,6 @@ import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
 
 /**
  * UpdateExportTask class contains logic for Binding export
@@ -66,6 +65,10 @@ public final class  UpdateExportTask implements Callable<Void> {
                         }
                         if (data != null) {
                                 ByteBuf message = data.apply(connection, connection.getFilter(FilterType.Outbound));
+                                if (message == null) {
+                                        LOG.error("{} Generated empty partition.", connection);
+                                        return null;
+                                }
                                 synchronized (generatedMessages) {
                                         generatedMessages[i] = message;
                                         generatedMessages.notifyAll();
