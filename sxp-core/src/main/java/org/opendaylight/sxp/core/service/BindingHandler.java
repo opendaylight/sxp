@@ -266,7 +266,7 @@ public final class BindingHandler {
      *
      * @param connection SxpConnection for which PurgeAll will be proceed
      */
-    public static ListenableFuture processPurgeAllMessage(final SxpConnection connection) {
+    public static ListenableFuture<Void> processPurgeAllMessage(final SxpConnection connection) {
         return Preconditions.checkNotNull(connection).getOwner().getWorker().executeTaskInSequence(() -> {
             processPurgeAllMessageSync(connection);
             return null;
@@ -278,7 +278,6 @@ public final class BindingHandler {
      *
      * @param connection SxpConnection for which PurgeAll will be proceed
      */
-    //TODO remove if necessary
     public static void processPurgeAllMessageSync(final SxpConnection connection) {
         final SxpNode owner = connection.getOwner();
         final Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(owner);

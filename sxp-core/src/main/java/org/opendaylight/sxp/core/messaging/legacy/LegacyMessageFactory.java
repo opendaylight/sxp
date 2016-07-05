@@ -182,10 +182,6 @@ public class LegacyMessageFactory extends MessageFactory {
                 }
             });
         }
-
-        if (mappingRecords.isEmpty()) {
-            return null;
-        }
         return getMessage(MessageType.Update, mappingRecords.toBytes());
     }
 
