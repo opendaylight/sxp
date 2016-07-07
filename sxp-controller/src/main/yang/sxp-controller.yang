@@ -575,6 +575,10 @@ module sxp-controller {
             leaf filter-specific {
                 type sxpfl:filter-specific;
             }
+            leaf filter-name {
+                type string;
+                default "base-domain-filter";
+            }
         }
         output {
             leaf result {
