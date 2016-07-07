@@ -40,7 +40,7 @@ public class SxpDomainTest {
     private List<SxpConnection> connections = new ArrayList<>();
 
     @Before public void setUp() {
-        domain = new SxpDomain("test", sxpDatabase, masterDatabase);
+        domain = new SxpDomain(null, "test", sxpDatabase, masterDatabase);
         connections.clear();
     }
 

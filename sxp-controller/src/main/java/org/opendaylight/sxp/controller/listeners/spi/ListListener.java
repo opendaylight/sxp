@@ -62,8 +62,11 @@ public abstract class ListListener<P extends DataObject, C extends ChildOf<? sup
         LOG.trace("Config Modification {} {}", getClass(), c.getModificationType());
         switch (c.getModificationType()) {
             case WRITE:
-                if (c.getDataAfter() != null && c.getDataBefore() == null)
+                if (c.getDataBefore() == null)
                     datastoreAccess.putSynchronous(getIdentifier(c.getDataAfter(), identifier), c.getDataAfter(),
+                            LogicalDatastoreType.OPERATIONAL);
+                else
+                    datastoreAccess.mergeSynchronous(getIdentifier(c.getDataAfter(), identifier), c.getDataAfter(),
                             LogicalDatastoreType.OPERATIONAL);
             case SUBTREE_MODIFIED:
                 if (c.getDataAfter() != null)

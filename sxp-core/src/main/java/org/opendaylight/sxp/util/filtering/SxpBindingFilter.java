@@ -85,7 +85,7 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
     }
 
     @Override public boolean test(SxpBindingFields binding) {
-        return apply(binding);
+        return !apply(binding);
     }
 
     /**
@@ -246,4 +246,25 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
                         && filter2.getFilterEntries() instanceof AclFilterEntries;
     }
 
+    public static SxpBindingFilter<?, ? extends SxpDomainFilterFields> mergeFilters(
+            List<SxpBindingFilter<?, ? extends SxpDomainFilterFields>> values) {
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+        if (values.size() == 1)
+            return Iterables.get(values, 0);
+        StringBuilder builder = new StringBuilder().append("MultiGroup[ ");
+        values.stream().map(SxpBindingFilter::getIdentifier).sorted().forEach(g -> builder.append(g).append(" "));
+        //noinspection unchecked
+        return new SxpBindingFilter(builder.append("]").toString()) {
+
+            protected boolean filter(FilterEntries filterEntries, SxpBindingFields binding) {
+                for (SxpBindingFilter filter : values) {
+                    if (filter.apply(binding))
+                        return true;
+                }
+                return false;
+            }
+        };
+    }
 }
