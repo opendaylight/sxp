@@ -147,6 +147,10 @@ module sxp-filter {
         leaf filter-specific {
             type sxpfl:filter-specific;
         }
+        leaf filter-name {
+            type string;
+            default "base-domain-filter";
+        }
         container domains {
             list domain {
                 key "name";

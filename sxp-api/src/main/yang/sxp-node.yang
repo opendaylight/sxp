@@ -249,7 +249,7 @@ module sxp-node {
         uses sxp-connections-fields;
         container domain-filters {
             list domain-filter {
-                key "filter-specific";
+                key "filter-specific filter-name";
                 uses sxpfl:sxp-domain-filter-fields;
             }
         }
@@ -281,5 +281,6 @@ module sxp-node {
         container sxp-peer-groups {
             uses sxpfl:sxp-peer-groups;
         }
+        description "Topology NodeId is constrained by Ipv4 see sxppt:node-id";
     }
 }

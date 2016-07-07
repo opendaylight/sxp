@@ -9,6 +9,9 @@
 package org.opendaylight.sxp.controller.util.io;
 
 import com.google.common.base.Preconditions;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.opendaylight.controller.config.yang.sxp.controller.conf.Connection;
 import org.opendaylight.controller.config.yang.sxp.controller.conf.ConnectionTimers;
 import org.opendaylight.controller.config.yang.sxp.controller.conf.Connections;
@@ -40,10 +43,6 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * <pre>
@@ -124,17 +123,19 @@ public final class ConfigLoader {
     private org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.Timers parseNodeTimers(
             Timers timers) {
         TimersBuilder timersBuilder = new TimersBuilder();
-        //Speaker
-        timersBuilder.setHoldTimeMinAcceptable(timers.getHoldTimeMinAcceptable());
-        timersBuilder.setKeepAliveTime(timers.getKeepAliveTime());
-        //Listener
-        timersBuilder.setHoldTime(timers.getHoldTime());
-        timersBuilder.setHoldTimeMax(timers.getHoldTimeMax());
-        timersBuilder.setHoldTimeMin(timers.getHoldTimeMin());
-        timersBuilder.setDeleteHoldDownTime(timers.getDeleteHoldDownTime());
-        timersBuilder.setReconciliationTime(timers.getDeleteHoldDownTime());
-        //Node
-        timersBuilder.setRetryOpenTime(timers.getRetryOpenTime());
+        if (timers != null) {
+            //Speaker
+            timersBuilder.setHoldTimeMinAcceptable(timers.getHoldTimeMinAcceptable());
+            timersBuilder.setKeepAliveTime(timers.getKeepAliveTime());
+            //Listener
+            timersBuilder.setHoldTime(timers.getHoldTime());
+            timersBuilder.setHoldTimeMax(timers.getHoldTimeMax());
+            timersBuilder.setHoldTimeMin(timers.getHoldTimeMin());
+            timersBuilder.setDeleteHoldDownTime(timers.getDeleteHoldDownTime());
+            timersBuilder.setReconciliationTime(timers.getDeleteHoldDownTime());
+            //Node
+            timersBuilder.setRetryOpenTime(timers.getRetryOpenTime());
+        }
         return timersBuilder.build();
     }
 

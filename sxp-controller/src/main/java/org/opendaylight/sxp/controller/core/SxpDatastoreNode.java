@@ -80,9 +80,10 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
         Preconditions.checkNotNull(domain.getDomainName());
         synchronized (sxpDomains) {
             if (!sxpDomains.containsKey(domain.getDomainName()))
-                sxpDomains.put(domain.getDomainName(), new org.opendaylight.sxp.core.SxpDomain(domain.getDomainName(),
-                        new SxpDatastoreImpl(datastoreAccess, nodeId, domain.getDomainName()),
-                        new MasterDatastoreImpl(datastoreAccess, nodeId, domain.getDomainName())));
+                sxpDomains.put(domain.getDomainName(),
+                        org.opendaylight.sxp.core.SxpDomain.createInstance(this, domain.getDomainName(),
+                                new SxpDatastoreImpl(datastoreAccess, nodeId, domain.getDomainName()),
+                                new MasterDatastoreImpl(datastoreAccess, nodeId, domain.getDomainName())));
             else
                 return false;
         }
@@ -112,7 +113,7 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
     }
 
     @Override public void close() {
-        datastoreAccess.closeOperations();
+        datastoreAccess.close();
         shutdown();
     }
 }
