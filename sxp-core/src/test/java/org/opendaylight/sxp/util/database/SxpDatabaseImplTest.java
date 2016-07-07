@@ -8,6 +8,9 @@
 
 package org.opendaylight.sxp.util.database;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,10 +37,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Node
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -176,19 +175,32 @@ import static org.mockito.Mockito.when;
         sxpConnections.add(mockConnection("30.30.30.30"));
 
         database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), mergeBindings(getBinding("2.2.2.2/32", 200)));
-        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(), database, SxpDatabase.getInboundFilters(node)), mergeBindings());
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(), database, SxpDatabase.getInboundFilters(node, "global")), mergeBindings());
 
         assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 200)), database,
-                SxpDatabase.getInboundFilters(node)), mergeBindings(getBinding("2.2.2.2/32", 20)));
+                SxpDatabase.getInboundFilters(node, "global")), mergeBindings(getBinding("2.2.2.2/32", 20)));
 
         database.deleteBindings(NodeId.getDefaultInstance("20.20.20.20"), mergeBindings(getBinding("2.2.2.2/32", 20)));
 
         assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 20)), database,
-                SxpDatabase.getInboundFilters(node)), mergeBindings(getBinding("2.2.2.2/32", 200)));
+                SxpDatabase.getInboundFilters(node, "global")), mergeBindings(getBinding("2.2.2.2/32", 200)));
         assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 254)), database,
-                SxpDatabase.getInboundFilters(node)), mergeBindings(getBinding("2.2.2.2/32", 200)));
+                SxpDatabase.getInboundFilters(node, "global")), mergeBindings(getBinding("2.2.2.2/32", 200)));
         assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("25.2.2.2/32", 20)), database,
-                SxpDatabase.getInboundFilters(node)), mergeBindings());
+                SxpDatabase.getInboundFilters(node, "global")), mergeBindings());
+
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 20)),
+                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("2.2.2.2/32", 200, "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 100, "10.10.10.10"))), mergeBindings(getBinding("2.2.2.2/32", 200)));
+
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 254)),
+                mergeBindings(getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 200, "10.10.10.10"), getBinding("1.1.1.1/32", 10, "20.20.20.20"))),
+                mergeBindings(getBinding("2.2.2.2/32", 200)));
+
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("25.2.2.2/32", 20)),
+                mergeBindings(getBinding("25.2.2.6/32", 20, "30.30.30.30", "20.20.20.20", "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 10, "30.30.30.30"))), mergeBindings());
     }
 
     @Test public void testAddBinding() throws Exception {
