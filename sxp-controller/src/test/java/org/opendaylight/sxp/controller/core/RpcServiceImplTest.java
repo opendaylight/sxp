@@ -32,6 +32,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ad
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainFilterInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddEntryInputBuilder;
@@ -45,6 +47,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.De
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainFilterInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteEntryInputBuilder;
@@ -79,6 +83,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntriesBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.domain.filter.SxpDomainFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
@@ -102,6 +107,7 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({MasterDatastoreImpl.class, DatastoreAccess.class, SxpNode.class})
@@ -188,6 +194,8 @@ public class RpcServiceImplTest {
     }
 
     @Test public void testAddEntry() throws Exception {
+        when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(
+                Collections.singletonList(mock(MasterDatabaseBinding.class)));
         AddEntryInputBuilder input = new AddEntryInputBuilder();
         input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
 
@@ -444,6 +452,24 @@ public class RpcServiceImplTest {
         result =
                 service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
                         .setBindingsRange(GetNodeBindingsInput.BindingsRange.All)
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertNotNull(result.getResult().getBinding());
+
+        result =
+                service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
+                        .setBindingsRange(GetNodeBindingsInput.BindingsRange.Local)
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertNotNull(result.getResult().getBinding());
+
+        result =
+                service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setBindingsRange(GetNodeBindingsInput.BindingsRange.Local)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -707,5 +733,124 @@ public class RpcServiceImplTest {
         assertNotNull(result.getResult());
         Boolean aBoolean = result.getResult().isResult();
         assertTrue(aBoolean);
+    }
+
+    @Test public void testDeleteDomainFilter() throws Exception {
+        RpcResult<DeleteDomainFilterOutput>
+                result =
+                service.deleteDomainFilter(
+                        new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.deleteDomainFilter(
+                        new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                                .setDomainName(null)
+                                .setFilterName(null)
+                                .setFilterSpecific(null)
+                                .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.deleteDomainFilter(
+                        new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                                .setDomainName("dom")
+                                .setFilterName(null)
+                                .setFilterSpecific(null)
+                                .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.deleteDomainFilter(
+                        new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                                .setDomainName("dom")
+                                .setFilterName("basic-filter")
+                                .setFilterSpecific(null)
+                                .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.deleteDomainFilter(
+                        new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                                .setDomainName("dom")
+                                .setFilterName("basic-filter")
+                                .setFilterSpecific(FilterSpecific.AccessOrPrefixList)
+                                .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertTrue(result.getResult().isResult());
+    }
+
+    @Test public void testAddDomainFilter() throws Exception {
+        RpcResult<AddDomainFilterOutput>
+                result =
+                service.addDomainFilter(
+                        new AddDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.addDomainFilter(new AddDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName(null)
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.addDomainFilter(new AddDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName("dom")
+                        .setSxpDomainFilter(null)
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.addDomainFilter(new AddDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName("dom")
+                        .setSxpDomainFilter(new SxpDomainFilterBuilder().setFilterName(null)
+                                .setFilterEntries(new AclFilterEntriesBuilder().build())
+                                .build())
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.addDomainFilter(new AddDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName("dom")
+                        .setSxpDomainFilter(new SxpDomainFilterBuilder().setFilterName("basic-filter")
+                                .setFilterEntries(new AclFilterEntriesBuilder().build())
+                                .build())
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertTrue(result.getResult().isResult());
+    }
+
+    @Test public void testClose() throws Exception {
+        service.close();
+        verify(node).shutdown();
+        verify(datastoreAccess).close();
     }
 }
