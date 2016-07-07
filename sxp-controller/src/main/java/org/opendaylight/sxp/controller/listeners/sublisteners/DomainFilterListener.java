@@ -47,19 +47,22 @@ public class DomainFilterListener extends ListListener<SxpDomain, DomainFilters,
                     sxpNode.addFilterToDomain(domain, c.getDataAfter());
                     break;
                 } else if (c.getDataAfter() == null) {
-                    sxpNode.removeFilterFromDomain(domain, c.getDataBefore().getFilterSpecific());
+                    sxpNode.removeFilterFromDomain(domain, c.getDataBefore().getFilterSpecific(),
+                            c.getDataBefore().getFilterName());
                     break;
                 }
             case SUBTREE_MODIFIED:
                 if (checkDifference(c, FilterEntriesFields::getFilterEntries)) {
-                    sxpNode.removeFilterFromDomain(domain, c.getDataBefore().getFilterSpecific());
+                    sxpNode.removeFilterFromDomain(domain, c.getDataBefore().getFilterSpecific(),
+                            c.getDataBefore().getFilterName());
                     sxpNode.addFilterToDomain(domain, c.getDataAfter());
                 } else if (checkDifference(c, SxpDomainFilterFields::getDomains)) {
                     //TODO
                 }
                 break;
             case DELETE:
-                sxpNode.removeFilterFromDomain(domain, c.getDataBefore().getFilterSpecific());
+                sxpNode.removeFilterFromDomain(domain, c.getDataBefore().getFilterSpecific(),
+                        c.getDataBefore().getFilterName());
                 break;
         }
     }
@@ -67,6 +70,6 @@ public class DomainFilterListener extends ListListener<SxpDomain, DomainFilters,
     @Override protected InstanceIdentifier<DomainFilter> getIdentifier(DomainFilter d,
             InstanceIdentifier<SxpDomain> parentIdentifier) {
         return parentIdentifier.child(DomainFilters.class)
-                .child(DomainFilter.class, new DomainFilterKey(d.getFilterSpecific()));
+                .child(DomainFilter.class, new DomainFilterKey(d.getFilterName(), d.getFilterSpecific()));
     }
 }

@@ -8,10 +8,17 @@
 
 package org.opendaylight.sxp.core.service;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.SxpConnection;
+import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.messaging.AttributeFactory;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyAttributeFactory;
@@ -64,13 +71,6 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
@@ -110,6 +110,8 @@ public class BindingHandlerTest {
                 masterDatabaseInf = new MasterDatabaseImpl();
                 PowerMockito.when(sxpNode.getBindingSxpDatabase(anyString())).thenReturn(sxpDatabaseInf);
                 PowerMockito.when(sxpNode.getBindingMasterDatabase(anyString())).thenReturn(masterDatabaseInf);
+                PowerMockito.when(sxpNode.getDomain(anyString()))
+                        .thenReturn(new SxpDomain(sxpNode, "default", sxpDatabaseInf, masterDatabaseInf));
                 handler = new BindingHandler(sxpNode, PowerMockito.mock(BindingDispatcher.class));
         }
 

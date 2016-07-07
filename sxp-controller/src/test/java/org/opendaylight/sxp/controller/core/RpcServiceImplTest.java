@@ -188,6 +188,8 @@ public class RpcServiceImplTest {
     }
 
     @Test public void testAddEntry() throws Exception {
+        when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(
+                Collections.singletonList(mock(MasterDatabaseBinding.class)));
         AddEntryInputBuilder input = new AddEntryInputBuilder();
         input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
 
