@@ -138,7 +138,7 @@ public class SxpNode {
             node.getSxpDomains().getSxpDomain().forEach(sxpNode::addDomain);
         }
         if (!sxpNode.sxpDomains.containsKey(DEFAULT_DOMAIN))
-            sxpNode.sxpDomains.put(DEFAULT_DOMAIN, new SxpDomain(DEFAULT_DOMAIN, sxpDatabase, masterDatabase));
+            sxpNode.sxpDomains.put(DEFAULT_DOMAIN, new SxpDomain(sxpNode, DEFAULT_DOMAIN, sxpDatabase, masterDatabase));
         if (node.getSxpPeerGroups() != null && node.getSxpPeerGroups().getSxpPeerGroup() != null) {
             node.getSxpPeerGroups()
                     .getSxpPeerGroup()
@@ -170,9 +170,9 @@ public class SxpNode {
     /**
      * Default constructor that creates and start SxpNode using provided values
      *
-     * @param nodeId         ID of newly created Node
-     * @param node           Node setup data
-     * @param worker         Thread workers which will be executing task inside SxpNode
+     * @param nodeId ID of newly created Node
+     * @param node   Node setup data
+     * @param worker Thread workers which will be executing task inside SxpNode
      */
     protected SxpNode(NodeId nodeId, SxpNodeIdentity node, ThreadsWorker worker) {
         this.nodeBuilder = new SxpNodeIdentityBuilder(Preconditions.checkNotNull(node));
@@ -495,6 +495,7 @@ public class SxpNode {
                 sxpDomains.put(domain.getDomainName(), new SxpDomain(this, domain));
             else
                 return false;
+            sxpDomains.values().forEach(d -> d.propagateToSharedDomain(d));
         }
         return true;
     }
@@ -509,31 +510,38 @@ public class SxpNode {
         synchronized (sxpDomains) {
             if (sxpDomains.containsKey(Preconditions.checkNotNull(domainName)) && sxpDomains.get(domainName)
                     .getConnections()
-                    .isEmpty())
+                    .isEmpty()) {
+                sxpDomains.get(domainName).close();
                 return sxpDomains.remove(domainName);
+            }
             throw new IllegalStateException("Domain " + domainName + "cannot be removed.");
         }
     }
 
     public SxpDomain getDomain(String name) {
         synchronized (sxpDomains) {
-            if (sxpDomains.containsKey(Preconditions.checkNotNull(name)))
-                return sxpDomains.get(name);
-            throw new IllegalStateException("Domain " + name+ "cannot be removed.");
+            return sxpDomains.get(name);
+        }
+    }
+
+    public Collection<SxpDomain> getDomains() {
+        synchronized (sxpDomains) {
+            return Collections.unmodifiableCollection(sxpDomains.values());
         }
     }
 
     public boolean addFilterToDomain(String domain, DomainFilter filter) {
-        Preconditions.checkNotNull(filter);
-        if (filter.getDomains() == null || filter.getDomains().getDomain() == null || filter.getDomains()
-                .getDomain()
-                .isEmpty() || filter.getFilterSpecific() == null || filter.getFilterEntries() == null)
-            return false;
-        return getDomain(domain).addFilter(filter.getFilterSpecific(), SxpBindingFilter.generateFilter(filter, domain));
+        synchronized (sxpDomains) {
+            return Preconditions.checkNotNull(getDomain(Preconditions.checkNotNull(domain)))
+                    .addFilter(SxpBindingFilter.generateFilter(Preconditions.checkNotNull(filter), domain));
+        }
     }
 
-    public SxpBindingFilter removeFilterFromDomain(String domain, FilterSpecific specific) {
-        return getDomain(domain).removeFilter(Preconditions.checkNotNull(specific));
+    public SxpBindingFilter removeFilterFromDomain(String domain, FilterSpecific specific, String filterName) {
+        synchronized (sxpDomains) {
+            return Preconditions.checkNotNull(getDomain(Preconditions.checkNotNull(domain)))
+                    .removeFilter(Preconditions.checkNotNull(specific), Preconditions.checkNotNull(filterName));
+        }
     }
 
     /**
@@ -591,7 +599,7 @@ public class SxpNode {
         return Collections.unmodifiableList(connections);
     }
 
-    private List<SxpConnection> filterConnections(Predicate<SxpConnection> predicate,String domain) {
+    private List<SxpConnection> filterConnections(Predicate<SxpConnection> predicate, String domain) {
         if (domain == null)
             return filterConnections(predicate);
         List<SxpConnection> connections = new ArrayList<>();
@@ -687,7 +695,6 @@ public class SxpNode {
     @Deprecated public List<SxpConnection> getAllOnListenerConnections() {
         return getAllOnListenerConnections(null);
     }
-
 
     /**
      * @param domain Domain containing connection,
@@ -1025,6 +1032,13 @@ public class SxpNode {
             throw new DomainNotFoundException(getName(), "Domain " + domain + " not found");
         List<MasterDatabaseBinding> addedBindings = masterDatabase.addLocalBindings(bindings);
         svcBindingDispatcher.propagateUpdate(null, addedBindings, getAllOnSpeakerConnections(domain));
+        /*
+        getDomain(domain).getFilters().parallelStream().filter(f -> domain.equals(f.getIdentifier())).forEach(f -> {
+            final MasterDatabaseInf database = getBindingMasterDatabase(f.getIdentifier());
+            svcBindingDispatcher.propagateUpdate(null,
+                    database.addBindings(bindings.stream().filter(f).collect(Collectors.toList())),
+                    getAllOnSpeakerConnections(f.getIdentifier()));
+        });*/
         return addedBindings;
     }
 
@@ -1042,14 +1056,25 @@ public class SxpNode {
 
         if (sxpDatabase == null || masterDatabase == null)
             throw new DomainNotFoundException(getName(), "Domain " + domain + " not found");
-        Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(this);
+        Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(this, domain);
+        List<MasterDatabaseBinding> deletedBindings ;
         synchronized (sxpDatabase) {
-            List<MasterDatabaseBinding> deletedBindings = masterDatabase.deleteBindingsLocal(bindings);
+            deletedBindings = masterDatabase.deleteBindingsLocal(bindings);
             svcBindingDispatcher.propagateUpdate(deletedBindings, masterDatabase.addBindings(
                     SxpDatabase.getReplaceForBindings(deletedBindings, sxpDatabase, filterMap)),
                     getAllOnSpeakerConnections(domain));
-            return deletedBindings;
-        }
+        }/*
+        getDomain(domain).getFilters().parallelStream().filter(f -> domain.equals(f.getIdentifier())).forEach(f -> {
+            final MasterDatabaseInf database = getBindingMasterDatabase(f.getIdentifier());
+            List<MasterDatabaseBinding>
+                    deleted =
+                    database.deleteBindings(bindings.stream().filter(f).collect(Collectors.toList()));
+
+            svcBindingDispatcher.propagateUpdate(deleted, database.addBindings(
+                    SxpDatabase.getReplaceForBindings(deleted, getBindingSxpDatabase(f.getIdentifier()), filterMap)),
+                    getAllOnSpeakerConnections(f.getIdentifier()));
+        });*/
+        return deletedBindings;
     }
 
     /**

@@ -9,6 +9,12 @@
 package org.opendaylight.sxp.controller.util.database;
 
 import com.google.common.base.Preconditions;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
@@ -30,11 +36,6 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public final class MasterDatastoreImpl extends MasterDatabase {
 
@@ -77,16 +78,26 @@ public final class MasterDatastoreImpl extends MasterDatabase {
                 .isEmpty()) {
             bindings.addAll(database.getMasterDatabaseBinding());
         }
+        Set<IpPrefix>
+                prefixSet =
+                bindings.parallelStream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
+        database = datastoreAccess.readSynchronous(getIdentifierBuilder().build(), LogicalDatastoreType.CONFIGURATION);
+        if (database != null && database.getMasterDatabaseBinding() != null && !database.getMasterDatabaseBinding()
+                .isEmpty()) {
+            database.getMasterDatabaseBinding().forEach(b -> {
+                if (!prefixSet.contains(b.getIpPrefix()))
+                    bindings.add(b);
+            });
+        }
         return bindings;
     }
 
     @Override synchronized public List<MasterDatabaseBinding> getLocalBindings() {
-        List<MasterDatabaseBinding> bindings = getBindings();
-        bindings.removeIf(
-                b -> b.getPeerSequence() == null || b.getPeerSequence().getPeer() == null || b.getPeerSequence()
+        return getBindings().stream()
+                .filter(b -> b.getPeerSequence() == null || b.getPeerSequence().getPeer() == null || b.getPeerSequence()
                         .getPeer()
-                        .isEmpty());
-        return bindings;
+                        .isEmpty())
+                .collect(Collectors.toList());
     }
 
     private <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings,
