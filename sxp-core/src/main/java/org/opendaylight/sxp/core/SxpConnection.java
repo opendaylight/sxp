@@ -51,7 +51,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilterFields;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimers;
@@ -174,7 +173,7 @@ public class SxpConnection {
         } else if (!filterRemoved) {
             //Filters out Bindings from SXP database, removes it from Master and send update to all Listeners
             owner.getWorker().executeTaskInSequence(() -> {
-                Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(getOwner());
+                Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(getOwner(), getDomainName());
                 synchronized (sxpDatabase) {
                     List<SxpDatabaseBinding>
                             bindingsDelete =

@@ -11,6 +11,7 @@ package org.opendaylight.sxp.controller.core;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -276,17 +277,19 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 LOG.warn("RpcAddEntry exception | Parameter 'sgt' not defined");
                 return RpcResultBuilder.success(output.build()).build();
             }
-            DateAndTime timestamp = TimeConv.toDt(System.currentTimeMillis());
-            List<MasterDatabaseBinding> bindings = new ArrayList<>();
-
             MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
-            bindingBuilder.setIpPrefix(ipPrefix).setTimestamp(timestamp);
+            bindingBuilder.setIpPrefix(ipPrefix).setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
             bindingBuilder.setSecurityGroupTag(sgt);
             bindingBuilder.setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
-            bindings.add(bindingBuilder.build());
 
-            Configuration.getRegisteredNode(nodeId).putLocalBindingsMasterDatabase(bindings, input.getDomainName());
-            output.setResult(true);
+            output.setResult(!Configuration.getRegisteredNode(nodeId)
+                    .putLocalBindingsMasterDatabase(Collections.singletonList(bindingBuilder.build()),
+                            input.getDomainName())
+                    .isEmpty());
+            if (output.isResult())
+                Configuration.getRegisteredNode(nodeId)
+                        .getDomain(input.getDomainName())
+                        .propagateToSharedDomains(null, Collections.singletonList(bindingBuilder.build()));
             return RpcResultBuilder.success(output.build()).build();
         });
     }
@@ -364,6 +367,10 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 output.setResult(!Configuration.getRegisteredNode(nodeId)
                         .removeLocalBindingsMasterDatabase(bindings, input.getDomainName())
                         .isEmpty());
+                if (output.isResult())
+                    Configuration.getRegisteredNode(nodeId)
+                            .getDomain(input.getDomainName())
+                            .propagateToSharedDomains(bindings, null);
             }
             return RpcResultBuilder.success(output.build()).build();
         });
@@ -407,7 +414,6 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 return RpcResultBuilder.success(output.build()).build();
             }
 
-            DateAndTime timestamp = TimeConv.toDt(System.currentTimeMillis());
             List<MasterDatabaseBinding> bindings = new ArrayList<>();
             MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
             bindingBuilder.setSecurityGroupTag(sgt);
@@ -415,16 +421,20 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
             if (input.getIpPrefix() != null) {
                 for (IpPrefix ipPrefix : input.getIpPrefix()) {
-                    bindingBuilder.setIpPrefix(ipPrefix).setTimestamp(timestamp);
+                    bindingBuilder.setIpPrefix(ipPrefix).setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
                     bindings.add(bindingBuilder.build());
                 }
             }
 
-            DeleteEntryOutputBuilder output1 = new DeleteEntryOutputBuilder();
-            output1.setResult(!Configuration.getRegisteredNode(nodeId)
+            output.setResult(!Configuration.getRegisteredNode(nodeId)
                     .removeLocalBindingsMasterDatabase(bindings, input.getDomainName())
                     .isEmpty());
-            return RpcResultBuilder.success(output1.build()).build();
+
+            if (output.isResult())
+                Configuration.getRegisteredNode(nodeId)
+                        .getDomain(input.getDomainName())
+                        .propagateToSharedDomains(bindings, null);
+            return RpcResultBuilder.success(output.build()).build();
         });
     }
 
@@ -698,6 +708,11 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 output.setResult(!Configuration.getRegisteredNode(nodeId)
                         .putLocalBindingsMasterDatabase(bindings, input.getDomainName())
                         .isEmpty());
+
+                if (output.isResult())
+                    Configuration.getRegisteredNode(nodeId)
+                            .getDomain(input.getDomainName())
+                            .propagateToSharedDomains(null, bindings);
             }
             return RpcResultBuilder.success(output.build()).build();
         });

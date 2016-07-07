@@ -10,6 +10,12 @@ package org.opendaylight.sxp.util.database;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
@@ -23,13 +29,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.Filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public abstract class SxpDatabase implements SxpDatabaseInf {
 
@@ -150,12 +149,13 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
     /**
      * Create Map consisting of NodeIds of remoter peers associated with Inbound filters applied to them
      *
-     * @param node SxpNode containing Connections and filters
+     * @param node   SxpNode containing Connections and filters
+     * @param domain Domain where to look
      * @return Map of NodeId of remote peers and Inbound filters
      */
-    public static Map<NodeId, SxpBindingFilter> getInboundFilters(SxpNode node) {
+    public static Map<NodeId, SxpBindingFilter> getInboundFilters(SxpNode node, String domain) {
         Map<NodeId, SxpBindingFilter> map = new HashMap<>();
-        node.getAllConnections().stream().forEach(c -> {
+        node.getAllConnections(Preconditions.checkNotNull(domain)).stream().forEach(c -> {
             if (c.isModeListener()) {
                 map.put(c.getNodeIdRemote(), c.getFilter(FilterType.Inbound));
             }
