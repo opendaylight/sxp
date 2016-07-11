@@ -9,16 +9,17 @@
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.spi.ListListener;
+import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
-import java.util.List;
 
 public class MasterBindingListener extends ListListener<SxpDomain, MasterDatabase, MasterDatabaseBinding> {
 
@@ -28,19 +29,29 @@ public class MasterBindingListener extends ListListener<SxpDomain, MasterDatabas
 
     @Override protected void handleOperational(DataObjectModification<MasterDatabaseBinding> c,
             InstanceIdentifier<SxpDomain> identifier) {
-        //TODO implement Binding handling
+        if (!LOG.isDebugEnabled())
+            return;
+        SxpNode sxpNode = Configuration.getRegisteredNode(identifier.firstKeyOf(Node.class).getNodeId().getValue());
+        //Logging of Bindings changes
+        switch (c.getModificationType()) {
+            case WRITE:
+                if (c.getDataBefore() == null && c.getDataAfter() != null)
+                    LOG.debug("{} Added Binding [{}|{}]", sxpNode,
+                            IpPrefixConv.toString(c.getDataAfter().getIpPrefix()),
+                            c.getDataAfter().getSecurityGroupTag().getValue());
+                if (c.getDataAfter() != null)
+                    break;
+            case DELETE:
+                LOG.debug("{} Removed Binding [{}|{}]", sxpNode, IpPrefixConv.toString(c.getDataBefore().getIpPrefix()),
+                        c.getDataBefore().getSecurityGroupTag().getValue());
+                break;
+        }
     }
 
     @Override protected InstanceIdentifier<MasterDatabaseBinding> getIdentifier(MasterDatabaseBinding d,
             InstanceIdentifier<SxpDomain> parentIdentifier) {
         return parentIdentifier.child(MasterDatabase.class)
                 .child(MasterDatabaseBinding.class, new MasterDatabaseBindingKey(d.getIpPrefix()));
-    }
-
-    @Override public void handleChange(List<DataObjectModification<MasterDatabase>> modifiedChildContainer,
-            LogicalDatastoreType logicalDatastoreType, InstanceIdentifier<SxpDomain> identifier) {
-        //TODO implement Binding handling
-        super.handleChange(modifiedChildContainer, logicalDatastoreType, identifier);
     }
 
 }

@@ -9,6 +9,8 @@
 package org.opendaylight.sxp.controller.listeners.spi;
 
 import com.google.common.base.Preconditions;
+import com.sun.istack.internal.NotNull;
+import java.util.HashSet;
 import java.util.List;
 import java.util.function.Function;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
@@ -87,6 +89,20 @@ public interface Listener<P extends DataObject, C extends DataObject> {
             Preconditions.checkNotNull(c);
             Preconditions.checkNotNull(function);
             return checkDifference(c.getDataBefore(), c.getDataAfter(), function);
+        }
+
+        /**
+         * @param before
+         * @param after
+         * @param <T>
+         * @return
+         */
+        public static <T extends DataObject> boolean checkDifference(@NotNull List<T> before, @NotNull List<T> after) {
+            if (before.size() != after.size())
+                return true;
+            if (before.isEmpty() && after.isEmpty())
+                return false;
+            return !new HashSet<>(before).containsAll(after);
         }
 
         /**
