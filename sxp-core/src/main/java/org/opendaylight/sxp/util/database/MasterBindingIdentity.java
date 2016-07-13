@@ -9,6 +9,8 @@
 package org.opendaylight.sxp.util.database;
 
 import com.google.common.base.Preconditions;
+import java.util.ArrayList;
+import java.util.List;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.Source;
@@ -19,9 +21,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev141002.master.database.fields.source.prefix.group.BindingKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev141002.sxp.databases.fields.MasterDatabase;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * MasterBindingIdentity class represent entity stored in MasterDatabase
@@ -58,7 +57,8 @@ public class MasterBindingIdentity {
                     for (PrefixGroup prefixGroup : source.getPrefixGroup()) {
                         if (prefixGroup.getBinding() != null) {
                             for (Binding binding : prefixGroup.getBinding()) {
-                                if (!onlyChanged || binding.isChanged()) {
+                                if (binding != null && (!onlyChanged || (binding.isChanged() != null
+                                        && binding.isChanged()))) {
                                     identities.add(new MasterBindingIdentity(binding, prefixGroup, source));
                                 }
                             }
