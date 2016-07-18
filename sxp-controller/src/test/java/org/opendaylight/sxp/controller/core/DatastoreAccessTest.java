@@ -10,7 +10,7 @@ package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.CheckedFuture;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -43,7 +43,7 @@ public class DatastoreAccessTest {
         private static DatastoreAccess access;
         private static BindingTransactionChain transactionChain;
 
-        @BeforeClass public static void initClass() {
+        @Before public void init() {
                 dataBroker = mock(DataBroker.class);
                 transactionChain = mock(BindingTransactionChain.class);
                 when(dataBroker.createTransactionChain(any(TransactionChainListenerImpl.class))).thenReturn(
@@ -289,5 +289,10 @@ public class DatastoreAccessTest {
                 when(optional.get()).thenReturn(mock(DataObject.class));
 
                 assertTrue(access.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+        }
+
+        @Test public void testClose() throws Exception {
+                access.close();
+                verify(transactionChain).close();
         }
 }

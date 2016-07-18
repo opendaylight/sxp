@@ -11,6 +11,7 @@ package org.opendaylight.sxp.controller.core;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -226,15 +227,41 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
         return getResponse(nodeId, output.build(), () -> {
             LOG.info("RpcDeleteDomainFilter event | {}", input.toString());
-            if (input.getDomainName() != null && input.getFilterSpecific() != null) {
-                InstanceIdentifier
-                        identifier =
-                        getIdentifier(nodeId).child(SxpDomains.class)
-                                .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
-                                .child(DomainFilters.class)
-                                .child(DomainFilter.class, new DomainFilterKey(input.getFilterSpecific()));
-                output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
-                        || datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+            if (input.getDomainName() != null) {
+                if (input.getFilterSpecific() != null) {
+                    InstanceIdentifier
+                            identifier =
+                            getIdentifier(nodeId).child(SxpDomains.class)
+                                    .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
+                                    .child(DomainFilters.class)
+                                    .child(DomainFilter.class,
+                                            new DomainFilterKey(input.getFilterName(), input.getFilterSpecific()));
+                    output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
+                            || datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+                } else {
+                    DomainFilters
+                            domainFilters =
+                            datastoreAccess.readSynchronous(getIdentifier(nodeId).child(SxpDomains.class)
+                                    .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
+                                    .child(DomainFilters.class), LogicalDatastoreType.OPERATIONAL);
+                    if (domainFilters != null && domainFilters.getDomainFilter() != null) {
+                        domainFilters.getDomainFilter()
+                                .stream()
+                                .filter(f -> input.getFilterName().equals(f.getFilterName()))
+                                .forEach(f -> {
+                                    InstanceIdentifier
+                                            identifier =
+                                            getIdentifier(nodeId).child(SxpDomains.class)
+                                                    .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
+                                                    .child(DomainFilters.class)
+                                                    .child(DomainFilter.class, new DomainFilterKey(f.getFilterName(),
+                                                            f.getFilterSpecific()));
+                                    output.setResult(datastoreAccess.checkAndDelete(identifier,
+                                            LogicalDatastoreType.CONFIGURATION) || datastoreAccess.checkAndDelete(
+                                            identifier, LogicalDatastoreType.OPERATIONAL));
+                                });
+                    }
+                }
             }
             return RpcResultBuilder.success(output.build()).build();
         });
@@ -246,13 +273,15 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
         return getResponse(nodeId, output.build(), () -> {
             LOG.info("RpcAddDomainFilter event | {}", input.toString());
-            if (input.getDomainName() != null && input.getSxpDomainFilter() != null) {
+            if (input.getDomainName() != null && input.getSxpDomainFilter() != null
+                    && input.getSxpDomainFilter().getFilterName() != null) {
                 DomainFilterBuilder filter = new DomainFilterBuilder(input.getSxpDomainFilter());
                 filter.setFilterSpecific(getFilterSpecific(filter.getFilterEntries()));
                 output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
                                 .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
                                 .child(DomainFilters.class)
-                                .child(DomainFilter.class, new DomainFilterKey(filter.getFilterSpecific())), filter.build(),
+                                .child(DomainFilter.class,
+                                        new DomainFilterKey(filter.getFilterName(), filter.getFilterSpecific())), filter.build(),
                         getDatastoreType(input.getConfigPersistence()), false));
             }
             return RpcResultBuilder.success(output.build()).build();
@@ -276,17 +305,15 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 LOG.warn("RpcAddEntry exception | Parameter 'sgt' not defined");
                 return RpcResultBuilder.success(output.build()).build();
             }
-            DateAndTime timestamp = TimeConv.toDt(System.currentTimeMillis());
-            List<MasterDatabaseBinding> bindings = new ArrayList<>();
-
             MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
-            bindingBuilder.setIpPrefix(ipPrefix).setTimestamp(timestamp);
+            bindingBuilder.setIpPrefix(ipPrefix).setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
             bindingBuilder.setSecurityGroupTag(sgt);
             bindingBuilder.setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
-            bindings.add(bindingBuilder.build());
 
-            Configuration.getRegisteredNode(nodeId).putLocalBindingsMasterDatabase(bindings, input.getDomainName());
-            output.setResult(true);
+            output.setResult(!Configuration.getRegisteredNode(nodeId)
+                    .putLocalBindingsMasterDatabase(Collections.singletonList(bindingBuilder.build()),
+                            input.getDomainName())
+                    .isEmpty());
             return RpcResultBuilder.success(output.build()).build();
         });
     }
@@ -407,7 +434,6 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 return RpcResultBuilder.success(output.build()).build();
             }
 
-            DateAndTime timestamp = TimeConv.toDt(System.currentTimeMillis());
             List<MasterDatabaseBinding> bindings = new ArrayList<>();
             MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
             bindingBuilder.setSecurityGroupTag(sgt);
@@ -415,16 +441,15 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
             if (input.getIpPrefix() != null) {
                 for (IpPrefix ipPrefix : input.getIpPrefix()) {
-                    bindingBuilder.setIpPrefix(ipPrefix).setTimestamp(timestamp);
+                    bindingBuilder.setIpPrefix(ipPrefix).setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
                     bindings.add(bindingBuilder.build());
                 }
             }
 
-            DeleteEntryOutputBuilder output1 = new DeleteEntryOutputBuilder();
-            output1.setResult(!Configuration.getRegisteredNode(nodeId)
+            output.setResult(!Configuration.getRegisteredNode(nodeId)
                     .removeLocalBindingsMasterDatabase(bindings, input.getDomainName())
                     .isEmpty());
-            return RpcResultBuilder.success(output1.build()).build();
+            return RpcResultBuilder.success(output.build()).build();
         });
     }
 
