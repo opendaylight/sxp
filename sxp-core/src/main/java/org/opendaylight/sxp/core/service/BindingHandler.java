@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
+import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.messaging.legacy.MappingRecord;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
@@ -36,7 +37,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilterFields;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.TlvType;
@@ -72,14 +72,6 @@ public final class BindingHandler {
         this.dispatcher = Preconditions.checkNotNull(dispatcher);
     }
 
-    private SxpDatabaseInf getSxpDatabase(String name) {
-        return sxpNode.getBindingSxpDatabase(name);
-    }
-
-    private MasterDatabaseInf getMasterDatabase(String name) {
-        return sxpNode.getBindingMasterDatabase(name);
-    }
-
     /**
      * Removes all paths that contains specified NodeId,
      * thus performs loop filtering
@@ -90,9 +82,7 @@ public final class BindingHandler {
      */
     public static <T extends SxpBindingFields> List<T> loopDetection(NodeId nodeId, List<T> bindings) {
         if (nodeId != null && bindings != null && !bindings.isEmpty()) {
-            bindings.removeIf(b -> !(b.getPeerSequence() != null && b.getPeerSequence().getPeer() != null) || NodeIdConv
-                    .getPeerSequence(b.getPeerSequence())
-                    .contains(nodeId));
+            bindings.removeIf(b -> NodeIdConv.getPeerSequence(b.getPeerSequence()).contains(nodeId));
         }
         return bindings;
     }
@@ -280,15 +270,16 @@ public final class BindingHandler {
      * @param connection SxpConnection for which PurgeAll will be proceed
      */
     public static void processPurgeAllMessageSync(final SxpConnection connection) {
-        final SxpNode owner = connection.getOwner();
-        final Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(owner);
-        final SxpDatabaseInf sxpDatabase = owner.getBindingSxpDatabase(connection.getDomainName());
-        synchronized (sxpDatabase) {
-            List<SxpDatabaseBinding> removed = sxpDatabase.deleteBindings(connection.getNodeIdRemote()),
-                    replace = SxpDatabase.getReplaceForBindings(removed, sxpDatabase, filterMap);
-            connection.propagateUpdate(
-                    owner.getBindingMasterDatabase(connection.getDomainName()).deleteBindings(removed),
-                    owner.getBindingMasterDatabase(connection.getDomainName()).addBindings(replace));
+        final Map<NodeId, SxpBindingFilter>
+                filterMap =
+                SxpDatabase.getInboundFilters(connection.getOwner(), connection.getDomainName());
+        final SxpDomain sxpDomain = connection.getOwner().getDomain(connection.getDomainName());
+        synchronized (sxpDomain) {
+            List<SxpDatabaseBinding> removed = sxpDomain.getSxpDatabase().deleteBindings(connection.getNodeIdRemote()),
+                    replace =
+                            SxpDatabase.getReplaceForBindings(removed, sxpDomain.getSxpDatabase(), filterMap);
+            connection.propagateUpdate(sxpDomain.getMasterDatabase().deleteBindings(removed),
+                    sxpDomain.getMasterDatabase().addBindings(replace));
         }
     }
 
@@ -302,20 +293,19 @@ public final class BindingHandler {
      */
     public <T extends SxpBindingFields> void processUpdate(List<T> databaseDelete, List<T> databaseAdd,
             SxpConnection connection) {
+        final SxpDomain domain = sxpNode.getDomain(connection.getDomainName());
+        final SxpDatabaseInf sxpDatabase = domain.getSxpDatabase();
+        final MasterDatabaseInf masterDatabase = domain.getMasterDatabase();
         // Loop detection.
         if (Preconditions.checkNotNull(connection).getCapabilities().contains(CapabilityType.LoopDetection)) {
             databaseAdd = loopDetection(connection.getOwnerId(), databaseAdd);
         }
+        Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(sxpNode, domain.getName());
+        SxpBindingFilter<?, ? extends SxpFilterFields> filter = connection.getFilter(FilterType.Inbound);
 
         List<SxpDatabaseBinding> added = new ArrayList<>(), removed = new ArrayList<>(), replace = new ArrayList<>();
-        SxpBindingFilter<?, ? extends SxpFilterFields> filter = connection.getFilter(FilterType.Inbound);
-        List<SxpConnection>
-                sxpConnections =
-                connection.getOwner().getAllOnSpeakerConnections(connection.getDomainName());
-        Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(connection.getOwner());
-        SxpDatabaseInf sxpDatabase = getSxpDatabase(connection.getDomainName());
-        MasterDatabaseInf masterDatabase = getMasterDatabase(connection.getDomainName());
-        synchronized (sxpDatabase) {
+        List<SxpConnection> sxpConnections = sxpNode.getAllOnSpeakerConnections(domain.getName());
+        synchronized (domain) {
             if (databaseDelete != null && !databaseDelete.isEmpty()) {
                 removed = sxpDatabase.deleteBindings(connection.getNodeIdRemote(), databaseDelete);
                 replace = SxpDatabase.getReplaceForBindings(removed, sxpDatabase, filterMap);
@@ -323,13 +313,13 @@ public final class BindingHandler {
             if (databaseAdd != null && !databaseAdd.isEmpty()) {
                 added = sxpDatabase.addBinding(connection.getNodeIdRemote(), databaseAdd);
                 if (filter != null)
-                    added.removeIf(filter);
+                    added.removeIf(b -> !filter.test(b));
             }
             added.addAll(replace);
             dispatcher.propagateUpdate(masterDatabase.deleteBindings(removed), masterDatabase.addBindings(added),
                     sxpConnections);
+            domain.propagateToSharedDomains(removed, added);
         }
-
         if (!removed.isEmpty() || !added.isEmpty() || !replace.isEmpty()) {
             LOG.info(connection.getOwnerId() + " [Deleted/Added/ToReplace] bindings [{}/{}/{}]", removed.size(),
                     added.size(), replace.size());

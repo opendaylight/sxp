@@ -14,11 +14,13 @@ import com.google.common.util.concurrent.ListenableFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
@@ -29,6 +31,7 @@ import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscr
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageCompositionException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.slf4j.Logger;
@@ -179,8 +182,7 @@ public final class BindingDispatcher {
             releaseCounter.incrementAndGet();
             exportTasks.add(new UpdateExportTask(connection, messagesPool.get(key), dataPool.get(key), releaseCounter));
         }
-        exportTasks.stream()
-                .forEach(e -> worker.executeTaskInSequence(e, ThreadsWorker.WorkerType.OUTBOUND, e.getConnection()));
+        exportTasks.forEach(e -> worker.executeTaskInSequence(e, ThreadsWorker.WorkerType.OUTBOUND, e.getConnection()));
     }
 
     /**
