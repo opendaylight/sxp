@@ -8,6 +8,10 @@
 
 package org.opendaylight.sxp.util.database;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -16,11 +20,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 
 public abstract class MasterDatabase implements MasterDatabaseInf {
 
@@ -38,15 +37,15 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
     protected static <T extends SxpBindingFields> Map<IpPrefix, MasterDatabaseBinding> filterIncomingBindings(
             List<T> bindings, Function<IpPrefix, MasterDatabaseBinding> get, Function<IpPrefix, Boolean> remove) {
         Map<IpPrefix, MasterDatabaseBinding> prefixMap = new HashMap<>();
-        if (get == null || bindings == null || bindings.isEmpty()) {
+        if (get == null || remove == null || bindings == null || bindings.isEmpty()) {
             return prefixMap;
         }
-        bindings.stream().forEach(b -> {
+        bindings.forEach(b -> {
             if (ignoreBinding(b))
                 return;
             MasterDatabaseBinding
                     binding =
-                    prefixMap.get(b.getIpPrefix()) == null ? get.apply(b.getIpPrefix()) : prefixMap.get(
+                    !prefixMap.containsKey(b.getIpPrefix()) ? get.apply(b.getIpPrefix()) : prefixMap.get(
                             b.getIpPrefix());
             if (binding == null || getPeerSequenceLength(b) < getPeerSequenceLength(binding) || (
                     getPeerSequenceLength(b) == getPeerSequenceLength(binding)
@@ -82,12 +81,11 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
         StringBuilder builder = new StringBuilder(this.getClass().getSimpleName() + "\n");
         List<MasterDatabaseBinding> databaseBindings = getBindings();
         if (!databaseBindings.isEmpty()) {
-            databaseBindings.stream()
-                    .forEach(b -> builder.append("\t")
-                            .append(b.getSecurityGroupTag().getValue())
-                            .append(" ")
-                            .append(b.getIpPrefix().getValue())
-                            .append("\n"));
+            databaseBindings.forEach(b -> builder.append("\t")
+                    .append(b.getSecurityGroupTag().getValue())
+                    .append(" ")
+                    .append(b.getIpPrefix().getValue())
+                    .append("\n"));
         }
         return builder.toString();
     }

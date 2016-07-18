@@ -8,14 +8,15 @@
 
 package org.opendaylight.sxp.util.database;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 
 /**
  * MasterDatabaseImpl class contains logic to operate with Database,
@@ -27,8 +28,14 @@ public class MasterDatabaseImpl extends MasterDatabase {
     private final Map<IpPrefix, MasterDatabaseBinding> localBindingMap = new HashMap<>();
 
     @Override synchronized public List<MasterDatabaseBinding> getBindings() {
-        List<MasterDatabaseBinding> bindings = getLocalBindings();
-        bindings.addAll(bindingMap.values());
+        List<MasterDatabaseBinding> bindings = new ArrayList<>(bindingMap.values());
+        Set<IpPrefix>
+                ipPrefixSet =
+                bindings.parallelStream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
+        getLocalBindings().forEach(b -> {
+            if (!ipPrefixSet.contains(b.getIpPrefix()))
+                bindings.add(b);
+        });
         return bindings;
     }
 

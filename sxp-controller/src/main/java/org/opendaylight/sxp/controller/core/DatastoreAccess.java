@@ -13,6 +13,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.opendaylight.controller.md.sal.binding.api.BindingTransactionChain;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
@@ -27,31 +29,27 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ExecutionException;
-
 public final class DatastoreAccess implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(DatastoreAccess.class.getName());
     private static final TransactionChainListener chainListener = new TransactionChainListenerImpl();
+    private static final int RETRY_FAILURE = 3;
 
-    private final BindingTransactionChain bindingTransactionChain;
-    private boolean closed = false;
+    private BindingTransactionChain bindingTransactionChain;
+    private final DataBroker dataBroker;
+    private AtomicInteger closed = new AtomicInteger(RETRY_FAILURE);
 
     public static DatastoreAccess getInstance(DataBroker dataBroker) {
         return new DatastoreAccess(Preconditions.checkNotNull(dataBroker));
     }
 
     public static DatastoreAccess getInstance(DatastoreAccess datastoreAccess) {
-        return new DatastoreAccess(Preconditions.checkNotNull(datastoreAccess).bindingTransactionChain);
+        return new DatastoreAccess(Preconditions.checkNotNull(datastoreAccess).dataBroker);
     }
 
     private DatastoreAccess(DataBroker dataBroker) {
-        Preconditions.checkNotNull(dataBroker);
-        bindingTransactionChain = dataBroker.createTransactionChain(chainListener);
-    }
-
-    private DatastoreAccess(BindingTransactionChain bindingTransactionChain) {
-        this.bindingTransactionChain = Preconditions.checkNotNull(bindingTransactionChain);
+        this.dataBroker = Preconditions.checkNotNull(dataBroker);
+        bindingTransactionChain = this.dataBroker.createTransactionChain(chainListener);
     }
 
     private <T extends DataObject> void checkParams(InstanceIdentifier<T> path,
@@ -66,7 +64,7 @@ public final class DatastoreAccess implements AutoCloseable {
         checkParams(path, logicalDatastoreType);
         if (LOG.isDebugEnabled())
             LOG.warn("Delete {} {}", logicalDatastoreType, path.getTargetType());
-        synchronized (bindingTransactionChain) {
+        synchronized (dataBroker) {
             WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
             transaction.delete(logicalDatastoreType, path);
             return transaction.submit();
@@ -79,7 +77,7 @@ public final class DatastoreAccess implements AutoCloseable {
         Preconditions.checkNotNull(data);
         if (LOG.isDebugEnabled())
             LOG.warn("Merge {} {}", logicalDatastoreType, path.getTargetType());
-        synchronized (bindingTransactionChain) {
+        synchronized (dataBroker) {
             WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
             transaction.merge(logicalDatastoreType, path, data);
             return transaction.submit();
@@ -92,7 +90,7 @@ public final class DatastoreAccess implements AutoCloseable {
         Preconditions.checkNotNull(data);
         if (LOG.isDebugEnabled())
             LOG.warn("Put {} {}", logicalDatastoreType, path.getTargetType());
-        synchronized (bindingTransactionChain) {
+        synchronized (dataBroker) {
             WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
             transaction.put(logicalDatastoreType, path, data);
             return transaction.submit();
@@ -102,7 +100,7 @@ public final class DatastoreAccess implements AutoCloseable {
     public <T extends DataObject> CheckedFuture<Optional<T>, ReadFailedException> read(InstanceIdentifier<T> path,
             LogicalDatastoreType logicalDatastoreType) {
         checkParams(path, logicalDatastoreType);
-        synchronized (bindingTransactionChain) {
+        synchronized (dataBroker) {
             try (ReadOnlyTransaction transaction = bindingTransactionChain.newReadOnlyTransaction()) {
                 return transaction.read(logicalDatastoreType, path);
             }
@@ -111,14 +109,18 @@ public final class DatastoreAccess implements AutoCloseable {
 
     @Deprecated public synchronized <T extends DataObject> boolean deleteSynchronous(InstanceIdentifier<T> path,
             LogicalDatastoreType logicalDatastoreType) {
-        if (closed)
+        if (closed.get() < 1)
             return false;
-        synchronized (bindingTransactionChain) {
+        synchronized (dataBroker) {
             try {
                 delete(path, logicalDatastoreType).get();
+                closed.set(RETRY_FAILURE);
             } catch (InterruptedException | ExecutionException e) {
                 LOG.error("Error deleting {}", path, e);
                 return false;
+            } catch (Exception e) {
+                reinitializeChain();
+                return deleteSynchronous(path, logicalDatastoreType);
             }
             return true;
         }
@@ -126,13 +128,17 @@ public final class DatastoreAccess implements AutoCloseable {
 
     public synchronized <T extends DataObject> boolean mergeSynchronous(InstanceIdentifier<T> path, T data,
             LogicalDatastoreType logicalDatastoreType) {
-        if (closed)
+        if (closed.get() < 1)
             return false;
-        synchronized (bindingTransactionChain) {
+        synchronized (dataBroker) {
             try {
                 merge(path, data, logicalDatastoreType).get();
+                closed.set(RETRY_FAILURE);
             } catch (InterruptedException | ExecutionException e) {
                 return false;
+            } catch (Exception e) {
+                reinitializeChain();
+                return mergeSynchronous(path, data, logicalDatastoreType);
             }
             return true;
         }
@@ -140,13 +146,17 @@ public final class DatastoreAccess implements AutoCloseable {
 
     public synchronized <T extends DataObject> boolean putSynchronous(InstanceIdentifier<T> path, T data,
             LogicalDatastoreType logicalDatastoreType) {
-        if (closed)
+        if (closed.get() < 1)
             return false;
-        synchronized (bindingTransactionChain) {
+        synchronized (dataBroker) {
             try {
                 put(path, data, logicalDatastoreType).get();
+                closed.set(RETRY_FAILURE);
             } catch (InterruptedException | ExecutionException e) {
                 return false;
+            } catch (Exception e) {
+                reinitializeChain();
+                return putSynchronous(path, data, logicalDatastoreType);
             }
             return true;
         }
@@ -154,14 +164,18 @@ public final class DatastoreAccess implements AutoCloseable {
 
     public synchronized <T extends DataObject> T readSynchronous(InstanceIdentifier<T> path,
             LogicalDatastoreType logicalDatastoreType) {
-        if (closed)
+        if (closed.get() < 1)
             return null;
-        synchronized (bindingTransactionChain) {
+        synchronized (dataBroker) {
             try {
                 Optional<T> result = read(path, logicalDatastoreType).get();
+                closed.set(RETRY_FAILURE);
                 return result.isPresent() ? result.get() : null;
             } catch (InterruptedException | ExecutionException e) {
                 return null;
+            } catch (Exception e) {
+                reinitializeChain();
+                return readSynchronous(path, logicalDatastoreType);
             }
         }
     }
@@ -180,9 +194,9 @@ public final class DatastoreAccess implements AutoCloseable {
     public synchronized <T extends DataObject> boolean checkAndPut(InstanceIdentifier<T> identifier, T data,
             LogicalDatastoreType datastoreType, final boolean mustContains) {
         Preconditions.checkNotNull(data);
-        if (closed)
+        if (closed.get() < 1)
             return false;
-        synchronized (bindingTransactionChain) {
+        synchronized (dataBroker) {
             checkParams(identifier, datastoreType);
             final boolean
                     check =
@@ -198,9 +212,9 @@ public final class DatastoreAccess implements AutoCloseable {
 
     public synchronized <T extends DataObject> boolean checkAndMerge(InstanceIdentifier<T> identifier, T data,
             LogicalDatastoreType datastoreType, final boolean mustContains) {
-        if (closed)
+        if (closed.get() < 1)
             return false;
-        synchronized (bindingTransactionChain) {
+        synchronized (dataBroker) {
             Preconditions.checkNotNull(data);
             checkParams(identifier, datastoreType);
             final boolean
@@ -217,16 +231,20 @@ public final class DatastoreAccess implements AutoCloseable {
 
     public synchronized <T extends DataObject> boolean checkAndDelete(InstanceIdentifier<T> identifier,
             LogicalDatastoreType datastoreType) {
-        if (closed)
+        if (closed.get() < 1)
             return false;
-        synchronized (bindingTransactionChain) {
+        synchronized (dataBroker) {
             checkParams(identifier, datastoreType);
             if (readSynchronous(identifier, datastoreType) != null) {
                 try {
                     delete(identifier, datastoreType).get();
+                    closed.set(RETRY_FAILURE);
                 } catch (InterruptedException | ExecutionException e) {
                     LOG.error("Error deleting {}", identifier, e);
                     return false;
+                } catch (Exception e) {
+                    reinitializeChain();
+                    return checkAndDelete(identifier, datastoreType);
                 }
                 return true;
             }
@@ -234,12 +252,14 @@ public final class DatastoreAccess implements AutoCloseable {
         }
     }
 
-    public synchronized void closeOperations() {
-        closed = true;
+    private void reinitializeChain() {
+        closed.decrementAndGet();
+        bindingTransactionChain.close();
+        bindingTransactionChain = dataBroker.createTransactionChain(chainListener);
     }
 
     @Override public synchronized void close() {
-        closeOperations();
+        closed.set(0);
         bindingTransactionChain.close();
     }
 }

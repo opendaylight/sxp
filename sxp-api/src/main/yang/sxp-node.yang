@@ -249,7 +249,7 @@ module sxp-node {
         uses sxp-connections-fields;
         container domain-filters {
             list domain-filter {
-                key "filter-specific";
+                key "filter-specific filter-name";
                 uses sxpfl:sxp-domain-filter-fields;
             }
         }

@@ -103,8 +103,12 @@ public class SxpConnectionTest {
                         mock(ListenableFuture.class));
                 sxpNode = PowerMockito.mock(SxpNode.class);
                 sxpDatabase = mock(SxpDatabaseInf.class);
+                SxpDomain domain = mock(SxpDomain.class);
+                PowerMockito.when(sxpNode.getDomain(anyString())).thenReturn(domain);
                 PowerMockito.when(sxpNode.getBindingSxpDatabase(anyString())).thenReturn(sxpDatabase);
+                when(domain.getSxpDatabase()).thenReturn(sxpDatabase);
                 PowerMockito.when(sxpNode.getBindingMasterDatabase(anyString())).thenReturn(mock(MasterDatabaseInf.class));
+                when(domain.getMasterDatabase()).thenReturn(mock(MasterDatabaseInf.class));
                 PowerMockito.when(sxpNode.getAllOnSpeakerConnections(anyString())).thenReturn(new ArrayList<>());
                 PowerMockito.when(sxpNode.getSvcBindingDispatcher()).thenReturn(mock(BindingDispatcher.class));
                 PowerMockito.when(sxpNode.getHoldTimeMax()).thenReturn(120);
