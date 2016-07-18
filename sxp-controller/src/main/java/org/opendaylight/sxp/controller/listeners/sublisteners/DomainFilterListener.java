@@ -8,13 +8,15 @@
 
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
+import com.google.common.base.Preconditions;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
+import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.spi.ListListener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntriesFields;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpDomainFilterFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.domain.filter.fields.Domains;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.DomainFilters;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilter;
@@ -44,22 +46,28 @@ public class DomainFilterListener extends ListListener<SxpDomain, DomainFilters,
         switch (c.getModificationType()) {
             case WRITE:
                 if (c.getDataBefore() == null) {
-                    sxpNode.addFilterToDomain(domain, c.getDataAfter());
+                    if (!sxpNode.addFilterToDomain(domain, c.getDataAfter())) {
+                        datastoreAccess.checkAndDelete(getIdentifier(c.getDataAfter(), identifier),
+                                LogicalDatastoreType.CONFIGURATION);
+                    }
                     break;
                 } else if (c.getDataAfter() == null) {
-                    sxpNode.removeFilterFromDomain(domain, c.getDataBefore().getFilterSpecific());
+                    sxpNode.removeFilterFromDomain(domain, c.getDataBefore().getFilterSpecific(),
+                            c.getDataBefore().getFilterName());
                     break;
                 }
             case SUBTREE_MODIFIED:
-                if (checkDifference(c, FilterEntriesFields::getFilterEntries)) {
-                    sxpNode.removeFilterFromDomain(domain, c.getDataBefore().getFilterSpecific());
+                if (checkDifference(c, FilterEntriesFields::getFilterEntries) || checkDifference(
+                        c.getDataBefore().getDomains().getDomain(), c.getDataAfter().getDomains().getDomain())) {
+                    sxpNode.removeFilterFromDomain(domain, c.getDataBefore().getFilterSpecific(),
+                            c.getDataBefore().getFilterName());
                     sxpNode.addFilterToDomain(domain, c.getDataAfter());
-                } else if (checkDifference(c, SxpDomainFilterFields::getDomains)) {
-                    //TODO
                 }
                 break;
             case DELETE:
-                sxpNode.removeFilterFromDomain(domain, c.getDataBefore().getFilterSpecific());
+                sxpNode.removeFilterFromDomain(domain,
+                        Preconditions.checkNotNull(c.getDataBefore()).getFilterSpecific(),
+                        c.getDataBefore().getFilterName());
                 break;
         }
     }
@@ -67,6 +75,6 @@ public class DomainFilterListener extends ListListener<SxpDomain, DomainFilters,
     @Override protected InstanceIdentifier<DomainFilter> getIdentifier(DomainFilter d,
             InstanceIdentifier<SxpDomain> parentIdentifier) {
         return parentIdentifier.child(DomainFilters.class)
-                .child(DomainFilter.class, new DomainFilterKey(d.getFilterSpecific()));
+                .child(DomainFilter.class, new DomainFilterKey(d.getFilterName(), d.getFilterSpecific()));
     }
 }
