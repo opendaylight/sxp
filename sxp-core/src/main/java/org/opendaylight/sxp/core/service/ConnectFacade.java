@@ -8,7 +8,6 @@
 
 package org.opendaylight.sxp.core.service;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import io.netty.bootstrap.Bootstrap;
@@ -35,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -62,7 +62,7 @@ public class ConnectFacade {
         Bootstrap bootstrap = new Bootstrap();
         if (connection.getPassword() != null && !connection.getPassword().isEmpty()) {
             Map<InetAddress, byte[]> keys = new HashMap<>();
-            keys.put(connection.getDestination().getAddress(), connection.getPassword().getBytes(Charsets.US_ASCII));
+            keys.put(connection.getDestination().getAddress(), connection.getPassword().getBytes(StandardCharsets.US_ASCII));
             bootstrap.option(EpollChannelOption.TCP_MD5SIG, keys);
         }
         bootstrap.channel(EpollSocketChannel.class);
@@ -100,7 +100,7 @@ public class ConnectFacade {
         ServerBootstrap bootstrap = new ServerBootstrap();
         Collections2.filter(node.getAllConnections(), CONNECTION_ENTRY_WITH_PASSWORD)
                 .forEach(p -> keyMapping.put(p.getDestination().getAddress(),
-                        p.getPassword().getBytes(Charsets.US_ASCII)));
+                        p.getPassword().getBytes(StandardCharsets.US_ASCII)));
         bootstrap.channel(EpollServerSocketChannel.class);
         bootstrap.option(EpollChannelOption.TCP_MD5SIG, keyMapping);
         bootstrap.group(bossGroup, eventLoopGroup);
