@@ -10,6 +10,12 @@ package org.opendaylight.sxp.util.database;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
@@ -23,13 +29,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.Filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public abstract class SxpDatabase implements SxpDatabaseInf {
 
@@ -150,12 +149,13 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
     /**
      * Create Map consisting of NodeIds of remoter peers associated with Inbound filters applied to them
      *
-     * @param node SxpNode containing Connections and filters
+     * @param node   SxpNode containing Connections and filters
+     * @param domain Domain where to look
      * @return Map of NodeId of remote peers and Inbound filters
      */
-    public static Map<NodeId, SxpBindingFilter> getInboundFilters(SxpNode node) {
+    public static Map<NodeId, SxpBindingFilter> getInboundFilters(SxpNode node, String domain) {
         Map<NodeId, SxpBindingFilter> map = new HashMap<>();
-        node.getAllConnections().stream().forEach(c -> {
+        node.getAllConnections(Preconditions.checkNotNull(domain)).stream().forEach(c -> {
             if (c.isModeListener()) {
                 map.put(c.getNodeIdRemote(), c.getFilter(FilterType.Inbound));
             }
@@ -167,6 +167,8 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
      * Finds replace for specified bindings from specified SxpNode
      *
      * @param bindings List of bindings that needs replace
+     * @param database SxpDatabase containing replaces
+     * @param filters  Filters that will be applied during replacement
      * @param <T>      Any type extending SxpBindingFields
      * @return List of replacements
      */
@@ -196,6 +198,44 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
                 });
             }
         }
+        return new ArrayList<>(prefixMap.values());
+    }
+
+    /**
+     * Finds replace for specified bindings from specified SxpNode
+     *
+     * @param bindings List of bindings that needs replace
+     * @param database List of bindings for replace
+     * @param <T>      Any type extending SxpBindingFields
+     * @return List of replacements
+     */
+    public static <T extends SxpBindingFields> List<T> getReplaceForBindings(List<T> bindings, final List<T> database) {
+        if (bindings == null || database == null || bindings.isEmpty())
+            return new ArrayList<>();
+        Set<IpPrefix>
+                prefixesForReplace =
+                bindings.stream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
+        Map<IpPrefix, T> prefixMap = new HashMap<>(bindings.size());
+        database.stream().forEach(b -> {
+            if (!prefixesForReplace.contains(b.getIpPrefix())) {
+                return;
+            }
+            T binding = prefixMap.get(b.getIpPrefix());
+            int
+                    seq1 =
+                    b.getPeerSequence() == null || b.getPeerSequence().getPeer() == null ? 0 : b.getPeerSequence()
+                            .getPeer()
+                            .size(),
+                    seq2 =
+                            binding == null || binding.getPeerSequence() == null
+                                    || binding.getPeerSequence().getPeer() == null ? 0 : binding.getPeerSequence()
+                                    .getPeer()
+                                    .size();
+            if (binding == null || seq1 < seq2 || (seq1 == seq2 && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(
+                    binding.getTimestamp()))) {
+                prefixMap.put(b.getIpPrefix(), b);
+            }
+        });
         return new ArrayList<>(prefixMap.values());
     }
 

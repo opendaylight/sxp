@@ -8,6 +8,9 @@
 
 package org.opendaylight.sxp.controller.listeners.spi;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
@@ -45,6 +48,10 @@ public class DifferencesTest {
                 .build();
     }
 
+    private List<Connection> getChanges(Connection... connection) {
+        return Arrays.asList(connection);
+    }
+
     @Test public void testCheckDifference() throws Exception {
         assertTrue(checkDifference(
                 getModification(getChange("127.0.0.1", 64999, Version.Version4, ConnectionMode.Speaker),
@@ -65,5 +72,22 @@ public class DifferencesTest {
                 getModification(getChange("127.0.0.1", 64999, Version.Version2, ConnectionMode.Speaker),
                         getChange("127.0.0.1", 64999, Version.Version4, ConnectionMode.Speaker)),
                 SxpConnectionFields::getPeerAddress));
+
+        Connection change1 = getChange("127.0.0.1", 64999, Version.Version2, ConnectionMode.Speaker),
+                change2 = getChange("127.0.0.2", 64999, Version.Version2, ConnectionMode.Speaker),
+                change3 = getChange("127.0.0.1", 64998, Version.Version2, ConnectionMode.Speaker),
+                change4 = getChange("127.0.0.1", 64999, Version.Version4, ConnectionMode.Speaker);
+
+        assertFalse(checkDifference(new ArrayList<>(), new ArrayList<>()));
+        assertFalse(checkDifference(getChanges(change1, change2), getChanges(change1, change2)));
+        assertFalse(checkDifference(getChanges(change2, change1), getChanges(change1, change2)));
+
+        assertTrue(checkDifference(getChanges(change1, change2, change3), getChanges(change1, change2)));
+        assertTrue(checkDifference(getChanges(change1, change2), getChanges(change1, change2, change3)));
+        assertTrue(checkDifference(getChanges(change1, change2), new ArrayList<>()));
+        assertTrue(checkDifference(new ArrayList<>(), getChanges(change1, change2)));
+        assertTrue(checkDifference(getChanges(change1, change2), getChanges(change1)));
+        assertTrue(checkDifference(getChanges(change1, change2), getChanges(change1, change3)));
+        assertTrue(checkDifference(getChanges(change3, change2), getChanges(change1, change3)));
     }
 }

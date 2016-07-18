@@ -85,7 +85,7 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
     }
 
     @Override public boolean test(SxpBindingFields binding) {
-        return apply(binding);
+        return !apply(binding);
     }
 
     /**
@@ -145,11 +145,16 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
             throw new IllegalArgumentException("Filter cannot be null");
         }
         if (filter.getFilterEntries() instanceof AclFilterEntries) {
-            return new AclFilter<>(new SxpFilterBuilder(filter).build(), peerGroupName);
+            return new AclFilter<>(
+                    new SxpFilterBuilder(filter).setFilterSpecific(FilterSpecific.AccessOrPrefixList).build(),
+                    peerGroupName);
         } else if (filter.getFilterEntries() instanceof PrefixListFilterEntries) {
-            return new PrefixListFilter<>(new SxpFilterBuilder(filter).build(), peerGroupName);
+            return new PrefixListFilter<>(
+                    new SxpFilterBuilder(filter).setFilterSpecific(FilterSpecific.AccessOrPrefixList).build(),
+                    peerGroupName);
         } else if (filter.getFilterEntries() instanceof PeerSequenceFilterEntries) {
-            return new PeerSequenceFilter<>(new SxpFilterBuilder(filter).build(), peerGroupName);
+            return new PeerSequenceFilter<>(
+                    new SxpFilterBuilder(filter).setFilterSpecific(FilterSpecific.PeerSequence).build(), peerGroupName);
         }
         throw new IllegalArgumentException("Undefined filter type " + filter);
     }
@@ -193,12 +198,15 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
             return false;
         SxpBindingFilter that = (SxpBindingFilter) o;
         if (sxpFilter instanceof SxpDomainFilterFields && that.sxpFilter instanceof SxpDomainFilterFields) {
-            return Objects.equals(((SxpDomainFilterFields) sxpFilter).getFilterSpecific(),
-                    ((SxpDomainFilterFields) that.sxpFilter).getFilterSpecific());
+            return Objects.equals(this.identifier, that.identifier) && Objects.equals(
+                    ((SxpDomainFilterFields) sxpFilter).getFilterSpecific(),
+                    ((SxpDomainFilterFields) that.sxpFilter).getFilterSpecific()) && Objects.equals(
+                    ((SxpDomainFilterFields) sxpFilter).getFilterName(),
+                    ((SxpDomainFilterFields) that.sxpFilter).getFilterName());
         } else if (sxpFilter instanceof SxpFilterFields && that.sxpFilter instanceof SxpFilterFields) {
-            return Objects.equals(((SxpFilterFields) sxpFilter).getFilterType(),
-                    ((SxpFilterFields) that.sxpFilter).getFilterType()) && Objects.equals(
-                    ((SxpFilterFields) sxpFilter).getFilterSpecific(),
+            return Objects.equals(this.identifier, that.identifier) && Objects.equals(
+                    ((SxpFilterFields) sxpFilter).getFilterType(), ((SxpFilterFields) that.sxpFilter).getFilterType())
+                    && Objects.equals(((SxpFilterFields) sxpFilter).getFilterSpecific(),
                     ((SxpFilterFields) that.sxpFilter).getFilterSpecific());
         }
         return false;
@@ -246,4 +254,25 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
                         && filter2.getFilterEntries() instanceof AclFilterEntries;
     }
 
+    public static SxpBindingFilter<?, ? extends SxpDomainFilterFields> mergeFilters(
+            List<SxpBindingFilter<?, ? extends SxpDomainFilterFields>> values) {
+        if (values == null || values.isEmpty()) {
+            throw new IllegalArgumentException("Filter list is Empty.");
+        }
+        if (values.size() == 1)
+            return Iterables.get(values, 0);
+        StringBuilder builder = new StringBuilder().append("MultiGroup[ ");
+        values.stream().map(SxpBindingFilter::getIdentifier).sorted().forEach(g -> builder.append(g).append(" "));
+        //noinspection unchecked
+        return new SxpBindingFilter(builder.append("]").toString()) {
+
+            protected boolean filter(FilterEntries filterEntries, SxpBindingFields binding) {
+                for (SxpBindingFilter filter : values) {
+                    if (filter.apply(binding))
+                        return true;
+                }
+                return false;
+            }
+        };
+    }
 }
