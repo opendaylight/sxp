@@ -21,6 +21,7 @@ import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
+import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -339,6 +340,7 @@ public class RpcServiceImplTest {
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
 
+        Configuration.unregister(NodeIdConv.toString(node.getNodeId()));
         result = service.deleteNode(new DeleteNodeInputBuilder().setNodeId(new NodeId("0.0.0.0")).build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -523,7 +525,7 @@ public class RpcServiceImplTest {
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
 
-        result = service.addNode(new AddNodeInputBuilder().setNodeId(new NodeId("2.2.2.2")).build()).get();
+        result = service.addNode(new AddNodeInputBuilder().setNodeId(node.getNodeId()).build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());

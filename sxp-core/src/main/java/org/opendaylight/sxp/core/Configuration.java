@@ -83,7 +83,7 @@ public final class Configuration {
         return CONSTANTS;
     }
 
-    public static HashMap<String, SxpNode> getNodes() {
+    public synchronized static HashMap<String, SxpNode> getNodes() {
         return nodes;
     }
 

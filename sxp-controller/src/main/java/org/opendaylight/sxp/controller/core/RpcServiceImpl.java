@@ -366,6 +366,9 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION));
                 output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL)
                         || output.isResult());
+                if (output.isResult())
+                    while (Configuration.getRegisteredNode(NodeIdConv.toString(input.getNodeId())) != null)
+                        Thread.sleep(500);
             }
             return RpcResultBuilder.success(output.build()).build();
         });
@@ -678,6 +681,9 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                                 new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
                                         nodeId))).augmentation(SxpNodeIdentity.class), identityBuilder.build(),
                         getDatastoreType(input.getConfigPersistence()), false));
+                if (output.isResult())
+                    while (Configuration.getRegisteredNode(nodeId) == null)
+                        Thread.sleep(500);
             }
             return RpcResultBuilder.success(output.build()).build();
         });
