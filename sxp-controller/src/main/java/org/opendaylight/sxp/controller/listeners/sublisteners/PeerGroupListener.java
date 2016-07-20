@@ -75,6 +75,11 @@ public class PeerGroupListener extends ListListener<SxpNodeIdentity, SxpPeerGrou
         return parentIdentifier.child(SxpPeerGroups.class).child(SxpPeerGroup.class, new SxpPeerGroupKey(d.getName()));
     }
 
+    /**
+     * @param sxpNode    Node where group will be added
+     * @param c          Object modification containing necessary data
+     * @param identifier InstanceIdentifier pointing to specified group
+     */
     private void addGroupToNode(final SxpNode sxpNode, final DataObjectModification<SxpPeerGroup> c,
             final InstanceIdentifier<SxpPeerGroup> identifier) {
         if (!sxpNode.addPeerGroup(new SxpPeerGroupBuilder(c.getDataAfter()).build())) {

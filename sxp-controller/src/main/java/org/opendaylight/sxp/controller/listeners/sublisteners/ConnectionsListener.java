@@ -77,6 +77,10 @@ public class ConnectionsListener extends ListListener<SxpDomain, Connections, Co
                 .child(Connection.class, new ConnectionKey(d.getPeerAddress(), d.getTcpPort()));
     }
 
+    /**
+     * @param connection Connection that will be parsed
+     * @return InetSocket address of provided connection
+     */
     private InetSocketAddress getConnection(Connection connection) {
         return new InetSocketAddress(Search.getAddress(Preconditions.checkNotNull(connection).getPeerAddress()),
                 Preconditions.checkNotNull(connection.getTcpPort()).getValue());

@@ -216,6 +216,14 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
         return Objects.hash(sxpFilter.getFilterEntries());
     }
 
+    /**
+     * Creates Sxp filter that merges all specified filters into one filter,
+     * Generated filter pass only if all sub-filters passes. Filter data may be missing due
+     * to merge process.
+     *
+     * @param values Sxp filters logic that will be merged
+     * @return Sxp filters with unified logic
+     */
     public static SxpBindingFilter<?, ? extends SxpFilterFields> mergeFilters(
             final Collection<SxpBindingFilter<?, ? extends SxpFilterFields>> values) {
         if (values == null || values.isEmpty()) {
@@ -238,6 +246,14 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
         };
     }
 
+    /**
+     * Checks filter incompatibility
+     *
+     * @param filter1 Filter that will be tested
+     * @param filter2 Filter that will be tested
+     * @param <F>     Any type extending SxpFilterFields
+     * @return If filters are incompatible
+     */
     public static <F extends SxpFilterFields> boolean checkInCompatibility(F filter1, F filter2) {
         if (filter1 == null || filter2 == null)
             return false;
@@ -251,9 +267,19 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
                 filter1.getFilterEntries() instanceof AclFilterEntries
                         && filter2.getFilterEntries() instanceof PrefixListFilterEntries ||
                 filter1.getFilterEntries() instanceof PrefixListFilterEntries
-                        && filter2.getFilterEntries() instanceof AclFilterEntries;
+                        && filter2.getFilterEntries() instanceof AclFilterEntries ||
+                filter1.getFilterEntries() instanceof PeerSequenceFilterEntries
+                        && filter2.getFilterEntries() instanceof PeerSequenceFilterEntries;
     }
 
+    /**
+     * Creates SxpDomain filter that merges all specified filters into one filter,
+     * Generated filter pass only if all sub-filters passes. Filter data may be missing due
+     * to merge process.
+     *
+     * @param values SxpDomains filters logic that will be merged
+     * @return SxpDomain filters with unified logic
+     */
     public static SxpBindingFilter<?, ? extends SxpDomainFilterFields> mergeFilters(
             List<SxpBindingFilter<?, ? extends SxpDomainFilterFields>> values) {
         if (values == null || values.isEmpty()) {

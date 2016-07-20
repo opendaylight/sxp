@@ -340,7 +340,7 @@ public class RpcServiceImplTest {
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
 
-        Configuration.unregister(NodeIdConv.toString(node.getNodeId()));
+        Configuration.unRegister(NodeIdConv.toString(node.getNodeId()));
         result = service.deleteNode(new DeleteNodeInputBuilder().setNodeId(new NodeId("0.0.0.0")).build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());

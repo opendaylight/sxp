@@ -30,6 +30,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
  */
 public class StrategyFactory {
 
+    /**
+     * @param context Contexts that will be used for strategy
+     * @param version Version according to which strategy wil be chosen
+     * @return Chosen strategy
+     * @throws UnknownVersionException
+     */
     public static Strategy getStrategy(Context context, Version version) throws UnknownVersionException {
         if (version != null) {
             switch (version) {

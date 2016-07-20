@@ -159,6 +159,10 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(RpcServiceImpl.class.getName());
 
+    /**
+     * @param requestedNodeId NodeId to be converted
+     * @return String representation of NodeId
+     */
     private static String getNodeId(NodeId requestedNodeId) {
         return requestedNodeId != null ? NodeIdConv.toString(requestedNodeId) : null;
     }
@@ -169,6 +173,13 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
 
     private ExecutorService executor = Executors.newFixedThreadPool(1);
 
+    /**
+     * @param nodeId         NodeId specifying Node where task will be executed
+     * @param response       Response used for failure case
+     * @param resultCallable Task representing request
+     * @param <T>            Any type
+     * @return Future callback to RpcResult
+     */
     private <T> Future<RpcResult<T>> getResponse(String nodeId, final T response,
             Callable<RpcResult<T>> resultCallable) {
         SxpNode node = Configuration.getRegisteredNode(nodeId);
@@ -184,6 +195,10 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         }
     }
 
+    /**
+     * @param persistence Config Persistence to be checked
+     * @return DataStore type corresponding to config persistence
+     */
     private LogicalDatastoreType getDatastoreType(ConfigPersistence persistence) {
         if (ConfigPersistence.Operational.equals(persistence))
             return LogicalDatastoreType.OPERATIONAL;
@@ -191,6 +206,10 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
             return LogicalDatastoreType.CONFIGURATION;
     }
 
+    /**
+     * @param entries Entries to be checked
+     * @return FilterSpecific corresponding to entries
+     */
     private FilterSpecific getFilterSpecific(FilterEntries entries) {
         if (entries instanceof AclFilterEntries || entries instanceof PrefixListFilterEntries) {
             return FilterSpecific.AccessOrPrefixList;

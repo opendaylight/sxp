@@ -87,6 +87,7 @@ public class SxpConnectionTest {
 
         @Rule public ExpectedException exception = ExpectedException.none();
 
+        private static String DOMAIN_NAME = "global";
         private static int ip4Address = 0;
         private static SxpNode sxpNode;
         private static SxpConnection sxpConnection;
@@ -115,7 +116,9 @@ public class SxpConnectionTest {
                 PowerMockito.when(sxpNode.getHoldTimeMin()).thenReturn(60);
                 PowerMockito.when(sxpNode.getHoldTimeMinAcceptable()).thenReturn(60);
                 PowerMockito.when(sxpNode.getWorker()).thenReturn(worker);
-                sxpConnection = SxpConnection.create(sxpNode, mockConnection(ConnectionMode.None, ConnectionState.On));
+                sxpConnection =
+                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.None, ConnectionState.On),
+                                DOMAIN_NAME);
         }
 
         private Connection mockConnection(ConnectionMode mode, ConnectionState state) {
@@ -285,12 +288,12 @@ public class SxpConnectionTest {
                         any(SxpConnection.class))).thenReturn(mock(ListenableFuture.class))
                         .thenReturn(mock(ListenableFuture.class));
 
-                sxpConnection = SxpConnection.create(sxpNode, connection);
+                sxpConnection = SxpConnection.create(sxpNode, connection, DOMAIN_NAME);
                 sxpConnection.shutdown();
                 verify(sxpDatabase).deleteBindings(sxpConnection.getNodeIdRemote());
                 assertEquals(ConnectionState.Off, sxpConnection.getState());
 
-                sxpConnection = SxpConnection.create(sxpNode, connection1);
+                sxpConnection = SxpConnection.create(sxpNode, connection1, DOMAIN_NAME);
                 sxpConnection.setTimer(TimerType.KeepAliveTimer, 50);
 
                 sxpConnection.shutdown();
@@ -305,7 +308,8 @@ public class SxpConnectionTest {
 
         @Test public void testSetConnection() throws Exception {
                 sxpConnection =
-                        spy(SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On)));
+                        spy(SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On),
+                                DOMAIN_NAME));
 
                 OpenMessage message = mock(OpenMessage.class);
                 when(message.getVersion()).thenReturn(Version.Version4);
@@ -318,7 +322,8 @@ public class SxpConnectionTest {
                 assertEquals(ConnectionState.On, sxpConnection.getState());
 
                 sxpConnection =
-                        spy(SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On)));
+                        spy(SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On),
+                                DOMAIN_NAME));
 
                 attributes.clear();
                 when(message.getSxpMode()).thenReturn(ConnectionMode.Listener);
@@ -354,7 +359,8 @@ public class SxpConnectionTest {
 
         @Test public void testSetConnectionListenerPartOpen() throws Exception {
                 sxpConnection =
-                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On));
+                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On),
+                                DOMAIN_NAME);
                 OpenMessage message = mock(OpenMessage.class);
                 when(message.getSxpMode()).thenReturn(ConnectionMode.Speaker);
                 when(message.getVersion()).thenReturn(Version.Version3);
@@ -370,7 +376,8 @@ public class SxpConnectionTest {
 
         @Test public void testSetConnectionListenerPartResp() throws Exception {
                 sxpConnection =
-                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On));
+                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On),
+                                DOMAIN_NAME);
                 OpenMessage message = mock(OpenMessage.class);
                 when(message.getSxpMode()).thenReturn(ConnectionMode.Speaker);
                 when(message.getVersion()).thenReturn(Version.Version3);
@@ -379,7 +386,8 @@ public class SxpConnectionTest {
                 when(message.getAttribute()).thenReturn(attributes);
 
                 sxpConnection =
-                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On));
+                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Listener, ConnectionState.On),
+                                DOMAIN_NAME);
                 attributes.clear();
                 attributes.add(getHoldTime(80, 180));
 
@@ -389,7 +397,8 @@ public class SxpConnectionTest {
 
         @Test public void testSetConnectionSpeakerPartOpen() throws Exception {
                 sxpConnection =
-                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On));
+                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On),
+                                DOMAIN_NAME);
                 OpenMessage message = mock(OpenMessage.class);
                 when(message.getSxpMode()).thenReturn(ConnectionMode.Listener);
                 when(message.getVersion()).thenReturn(Version.Version3);
@@ -405,7 +414,8 @@ public class SxpConnectionTest {
                 assertNotNull(sxpConnection.getTimer(TimerType.KeepAliveTimer));
 
                 sxpConnection =
-                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On));
+                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On),
+                                DOMAIN_NAME);
                 attributes.clear();
 
                 sxpConnection.setConnectionSpeakerPart(message);
@@ -414,7 +424,8 @@ public class SxpConnectionTest {
                 assertEquals(0, sxpConnection.getKeepaliveTime());
 
                 sxpConnection =
-                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On));
+                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On),
+                                DOMAIN_NAME);
                 attributes.clear();
                 attributes.add(getNodeId("1.1.1.1"));
 
@@ -431,7 +442,8 @@ public class SxpConnectionTest {
                 when(message.getAttribute()).thenReturn(attributes);
 
                 sxpConnection =
-                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On));
+                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On),
+                                DOMAIN_NAME);
                 attributes.clear();
                 attributes.add(getHoldTime(80, 100));
 
@@ -441,7 +453,8 @@ public class SxpConnectionTest {
                 assertNotNull(sxpConnection.getTimer(TimerType.KeepAliveTimer));
 
                 sxpConnection =
-                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On));
+                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Speaker, ConnectionState.On),
+                                DOMAIN_NAME);
                 attributes.clear();
                 attributes.add(getHoldTime(25, 100));
 
@@ -459,7 +472,9 @@ public class SxpConnectionTest {
                 assertFalse(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext));
                 assertFalse(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext));
 
-                sxpConnection = SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On));
+                sxpConnection =
+                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On),
+                                DOMAIN_NAME);
 
                 ChannelHandlerContext context = mock(ChannelHandlerContext.class);
                 when(context.isRemoved()).thenReturn(false);
@@ -526,7 +541,9 @@ public class SxpConnectionTest {
         }
 
         @Test public void testPutFilter() throws Exception {
-                sxpConnection = SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On));
+                sxpConnection =
+                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On),
+                                DOMAIN_NAME);
                 sxpConnection.markChannelHandlerContext(mock(ChannelHandlerContext.class),
                         SxpConnection.ChannelHandlerContextType.SpeakerContext);
                 assertNull(sxpConnection.getFilter(FilterType.Inbound));
@@ -563,7 +580,9 @@ public class SxpConnectionTest {
         }
 
         @Test public void testRemoveFilter() throws Exception {
-                sxpConnection = SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On));
+                sxpConnection =
+                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On),
+                                DOMAIN_NAME);
                 sxpConnection.markChannelHandlerContext(mock(ChannelHandlerContext.class),
                         SxpConnection.ChannelHandlerContextType.SpeakerContext);
                 assertNull(sxpConnection.getFilter(FilterType.Inbound));
@@ -593,7 +612,9 @@ public class SxpConnectionTest {
         }
 
         @Test public void testSetCapabilitiesRemote() throws Exception {
-                sxpConnection = SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On));
+                sxpConnection =
+                        SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On),
+                                DOMAIN_NAME);
                 assertTrue(sxpConnection.getCapabilitiesRemote().isEmpty());
                 List<CapabilityType> capabilityTypes = new ArrayList<>();
                 capabilityTypes.add(CapabilityType.Ipv4Unicast);
@@ -610,7 +631,8 @@ public class SxpConnectionTest {
         @Test public void testConnectionGetters() throws Exception {
                 sxpConnection =
                         SxpConnection.create(sxpNode,
-                                mockConnection(ConnectionMode.Speaker, ConnectionState.AdministrativelyDown));
+                                mockConnection(ConnectionMode.Speaker, ConnectionState.AdministrativelyDown),
+                                DOMAIN_NAME);
                 assertFalse(sxpConnection.getCapabilities().isEmpty());
                 assertTrue(sxpConnection.getCapabilitiesRemote().isEmpty());
                 assertNotNull(sxpConnection.getConnection());

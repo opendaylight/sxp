@@ -102,10 +102,6 @@ public class SxpConnection {
         return sxpConnection;
     }
 
-    public static SxpConnection create(SxpNode owner, Connection connection) throws UnknownVersionException {
-        return create(owner, connection, SxpNode.DEFAULT_DOMAIN);
-    }
-
     private ConnectionBuilder connectionBuilder;
     private Context context;
 
@@ -267,26 +263,44 @@ public class SxpConnection {
                         connectionBuilder.getVersion() != null ? connectionBuilder.getVersion() : owner.getVersion());
     }
 
+    /**
+     * @param build Timers to set
+     */
     protected void setTimers(ConnectionTimers build) {
         connectionBuilder.setConnectionTimers(Preconditions.checkNotNull(build));
     }
 
+    /**
+     * @param state State to be set
+     */
     protected void setState(ConnectionState state) {
         connectionBuilder.setState(Preconditions.checkNotNull(state));
     }
 
+    /**
+     * @param capabilities Capabilities to be set
+     */
     protected void setCapabilities(Capabilities capabilities) {
         connectionBuilder.setCapabilities(Preconditions.checkNotNull(capabilities));
     }
 
+    /**
+     * @param version Version to be set
+     */
     protected void setVersion(Version version) {
         connectionBuilder.setVersion(Preconditions.checkNotNull(version));
     }
 
+    /**
+     * @return Connections containing configuration of local peer
+     */
     public Connection getConnection() {
         return connectionBuilder.build();
     }
 
+    /**
+     * @param connection Connection to be set
+     */
     protected void setConnection(Connection connection) {
         connectionBuilder = new ConnectionBuilder(Preconditions.checkNotNull(connection));
     }
@@ -778,6 +792,9 @@ public class SxpConnection {
         return isStateOn();
     }
 
+    /**
+     * @return is State is PendingOn
+     */
     public boolean isStatePendingOn() {
         return getState().equals(ConnectionState.PendingOn);
     }
@@ -826,6 +843,9 @@ public class SxpConnection {
         }
     }
 
+    /**
+     * Removes all learned Bindings on current connection and shutdown connection
+     */
     public void purgeBindings() {
         // Get message relevant peer node ID.
         getOwner().getWorker().addListener(BindingHandler.processPurgeAllMessage(this), () -> {
@@ -880,7 +900,6 @@ public class SxpConnection {
      * @throws ErrorMessageException If data in OpenMessage are incorrect
      */
     public void setConnectionListenerPart(OpenMessage message) throws ErrorMessageException {
-
         // Node modes compatibility.
         if (getMode().equals(ConnectionMode.Listener) && !message.getSxpMode().equals(ConnectionMode.Speaker)
                 || getMode().equals(ConnectionMode.Speaker) && !message.getSxpMode().equals(ConnectionMode.Listener)) {
@@ -1092,6 +1111,9 @@ public class SxpConnection {
         setTimers(connectionTimersBuilder.build());
     }
 
+    /**
+     *Sets Reconciliation timer on current connection
+     */
     public void setReconciliationTimer() {
         if (getReconciliationTime() > 0) {
             ListenableScheduledFuture<?> ctDeleteHoldDown = getTimer(TimerType.DeleteHoldDownTimer);

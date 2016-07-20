@@ -9,6 +9,9 @@
 package org.opendaylight.sxp.controller.util.database;
 
 import com.google.common.base.Preconditions;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
@@ -38,10 +41,6 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
 public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.SxpDatabase {
 
     private final DatastoreAccess datastoreAccess;
@@ -65,6 +64,9 @@ public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.S
             LogicalDatastoreType.OPERATIONAL);
     }
 
+    /**
+     * @return InstanceIdentifier pointing to current SxpDatabase
+     */
     private InstanceIdentifier.InstanceIdentifierBuilder<SxpDatabase> getIdentifierBuilder() {
         return InstanceIdentifier.builder(NetworkTopology.class)
                 .child(Topology.class, new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME)))
@@ -77,12 +79,21 @@ public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.S
                 .child(SxpDatabase.class);
     }
 
+    /**
+     * @param bindingType InstanceIdentifier key
+     * @return InstanceIdentifier pointing to specific BindingDatabase
+     */
     private InstanceIdentifier.InstanceIdentifierBuilder<BindingDatabase> getIdentifierBuilder(
         BindingDatabase.BindingType bindingType) {
         return getIdentifierBuilder()
             .child(BindingDatabase.class, new BindingDatabaseKey(bindingType));
     }
 
+    /**
+     * @param bindingType InstanceIdentifier key
+     * @param nodeId      InstanceIdentifier key
+     * @return InstanceIdentifier pointing to specific Binding source
+     */
     private InstanceIdentifier.InstanceIdentifierBuilder<BindingSource> getIdentifierBuilder(
         BindingDatabase.BindingType bindingType, NodeId nodeId) {
         return getIdentifierBuilder()
