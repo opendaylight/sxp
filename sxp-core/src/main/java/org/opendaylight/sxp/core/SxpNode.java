@@ -18,6 +18,22 @@ import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelPromiseNotifier;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nullable;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -53,22 +69,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Node
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The source-group tag exchange protocol (SXP) aware node implementation. SXP
@@ -1181,7 +1181,14 @@ public class SxpNode {
      * Start SxpNode
      */
     public synchronized SxpNode start() {
-        if (isEnabled() || serverChannelInit.getAndSet(true)) {
+        while (serverChannelInit.getAndSet(true)) {
+            try {
+                wait(THREAD_DELAY);
+            } catch (InterruptedException e) {
+                LOG.warn("{} Error while starting", this, e);
+            }
+        }
+        if (isEnabled()) {
             return this;
         }
         this.sourceIp = InetAddresses.forString(Search.getAddress(getNodeIdentity().getSourceIp()));
@@ -1210,12 +1217,23 @@ public class SxpNode {
                 || !isEnabled()) {
             return;
         }
-        LOG.info("{} Updating MD5 keys", this);
-        updateMD5counter.incrementAndGet();
-        serverChannel.close().addListener(createMD5updateListener(this)).syncUninterruptibly();
+        if (updateMD5counter.incrementAndGet() == 1)
+            serverChannel.close().addListener(createMD5updateListener(this)).syncUninterruptibly();
     }
 
     private ChannelFutureListener createMD5updateListener(final SxpNode sxpNode) {
+        while (serverChannelInit.getAndSet(true)) {
+            try {
+                wait(THREAD_DELAY);
+            } catch (InterruptedException e) {
+                LOG.warn("{} Error while Updating MD5", this, e);
+            }
+        }
+        if (serverChannel == null) {
+            updateMD5counter.set(0);
+            return new ChannelPromiseNotifier();
+        }
+        LOG.info("{} Updating MD5 keys", this);
         return future -> ConnectFacade.createServer(sxpNode, handlerFactoryServer)
                 .addListener(new ChannelFutureListener() {
 
@@ -1223,7 +1241,8 @@ public class SxpNode {
                         serverChannel = future.channel();
                         serverChannelInit.set(false);
                         if (updateMD5counter.decrementAndGet() > 0) {
-                            serverChannel.close().addListener(createMD5updateListener(sxpNode));
+                            updateMD5counter.set(1);
+                            serverChannel.close().addListener(createMD5updateListener(sxpNode)).syncUninterruptibly();
                         }
                     }
                 });
