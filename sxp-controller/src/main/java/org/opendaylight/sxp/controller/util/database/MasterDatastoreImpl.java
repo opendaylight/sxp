@@ -54,6 +54,9 @@ public final class MasterDatastoreImpl extends MasterDatabase {
                 LogicalDatastoreType.CONFIGURATION, false);
     }
 
+    /**
+     * @return InstanceIdentifier pointing to current Database
+     */
     private InstanceIdentifier.InstanceIdentifierBuilder<org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase> getIdentifierBuilder() {
         return InstanceIdentifier.builder(NetworkTopology.class)
                 .child(Topology.class, new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME)))
@@ -64,6 +67,10 @@ public final class MasterDatastoreImpl extends MasterDatabase {
                 .child(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase.class);
     }
 
+    /**
+     * @param ipPrefix InstanceIdentifier key
+     * @return InstanceIdentifier pointing to Binding
+     */
     private InstanceIdentifier.InstanceIdentifierBuilder<MasterDatabaseBinding> getIdentifierBuilder(
             IpPrefix ipPrefix) {
         return getIdentifierBuilder().child(MasterDatabaseBinding.class, new MasterDatabaseBindingKey(ipPrefix));
@@ -100,6 +107,12 @@ public final class MasterDatastoreImpl extends MasterDatabase {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * @param bindings      Bindings that will be added
+     * @param datastoreType Defines from where bindings will be added
+     * @param <T>           Any type extending SxpBindingFields
+     * @return List of added Bindings
+     */
     private <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings,
             LogicalDatastoreType datastoreType) {
         List<MasterDatabaseBinding> added = new ArrayList<>();
@@ -117,6 +130,12 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         return added;
     }
 
+    /**
+     * @param bindings      Bindings to be removed
+     * @param datastoreType Defines from where bindings will be removed
+     * @param <T>           Any type extending SxpBindingFields
+     * @return List of removed Bindings
+     */
     private <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings,
             LogicalDatastoreType datastoreType) {
         List<MasterDatabaseBinding> removed = new ArrayList<>();

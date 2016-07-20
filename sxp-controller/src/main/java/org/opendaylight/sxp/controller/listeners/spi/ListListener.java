@@ -15,6 +15,10 @@ import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
+import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
+import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.ChildOf;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -47,10 +51,24 @@ public abstract class ListListener<P extends DataObject, C extends ChildOf<? sup
     }
 
     /**
+     * @param nodeId SxpNode identifier
+     * @return DatastoreAcces associated with SxpNode or default if nothing found
+     */
+    protected DatastoreAccess getDatastoreAccess(String nodeId) {
+        SxpNode node = Configuration.getRegisteredNode(nodeId);
+        if (node instanceof SxpDatastoreNode) {
+            return ((SxpDatastoreNode) node).getDatastoreAccess();
+        }
+        return datastoreAccess;
+    }
+
+    /**
      * @param c          Container modification object
      * @param identifier InstanceIdentifier pointing to Parent of Container
+     * @param sxpNode
      */
-    protected abstract void handleOperational(DataObjectModification<O> c, final InstanceIdentifier<P> identifier);
+    protected abstract void handleOperational(DataObjectModification<O> c, final InstanceIdentifier<P> identifier,
+            SxpNode sxpNode);
 
     /**
      * Mirrors changes into Operational Datastore
@@ -60,6 +78,12 @@ public abstract class ListListener<P extends DataObject, C extends ChildOf<? sup
      */
     protected void handleConfig(DataObjectModification<O> c, final InstanceIdentifier<P> identifier) {
         LOG.trace("Config Modification {} {}", getClass(), c.getModificationType());
+        final String
+                nodeId =
+                identifier.firstKeyOf(Node.class) != null ? identifier.firstKeyOf(Node.class)
+                        .getNodeId()
+                        .getValue() : null;
+        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         switch (c.getModificationType()) {
             case WRITE:
                 if (c.getDataBefore() == null)
@@ -90,12 +114,19 @@ public abstract class ListListener<P extends DataObject, C extends ChildOf<? sup
             InstanceIdentifier<P> identifier) {
         if (modifiedChilds != null && !modifiedChilds.isEmpty()) {
             modifiedChilds.stream().filter(c -> c != null).forEach(modifiedChildContainer -> {
-                modifiedChildContainer.getModifiedChildren().stream().forEach(m -> {
+                final String nodeId = identifier.firstKeyOf(Node.class).getNodeId().getValue();
+                SxpNode sxpNode = Configuration.getRegisteredNode(nodeId);
+                modifiedChildContainer.getModifiedChildren().stream().filter(m -> m != null).forEach(m -> {
                     //noinspection unchecked
                     DataObjectModification<O> c = (DataObjectModification<O>) m;
                     switch (logicalDatastoreType) {
                         case OPERATIONAL:
-                            handleOperational(c, identifier);
+                            if (sxpNode != null) {
+                                handleOperational(c, identifier, sxpNode);
+                            } else {
+                                LOG.error("Modification {} {} {} could not get SxpNode {}", this, logicalDatastoreType,
+                                        modifiedChildContainer.getDataType(), nodeId);
+                            }
                             break;
                         case CONFIGURATION:
                             handleConfig(c, identifier);

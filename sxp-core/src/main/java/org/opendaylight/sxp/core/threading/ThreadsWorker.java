@@ -8,13 +8,24 @@
 package org.opendaylight.sxp.core.threading;
 
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.*;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListenableScheduledFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * ThreadsWorker class is used for executing and scheduling tasks inside SxpNode and SxpConnection
@@ -89,14 +100,24 @@ public class ThreadsWorker {
 
     /**
      * Default ThreadsWorker constructor with these threads pools
-     * ScheduledExecutorService contains 10 threads
-     * Default executorService contains 5 threads and
+     * ScheduledExecutorService contains 2 threads
+     * Default executorService contains 2 threads and
      * executorService for inbound and outbound communication
-     * have 10 threads both
+     * have 2 threads both
      */
     public ThreadsWorker() {
-        this(Executors.newScheduledThreadPool(1), Executors.newFixedThreadPool(2), Executors.newFixedThreadPool(2),
-                Executors.newFixedThreadPool(2));
+        this(2, 2, 2, 1);
+    }
+
+    /**
+     * @param inPool      Inbound executor poll size
+     * @param defaultPool Default executor poll size
+     * @param outPool     Outbound executor poll size
+     * @param timers      Timer executor poll size
+     */
+    public ThreadsWorker(int inPool, int defaultPool, int outPool, int timers) {
+        this(Executors.newScheduledThreadPool(timers), Executors.newFixedThreadPool(defaultPool),
+                Executors.newFixedThreadPool(inPool), Executors.newFixedThreadPool(outPool));
     }
 
     /**

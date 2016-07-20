@@ -11,14 +11,12 @@ package org.opendaylight.sxp.controller.listeners.sublisteners;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.spi.ListListener;
-import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 public class MasterBindingListener extends ListListener<SxpDomain, MasterDatabase, MasterDatabaseBinding> {
@@ -28,10 +26,9 @@ public class MasterBindingListener extends ListListener<SxpDomain, MasterDatabas
     }
 
     @Override protected void handleOperational(DataObjectModification<MasterDatabaseBinding> c,
-            InstanceIdentifier<SxpDomain> identifier) {
+            InstanceIdentifier<SxpDomain> identifier, SxpNode sxpNode) {
         if (!LOG.isDebugEnabled())
             return;
-        SxpNode sxpNode = Configuration.getRegisteredNode(identifier.firstKeyOf(Node.class).getNodeId().getValue());
         final String domainName = identifier.firstKeyOf(SxpDomain.class).getDomainName();
         //Logging of Bindings changes
         switch (c.getModificationType()) {

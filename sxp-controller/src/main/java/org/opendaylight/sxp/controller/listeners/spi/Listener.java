@@ -146,6 +146,11 @@ public interface Listener<P extends DataObject, C extends DataObject> {
             return !before_resp.equals(after_resp);
         }
 
+        /**
+         * @param match1 Match to be checked
+         * @param match2 Match to be checked
+         * @return If provided matches differs in some fields
+         */
         private static boolean checkSgtMatch(SgtMatch match1, SgtMatch match2) {
             if (match1 instanceof SgtMatches && match2 instanceof SgtMatches) {
                 SgtMatches match_1 = (SgtMatches) match1, match_2 = (SgtMatches) match2;
@@ -176,16 +181,31 @@ public interface Listener<P extends DataObject, C extends DataObject> {
                 return true;
         }
 
+        /**
+         * @param match1 Match to be checked
+         * @param match2 Match to be checked
+         * @return If provided matches differs in some fields
+         */
         private static boolean checkAclMatch(AclMatch match1, AclMatch match2) {
             return !Objects.equals(match1.getIpAddress(), match2.getIpAddress()) || !Objects.equals(match1.getMask(),
                     match2.getMask()) || !Objects.equals(match1.getWildcardMask(), match2.getWildcardMask());
         }
 
+        /**
+         * @param match1 Match to be checked
+         * @param match2 Match to be checked
+         * @return If provided matches differs in some fields
+         */
         private static boolean checkPrefixListMatch(PrefixListMatch match1, PrefixListMatch match2) {
             return !Objects.equals(match1.getMask(), match2.getMask()) || !Objects.equals(match1.getIpPrefix(),
                     match2.getIpPrefix());
         }
 
+        /**
+         * @param entries1 Match to be checked
+         * @param entries2 Match to be checked
+         * @return If provided entries differs in some fields
+         */
         public static boolean checkFilterEntries(FilterEntries entries1, FilterEntries entries2) {
             if (entries1 instanceof AclFilterEntries && entries2 instanceof AclFilterEntries) {
                 AclFilterEntries entries_1 = (AclFilterEntries) entries1, entries_2 = (AclFilterEntries) entries2;

@@ -67,13 +67,14 @@ public class NodeIdentityListenerTest {
         identityListener.addSubListener(listener);
         sxpNode = mock(SxpDatastoreNode.class);
         when(sxpNode.shutdown()).thenReturn(sxpNode);
+        when(sxpNode.getDatastoreAccess()).thenReturn(datastoreAccess);
         PowerMockito.mockStatic(Configuration.class);
         PowerMockito.mockStatic(DatastoreAccess.class);
         PowerMockito.when(DatastoreAccess.getInstance(any(DatastoreAccess.class))).thenReturn(datastoreAccess);
         PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(mock(DatastoreAccess.class));
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unregister(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.getConstants()).thenCallRealMethod();
     }
 

@@ -119,6 +119,8 @@ public final class Context {
                     MessageDecoder.sendErrorMessage(ctx,
                             new ErrorMessageException(ErrorCodeNonExtended.VersionMismatch, null), connection);
                     connection.setStateOff(ctx);
+                    //Fix timing issue
+                    owner.openConnection(connection);
                     return;
                 } else if (messageVersion.compareTo(version) < 0) {
                     // Update strategy according to version specified in Open from remote

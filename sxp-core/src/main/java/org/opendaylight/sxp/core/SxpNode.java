@@ -183,15 +183,24 @@ public class SxpNode {
         this.svcBindingHandler = new BindingHandler(this, this.svcBindingDispatcher);
     }
 
+    /**
+     * @return SxpNodeIdentity containing configuration of current Node
+     */
     protected SxpNodeIdentity getNodeIdentity() {
         return nodeBuilder.build();
     }
 
+    /**
+     * @param security Sets Security used for peers
+     */
     protected void setSecurity(
             org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security security) {
         nodeBuilder.setSecurity(Preconditions.checkNotNull(security));
     }
 
+    /**
+     * @param connection Adds connection and update MD5 keys if needed
+     */
     protected void addConnection(SxpConnection connection) {
         synchronized (peerGroupMap) {
             for (SxpPeerGroup peerGroup : getPeerGroup(connection)) {
@@ -625,6 +634,10 @@ public class SxpNode {
         connections.getConnection().forEach(c -> addConnection(c, domain));
     }
 
+    /**
+     * @param predicate Predicate used for selection of connections
+     * @return List of Connections matching specified criteria
+     */
     private List<SxpConnection> filterConnections(Predicate<SxpConnection> predicate) {
         List<SxpConnection> connections = new ArrayList<>();
         synchronized (sxpDomains) {
@@ -633,6 +646,11 @@ public class SxpNode {
         return Collections.unmodifiableList(connections);
     }
 
+    /**
+     * @param predicate Predicate used for selection of connections
+     * @param domain    Domain where to look for Connections
+     * @return List of Connections matching specified criteria
+     */
     private List<SxpConnection> filterConnections(Predicate<SxpConnection> predicate, String domain) {
         if (domain == null)
             return filterConnections(predicate);
@@ -1024,10 +1042,16 @@ public class SxpNode {
         }
     }
 
+    /**
+     * @return BindingDispatcher routine used by current Node
+     */
     BindingDispatcher getSvcBindingDispatcher() {
         return svcBindingDispatcher;
     }
 
+    /**
+     * @return BindingHandler routine used by current Node
+     */
     BindingHandler getSvcBindingHandler() {
         return svcBindingHandler;
     }
@@ -1273,7 +1297,7 @@ public class SxpNode {
                     LOG.info(node + " Server created [" + getSourceIp().getHostAddress() + ":" + getServerPort() + "]");
                     node.setTimer(TimerType.RetryOpenTimer, node.getRetryOpenTime());
                 } else {
-                    LOG.info(node + " Server [" + node.getSourceIp().getHostAddress() + ":" + getServerPort()
+                    LOG.error(node + " Server [" + node.getSourceIp().getHostAddress() + ":" + getServerPort()
                             + "] Could not be created " + channelFuture.cause());
                 }
                 serverChannelInit.set(false);
@@ -1284,6 +1308,9 @@ public class SxpNode {
 
     private final AtomicInteger updateMD5counter = new AtomicInteger();
 
+    /**
+     * @param connection Connection containing password for MD5 key update
+     */
     private synchronized void updateMD5keys(final SxpConnection connection) {
         if (serverChannel == null || connection.getPassword() == null || connection.getPassword().isEmpty()
                 || !isEnabled()) {
@@ -1293,6 +1320,10 @@ public class SxpNode {
             serverChannel.close().addListener(createMD5updateListener(this)).syncUninterruptibly();
     }
 
+    /**
+     * @param sxpNode Node where MD5 keys will be updated
+     * @return ChannelFutureListener callback
+     */
     private ChannelFutureListener createMD5updateListener(final SxpNode sxpNode) {
         channelInitializationWait("Error while Updating MD5");
         if (serverChannel == null) {

@@ -62,7 +62,7 @@ public class DomainListenerTest {
         PowerMockito.mockStatic(Configuration.class);
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unregister(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.getConstants()).thenCallRealMethod();
     }
 
@@ -101,24 +101,28 @@ public class DomainListenerTest {
     @Test public void testHandleOperational_1() throws Exception {
         SxpDomain domain = getDomain("global");
         identityListener.handleOperational(
-                getObjectModification(DataObjectModification.ModificationType.WRITE, null, domain), getIdentifier());
+                getObjectModification(DataObjectModification.ModificationType.WRITE, null, domain), getIdentifier(),
+                sxpNode);
         verify(sxpNode).addDomain(domain);
 
         domain = getDomain("secure");
         identityListener.handleOperational(
-                getObjectModification(DataObjectModification.ModificationType.WRITE, null, domain), getIdentifier());
+                getObjectModification(DataObjectModification.ModificationType.WRITE, null, domain), getIdentifier(),
+                sxpNode);
         verify(sxpNode).addDomain(domain);
     }
 
     @Test public void testHandleOperational_2() throws Exception {
         SxpDomain domain = getDomain("global");
         identityListener.handleOperational(
-                getObjectModification(DataObjectModification.ModificationType.WRITE, domain, null), getIdentifier());
+                getObjectModification(DataObjectModification.ModificationType.WRITE, domain, null), getIdentifier(),
+                sxpNode);
         verify(sxpNode).removeDomain("global");
 
         domain = getDomain("secure");
         identityListener.handleOperational(
-                getObjectModification(DataObjectModification.ModificationType.WRITE, domain, null), getIdentifier());
+                getObjectModification(DataObjectModification.ModificationType.WRITE, domain, null), getIdentifier(),
+                sxpNode);
         verify(sxpNode).removeDomain("secure");
     }
 

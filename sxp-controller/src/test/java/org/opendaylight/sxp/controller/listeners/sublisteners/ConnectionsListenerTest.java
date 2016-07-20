@@ -69,7 +69,7 @@ public class ConnectionsListenerTest {
         PowerMockito.mockStatic(Configuration.class);
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unregister(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.getConstants()).thenCallRealMethod();
     }
 
@@ -108,19 +108,19 @@ public class ConnectionsListenerTest {
 
     @Test public void testHandleOperational_1() throws Exception {
         identityListener.handleOperational(getObjectModification(DataObjectModification.ModificationType.WRITE, null,
-                getConnection("1.1.1.1", ConnectionState.Off, 56)), getIdentifier());
+                getConnection("1.1.1.1", ConnectionState.Off, 56)), getIdentifier(), sxpNode);
         verify(sxpNode).addConnection(any(Connection.class), anyString());
     }
 
     @Test public void testHandleOperational_2() throws Exception {
         identityListener.handleOperational(getObjectModification(DataObjectModification.ModificationType.WRITE,
-                getConnection("1.1.1.1", ConnectionState.Off, 56), null), getIdentifier());
+                getConnection("1.1.1.1", ConnectionState.Off, 56), null), getIdentifier(), sxpNode);
         verify(sxpNode).removeConnection(any(InetSocketAddress.class));
     }
 
     @Test public void testHandleOperational_3() throws Exception {
         identityListener.handleOperational(getObjectModification(DataObjectModification.ModificationType.DELETE,
-                getConnection("1.1.1.1", ConnectionState.Off, 56), null), getIdentifier());
+                getConnection("1.1.1.1", ConnectionState.Off, 56), null), getIdentifier(), sxpNode);
         verify(sxpNode).removeConnection(any(InetSocketAddress.class));
     }
 
@@ -128,7 +128,7 @@ public class ConnectionsListenerTest {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
                         getConnection("1.1.1.1", ConnectionState.On, 56),
-                        getConnection("1.1.1.1", ConnectionState.On, 57)), getIdentifier());
+                        getConnection("1.1.1.1", ConnectionState.On, 57)), getIdentifier(), sxpNode);
         verify(connection).shutdown();
     }
 
@@ -136,7 +136,7 @@ public class ConnectionsListenerTest {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
                         getConnection("1.1.1.1", ConnectionState.On, 56),
-                        getConnection("1.1.1.2", ConnectionState.On, 56)), getIdentifier());
+                        getConnection("1.1.1.2", ConnectionState.On, 56)), getIdentifier(), sxpNode);
         verify(connection).shutdown();
     }
 

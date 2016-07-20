@@ -51,6 +51,9 @@ public final class  UpdateExportTask implements Callable<Void> {
                 this.messagesReleaseCounter = Preconditions.checkNotNull(messagesReleaseCounter);
         }
 
+        /**
+         * @return SxpConnection associated with current ExportTask
+         */
         public SxpConnection getConnection(){
                 return connection;
         }
