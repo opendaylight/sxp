@@ -58,6 +58,12 @@ public class MasterDatabaseImpl extends MasterDatabase {
         return added;
     }
 
+    /**
+     * @param bindings Bindings to be removed
+     * @param map      Map from where bindings will be removed
+     * @param <T>      Any type extending SxpBindingFields
+     * @return Deleted bindings
+     */
     private <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings,
             Map<IpPrefix, MasterDatabaseBinding> map) {
         List<MasterDatabaseBinding> removed = new ArrayList<>();

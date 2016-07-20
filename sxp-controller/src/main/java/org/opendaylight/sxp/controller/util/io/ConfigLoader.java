@@ -57,6 +57,12 @@ public final class ConfigLoader {
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
     }
 
+    /**
+     * @param nodeName             NodeId used for initialization
+     * @param logicalDatastoreType Logical datastore type where topology will be initialized
+     * @param datastoreAccess      Datastore access used for initialization
+     * @return If Topology was successfully initialized
+     */
     public static boolean initTopologyNode(final String nodeName, final LogicalDatastoreType logicalDatastoreType,
             final DatastoreAccess datastoreAccess) {
         InstanceIdentifier<Node>
@@ -69,6 +75,9 @@ public final class ConfigLoader {
                         nodeName))).build(), logicalDatastoreType, false);
     }
 
+    /**
+     * @param configuration Configuration containing data about SxpNode that will be written into DataStore
+     */
     public void load(SxpController configuration) {
         if (configuration == null || configuration.getSxpNode() == null)
             return;
@@ -86,6 +95,10 @@ public final class ConfigLoader {
         });
     }
 
+    /**
+     * @param node SxpNode containing data
+     * @return SxpNodeIdentity containing provided data
+     */
     private SxpNodeIdentity parseNode(SxpNode node) {
         SxpNodeIdentityBuilder identityBuilder = new SxpNodeIdentityBuilder();
         identityBuilder.setEnabled(node.getEnabled());
@@ -110,6 +123,10 @@ public final class ConfigLoader {
         return identityBuilder.build();
     }
 
+    /**
+     * @param connections Connections containing data
+     * @return Connections wrapping data
+     */
     private org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections parseConnections(
             Connections connections) {
         ConnectionsBuilder connectionsBuilder = new ConnectionsBuilder().setConnection(new ArrayList<>());
@@ -120,6 +137,10 @@ public final class ConfigLoader {
         return connectionsBuilder.build();
     }
 
+    /**
+     * @param timers Timers containing timer data
+     * @return Timers wrapping data
+     */
     private org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.Timers parseNodeTimers(
             Timers timers) {
         TimersBuilder timersBuilder = new TimersBuilder();
@@ -139,6 +160,10 @@ public final class ConfigLoader {
         return timersBuilder.build();
     }
 
+    /**
+     * @param connections Connection containing data about peer
+     * @return Connection data wrapper
+     */
     private org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection parseConnection(
             Connection connections) {
         ConnectionBuilder connectionBuilder = new ConnectionBuilder();
@@ -152,6 +177,10 @@ public final class ConfigLoader {
         return connectionBuilder.build();
     }
 
+    /**
+     * @param timers Timers containing data about connection timers
+     * @return Timers data wrapper
+     */
     private org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimers parseConnectionTimers(
             ConnectionTimers timers) {
         ConnectionTimersBuilder timersBuilder = new ConnectionTimersBuilder();
@@ -167,6 +196,10 @@ public final class ConfigLoader {
         return timersBuilder.build();
     }
 
+    /**
+     * @param database MasterDatabase containing bindings
+     * @return MasterDatabase data wrapper
+     */
     private MasterDatabase parseMasterDatabase(
             org.opendaylight.controller.config.yang.sxp.controller.conf.MasterDatabase database) {
         List<MasterDatabaseBinding> bindings = new ArrayList<>();
@@ -184,6 +217,10 @@ public final class ConfigLoader {
         return databaseBuilder.build();
     }
 
+    /**
+     * @param database MasterDatabase containing bindings
+     * @return MasterDatabase data wrapper
+     */
     public static MasterDatabase parseMasterDatabase(
             org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.MasterDatabase database) {
         List<MasterDatabaseBinding> bindings = new ArrayList<>();
@@ -201,6 +238,10 @@ public final class ConfigLoader {
         return databaseBuilder.build();
     }
 
+    /**
+     * @param connections Connection containing data about peer
+     * @return Connection data wrapper
+     */
     public static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections parseConnections(
             org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections connections) {
         ConnectionsBuilder connectionsBuilder = new ConnectionsBuilder().setConnection(new ArrayList<>());

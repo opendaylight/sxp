@@ -13,12 +13,11 @@ import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.spi.ContainerListener;
-import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilterKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkFilterEntries;
@@ -30,15 +29,9 @@ public class FilterListener extends ContainerListener<SxpPeerGroup, SxpFilter> {
     }
 
     @Override
-    protected void handleOperational(DataObjectModification<SxpFilter> c, InstanceIdentifier<SxpPeerGroup> identifier) {
-        final String nodeId = identifier.firstKeyOf(Node.class).getNodeId().getValue(),
-                groupName = identifier.firstKeyOf(SxpPeerGroup.class).getName();
-        SxpNode sxpNode = Configuration.getRegisteredNode(nodeId);
-        if (sxpNode == null) {
-            LOG.error("Operational Modification {} {} could not get SXPNode {}", getClass(), c.getModificationType(),
-                    nodeId);
-            return;
-        }
+    protected void handleOperational(DataObjectModification<SxpFilter> c, InstanceIdentifier<SxpPeerGroup> identifier,
+            SxpNode sxpNode) {
+        final String groupName = identifier.firstKeyOf(SxpPeerGroup.class).getName();
         LOG.trace("Operational Modification {} {}", getClass(), c.getModificationType());
         switch (c.getModificationType()) {
             case WRITE:
@@ -72,8 +65,15 @@ public class FilterListener extends ContainerListener<SxpPeerGroup, SxpFilter> {
         return parentIdentifier.child(SxpFilter.class, new SxpFilterKey(d.getFilterSpecific(), d.getFilterType()));
     }
 
+    /**
+     * @param sxpNode    Node where filter will be added
+     * @param c          Object modification containing necessary data
+     * @param groupName  Group name specifying where filter will be added
+     * @param identifier InstanceIdentifier pointing to provided filter
+     */
     private void addFilterToGroup(final SxpNode sxpNode, DataObjectModification<SxpFilter> c, final String groupName,
             final InstanceIdentifier<SxpFilter> identifier) {
+        final DatastoreAccess datastoreAccess = getDatastoreAccess(NodeIdConv.toString(sxpNode.getNodeId()));
         if (!sxpNode.addFilterToPeerGroup(groupName, c.getDataAfter())) {
             if (!datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION))
                 datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL);
