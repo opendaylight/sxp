@@ -9,6 +9,7 @@
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
 import com.google.common.base.Preconditions;
+import java.net.InetSocketAddress;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.spi.ListListener;
@@ -24,8 +25,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
-import java.net.InetSocketAddress;
 
 import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
 
@@ -79,6 +78,10 @@ public class ConnectionsListener extends ListListener<SxpDomain, Connections, Co
                 .child(Connection.class, new ConnectionKey(d.getPeerAddress(), d.getTcpPort()));
     }
 
+    /**
+     * @param connection Connection that will be parsed
+     * @return InetSocket address of provided connection
+     */
     private InetSocketAddress getConnection(Connection connection) {
         return new InetSocketAddress(Search.getAddress(Preconditions.checkNotNull(connection).getPeerAddress()),
                 Preconditions.checkNotNull(connection.getTcpPort()).getValue());

@@ -71,6 +71,10 @@ public class PeerGroupListener extends ListListener<SxpNodeIdentity, SxpPeerGrou
         return parentIdentifier.child(SxpPeerGroups.class).child(SxpPeerGroup.class, new SxpPeerGroupKey(d.getName()));
     }
 
+    /**
+     * @param c Modification to be checked
+     * @return If change was due to peer container collapsing
+     */
     private boolean checkPeersColapsing(DataObjectModification<SxpPeerGroup> c) {
         SxpPeers before = Preconditions.checkNotNull(c.getDataBefore()).getSxpPeers(),
                 after = Preconditions.checkNotNull(c.getDataAfter()).getSxpPeers();
@@ -79,6 +83,11 @@ public class PeerGroupListener extends ListListener<SxpNodeIdentity, SxpPeerGrou
                 before.getSxpPeer() != null && !before.getSxpPeer().isEmpty();
     }
 
+    /**
+     * @param sxpNode    Node where group will be added
+     * @param c          Object modification containing necessary data
+     * @param identifier InstanceIdentifier pointing to specified group
+     */
     private void addGroupToNode(final SxpNode sxpNode, final DataObjectModification<SxpPeerGroup> c,
             final InstanceIdentifier<SxpPeerGroup> identifier) {
         if (!sxpNode.addPeerGroup(new SxpPeerGroupBuilder(c.getDataAfter()).build())) {

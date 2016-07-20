@@ -68,6 +68,10 @@ public final class BindingHandler {
     private final SxpNode sxpNode;
     private final BindingDispatcher dispatcher;
 
+    /**
+     * @param node       Owner of Handler
+     * @param dispatcher Dispatcher service used for sending Bindings
+     */
     public BindingHandler(SxpNode node, BindingDispatcher dispatcher) {
         this.sxpNode = Preconditions.checkNotNull(node);
         this.dispatcher = Preconditions.checkNotNull(dispatcher);
