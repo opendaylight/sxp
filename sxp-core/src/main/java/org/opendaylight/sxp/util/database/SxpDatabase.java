@@ -34,15 +34,41 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
 
     protected static final Logger LOG = LoggerFactory.getLogger(SxpDatabase.class.getName());
 
+    /**
+     * @param nodeId      NodeId associated with Bindings
+     * @param bindingType Type of Bindings
+     * @param bindings    Bindings to that will be added
+     * @return Bindings that were added
+     */
     protected abstract boolean putBindings(NodeId nodeId, BindingDatabase.BindingType bindingType,
             List<SxpDatabaseBinding> bindings);
 
+    /**
+     * @param bindingType Type of Bindings
+     * @return Bindings of specified type
+     */
     protected abstract List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType);
 
+    /**
+     * @param bindingType Type of Bindings
+     * @param nodeId      NodeId associated with Bindings
+     * @return Bindings of specified type from specific source
+     */
     protected abstract List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType, NodeId nodeId);
 
+    /**
+     * @param nodeId      NodeId associated with Bindings
+     * @param bindingType Type of Bindings
+     * @return Bindings that were removed
+     */
     protected abstract boolean deleteBindings(NodeId nodeId, BindingDatabase.BindingType bindingType);
 
+    /**
+     * @param nodeId      NodeId associated with Bindings
+     * @param bindings    Bindings that will be removed
+     * @param bindingType Type of Bindings
+     * @return Bindings that were removed
+     */
     protected abstract List<SxpDatabaseBinding> deleteBindings(NodeId nodeId, Set<IpPrefix> bindings,
             BindingDatabase.BindingType bindingType);
 

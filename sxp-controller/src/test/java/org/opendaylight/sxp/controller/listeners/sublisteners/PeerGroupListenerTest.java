@@ -64,7 +64,7 @@ public class PeerGroupListenerTest {
         PowerMockito.mockStatic(Configuration.class);
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unregister(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.getConstants()).thenCallRealMethod();
     }
 
@@ -105,7 +105,7 @@ public class PeerGroupListenerTest {
     @Test public void testHandleOperational_1() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, getPeerGroup("GR", 2)),
-                getIdentifier());
+                getIdentifier(), sxpNode);
         verify(sxpNode).addPeerGroup(
                 any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup.class));
     }
@@ -113,14 +113,14 @@ public class PeerGroupListenerTest {
     @Test public void testHandleOperational_2() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getPeerGroup("GR", 2), null),
-                getIdentifier());
+                getIdentifier(), sxpNode);
         verify(sxpNode).removePeerGroup(anyString());
     }
 
     @Test public void testHandleOperational_3() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED, getPeerGroup("GR", 5),
-                        getPeerGroup("GR", 2)), getIdentifier());
+                        getPeerGroup("GR", 2)), getIdentifier(), sxpNode);
         verify(sxpNode).removePeerGroup(anyString());
         verify(sxpNode).addPeerGroup(
                 any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup.class));
@@ -129,7 +129,7 @@ public class PeerGroupListenerTest {
     @Test public void testHandleOperational_4() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.DELETE, getPeerGroup("GR", 5), null),
-                getIdentifier());
+                getIdentifier(), sxpNode);
         verify(sxpNode).removePeerGroup(anyString());
     }
 

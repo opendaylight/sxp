@@ -67,7 +67,7 @@ public class DomainFilterListenerTest {
         PowerMockito.mockStatic(Configuration.class);
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unregister(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.getConstants()).thenCallRealMethod();
     }
 
@@ -114,35 +114,35 @@ public class DomainFilterListenerTest {
     @Test public void testHandleOperational_1() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, getDomainFilter(5, 2)),
-                getIdentifier());
+                getIdentifier(), sxpNode);
         verify(sxpNode).addFilterToDomain(anyString(), any(DomainFilter.class));
     }
 
     @Test public void testHandleOperational_2() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getDomainFilter(5, 2), null),
-                getIdentifier());
+                getIdentifier(), sxpNode);
         verify(sxpNode).removeFilterFromDomain(anyString(), any(FilterSpecific.class), anyString());
     }
 
     @Test public void testHandleOperational_3() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED, getDomainFilter(5, 2),
-                        getDomainFilter(8, 2)), getIdentifier());
+                        getDomainFilter(8, 2)), getIdentifier(), sxpNode);
         verify(sxpNode).updateDomainFilter(anyString(), any(DomainFilter.class));
     }
 
     @Test public void testHandleOperational_4() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED, getDomainFilter(5, 2),
-                        getDomainFilter(5, 8)), getIdentifier());
+                        getDomainFilter(5, 8)), getIdentifier(), sxpNode);
         verify(sxpNode).updateDomainFilter(anyString(), any(DomainFilter.class));
     }
 
     @Test public void testHandleOperational_5() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.DELETE, getDomainFilter(5, 2), null),
-                getIdentifier());
+                getIdentifier(), sxpNode);
         verify(sxpNode).removeFilterFromDomain(anyString(), any(FilterSpecific.class), anyString());
     }
 

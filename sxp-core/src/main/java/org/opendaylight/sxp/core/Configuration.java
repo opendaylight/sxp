@@ -9,16 +9,15 @@
 package org.opendaylight.sxp.core;
 
 import com.google.common.base.Preconditions;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.CapabilitiesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 public final class Configuration {
 
@@ -40,21 +39,25 @@ public final class Configuration {
         _initializeLogger();
     }
 
+    /**
+     * Initialize Logger services
+     */
     private static void _initializeLogger() {
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
         System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
-        // System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", new
-        // SimpleDateFormat("yyMMdd'T'HH:mm:ss.SZ").toPattern());
         System.setProperty("org.slf4j.simpleLogger.dateTimeFormat",
                 new SimpleDateFormat("yyMMdd HH:mm:ss").toPattern());
         System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
         System.setProperty("org.slf4j.simpleLogger.showLogName", "false");
         System.setProperty("org.slf4j.simpleLogger.showShortLogName", "false");
-        System.setProperty("org.slf4j.simpleLogger.logFile", "System.out");// "logs/sxp.log");
+        System.setProperty("org.slf4j.simpleLogger.logFile", "System.out");
         System.setProperty("org.slf4j.simpleLogger.levelInBrackets", "false");
-        // System.setProperty("org.slf4j.simpleLogger.warnLevelString", "WARN");
     }
 
+    /**
+     * @param version Version according which Capabilities are generated
+     * @return Capabilities supported by provided version of SXP peer
+     */
     public static Capabilities getCapabilities(Version version) {
         CapabilitiesBuilder capabilitiesBuilder = new CapabilitiesBuilder();
 
@@ -79,22 +82,40 @@ public final class Configuration {
         return capabilitiesBuilder.build();
     }
 
+    /**
+     * @return Constants used to initialize SXP variables
+     */
     public static Constants getConstants() {
         return CONSTANTS;
     }
 
+    /**
+     * @return Currently added SxpNodes
+     */
     public synchronized static HashMap<String, SxpNode> getNodes() {
         return nodes;
     }
 
+    /**
+     * @param nodeId NodeId specifying Node
+     * @return SxpNode with provided NodeId
+     */
     public synchronized static SxpNode getRegisteredNode(String nodeId) {
         return nodes.get(nodeId);
     }
 
-    public synchronized static SxpNode unregister(String nodeId) {
+    /**
+     * @param nodeId NodeId specifying Node
+     * @return Removed SxpNode
+     */
+    public synchronized static SxpNode unRegister(String nodeId) {
         return nodes.remove(Preconditions.checkNotNull(nodeId));
     }
 
+    /**
+     * @param node SxpNode that will be registered
+     * @return Registered SxpNode
+     */
     public synchronized static SxpNode register(SxpNode node) {
         nodes.put(NodeIdConv.toString(Preconditions.checkNotNull(node).getNodeId()), node);
         return node;

@@ -13,7 +13,6 @@ import java.net.InetSocketAddress;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.spi.ListListener;
-import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpConnectionFields;
@@ -23,7 +22,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
@@ -35,15 +33,9 @@ public class ConnectionsListener extends ListListener<SxpDomain, Connections, Co
     }
 
     @Override
-    protected void handleOperational(DataObjectModification<Connection> c, InstanceIdentifier<SxpDomain> identifier) {
-        final String nodeId = identifier.firstKeyOf(Node.class).getNodeId().getValue(),
-                domainName = identifier.firstKeyOf(SxpDomain.class).getDomainName();
-        SxpNode sxpNode = Configuration.getRegisteredNode(nodeId);
-        if (sxpNode == null) {
-            LOG.error("Operational Modification {} {} could not get SXPNode {}", getClass(), c.getModificationType(),
-                    nodeId);
-            return;
-        }
+    protected void handleOperational(DataObjectModification<Connection> c, InstanceIdentifier<SxpDomain> identifier,
+            SxpNode sxpNode) {
+        final String domainName = identifier.firstKeyOf(SxpDomain.class).getDomainName();
         LOG.trace("Operational Modification {} {}", getClass(), c.getModificationType());
         switch (c.getModificationType()) {
             case WRITE:
@@ -77,6 +69,10 @@ public class ConnectionsListener extends ListListener<SxpDomain, Connections, Co
                 .child(Connection.class, new ConnectionKey(d.getPeerAddress(), d.getTcpPort()));
     }
 
+    /**
+     * @param connection Connection that will be parsed
+     * @return InetSocket address of provided connection
+     */
     private InetSocketAddress getConnection(Connection connection) {
         return new InetSocketAddress(Search.getAddress(Preconditions.checkNotNull(connection).getPeerAddress()),
                 Preconditions.checkNotNull(connection.getTcpPort()).getValue());

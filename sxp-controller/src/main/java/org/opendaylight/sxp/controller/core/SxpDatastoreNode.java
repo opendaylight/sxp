@@ -112,6 +112,10 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
         return nodeSecurity;
     }
 
+    public DatastoreAccess getDatastoreAccess() {
+        return datastoreAccess;
+    }
+
     @Override public void close() {
         datastoreAccess.close();
         shutdown();

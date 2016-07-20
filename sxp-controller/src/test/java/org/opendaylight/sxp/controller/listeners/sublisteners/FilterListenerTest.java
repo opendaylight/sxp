@@ -66,7 +66,7 @@ public class FilterListenerTest {
         PowerMockito.mockStatic(Configuration.class);
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unregister(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.getConstants()).thenCallRealMethod();
     }
 
@@ -102,21 +102,21 @@ public class FilterListenerTest {
     @Test public void testHandleOperational_1() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, getSxpFilter(5)),
-                getIdentifier());
+                getIdentifier(), sxpNode);
         verify(sxpNode).addFilterToPeerGroup(anyString(), any(SxpFilter.class));
     }
 
     @Test public void testHandleOperational_2() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getSxpFilter(5), null),
-                getIdentifier());
+                getIdentifier(), sxpNode);
         verify(sxpNode).removeFilterFromPeerGroup(anyString(), any(FilterType.class), any(FilterSpecific.class));
     }
 
     @Test public void testHandleOperational_3() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED, getSxpFilter(5),
-                        getSxpFilter(8)), getIdentifier());
+                        getSxpFilter(8)), getIdentifier(), sxpNode);
         verify(sxpNode).removeFilterFromPeerGroup(anyString(), any(FilterType.class), any(FilterSpecific.class));
         verify(sxpNode).addFilterToPeerGroup(anyString(), any(SxpFilter.class));
     }
@@ -124,7 +124,7 @@ public class FilterListenerTest {
     @Test public void testHandleOperational_4() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.DELETE, getSxpFilter(5), null),
-                getIdentifier());
+                getIdentifier(), sxpNode);
         verify(sxpNode).removeFilterFromPeerGroup(anyString(), any(FilterType.class), any(FilterSpecific.class));
     }
 

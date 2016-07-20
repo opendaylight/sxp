@@ -8,10 +8,9 @@
 
 package org.opendaylight.sxp.core.messaging.legacy;
 
+import com.google.common.net.InetAddresses;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-
-import com.google.common.net.InetAddresses;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
@@ -25,6 +24,14 @@ public class MappingRecordList extends ArrayList<MappingRecord> {
     /** */
     private static final long serialVersionUID = -427123702376957236L;
 
+    /**
+     * @param array Byte array that will b decoded
+     * @return MappingRecordList created from provided values
+     * @throws UnknownPrefixException   If provided data is not valid
+     * @throws AddressLengthException   If provided data is not valid
+     * @throws AttributeLengthException If provided data is not valid
+     * @throws UnknownHostException     If provided data is not valid
+     */
     public static MappingRecordList decode(byte[] array)
             throws UnknownPrefixException, AddressLengthException, AttributeLengthException, UnknownHostException {
         MappingRecordList mappingRecordList = new MappingRecordList();
@@ -36,6 +43,10 @@ public class MappingRecordList extends ArrayList<MappingRecord> {
         return mappingRecordList;
     }
 
+    /**
+     * @param mappingRecord that will be converted
+     * @return Byte representation of MappingRecord
+     */
     private static byte[] toBytes(MappingRecord mappingRecord) {
         String _prefix = new String(mappingRecord.getAddress().getValue());
         if (_prefix.startsWith("/")) {
@@ -58,10 +69,16 @@ public class MappingRecordList extends ArrayList<MappingRecord> {
         return _mappingRecord;
     }
 
+    /**
+     * Default MappingRecordList constructor
+     */
     public MappingRecordList() {
         super(INITIAL_CAPACITY);
     }
 
+    /**
+     * @return Byte representation of MappingRecordList
+     */
     public byte[] toBytes() {
         byte[] mappingRecords = new byte[0];
         for (MappingRecord mappingRecord : this) {

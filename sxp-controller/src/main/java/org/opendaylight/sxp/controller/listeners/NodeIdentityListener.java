@@ -23,6 +23,7 @@ import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.listeners.spi.Listener;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
@@ -52,10 +53,18 @@ public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdent
         subListeners = new ArrayList<>();
     }
 
+    /**
+     * @param listener Adds sub-listener to current listener, that will react to subtree changes
+     */
     public void addSubListener(Listener<SxpNodeIdentity, ?> listener) {
         subListeners.add(Preconditions.checkNotNull(listener));
     }
 
+    /**
+     * @param dataBroker    DataBroker used for registration
+     * @param datastoreType Type of data store where listener is registered
+     * @return ListenerRegistration callback
+     */
     public ListenerRegistration<DataTreeChangeListener> register(final DataBroker dataBroker,
             final LogicalDatastoreType datastoreType) {
         //noinspection unchecked
@@ -63,9 +72,22 @@ public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdent
                 SUBSCRIBED_PATH.child(Node.class).augmentation(SxpNodeIdentity.class)), this);
     }
 
+    /**
+     * @param nodeId SxpNode identifier
+     * @return DatastoreAcces associated with SxpNode or default if nothing found
+     */
+    private DatastoreAccess getDatastoreAccess(String nodeId) {
+        SxpNode node = Configuration.getRegisteredNode(nodeId);
+        if (node instanceof SxpDatastoreNode) {
+            return ((SxpDatastoreNode) node).getDatastoreAccess();
+        }
+        return datastoreAccess;
+    }
+
     @Override public void onDataTreeChanged(@Nonnull Collection<DataTreeModification<SxpNodeIdentity>> changes) {
         changes.stream().forEach(c -> {
             final String nodeId = c.getRootPath().getRootIdentifier().firstKeyOf(Node.class).getNodeId().getValue();
+            final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
             if (LogicalDatastoreType.CONFIGURATION.equals(c.getRootPath().getDatastoreType())) {
                 switch (c.getRootNode().getModificationType()) {
                     case WRITE:
@@ -105,7 +127,7 @@ public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdent
                                         c.getRootPath().getRootIdentifier());
                             });
                         } else if (c.getRootNode().getDataAfter() == null) {
-                            Configuration.unregister(Preconditions.checkNotNull(nodeId)).shutdown();
+                            Configuration.unRegister(Preconditions.checkNotNull(nodeId)).shutdown();
                         }
                         break;
                     case SUBTREE_MODIFIED:
@@ -128,7 +150,10 @@ public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdent
                         });
                         break;
                     case DELETE:
-                        ((SxpDatastoreNode) Configuration.unregister(Preconditions.checkNotNull(nodeId))).close();
+                        SxpNode node = Configuration.unRegister(Preconditions.checkNotNull(nodeId));
+                        if (node instanceof SxpDatastoreNode) {
+                            ((SxpDatastoreNode) node).close();
+                        }
                         break;
                 }
             }
