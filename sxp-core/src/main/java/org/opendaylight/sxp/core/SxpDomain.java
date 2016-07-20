@@ -9,18 +9,21 @@
 package org.opendaylight.sxp.core;
 
 import com.google.common.base.Preconditions;
-import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
-import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
-import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
-
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
+import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
+import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
+import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpDomainFilterFields;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SxpDomain class represent layer that isolate Connections
@@ -29,10 +32,14 @@ import java.util.Map;
  */
 public class SxpDomain implements AutoCloseable {
 
+    private static final Logger LOG = LoggerFactory.getLogger(SxpDomain.class.getName());
+
     private final MasterDatabaseInf masterDatabase;
     private final SxpDatabaseInf sxpDatabase;
     private final String name;
-    private final Map<String, SxpBindingFilter<?>> filters = new HashMap<>();
+    private final Map<FilterSpecific, SxpBindingFilter<?, ? extends SxpDomainFilterFields>>
+            filters =
+            new HashMap<>(FilterSpecific.values().length);
     private final Map<InetAddress, SxpConnection> connections = new HashMap<>();
 
     /**
@@ -64,6 +71,26 @@ public class SxpDomain implements AutoCloseable {
                 putConnection(new SxpConnection(owner, c, name));
             });
         }
+    }
+
+    public synchronized Collection<SxpBindingFilter<?, ? extends SxpDomainFilterFields>> getFilters() {
+        return Collections.unmodifiableCollection(filters.values());
+    }
+
+    public synchronized boolean addFilter(FilterSpecific type,
+            SxpBindingFilter<?, ? extends SxpDomainFilterFields> filter) {
+        if (filters.containsKey(Preconditions.checkNotNull(type)))
+            return false;
+        filters.put(type, Preconditions.checkNotNull(filter));
+        //TODO propagate current bindings to other domains - peers
+        LOG.warn("{} Filter added", name);
+        return true;
+    }
+
+    public synchronized SxpBindingFilter<?, ? extends SxpDomainFilterFields> removeFilter(FilterSpecific specific) {
+        //TODO remove bindings from other peers
+        LOG.warn("{} Filter removed", name);
+        return filters.remove(Preconditions.checkNotNull(specific));
     }
 
     /**

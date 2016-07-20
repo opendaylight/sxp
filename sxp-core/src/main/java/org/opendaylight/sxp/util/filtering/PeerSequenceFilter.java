@@ -8,19 +8,18 @@
 
 package org.opendaylight.sxp.util.filtering;
 
+import java.util.Collections;
 import org.opendaylight.sxp.util.database.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntriesFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.PeerSequenceFilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.peer.sequence.filter.entries.PeerSequenceEntry;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilter;
-
-import java.util.Collections;
 
 /**
  * Filters Bindings according their peer sequence length
  */
-public class PeerSequenceFilter extends SxpBindingFilter<PeerSequenceFilterEntries> {
+public class PeerSequenceFilter<T extends FilterEntriesFields> extends SxpBindingFilter<PeerSequenceFilterEntries, T> {
 
     /**
      * Parametric constructor for SxpFiltering logic
@@ -29,7 +28,7 @@ public class PeerSequenceFilter extends SxpBindingFilter<PeerSequenceFilterEntri
      * @param peerGroupName name of PeerGroup in which filter is assigned
      * @throws IllegalArgumentException If SxpFilter fields are not set
      */
-    protected PeerSequenceFilter(SxpFilter filter, String peerGroupName) {
+    protected PeerSequenceFilter(T filter, String peerGroupName) {
         super(filter, peerGroupName);
         if (filter.getFilterEntries() == null) {
             throw new IllegalArgumentException("Filter Entries not defined");
