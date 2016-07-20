@@ -10,6 +10,12 @@ package org.opendaylight.sxp.util.database;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
@@ -23,13 +29,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.Filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public abstract class SxpDatabase implements SxpDatabaseInf {
 
@@ -122,12 +121,11 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
         StringBuilder builder = new StringBuilder(this.getClass().getSimpleName() + "\n");
         List<SxpDatabaseBinding> databaseBindings = getBindings();
         if (!databaseBindings.isEmpty()) {
-            databaseBindings.stream()
-                    .forEach(b -> builder.append("\t")
-                            .append(b.getSecurityGroupTag().getValue())
-                            .append(" ")
-                            .append(b.getIpPrefix().getValue())
-                            .append("\n"));
+            databaseBindings.forEach(b -> builder.append("\t")
+                    .append(b.getSecurityGroupTag().getValue())
+                    .append(" ")
+                    .append(b.getIpPrefix().getValue())
+                    .append("\n"));
         }
         return builder.toString();
     }
@@ -150,12 +148,13 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
     /**
      * Create Map consisting of NodeIds of remoter peers associated with Inbound filters applied to them
      *
-     * @param node SxpNode containing Connections and filters
+     * @param node   SxpNode containing Connections and filters
+     * @param domain Domain where to look
      * @return Map of NodeId of remote peers and Inbound filters
      */
-    public static Map<NodeId, SxpBindingFilter> getInboundFilters(SxpNode node) {
+    public static Map<NodeId, SxpBindingFilter> getInboundFilters(SxpNode node, String domain) {
         Map<NodeId, SxpBindingFilter> map = new HashMap<>();
-        node.getAllConnections().stream().forEach(c -> {
+        node.getAllConnections(Preconditions.checkNotNull(domain)).forEach(c -> {
             if (c.isModeListener()) {
                 map.put(c.getNodeIdRemote(), c.getFilter(FilterType.Inbound));
             }
@@ -167,6 +166,8 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
      * Finds replace for specified bindings from specified SxpNode
      *
      * @param bindings List of bindings that needs replace
+     * @param database SxpDatabase containing replaces
+     * @param filters  Filters that will be applied during replacement
      * @param <T>      Any type extending SxpBindingFields
      * @return List of replacements
      */
@@ -178,23 +179,20 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
                 prefixesForReplace =
                 bindings.stream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
         Map<IpPrefix, SxpDatabaseBinding> prefixMap = new HashMap<>(bindings.size());
-        synchronized (database) {
-            for (Map.Entry<NodeId, SxpBindingFilter> entry : filters.entrySet()) {
-                database.getBindings(entry.getKey()).stream().forEach(b -> {
-                    if (!prefixesForReplace.contains(b.getIpPrefix()) || entry.getValue() != null && entry.getValue()
-                            .apply(b)) {
-                        return;
-                    }
-                    SxpDatabaseBinding binding = prefixMap.get(b.getIpPrefix());
-                    if (binding == null || b.getPeerSequence().getPeer().size() < binding.getPeerSequence()
-                            .getPeer()
-                            .size() || (
-                            b.getPeerSequence().getPeer().size() == binding.getPeerSequence().getPeer().size()
-                                    && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
-                        prefixMap.put(b.getIpPrefix(), b);
-                    }
-                });
-            }
+        for (Map.Entry<NodeId, SxpBindingFilter> entry : filters.entrySet()) {
+            database.getBindings(entry.getKey()).forEach(b -> {
+                if (!prefixesForReplace.contains(b.getIpPrefix()) || entry.getValue() != null && entry.getValue()
+                        .apply(b)) {
+                    return;
+                }
+                SxpDatabaseBinding binding = prefixMap.get(b.getIpPrefix());
+                if (binding == null || MasterDatabase.getPeerSequenceLength(b) < MasterDatabase.getPeerSequenceLength(
+                        binding) || (
+                        MasterDatabase.getPeerSequenceLength(b) == MasterDatabase.getPeerSequenceLength(binding)
+                                && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
+                    prefixMap.put(b.getIpPrefix(), b);
+                }
+            });
         }
         return new ArrayList<>(prefixMap.values());
     }

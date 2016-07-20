@@ -15,14 +15,13 @@ import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.spi.ContainerListener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilterFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilterKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkFilterEntries;
 
 public class FilterListener extends ContainerListener<SxpPeerGroup, SxpFilter> {
 
@@ -52,7 +51,8 @@ public class FilterListener extends ContainerListener<SxpPeerGroup, SxpFilter> {
                     break;
                 }
             case SUBTREE_MODIFIED:
-                if (checkDifference(c, SxpFilterFields::getFilterEntries)) {
+                if (checkFilterEntries(c.getDataBefore() == null ? null : c.getDataBefore().getFilterEntries(),
+                        c.getDataAfter() == null ? null : c.getDataAfter().getFilterEntries())) {
                     sxpNode.removeFilterFromPeerGroup(groupName,
                             Preconditions.checkNotNull(c.getDataBefore()).getFilterType(),
                             Preconditions.checkNotNull(c.getDataBefore()).getFilterSpecific());
