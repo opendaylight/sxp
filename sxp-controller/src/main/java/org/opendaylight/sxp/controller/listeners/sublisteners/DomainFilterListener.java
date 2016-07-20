@@ -36,6 +36,7 @@ public class DomainFilterListener extends ListListener<SxpDomain, DomainFilters,
         final String nodeId = identifier.firstKeyOf(Node.class).getNodeId().getValue(),
                 domain = identifier.firstKeyOf(SxpDomain.class).getDomainName();
         SxpNode sxpNode = Configuration.getRegisteredNode(nodeId);
+        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         if (sxpNode == null) {
             LOG.error("Operational Modification {} {} could not get SXPNode {}", getClass(), c.getModificationType(),
                     nodeId);

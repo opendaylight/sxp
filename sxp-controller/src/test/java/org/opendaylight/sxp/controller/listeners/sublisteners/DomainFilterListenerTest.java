@@ -67,7 +67,7 @@ public class DomainFilterListenerTest {
         PowerMockito.mockStatic(Configuration.class);
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unregister(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.getConstants()).thenCallRealMethod();
     }
 

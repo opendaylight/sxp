@@ -15,6 +15,9 @@ import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
+import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
+import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.ChildOf;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -44,6 +47,15 @@ public abstract class ContainerListener<P extends DataObject, C extends ChildOf<
         return this;
     }
 
+    protected DatastoreAccess getDatastoreAccess(String nodeId) {
+        if (nodeId == null)
+            return datastoreAccess;
+        SxpDatastoreNode node = (SxpDatastoreNode) Configuration.getRegisteredNode(nodeId);
+        if (node != null)
+            return node.getDatastoreAccess();
+        return datastoreAccess;
+    }
+
     /**
      * @param c          Container modification object
      * @param identifier InstanceIdentifier pointing to Parent of Container
@@ -58,6 +70,12 @@ public abstract class ContainerListener<P extends DataObject, C extends ChildOf<
      */
     protected void handleConfig(DataObjectModification<C> c, final InstanceIdentifier<P> identifier) {
         LOG.trace("Config Modification {} {}", getClass(), c.getModificationType());
+        final String
+                nodeId =
+                identifier.firstKeyOf(Node.class) != null ? identifier.firstKeyOf(Node.class)
+                        .getNodeId()
+                        .getValue() : null;
+        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         switch (c.getModificationType()) {
             case WRITE:
                 if (c.getDataBefore() == null)

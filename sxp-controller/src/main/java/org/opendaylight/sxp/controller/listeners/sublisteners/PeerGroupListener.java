@@ -12,6 +12,7 @@ import com.google.common.base.Preconditions;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
+import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.listeners.spi.ListListener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
@@ -75,8 +76,14 @@ public class PeerGroupListener extends ListListener<SxpNodeIdentity, SxpPeerGrou
         return parentIdentifier.child(SxpPeerGroups.class).child(SxpPeerGroup.class, new SxpPeerGroupKey(d.getName()));
     }
 
+    /**
+     * @param sxpNode    Node where group will be added
+     * @param c          Object modification containing necessary data
+     * @param identifier InstanceIdentifier pointing to specified group
+     */
     private void addGroupToNode(final SxpNode sxpNode, final DataObjectModification<SxpPeerGroup> c,
             final InstanceIdentifier<SxpPeerGroup> identifier) {
+        final DatastoreAccess datastoreAccess = ((SxpDatastoreNode) sxpNode).getDatastoreAccess();
         if (!sxpNode.addPeerGroup(new SxpPeerGroupBuilder(c.getDataAfter()).build())) {
             if (!datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION))
                 datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL);

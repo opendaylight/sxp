@@ -12,6 +12,7 @@ import com.google.common.base.Preconditions;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
+import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.listeners.spi.ContainerListener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
@@ -72,8 +73,15 @@ public class FilterListener extends ContainerListener<SxpPeerGroup, SxpFilter> {
         return parentIdentifier.child(SxpFilter.class, new SxpFilterKey(d.getFilterSpecific(), d.getFilterType()));
     }
 
+    /**
+     * @param sxpNode    Node where filter will be added
+     * @param c          Object modification containing necessary data
+     * @param groupName  Group name specifying where filter will be added
+     * @param identifier InstanceIdentifier pointing to provided filter
+     */
     private void addFilterToGroup(final SxpNode sxpNode, DataObjectModification<SxpFilter> c, final String groupName,
             final InstanceIdentifier<SxpFilter> identifier) {
+        final DatastoreAccess datastoreAccess = ((SxpDatastoreNode) sxpNode).getDatastoreAccess();
         if (!sxpNode.addFilterToPeerGroup(groupName, c.getDataAfter())) {
             if (!datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION))
                 datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL);

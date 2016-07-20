@@ -52,10 +52,18 @@ public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdent
         subListeners = new ArrayList<>();
     }
 
+    /**
+     * @param listener Adds sub-listener to current listener, that will react to subtree changes
+     */
     public void addSubListener(Listener<SxpNodeIdentity, ?> listener) {
         subListeners.add(Preconditions.checkNotNull(listener));
     }
 
+    /**
+     * @param dataBroker    DataBroker used for registration
+     * @param datastoreType Type of data store where listener is registered
+     * @return ListenerRegistration callback
+     */
     public ListenerRegistration<DataTreeChangeListener> register(final DataBroker dataBroker,
             final LogicalDatastoreType datastoreType) {
         //noinspection unchecked
@@ -63,9 +71,19 @@ public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdent
                 SUBSCRIBED_PATH.child(Node.class).augmentation(SxpNodeIdentity.class)), this);
     }
 
+    protected DatastoreAccess getDatastoreAccess(String nodeId) {
+        if (nodeId == null)
+            return datastoreAccess;
+        SxpDatastoreNode node = (SxpDatastoreNode) Configuration.getRegisteredNode(nodeId);
+        if (node != null)
+            return node.getDatastoreAccess();
+        return datastoreAccess;
+    }
+
     @Override public void onDataTreeChanged(@Nonnull Collection<DataTreeModification<SxpNodeIdentity>> changes) {
         changes.stream().forEach(c -> {
             final String nodeId = c.getRootPath().getRootIdentifier().firstKeyOf(Node.class).getNodeId().getValue();
+            final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
             if (LogicalDatastoreType.CONFIGURATION.equals(c.getRootPath().getDatastoreType())) {
                 switch (c.getRootNode().getModificationType()) {
                     case WRITE:
@@ -105,7 +123,7 @@ public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdent
                                         c.getRootPath().getRootIdentifier());
                             });
                         } else if (c.getRootNode().getDataAfter() == null) {
-                            Configuration.unregister(Preconditions.checkNotNull(nodeId)).shutdown();
+                            Configuration.unRegister(Preconditions.checkNotNull(nodeId)).shutdown();
                         }
                         break;
                     case SUBTREE_MODIFIED:
@@ -128,7 +146,7 @@ public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdent
                         });
                         break;
                     case DELETE:
-                        ((SxpDatastoreNode) Configuration.unregister(Preconditions.checkNotNull(nodeId))).close();
+                        ((SxpDatastoreNode) Configuration.unRegister(Preconditions.checkNotNull(nodeId))).close();
                         break;
                 }
             }

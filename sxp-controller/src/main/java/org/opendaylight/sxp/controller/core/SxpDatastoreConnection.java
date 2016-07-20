@@ -56,6 +56,15 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
         return datastoreConnection;
     }
 
+    /**
+     * Creates SxpDatastoreConnection using provided values
+     *
+     * @param datastoreAccess Handle used to read and write from Datastore
+     * @param owner           SxpNode to be set as owner
+     * @param connection      Connection that contains settings
+     * @param domain          Sxp Domain where Connections contains
+     * @throws UnknownVersionException If version in provided values isn't supported
+     */
     private SxpDatastoreConnection(DatastoreAccess datastoreAccess, SxpNode owner, Connection connection, String domain)
             throws UnknownVersionException {
         super(Preconditions.checkNotNull(owner), Preconditions.checkNotNull(connection),
