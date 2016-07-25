@@ -15,9 +15,7 @@ import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.spi.ListListener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpPeerGroupFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroupKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
@@ -53,7 +51,13 @@ public class PeerGroupListener extends ListListener<SxpNodeIdentity, SxpPeerGrou
                     break;
                 }
             case SUBTREE_MODIFIED:
-                if (checkDifference(c, SxpPeerGroupFields::getSxpPeers) && !checkPeersColapsing(c)) {
+                if (checkDifference(
+                        c.getDataBefore() == null || c.getDataBefore().getSxpPeers() == null ? null : c.getDataBefore()
+                                .getSxpPeers()
+                                .getSxpPeer(),
+                        c.getDataAfter() == null || c.getDataAfter().getSxpPeers() == null ? null : c.getDataAfter()
+                                .getSxpPeers()
+                                .getSxpPeer())) {
                     sxpNode.removePeerGroup(Preconditions.checkNotNull(c.getDataBefore()).getName());
                     addGroupToNode(sxpNode, c, getIdentifier(c.getDataAfter(), identifier));
                 }
@@ -69,14 +73,6 @@ public class PeerGroupListener extends ListListener<SxpNodeIdentity, SxpPeerGrou
         Preconditions.checkNotNull(d);
         Preconditions.checkNotNull(parentIdentifier);
         return parentIdentifier.child(SxpPeerGroups.class).child(SxpPeerGroup.class, new SxpPeerGroupKey(d.getName()));
-    }
-
-    private boolean checkPeersColapsing(DataObjectModification<SxpPeerGroup> c) {
-        SxpPeers before = Preconditions.checkNotNull(c.getDataBefore()).getSxpPeers(),
-                after = Preconditions.checkNotNull(c.getDataAfter()).getSxpPeers();
-        return before == null && after != null &&
-                after.getSxpPeer() != null && !after.getSxpPeer().isEmpty() || after == null && before != null &&
-                before.getSxpPeer() != null && !before.getSxpPeer().isEmpty();
     }
 
     private void addGroupToNode(final SxpNode sxpNode, final DataObjectModification<SxpPeerGroup> c,
