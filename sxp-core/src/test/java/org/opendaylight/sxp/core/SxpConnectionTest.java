@@ -60,6 +60,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.hold.time.attribute.HoldTimeAttributesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.sxp.node.id.attribute.SxpNodeIdAttributesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -79,6 +81,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -662,5 +665,22 @@ public class SxpConnectionTest {
                 NodeId nodeId = new NodeId("1.1.1.1");
                 sxpConnection.setNodeIdRemote(nodeId);
                 assertEquals(nodeId, sxpConnection.getNodeIdRemote());
+        }
+
+        @Test public void testProcessUpdateMessage() throws Exception {
+                sxpConnection.processUpdateMessage(mock(UpdateMessageLegacy.class));
+                verify(worker, never()).executeTaskInSequence(any(Callable.class), eq(ThreadsWorker.WorkerType.INBOUND),
+                        eq(sxpConnection));
+                sxpConnection.processUpdateMessage(mock(UpdateMessage.class));
+                verify(worker, never()).executeTaskInSequence(any(Callable.class), eq(ThreadsWorker.WorkerType.INBOUND),
+                        eq(sxpConnection));
+
+                sxpConnection.setNodeIdRemote(new NodeId("6.6.6.6"));
+                sxpConnection.processUpdateMessage(mock(UpdateMessageLegacy.class));
+                verify(worker).executeTaskInSequence(any(Callable.class), eq(ThreadsWorker.WorkerType.INBOUND),
+                        eq(sxpConnection));
+                sxpConnection.processUpdateMessage(mock(UpdateMessage.class));
+                verify(worker, times(2)).executeTaskInSequence(any(Callable.class),
+                        eq(ThreadsWorker.WorkerType.INBOUND), eq(sxpConnection));
         }
 }
