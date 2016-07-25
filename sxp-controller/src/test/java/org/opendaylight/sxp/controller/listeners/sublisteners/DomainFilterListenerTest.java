@@ -9,10 +9,13 @@
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
+import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.core.Configuration;
@@ -27,11 +30,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeI
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.DomainFilters;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
+import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
@@ -41,7 +46,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -71,6 +78,14 @@ public class DomainFilterListenerTest {
         when(modification.getDataAfter()).thenReturn(after);
         when(modification.getDataBefore()).thenReturn(before);
         when(modification.getDataType()).thenReturn(DomainFilter.class);
+        return modification;
+    }
+
+    private DataObjectModification<DomainFilters> getObjectModification(DataObjectModification<DomainFilter> change) {
+        DataObjectModification<DomainFilters> modification = mock(DataObjectModification.class);
+        when(modification.getModificationType()).thenReturn(DataObjectModification.ModificationType.WRITE);
+        when(modification.getDataType()).thenReturn(DomainFilters.class);
+        when(modification.getModifiedChildren()).thenReturn(Collections.singletonList(change));
         return modification;
     }
 
@@ -138,5 +153,41 @@ public class DomainFilterListenerTest {
         assertTrue(identityListener.getIdentifier(new DomainFilterBuilder().setFilterName("extended")
                 .setFilterSpecific(FilterSpecific.AccessOrPrefixList)
                 .build(), getIdentifier()).getTargetType().equals(DomainFilter.class));
+
+        assertNotNull(identityListener.getObjectModifications(null));
+        assertNotNull(identityListener.getObjectModifications(mock(DataObjectModification.class)));
+        assertNotNull(identityListener.getModifications(null));
+        DataTreeModification dtm = mock(DataTreeModification.class);
+        when(dtm.getRootNode()).thenReturn(mock(DataObjectModification.class));
+        assertNotNull(identityListener.getModifications(dtm));
+    }
+
+    @Test public void testHandleChange() throws Exception {
+        identityListener.handleChange(Collections.singletonList(getObjectModification(
+                getObjectModification(DataObjectModification.ModificationType.WRITE, getDomainFilter(5, 2),
+                        getDomainFilter(5, 3)))), LogicalDatastoreType.OPERATIONAL, getIdentifier());
+        verify(datastoreAccess, never()).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.OPERATIONAL));
+        verify(datastoreAccess, never()).mergeSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.OPERATIONAL));
+        verify(datastoreAccess, never()).checkAndDelete(any(InstanceIdentifier.class),
+                eq(LogicalDatastoreType.OPERATIONAL));
+
+        identityListener.handleChange(Collections.singletonList(getObjectModification(
+                getObjectModification(DataObjectModification.ModificationType.WRITE, null, getDomainFilter(5, 2)))),
+                LogicalDatastoreType.CONFIGURATION, getIdentifier());
+        verify(datastoreAccess).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.OPERATIONAL));
+
+        identityListener.handleChange(Collections.singletonList(getObjectModification(
+                getObjectModification(DataObjectModification.ModificationType.WRITE, getDomainFilter(5, 2),
+                        getDomainFilter(5, 4)))), LogicalDatastoreType.CONFIGURATION, getIdentifier());
+        verify(datastoreAccess).mergeSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.OPERATIONAL));
+
+        identityListener.handleChange(Collections.singletonList(getObjectModification(
+                getObjectModification(DataObjectModification.ModificationType.DELETE, getDomainFilter(5, 2),
+                        getDomainFilter(5, 4)))), LogicalDatastoreType.CONFIGURATION, getIdentifier());
+        verify(datastoreAccess).checkAndDelete(any(InstanceIdentifier.class), eq(LogicalDatastoreType.OPERATIONAL));
     }
 }

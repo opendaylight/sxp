@@ -115,14 +115,18 @@ public abstract class ListListener<P extends DataObject, C extends ChildOf<? sup
 
     @Override public List<DataObjectModification<C>> getModifications(DataTreeModification<P> treeModification) {
         List<DataObjectModification<C>> modifications = new ArrayList<>();
-        modifications.add(treeModification.getRootNode().getModifiedChildContainer(container));
+        if (treeModification != null) {
+            modifications.add(treeModification.getRootNode().getModifiedChildContainer(container));
+        }
         return modifications;
     }
 
     @Override
     public List<DataObjectModification<C>> getObjectModifications(DataObjectModification<P> objectModification) {
         List<DataObjectModification<C>> modifications = new ArrayList<>();
-        modifications.add(objectModification.getModifiedChildContainer(container));
+        if (objectModification != null) {
+            modifications.add(objectModification.getModifiedChildContainer(container));
+        }
         return modifications;
     }
 }

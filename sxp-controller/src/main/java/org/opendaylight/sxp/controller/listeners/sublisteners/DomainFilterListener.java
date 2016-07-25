@@ -58,7 +58,12 @@ public class DomainFilterListener extends ListListener<SxpDomain, DomainFilters,
             case SUBTREE_MODIFIED:
                 if (checkFilterEntries(c.getDataBefore() == null ? null : c.getDataBefore().getFilterEntries(),
                         c.getDataAfter() == null ? null : c.getDataAfter().getFilterEntries()) || checkDifference(
-                        c.getDataBefore().getDomains().getDomain(), c.getDataAfter().getDomains().getDomain())) {
+                        c.getDataBefore() == null || c.getDataBefore().getDomains() == null ? null : c.getDataBefore()
+                                .getDomains()
+                                .getDomain(),
+                        c.getDataAfter() == null || c.getDataAfter().getDomains() == null ? null : c.getDataAfter()
+                                .getDomains()
+                                .getDomain())) {
                     sxpNode.updateDomainFilter(domain, c.getDataAfter());
                 }
                 break;
