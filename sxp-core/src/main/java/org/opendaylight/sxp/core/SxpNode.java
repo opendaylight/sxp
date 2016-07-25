@@ -573,7 +573,7 @@ public class SxpNode {
     public boolean updateDomainFilter(String domain, DomainFilter newFilter) {
         synchronized (sxpDomains) {
             SxpDomain sxpDomain = getDomain(Preconditions.checkNotNull(domain));
-            return sxpDomain.updateFilter(
+            return sxpDomain != null && sxpDomain.updateFilter(
                     SxpBindingFilter.generateFilter(Preconditions.checkNotNull(newFilter), domain));
         }
     }
@@ -1208,17 +1208,26 @@ public class SxpNode {
     }
 
     /**
+     * Blocking wait until previous operation on channel is done
+     *
+     * @param logMsg Message displayed if Error occurs
+     */
+    private void channelInitializationWait(String logMsg) {
+        try {
+            while (serverChannelInit.getAndSet(true)) {
+                wait(THREAD_DELAY);
+            }
+        } catch (InterruptedException e) {
+            LOG.warn("{} {} ", this, logMsg, e);
+        }
+    }
+
+    /**
      * Administratively shutdown.
      */
     public synchronized SxpNode shutdown() {
         // Wait until server channel ends its own initialization.
-        while (serverChannelInit.getAndSet(true)) {
-            try {
-                wait(THREAD_DELAY);
-            } catch (InterruptedException e) {
-                LOG.warn("{} Error while shut down ", this, e);
-            }
-        }
+        channelInitializationWait("Error while shut down");
         setTimer(TimerType.RetryOpenTimer, 0);
         shutdownConnections();
         for (ThreadsWorker.WorkerType type : ThreadsWorker.WorkerType.values()) {
@@ -1250,13 +1259,7 @@ public class SxpNode {
      * Start SxpNode
      */
     public synchronized SxpNode start() {
-        while (serverChannelInit.getAndSet(true)) {
-            try {
-                wait(THREAD_DELAY);
-            } catch (InterruptedException e) {
-                LOG.warn("{} Error while starting", this, e);
-            }
-        }
+        channelInitializationWait("Error while starting");
         if (isEnabled()) {
             return this;
         }
@@ -1291,13 +1294,7 @@ public class SxpNode {
     }
 
     private ChannelFutureListener createMD5updateListener(final SxpNode sxpNode) {
-        while (serverChannelInit.getAndSet(true)) {
-            try {
-                wait(THREAD_DELAY);
-            } catch (InterruptedException e) {
-                LOG.warn("{} Error while Updating MD5", this, e);
-            }
-        }
+        channelInitializationWait("Error while Updating MD5");
         if (serverChannel == null) {
             updateMD5counter.set(0);
             return new ChannelPromiseNotifier();

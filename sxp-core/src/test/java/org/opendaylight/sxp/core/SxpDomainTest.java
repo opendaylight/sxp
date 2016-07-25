@@ -32,10 +32,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpB
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpDomainFilterFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilterFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.FilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntriesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.acl.filter.entries.AclEntryBuilder;
@@ -246,7 +246,7 @@ import static org.mockito.Mockito.when;
         assertNotNull(domain.removeFilter(FilterSpecific.PeerSequence, "domain1"));
     }
 
-    @Test public void testPropagateToSharedDomains() throws Exception {
+    @Test public void testPropagateToSharedMasterDomains() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         assertTrue(domain.addFilter(getFilter(FilterSpecific.AccessOrPrefixList, "domain8")));
         assertTrue(domain.addFilter(getFilter(FilterSpecific.AccessOrPrefixList, "domain1")));
@@ -266,6 +266,36 @@ import static org.mockito.Mockito.when;
 
         domain.pushToSharedMasterDatabases(Collections.singletonList(mock(MasterDatabaseBinding.class)),
                 Collections.singletonList(mock(MasterDatabaseBinding.class)));
+        verify(dispatcher).propagateUpdate(anyList(), anyList(), anyList());
+    }
+
+    @Test public void testPropagateToSharedSxpDomains() throws Exception {
+        when(sxpNode.getDomains()).thenReturn(domains);
+        assertTrue(domain.addFilter(getFilter(FilterSpecific.AccessOrPrefixList, "domain8")));
+        assertTrue(domain.addFilter(getFilter(FilterSpecific.AccessOrPrefixList, "domain1")));
+        assertTrue(domain.addFilter(getFilter(FilterSpecific.PeerSequence, "domain1")));
+
+        dispatcher = mock(BindingDispatcher.class);
+        when(sxpNode.getSvcBindingDispatcher()).thenReturn(dispatcher);
+
+        SxpBindingFilter<?, ? extends SxpFilterFields> filter = mock(SxpBindingFilter.class);
+        when(filter.test(any(SxpBindingFields.class))).thenReturn(true);
+        domain.pushToSharedSxpDatabases(null, null, null, null);
+        verify(dispatcher, never()).propagateUpdate(anyList(), anyList(), anyList());
+        domain.pushToSharedSxpDatabases(new NodeId("127.0.0.5"), null, null, null);
+        verify(dispatcher, never()).propagateUpdate(anyList(), anyList(), anyList());
+        domain.pushToSharedSxpDatabases(new NodeId("127.0.0.5"), filter, null, null);
+        verify(dispatcher, never()).propagateUpdate(anyList(), anyList(), anyList());
+        domain.pushToSharedSxpDatabases(new NodeId("127.0.0.5"), filter, null, new ArrayList<>());
+        verify(dispatcher, never()).propagateUpdate(anyList(), anyList(), anyList());
+        domain.pushToSharedSxpDatabases(new NodeId("127.0.0.5"), filter, new ArrayList<>(), null);
+        verify(dispatcher, never()).propagateUpdate(anyList(), anyList(), anyList());
+        domain.pushToSharedSxpDatabases(new NodeId("127.0.0.5"), filter, new ArrayList<>(), new ArrayList<>());
+        verify(dispatcher, never()).propagateUpdate(anyList(), anyList(), anyList());
+
+        domain.pushToSharedSxpDatabases(new NodeId("127.0.0.5"), filter,
+                Collections.singletonList(mock(SxpDatabaseBinding.class)),
+                Collections.singletonList(mock(SxpDatabaseBinding.class)));
         verify(dispatcher).propagateUpdate(anyList(), anyList(), anyList());
     }
 

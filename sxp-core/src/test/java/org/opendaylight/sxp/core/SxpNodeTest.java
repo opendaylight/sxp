@@ -16,10 +16,12 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,12 +33,16 @@ import org.opendaylight.sxp.core.service.ConnectFacade;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
+import org.opendaylight.sxp.util.exception.node.DomainNotFoundException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
@@ -44,6 +50,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.acl.filter.entries.AclEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.acl.filter.entries.AclEntryBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.sgt.match.SgtMatchesBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.domain.filter.fields.DomainsBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.domain.filter.fields.domains.DomainBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
@@ -57,6 +65,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilter;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.Timers;
@@ -75,6 +85,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyList;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.mock;
@@ -334,10 +345,38 @@ public class SxpNodeTest {
                 assertFalse(node.isEnabled());
         }
 
+        private MasterDatabaseBinding getBinding(String prefix, int sgt) {
+                return new MasterDatabaseBindingBuilder().setIpPrefix(new IpPrefix(prefix.toCharArray()))
+                        .setSecurityGroupTag(new Sgt(sgt))
+                        .build();
+        }
+
         @Test public void testPutLocalBindingsMasterDatabase() throws Exception {
+                assertNotNull(
+                        node.putLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)),
+                                "global"));
+                verify(databaseProvider).addLocalBindings(anyList());
+                assertNotNull(
+                        node.putLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)),
+                                "global"));
+                verify(databaseProvider, times(2)).addLocalBindings(anyList());
+                exception.expect(DomainNotFoundException.class);
+                node.putLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)),
+                        "badDomain");
         }
 
         @Test public void testRemoveLocalBindingsMasterDatabase() throws Exception {
+                assertNotNull(
+                        node.removeLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)),
+                                "global"));
+                verify(databaseProvider).deleteBindingsLocal(anyList());
+                assertNotNull(
+                        node.removeLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)),
+                                "global"));
+                verify(databaseProvider, times(2)).deleteBindingsLocal(anyList());
+                exception.expect(DomainNotFoundException.class);
+                node.removeLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)),
+                        "badDomain");
         }
 
         @Test public void testRemoveConnection() throws Exception {
@@ -424,6 +463,30 @@ public class SxpNodeTest {
                 aclFilterEntriesBuilder.setAclEntry(aclEntries);
                 builder.setFilterEntries(aclFilterEntriesBuilder.build());
                 return builder.build();
+        }
+
+        private DomainFilter getFilter(String domainName, String... domain) {
+                DomainFilterBuilder filterBuilder = new DomainFilterBuilder();
+                Arrays.sort(domain);
+                filterBuilder.setFilterName(domainName);
+                filterBuilder.setDomains(new DomainsBuilder().setDomain(Arrays.asList(domain)
+                        .stream()
+                        .map(d -> new DomainBuilder().setName(d).build())
+                        .collect(Collectors.toList())).build());
+                AclFilterEntriesBuilder aclFilterEntriesBuilder = new AclFilterEntriesBuilder();
+                ArrayList<AclEntry> aclEntries = new ArrayList<>();
+                AclEntryBuilder aclEntryBuilder = new AclEntryBuilder();
+                aclEntryBuilder.setEntrySeq(1);
+                aclEntryBuilder.setEntryType(FilterEntryType.Permit);
+                SgtMatchesBuilder matchesBuilder = new SgtMatchesBuilder();
+                ArrayList<Sgt> sgts = new ArrayList<>();
+                sgts.add(new Sgt(5));
+                matchesBuilder.setMatches(sgts);
+                aclEntryBuilder.setSgtMatch( matchesBuilder.build());
+                aclEntries.add(aclEntryBuilder.build());
+                aclFilterEntriesBuilder.setAclEntry(aclEntries);
+                filterBuilder.setFilterEntries(aclFilterEntriesBuilder.build());
+                return filterBuilder.build();
         }
 
         private SxpPeerGroup getGroup(String name, List<SxpFilter> filters, List<SxpPeer> sxpPeers) {
@@ -597,5 +660,65 @@ public class SxpNodeTest {
                 assertNotNull(node.getDomains());
                 assertFalse(node.getDomains().isEmpty());
                 assertEquals(3, node.getDomains().size());
+        }
+
+        @Test public void testAddFilterToDomain() throws Exception {
+                node.addDomain(getDomain("custom", null));
+                SxpDomain domain = node.getDomain("custom");
+                node.addFilterToDomain("custom", getFilter("custom", "global"));
+                assertEquals(1, domain.getFilters().size());
+                node.addFilterToDomain("custom", getFilter("custom", "global"));
+                assertEquals(1, domain.getFilters().size());
+        }
+
+        @Test public void testRemoveFilterFromDomain() throws Exception {
+                node.addDomain(getDomain("custom", null));
+                SxpDomain domain = node.getDomain("custom");
+                node.addFilterToDomain("custom", getFilter("custom", "global"));
+                assertEquals(1, domain.getFilters().size());
+                node.removeFilterFromDomain("domain", FilterSpecific.AccessOrPrefixList, "custom");
+                assertEquals(1, domain.getFilters().size());
+                node.removeFilterFromDomain("custom", FilterSpecific.PeerSequence, "custom");
+                assertEquals(1, domain.getFilters().size());
+                node.removeFilterFromDomain("custom", FilterSpecific.AccessOrPrefixList, "filter");
+                assertEquals(1, domain.getFilters().size());
+                node.removeFilterFromDomain("custom", FilterSpecific.AccessOrPrefixList, "custom");
+                assertEquals(0, domain.getFilters().size());
+        }
+
+        @Test public void testUpdateDomainFilter() throws Exception {
+                node.addDomain(getDomain("custom", null));
+                SxpDomain domain = node.getDomain("custom");
+                node.addFilterToDomain("custom", getFilter("custom", "global"));
+                assertEquals(1, domain.getFilters().size());
+
+                node.updateDomainFilter("domain",getFilter("custom", "global"));
+                assertEquals(1, domain.getFilters().size());
+                assertTrue(domain.getFilters().containsKey("global"));
+
+                node.updateDomainFilter("custom",getFilter("custom", "newGlobal"));
+                assertEquals(1, domain.getFilters().size());
+                assertTrue(domain.getFilters().containsKey("newGlobal"));
+
+                node.updateDomainFilter("custom",getFilter("custom", "global","test"));
+                assertEquals(2, domain.getFilters().size());
+                assertTrue(domain.getFilters().containsKey("global"));
+                assertTrue(domain.getFilters().containsKey("test"));
+        }
+
+        @Test public void testGetBindingMasterDatabase() throws Exception {
+                assertNotNull(node.getBindingMasterDatabase());
+                node.addDomain(getDomain("custom", null));
+                assertNotNull(node.getBindingMasterDatabase("custom"));
+                exception.expect(DomainNotFoundException.class);
+                node.getBindingMasterDatabase("badDomain");
+        }
+
+        @Test public void testGetBindingSxpDatabase() throws Exception {
+                assertNotNull(node.getBindingSxpDatabase());
+                node.addDomain(getDomain("custom", null));
+                assertNotNull(node.getBindingSxpDatabase("custom"));
+                exception.expect(DomainNotFoundException.class);
+                node.getBindingSxpDatabase("badDomain");
         }
 }
