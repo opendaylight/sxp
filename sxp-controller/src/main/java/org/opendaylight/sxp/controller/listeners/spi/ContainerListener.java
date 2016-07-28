@@ -110,20 +110,24 @@ public abstract class ContainerListener<P extends DataObject, C extends ChildOf<
 
     @Override public List<DataObjectModification<C>> getModifications(DataTreeModification<P> treeModification) {
         List<DataObjectModification<C>> modifications = new ArrayList<>();
-        treeModification.getRootNode().getModifiedChildren().forEach(c -> {
-            if (c.getDataType().equals(container))
-                modifications.add((DataObjectModification<C>) c);
-        });
+        if (treeModification != null) {
+            treeModification.getRootNode().getModifiedChildren().forEach(c -> {
+                if (c.getDataType().equals(container))
+                    modifications.add((DataObjectModification<C>) c);
+            });
+        }
         return modifications;
     }
 
     @Override
     public List<DataObjectModification<C>> getObjectModifications(DataObjectModification<P> objectModification) {
         List<DataObjectModification<C>> modifications = new ArrayList<>();
-        objectModification.getModifiedChildren().forEach(c -> {
-            if (c.getDataType().equals(container))
-                modifications.add((DataObjectModification<C>) c);
-        });
+        if (objectModification != null) {
+            objectModification.getModifiedChildren().forEach(c -> {
+                if (c.getDataType().equals(container))
+                    modifications.add((DataObjectModification<C>) c);
+            });
+        }
         return modifications;
     }
 }

@@ -9,6 +9,7 @@
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
 import com.google.common.base.Preconditions;
+import java.net.InetSocketAddress;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.spi.ListListener;
@@ -24,8 +25,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
-import java.net.InetSocketAddress;
 
 import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
 
@@ -56,9 +55,8 @@ public class ConnectionsListener extends ListListener<SxpDomain, Connections, Co
                     break;
                 }
             case SUBTREE_MODIFIED:
-                if (checkDifference(c, SxpConnectionFields::getTcpPort) || (
-                        (checkDifference(c, SxpConnectionFields::getVersion) || checkDifference(c,
-                                SxpConnectionFields::getConnectionTimers)) && !checkDifference(c,
+                if (checkDifference(c, con -> con.getTcpPort().getValue()) || (
+                        checkDifference(c, SxpConnectionFields::getVersion) && !checkDifference(c,
                                 SxpConnectionPeerFields::getState) && ConnectionState.On.equals(
                                 c.getDataAfter().getState())) || checkDifference(c, SxpConnectionFields::getPassword)
                         || checkDifference(c, SxpConnectionFields::getPeerAddress)) {

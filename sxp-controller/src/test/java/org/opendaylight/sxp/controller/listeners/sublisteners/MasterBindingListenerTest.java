@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Cisco Systems, Inc. and others.  All rights reserved.
+ * Copyright (c) 2014 Cisco Systems, Inc. and others.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,7 +8,6 @@
 
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,13 +19,15 @@ import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabaseBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.SxpDatabaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
@@ -47,18 +48,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({Configuration.class, DatastoreAccess.class})
-public class DomainListenerTest {
+public class MasterBindingListenerTest {
 
-    private DomainListener identityListener;
+    private MasterBindingListener identityListener;
     private DatastoreAccess datastoreAccess;
     private SxpNode sxpNode;
 
     @Before public void setUp() throws Exception {
         datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
-        identityListener = new DomainListener(datastoreAccess);
+        identityListener = new MasterBindingListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
         when(sxpNode.shutdown()).thenReturn(sxpNode);
-        when(sxpNode.removeDomain(anyString())).thenReturn(mock(org.opendaylight.sxp.core.SxpDomain.class));
         PowerMockito.mockStatic(Configuration.class);
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
@@ -66,82 +66,50 @@ public class DomainListenerTest {
         PowerMockito.when(Configuration.getConstants()).thenCallRealMethod();
     }
 
-    private DataObjectModification<SxpDomain> getObjectModification(
-            DataObjectModification.ModificationType modificationType, SxpDomain before, SxpDomain after) {
-        DataObjectModification<SxpDomain> modification = mock(DataObjectModification.class);
+    private DataObjectModification<MasterDatabaseBinding> getObjectModification(
+            DataObjectModification.ModificationType modificationType, MasterDatabaseBinding before,
+            MasterDatabaseBinding after) {
+        DataObjectModification<MasterDatabaseBinding> modification = mock(DataObjectModification.class);
         when(modification.getModificationType()).thenReturn(modificationType);
         when(modification.getDataAfter()).thenReturn(after);
         when(modification.getDataBefore()).thenReturn(before);
-        when(modification.getDataType()).thenReturn(SxpDomain.class);
+        when(modification.getDataType()).thenReturn(MasterDatabaseBinding.class);
         return modification;
     }
 
-    private DataObjectModification<SxpDomains> getObjectModification(DataObjectModification<SxpDomain> change) {
-        DataObjectModification<SxpDomains> modification = mock(DataObjectModification.class);
+    private DataObjectModification<MasterDatabase> getObjectModification(
+            DataObjectModification<MasterDatabaseBinding> change) {
+        DataObjectModification<MasterDatabase> modification = mock(DataObjectModification.class);
         when(modification.getModificationType()).thenReturn(DataObjectModification.ModificationType.WRITE);
-        when(modification.getDataType()).thenReturn(SxpDomains.class);
+        when(modification.getDataType()).thenReturn(MasterDatabase.class);
         when(modification.getModifiedChildren()).thenReturn(Collections.singletonList(change));
         return modification;
     }
 
-    private InstanceIdentifier<SxpNodeIdentity> getIdentifier() {
+    private InstanceIdentifier<SxpDomain> getIdentifier() {
         return NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class, new NodeKey(new NodeId("0.0.0.0")))
-                .augmentation(SxpNodeIdentity.class);
+                .augmentation(SxpNodeIdentity.class)
+                .child(SxpDomains.class)
+                .child(SxpDomain.class, new SxpDomainKey("global"));
     }
 
-    private SxpDomain getDomain(String name) {
-        SxpDomainBuilder builder = new SxpDomainBuilder();
-        builder.setConnections(new ConnectionsBuilder().setConnection(new ArrayList<>()).build());
-        builder.setSxpDatabase(new SxpDatabaseBuilder().setBindingDatabase(new ArrayList<>()).build());
-        builder.setMasterDatabase(new MasterDatabaseBuilder().setMasterDatabaseBinding(new ArrayList<>()).build());
-        builder.setDomainName(name);
-        return builder.build();
+    private MasterDatabaseBinding getBinding(String prefix, int sgt) {
+        return new MasterDatabaseBindingBuilder().setIpPrefix(new IpPrefix(prefix.toCharArray()))
+                .setSecurityGroupTag(new Sgt(sgt))
+                .build();
     }
 
-    @Test public void testHandleOperational_1() throws Exception {
-        SxpDomain domain = getDomain("global");
-        identityListener.handleOperational(
-                getObjectModification(DataObjectModification.ModificationType.WRITE, null, domain), getIdentifier());
-        verify(sxpNode).addDomain(domain);
-
-        domain = getDomain("secure");
-        identityListener.handleOperational(
-                getObjectModification(DataObjectModification.ModificationType.WRITE, null, domain), getIdentifier());
-        verify(sxpNode).addDomain(domain);
-    }
-
-    @Test public void testHandleOperational_2() throws Exception {
-        SxpDomain domain = getDomain("global");
-        identityListener.handleOperational(
-                getObjectModification(DataObjectModification.ModificationType.WRITE, domain, null), getIdentifier());
-        verify(sxpNode).removeDomain("global");
-
-        domain = getDomain("secure");
-        identityListener.handleOperational(
-                getObjectModification(DataObjectModification.ModificationType.WRITE, domain, null), getIdentifier());
-        verify(sxpNode).removeDomain("secure");
-    }
-
-    @Test public void testGetModifications() throws Exception {
-        assertNotNull(identityListener.getIdentifier(new SxpDomainBuilder().setDomainName("global").build(),
-                getIdentifier()));
-        assertTrue(
-                identityListener.getIdentifier(new SxpDomainBuilder().setDomainName("global").build(), getIdentifier())
-                        .getTargetType()
-                        .equals(SxpDomain.class));
-
-        assertNotNull(identityListener.getObjectModifications(null));
-        assertNotNull(identityListener.getObjectModifications(mock(DataObjectModification.class)));
-        assertNotNull(identityListener.getModifications(null));
-        DataTreeModification dtm = mock(DataTreeModification.class);
-        when(dtm.getRootNode()).thenReturn(mock(DataObjectModification.class));
-        assertNotNull(identityListener.getModifications(dtm));
+    @Test public void testGetIdentifier() throws Exception {
+        assertNotNull(identityListener.getIdentifier(new MasterDatabaseBindingBuilder().build(), getIdentifier()));
+        assertTrue(identityListener.getIdentifier(new MasterDatabaseBindingBuilder().build(), getIdentifier())
+                .getTargetType()
+                .equals(MasterDatabaseBinding.class));
     }
 
     @Test public void testHandleChange() throws Exception {
         identityListener.handleChange(Collections.singletonList(getObjectModification(
-                getObjectModification(DataObjectModification.ModificationType.WRITE, getDomain("global"),
-                        getDomain("global-two")))), LogicalDatastoreType.OPERATIONAL, getIdentifier());
+                getObjectModification(DataObjectModification.ModificationType.WRITE, getBinding("1.1.1.1/32", 50),
+                        getBinding("1.1.1.1/32", 51)))), LogicalDatastoreType.OPERATIONAL, getIdentifier());
         verify(datastoreAccess, never()).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
         verify(datastoreAccess, never()).mergeSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
@@ -150,20 +118,29 @@ public class DomainListenerTest {
                 eq(LogicalDatastoreType.OPERATIONAL));
 
         identityListener.handleChange(Collections.singletonList(getObjectModification(
-                getObjectModification(DataObjectModification.ModificationType.WRITE, null, getDomain("global")))),
-                LogicalDatastoreType.CONFIGURATION, getIdentifier());
+                getObjectModification(DataObjectModification.ModificationType.WRITE, null,
+                        getBinding("1.1.1.1/32", 50)))), LogicalDatastoreType.CONFIGURATION, getIdentifier());
         verify(datastoreAccess).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
 
         identityListener.handleChange(Collections.singletonList(getObjectModification(
-                getObjectModification(DataObjectModification.ModificationType.WRITE, getDomain("global"),
-                        getDomain("global")))), LogicalDatastoreType.CONFIGURATION, getIdentifier());
+                getObjectModification(DataObjectModification.ModificationType.WRITE, getBinding("1.1.1.1/32", 50),
+                        getBinding("1.1.1.1/32", 55)))), LogicalDatastoreType.CONFIGURATION, getIdentifier());
         verify(datastoreAccess).mergeSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
 
         identityListener.handleChange(Collections.singletonList(getObjectModification(
-                getObjectModification(DataObjectModification.ModificationType.DELETE, getDomain("global"),
-                        getDomain("global")))), LogicalDatastoreType.CONFIGURATION, getIdentifier());
+                getObjectModification(DataObjectModification.ModificationType.DELETE, getBinding("1.1.1.1/32", 50),
+                        getBinding("1.1.1.1/32", 55)))), LogicalDatastoreType.CONFIGURATION, getIdentifier());
         verify(datastoreAccess).checkAndDelete(any(InstanceIdentifier.class), eq(LogicalDatastoreType.OPERATIONAL));
+    }
+
+    @Test public void testGetModifications() throws Exception {
+        assertNotNull(identityListener.getObjectModifications(null));
+        assertNotNull(identityListener.getObjectModifications(mock(DataObjectModification.class)));
+        assertNotNull(identityListener.getModifications(null));
+        DataTreeModification dtm = mock(DataTreeModification.class);
+        when(dtm.getRootNode()).thenReturn(mock(DataObjectModification.class));
+        assertNotNull(identityListener.getModifications(dtm));
     }
 }
