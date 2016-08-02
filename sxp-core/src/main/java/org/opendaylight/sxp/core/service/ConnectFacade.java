@@ -26,17 +26,17 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ConnectFacade {
 
@@ -61,9 +61,9 @@ public class ConnectFacade {
         }
         Bootstrap bootstrap = new Bootstrap();
         if (connection.getPassword() != null && !connection.getPassword().isEmpty()) {
-            Map<InetAddress, byte[]> keys = new HashMap<>();
-            keys.put(connection.getDestination().getAddress(), connection.getPassword().getBytes(StandardCharsets.US_ASCII));
-            bootstrap.option(EpollChannelOption.TCP_MD5SIG, keys);
+            bootstrap.option(EpollChannelOption.TCP_MD5SIG,
+                    Collections.singletonMap(connection.getDestination().getAddress(),
+                            connection.getPassword().getBytes(StandardCharsets.US_ASCII)));
         }
         bootstrap.channel(EpollSocketChannel.class);
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, Configuration.NETTY_CONNECT_TIMEOUT_MILLIS);
@@ -104,18 +104,16 @@ public class ConnectFacade {
         bootstrap.channel(EpollServerSocketChannel.class);
         bootstrap.option(EpollChannelOption.TCP_MD5SIG, keyMapping);
         bootstrap.group(bossGroup, eventLoopGroup);
-        ChannelInitializer<SocketChannel> channelInitializer = new ChannelInitializer<SocketChannel>() {
+        if (Configuration.NETTY_LOGGER_HANDLER) {
+            bootstrap.handler(new LoggingHandler(LogLevel.INFO));
+        }
+        bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
 
             @Override protected void initChannel(SocketChannel ch) throws Exception {
                 ch.pipeline().addLast(hf.getDecoders());
                 ch.pipeline().addLast(hf.getEncoders());
             }
-        };
-        if (Configuration.NETTY_LOGGER_HANDLER) {
-            bootstrap.handler(new LoggingHandler(LogLevel.INFO)).childHandler(channelInitializer);
-        } else {
-            bootstrap.childHandler(channelInitializer);
-        }
+        });
         ChannelFuture channelFuture = bootstrap.bind(node.getSourceIp(), node.getServerPort());
         channelFuture.channel().closeFuture().addListener(future -> bossGroup.shutdownGracefully());
         return channelFuture;

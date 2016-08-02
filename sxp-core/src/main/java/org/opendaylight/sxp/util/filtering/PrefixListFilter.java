@@ -20,6 +20,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.prefix.list.filter.entries.PrefixListEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.entry.PrefixListMatch;
 
+import static org.opendaylight.sxp.util.ArraysUtil.getBitAddress;
+
 /**
  * PrefixList Filter logic based on Most specific Match that supports SGT matching
  */

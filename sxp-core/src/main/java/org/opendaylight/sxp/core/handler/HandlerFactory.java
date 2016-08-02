@@ -8,19 +8,20 @@
 
 package org.opendaylight.sxp.core.handler;
 
+import com.google.common.base.Preconditions;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelOutboundHandler;
 import io.netty.handler.codec.bytes.ByteArrayEncoder;
+import java.util.Collections;
 
 /**
  * HandlerFactory class represent unification for decoders and encoders used
  */
 public final class HandlerFactory {
 
-    protected final ChannelInboundHandler decoder;
-
-    protected final ChannelOutboundHandler encoder;
+    protected final ChannelInboundHandler[] decoder;
+    protected final ChannelOutboundHandler[] encoder;
 
     /**
      * Constructor that set decoder, along with default LengthFieldBasedFrameDecoderImpl
@@ -29,7 +30,11 @@ public final class HandlerFactory {
      * @param decoder ChannelInboundHandler custom decoder
      */
     public HandlerFactory(ChannelInboundHandler decoder) {
-        this(null, decoder);
+        this(new ChannelOutboundHandler[0], Collections.singletonList(decoder).toArray(new ChannelInboundHandler[1]));
+    }
+
+    public HandlerFactory(ChannelInboundHandler[] decoders) {
+        this(new ChannelOutboundHandler[0], decoders);
     }
 
     /**
@@ -40,23 +45,28 @@ public final class HandlerFactory {
      * @param encoder ChannelOutboundHandler custom encoder
      * @param decoder ChannelInboundHandler custom decoder
      */
-    public HandlerFactory(ChannelOutboundHandler encoder, ChannelInboundHandler decoder) {
-        super();
-        this.encoder = encoder;
-        this.decoder = decoder;
+    public HandlerFactory(ChannelOutboundHandler[] encoder, ChannelInboundHandler[] decoder) {
+        this.encoder = Preconditions.checkNotNull(encoder);
+        this.decoder = Preconditions.checkNotNull(decoder);
     }
 
     /**
      * @return Gets all decoders
      */
     public ChannelHandler[] getDecoders() {
-        return new ChannelHandler[] { new LengthFieldBasedFrameDecoderImpl(), decoder };
+        ChannelHandler[] decoders = new ChannelHandler[decoder.length + 1];
+        decoders[0] = new LengthFieldBasedFrameDecoderImpl();
+        System.arraycopy(decoder, 0, decoders, 1, decoder.length);
+        return decoders;
     }
 
     /**
      * @return Gets all encoders
      */
     public ChannelHandler[] getEncoders() {
-        return new ChannelHandler[] { new ByteArrayEncoder(), encoder };
+        ChannelHandler[] encoders = new ChannelHandler[encoder.length + 1];
+        encoders[0] = new ByteArrayEncoder();
+        System.arraycopy(encoder, 0, encoders, 1, encoder.length);
+        return encoders;
     }
 }
