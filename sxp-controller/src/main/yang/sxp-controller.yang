@@ -498,7 +498,7 @@ module sxp-controller {
             }
             leaf domain-name {
                 type string;
-                mandatory true;
+                default "global";
             }
             leaf node-id {
                 type sxppt:node-id;
@@ -524,7 +524,7 @@ module sxp-controller {
             }
             leaf domain-name {
                 type string;
-                mandatory true;
+                default "global";
             }
             uses sxpdb:master-database-configuration-fields;
         }
@@ -549,7 +549,7 @@ module sxp-controller {
             }
             leaf domain-name {
                 type string;
-                mandatory true;
+                default "global";
             }
             uses sxpfl:sxp-domain-filter;
         }
@@ -570,7 +570,7 @@ module sxp-controller {
             }
             leaf domain-name {
                 type string;
-                mandatory true;
+                default "global";
             }
             leaf filter-specific {
                 type sxpfl:filter-specific;
@@ -578,6 +578,57 @@ module sxp-controller {
             leaf filter-name {
                 type string;
                 default "base-domain-filter";
+            }
+        }
+        output {
+            leaf result {
+                type boolean;
+            }
+        }
+    }
+
+    rpc add-connection-template {
+        description "Delete a domain from node";
+        input {
+            leaf config-persistence {
+                type config-persistence;
+                default "pernament";
+            }
+            leaf node-id {
+                type sxppt:node-id;
+                mandatory true;
+                description "SXP node ID";
+            }
+            leaf domain-name {
+                type string;
+                default "global";
+            }
+            uses sxpnd:sxp-connection-template-fields;
+        }
+        output {
+            leaf result {
+                type boolean;
+            }
+        }
+    }
+
+
+    rpc delete-connection-template {
+        description "Delete a domain from node";
+        input {
+            leaf node-id {
+                type sxppt:node-id;
+                mandatory true;
+                description "SXP node ID";
+            }
+            leaf domain-name {
+                type string;
+                default "global";
+            }
+            leaf template-prefix {
+                type inet:ip-prefix;
+                mandatory true;
+                description "Ip prefix of the remote peers";
             }
         }
         output {

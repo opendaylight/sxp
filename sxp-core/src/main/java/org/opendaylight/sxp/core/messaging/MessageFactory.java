@@ -70,11 +70,11 @@ import java.util.List;
  */
 public class MessageFactory {
 
-    private static final int MESSAGE_HEADER_LENGTH_LENGTH = Configuration.getConstants().getMessageHeaderLengthLength();
+    public static final int MESSAGE_HEADER_LENGTH_LENGTH = Configuration.getConstants().getMessageHeaderLengthLength();
 
-    private static final int MESSAGE_HEADER_TYPE_LENGTH = Configuration.getConstants().getMessageHeaderTypeLength();
+    public static final int MESSAGE_HEADER_TYPE_LENGTH = Configuration.getConstants().getMessageHeaderTypeLength();
 
-    private static final int MESSAGE_LENGTH_MAX = Configuration.getConstants().getMessageLengthMax();
+    public static final int MESSAGE_LENGTH_MAX = Configuration.getConstants().getMessageLengthMax();
 
     /**
      * Creates Error message based on provided error code

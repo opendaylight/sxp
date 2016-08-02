@@ -16,6 +16,12 @@ import org.junit.Test;
 
 public class ArraysUtilTest {
 
+        @Test public void testGetBitAddress() throws Exception {
+                assertArrayEquals(new byte[] {-2, 0, 0, -128}, ArraysUtil.getBitAddress("127.0.0.1").toByteArray());
+                assertArrayEquals(new byte[] {-1, -1, -1, 127},
+                        ArraysUtil.getBitAddress("255.255.255.254").toByteArray());
+        }
+
         @Test public void testBytes2int() throws Exception {
                 assertEquals(0, ArraysUtil.bytes2int(null));
                 assertEquals(960488, ArraysUtil.bytes2int(new byte[] {0, 14, -89, -24}));

@@ -24,6 +24,8 @@ import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 
+import static org.opendaylight.sxp.util.ArraysUtil.getBitAddress;
+
 /**
  * AclFilter logic based on First Match that support SGT matching
  */

@@ -621,14 +621,19 @@ public class SxpConnection {
      * @return Gets Mode of Peer
      */
     public ConnectionMode getModeRemote() {
-        ConnectionMode mode = getMode();
-        switch (mode) {
-            case Speaker:
-                return ConnectionMode.Listener;
-            case Listener:
-                return ConnectionMode.Speaker;
-        }
-        return mode;
+        return invertMode(getMode());
+    }
+
+    /**
+     * @param mode Mode that will be logically inverted
+     * @return Inverted Mode
+     */
+    public static ConnectionMode invertMode(ConnectionMode mode) {
+        if (ConnectionMode.Listener.equals(mode))
+            return ConnectionMode.Speaker;
+        else if (ConnectionMode.Speaker.equals(mode))
+            return ConnectionMode.Listener;
+        return ConnectionMode.Both;
     }
 
     /**

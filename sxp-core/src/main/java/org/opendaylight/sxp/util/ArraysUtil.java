@@ -8,9 +8,23 @@
 
 package org.opendaylight.sxp.util;
 
+import com.google.common.net.InetAddresses;
 import java.util.Arrays;
+import java.util.BitSet;
 
 public final class ArraysUtil {
+
+    /**
+     * @param ip String representation of ip address
+     * @return BitSet representing ip address
+     */
+    public static BitSet getBitAddress(String ip) {
+        byte[] address = InetAddresses.forString(ip).getAddress();
+        for (int i = 0; i < address.length; i++) {
+            address[i] = ArraysUtil.reverseBitsByte(address[i]);
+        }
+        return BitSet.valueOf(address);
+    }
 
     /**
      * Converts Byte Array into Integer value

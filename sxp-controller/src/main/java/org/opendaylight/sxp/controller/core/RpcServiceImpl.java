@@ -38,6 +38,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ad
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionTemplateInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionTemplateOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionTemplateOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainFilterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainFilterOutputBuilder;
@@ -63,6 +66,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.De
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionTemplateInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionTemplateOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionTemplateOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainFilterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainFilterOutputBuilder;
@@ -124,6 +130,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.templates.fields.ConnectionTemplates;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.templates.fields.ConnectionTemplatesBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.templates.fields.connection.templates.ConnectionTemplate;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.templates.fields.connection.templates.ConnectionTemplateBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.templates.fields.connection.templates.ConnectionTemplateKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
@@ -386,6 +397,28 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
+    @Override public Future<RpcResult<DeleteConnectionTemplateOutput>> deleteConnectionTemplate(
+            DeleteConnectionTemplateInput input) {
+        final String nodeId = getNodeId(input.getNodeId());
+        final DeleteConnectionTemplateOutputBuilder output = new DeleteConnectionTemplateOutputBuilder().setResult(false);
+
+        return getResponse(nodeId, output.build(), () -> {
+            LOG.info("RpcDeleteConnectionTemplate event | {}", input.toString());
+            if (input.getDomainName() != null && !input.getDomainName().isEmpty()
+                    && input.getTemplatePrefix() != null) {
+                InstanceIdentifier
+                        identifier =
+                        getIdentifier(nodeId).child(SxpDomains.class)
+                                .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
+                                .child(ConnectionTemplates.class)
+                                .child(ConnectionTemplate.class, new ConnectionTemplateKey(input.getTemplatePrefix()));
+                output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
+                        || datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+            }
+            return RpcResultBuilder.success(output.build()).build();
+        });
+    }
+
     @Override public Future<RpcResult<DeleteNodeOutput>> deleteNode(DeleteNodeInput input) {
         final String nodeId = getNodeId(input.getNodeId());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
@@ -579,6 +612,27 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
+    @Override
+    public Future<RpcResult<AddConnectionTemplateOutput>> addConnectionTemplate(AddConnectionTemplateInput input) {
+        final String nodeId = getNodeId(input.getNodeId());
+        final AddConnectionTemplateOutputBuilder output = new AddConnectionTemplateOutputBuilder().setResult(false);
+
+        return getResponse(nodeId, output.build(), () -> {
+            LOG.info("RpcAddConnectionTemplate event | {}", input.toString());
+            if (input.getDomainName() != null && !input.getDomainName().isEmpty()
+                    && input.getTemplatePrefix() != null) {
+                ConnectionTemplateBuilder builder = new ConnectionTemplateBuilder(input);
+
+                output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
+                                .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
+                                .child(ConnectionTemplates.class)
+                                .child(ConnectionTemplate.class, new ConnectionTemplateKey(builder.getTemplatePrefix())),
+                        builder.build(), getDatastoreType(input.getConfigPersistence()), false));
+            }
+            return RpcResultBuilder.success(output.build()).build();
+        });
+    }
+
     @Override public Future<RpcResult<GetConnectionsOutput>> getConnections(final GetConnectionsInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
@@ -713,6 +767,9 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                                     .setMasterDatabase(ConfigLoader.parseMasterDatabase(input.getMasterDatabase()))
                                     .setDomainFilters(
                                             new DomainFiltersBuilder().setDomainFilter(new ArrayList<>()).build())
+                                    .setConnectionTemplates(
+                                            new ConnectionTemplatesBuilder().setConnectionTemplate(new ArrayList<>())
+                                                    .build())
                                     .build());
                 }
                 if (identityBuilder.getSxpPeerGroups() == null)
@@ -748,6 +805,8 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
                 builder.setMasterDatabase(ConfigLoader.parseMasterDatabase(input.getMasterDatabase()));
                 builder.setConnections(ConfigLoader.parseConnections(input.getConnections()));
                 builder.setDomainFilters(new DomainFiltersBuilder().setDomainFilter(new ArrayList<>()).build());
+                builder.setConnectionTemplates(
+                        new ConnectionTemplatesBuilder().setConnectionTemplate(new ArrayList<>()).build());
                 output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
                                 .child(SxpDomain.class, new SxpDomainKey(input.getDomainName())), builder.build(),
                         getDatastoreType(input.getConfigPersistence()), false));

@@ -11,7 +11,9 @@
     </parent>
     <artifactId>sxp-controller</artifactId>
     <packaging>bundle</packaging>
-
+    <properties>
+        <sonar.exclusions>**Exception.java**</sonar.exclusions>
+    </properties>
     <build>
         <plugins>
             <plugin>
