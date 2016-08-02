@@ -27,6 +27,7 @@ import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
@@ -43,6 +44,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.ma
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.domain.filter.SxpDomainFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.domain.filter.fields.DomainsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.domain.filter.fields.domains.DomainBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.templates.fields.connection.templates.ConnectionTemplate;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.templates.fields.connection.templates.ConnectionTemplateBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -59,6 +62,7 @@ import static org.mockito.Matchers.anyList;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -361,5 +365,70 @@ import static org.mockito.Mockito.when;
         domain.updateFilter(bindingFilter);
         assertEquals(1, captorAdd.getAllValues().get(captorAdd.getAllValues().size() - 1).size());
         assertEquals(2, captorDell.getAllValues().get(captorDell.getAllValues().size() - 1).size());
+    }
+
+    private ConnectionTemplate getTemplate(String ipPrefix, String pass) {
+        ConnectionTemplateBuilder builder = new ConnectionTemplateBuilder();
+        builder.setTemplateTcpPort(new PortNumber(64999));
+        builder.setTemplatePrefix(new IpPrefix(ipPrefix.toCharArray()));
+        builder.setTemplatePassword(pass);
+        return builder.build();
+    }
+
+    @Test public void testAddConnectionTemplate() throws Exception {
+        assertEquals(0, domain.getConnectionTemplates().size());
+
+        assertTrue(domain.addConnectionTemplate(getTemplate("1.1.1.1/32", null)));
+        assertEquals(1, domain.getConnectionTemplates().size());
+        verify(sxpNode, never()).updateMD5keys();
+
+        assertFalse(domain.addConnectionTemplate(getTemplate("1.1.1.1/32", null)));
+        assertEquals(1, domain.getConnectionTemplates().size());
+        verify(sxpNode, never()).updateMD5keys();
+
+        assertTrue(domain.addConnectionTemplate(getTemplate("1.1.1.2/32", "")));
+        assertEquals(2, domain.getConnectionTemplates().size());
+        verify(sxpNode, never()).updateMD5keys();
+
+        assertTrue(domain.addConnectionTemplate(getTemplate("1.1.1.3/32", "password")));
+        assertEquals(3, domain.getConnectionTemplates().size());
+        verify(sxpNode).updateMD5keys();
+    }
+
+    @Test public void testRemoveConnectionTemplate() throws Exception {
+        assertEquals(0, domain.getConnectionTemplates().size());
+
+        assertTrue(domain.addConnectionTemplate(getTemplate("1.1.1.1/32", null)));
+        assertEquals(1, domain.getConnectionTemplates().size());
+
+        assertNull(domain.removeConnectionTemplate(new IpPrefix("0.0.0.0/32".toCharArray())));
+        assertEquals(1, domain.getConnectionTemplates().size());
+
+        assertNotNull(domain.removeConnectionTemplate(new IpPrefix("1.1.1.1/32".toCharArray())));
+        assertEquals(0, domain.getConnectionTemplates().size());
+        verify(sxpNode, never()).updateMD5keys();
+
+        assertTrue(domain.addConnectionTemplate(getTemplate("1.1.1.1/32", "password")));
+        assertEquals(1, domain.getConnectionTemplates().size());
+
+        assertNull(domain.removeConnectionTemplate(new IpPrefix("0.0.0.0/32".toCharArray())));
+        assertEquals(1, domain.getConnectionTemplates().size());
+
+        assertNotNull(domain.removeConnectionTemplate(new IpPrefix("1.1.1.1/32".toCharArray())));
+        assertEquals(0, domain.getConnectionTemplates().size());
+        verify(sxpNode, times(2)).updateMD5keys();
+    }
+
+    @Test public void testGetConnectionTemplates() throws Exception {
+        assertTrue(domain.addConnectionTemplate(getTemplate("1.1.1.0/24", null)));
+
+        assertNotNull(domain.getTemplate(new InetSocketAddress("1.1.1.0", 64999)));
+        assertNotNull(domain.getTemplate(new InetSocketAddress("1.1.1.100", 64999)));
+        assertNotNull(domain.getTemplate(new InetSocketAddress("1.1.1.255", 64999)));
+
+        assertNull(domain.getTemplate(new InetSocketAddress("1.1.255.0", 64999)));
+        assertNull(domain.getTemplate(new InetSocketAddress("1.1.0.0", 64999)));
+        assertNull(domain.getTemplate(new InetSocketAddress("1.0.0.0", 64999)));
+        assertNull(domain.getTemplate(new InetSocketAddress("0.0.0.0", 64999)));
     }
 }

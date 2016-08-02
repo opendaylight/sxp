@@ -17,6 +17,7 @@ import org.opendaylight.controller.sal.binding.api.BindingAwareBroker.RpcRegistr
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.RpcServiceImpl;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
+import org.opendaylight.sxp.controller.listeners.sublisteners.ConnectionTemplateListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.ConnectionsListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.DomainFilterListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.DomainListener;
@@ -83,7 +84,8 @@ public class SxpControllerModule
         listener.addSubListener(
                 new DomainListener(datastoreAccess).addSubListener(new ConnectionsListener(datastoreAccess))
                         .addSubListener(new MasterBindingListener(datastoreAccess))
-                        .addSubListener(new DomainFilterListener(datastoreAccess)));
+                        .addSubListener(new DomainFilterListener(datastoreAccess))
+                        .addSubListener(new ConnectionTemplateListener(datastoreAccess)));
         listener.addSubListener(
                 new PeerGroupListener(datastoreAccess).addSubListener(new FilterListener(datastoreAccess)));
 

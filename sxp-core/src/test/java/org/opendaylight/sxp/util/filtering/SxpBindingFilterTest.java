@@ -10,7 +10,9 @@ package org.opendaylight.sxp.util.filtering;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
+import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
@@ -42,12 +44,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class SxpBindingFilterTest {
-
-    @Test public void testGetBitAddress() throws Exception {
-        assertArrayEquals(new byte[] {-2, 0, 0, -128}, SxpBindingFilter.getBitAddress("127.0.0.1").toByteArray());
-        assertArrayEquals(new byte[] {-1, -1, -1, 127},
-                SxpBindingFilter.getBitAddress("255.255.255.254").toByteArray());
-    }
 
     @Test public void testGenerateFilter() throws Exception {
         SxpBindingFilter bindingFilter = SxpBindingFilter.generateFilter(getAclFilter(FilterType.Inbound), "TEST");

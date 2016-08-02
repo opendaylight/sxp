@@ -26,17 +26,18 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
+import org.opendaylight.sxp.util.inet.Search;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ConnectFacade {
 
@@ -61,9 +62,9 @@ public class ConnectFacade {
         }
         Bootstrap bootstrap = new Bootstrap();
         if (connection.getPassword() != null && !connection.getPassword().isEmpty()) {
-            Map<InetAddress, byte[]> keys = new HashMap<>();
-            keys.put(connection.getDestination().getAddress(), connection.getPassword().getBytes(StandardCharsets.US_ASCII));
-            bootstrap.option(EpollChannelOption.TCP_MD5SIG, keys);
+            bootstrap.option(EpollChannelOption.TCP_MD5SIG,
+                    Collections.singletonMap(connection.getDestination().getAddress(),
+                            connection.getPassword().getBytes(StandardCharsets.US_ASCII)));
         }
         bootstrap.channel(EpollSocketChannel.class);
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, Configuration.NETTY_CONNECT_TIMEOUT_MILLIS);
@@ -98,24 +99,31 @@ public class ConnectFacade {
         final EventLoopGroup bossGroup = new EpollEventLoopGroup(1);
         Map<InetAddress, byte[]> keyMapping = new HashMap<>();
         ServerBootstrap bootstrap = new ServerBootstrap();
+        node.getDomains().forEach(d -> d.getConnectionTemplates().forEach(t -> {
+            if (t.getTemplatePassword() != null && !t.getTemplatePassword().isEmpty()) {
+                final byte[] password = t.getTemplatePassword().getBytes(StandardCharsets.US_ASCII);
+                Search.expandPrefix(t.getTemplatePrefix())
+                        .forEach(inetAddress -> keyMapping.put(inetAddress, password));
+            }
+        }));
         Collections2.filter(node.getAllConnections(), CONNECTION_ENTRY_WITH_PASSWORD)
                 .forEach(p -> keyMapping.put(p.getDestination().getAddress(),
                         p.getPassword().getBytes(StandardCharsets.US_ASCII)));
+
+        keyMapping.remove(node.getSourceIp());
         bootstrap.channel(EpollServerSocketChannel.class);
         bootstrap.option(EpollChannelOption.TCP_MD5SIG, keyMapping);
         bootstrap.group(bossGroup, eventLoopGroup);
-        ChannelInitializer<SocketChannel> channelInitializer = new ChannelInitializer<SocketChannel>() {
+        if (Configuration.NETTY_LOGGER_HANDLER) {
+            bootstrap.handler(new LoggingHandler(LogLevel.INFO));
+        }
+        bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
 
             @Override protected void initChannel(SocketChannel ch) throws Exception {
                 ch.pipeline().addLast(hf.getDecoders());
                 ch.pipeline().addLast(hf.getEncoders());
             }
-        };
-        if (Configuration.NETTY_LOGGER_HANDLER) {
-            bootstrap.handler(new LoggingHandler(LogLevel.INFO)).childHandler(channelInitializer);
-        } else {
-            bootstrap.childHandler(channelInitializer);
-        }
+        });
         ChannelFuture channelFuture = bootstrap.bind(node.getSourceIp(), node.getServerPort());
         channelFuture.channel().closeFuture().addListener(future -> bossGroup.shutdownGracefully());
         return channelFuture;

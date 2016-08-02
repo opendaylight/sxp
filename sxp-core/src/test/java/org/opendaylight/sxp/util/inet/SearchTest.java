@@ -8,6 +8,10 @@
 
 package org.opendaylight.sxp.util.inet;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.Test;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -15,10 +19,6 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv6Address;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -59,5 +59,16 @@ public class SearchTest {
                     Short.MAX_VALUE).size());
                 assertEquals(256, Search.expandBinding(new MasterDatabaseBindingBuilder().setIpPrefix(
                         IpPrefixConv.createPrefix("2001:db8::ff00:42:8329/120")).build(), Short.MAX_VALUE).size());
+        }
+
+        @Test public void testExpandPrefix() throws Exception {
+            assertEquals(0,
+                    Search.expandPrefix(new IpPrefix("5.5.5.5/32".toCharArray())).collect(Collectors.toList()).size());
+            Stream.iterate(16, n -> n + 1).limit(16).forEach(n -> {
+                assertEquals((long) Math.pow(2, 32 - n),
+                        Search.expandPrefix(new IpPrefix(("0.0.0.0/" + n).toCharArray()))
+                                .collect(Collectors.toList())
+                                .size());
+            });
         }
 }

@@ -10,6 +10,15 @@ package org.opendaylight.sxp.util.inet;
 
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.opendaylight.sxp.util.exception.connection.NoNetworkInterfacesException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IetfInetUtil;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -17,11 +26,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpB
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.util.*;
 
 public final class Search {
 
@@ -84,44 +88,47 @@ public final class Search {
      * @return List of bindings that were created by expansion into subnet
      */
     public static <T extends SxpBindingFields> List<T> expandBinding(T binding, int quantity) {
-        List<T> bindings = new ArrayList<>();
-        if (binding == null || quantity == 0) {
-            return bindings;
-        }
-        MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder(binding);
-
-        byte[]
-                address =
-                InetAddresses.forString(IpPrefixConv.toString(binding.getIpPrefix()).split("/")[0]).getAddress(),
-                address_;
-        BitSet bitSet = BitSet.valueOf(address);
-        if (bitSet.length() >= IpPrefixConv.getPrefixLength(binding.getIpPrefix()))
-            bitSet.clear(IpPrefixConv.getPrefixLength(binding.getIpPrefix()), bitSet.length());
-        address_ = bitSet.toByteArray();
-
-        bitSet.set(IpPrefixConv.getPrefixLength(binding.getIpPrefix()),
-                binding.getIpPrefix().getIpv4Prefix() != null ? 32 : 128);
-
-        for (int i = 0; i < address.length; i++) {
-            address[i] = i < address_.length ? address_[i] : 0;
-        }
-
-        InetAddress
-                max =
-                InetAddresses.increment(
-                        IetfInetUtil.INSTANCE.inetAddressFor(IetfInetUtil.INSTANCE.ipAddressFor(bitSet.toByteArray())));
-        for (InetAddress
-             inetAddress =
-             IetfInetUtil.INSTANCE.inetAddressFor(IetfInetUtil.INSTANCE.ipAddressFor(address));
-             quantity > 0 && !max.equals(inetAddress); inetAddress = InetAddresses.increment(inetAddress), quantity--) {
+        final MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder(binding);
+        return expandPrefix(binding.getIpPrefix(), quantity).map(inetAddress -> {
             if (binding.getIpPrefix().getIpv4Prefix() != null) {
                 bindingBuilder.setIpPrefix(new IpPrefix(IetfInetUtil.INSTANCE.ipv4PrefixFor(inetAddress, 32)));
             } else {
                 bindingBuilder.setIpPrefix(new IpPrefix(IetfInetUtil.INSTANCE.ipv6PrefixFor(inetAddress, 128)));
             }
-            bindings.add((T) bindingBuilder.build());
+            return (T) bindingBuilder.build();
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * @param prefix IpPrefix to be expanded
+     * @return Stream of InetAddresses created by expansion
+     */
+    public static Stream<InetAddress> expandPrefix(final IpPrefix prefix) {
+        return expandPrefix(prefix, Long.MAX_VALUE);
+    }
+
+    /**
+     * @param prefix IpPrefix to be expanded
+     * @param limit  Limit of expansion
+     * @return Stream of InetAddresses created by expansion
+     */
+    public static Stream<InetAddress> expandPrefix(final IpPrefix prefix, final long limit) {
+        int prefixLength = IpPrefixConv.getPrefixLength(prefix),
+                addressFamily = prefix.getIpv4Prefix() != null ? 32 : 128;
+        byte[] address = InetAddresses.forString(IpPrefixConv.toString(prefix).split("/")[0]).getAddress(),
+                address_;
+        BitSet bitSet = BitSet.valueOf(address);
+        if (bitSet.length() >= prefixLength)
+            bitSet.clear(prefixLength, bitSet.length());
+        address_ = bitSet.toByteArray();
+        for (int i = 0; i < address.length; i++) {
+            address[i] = i < address_.length ? address_[i] : 0;
         }
-        return bindings;
+
+        addressFamily -= Integer.parseInt(IpPrefixConv.toString(prefix).split("/")[1]);
+        return Stream.iterate(IetfInetUtil.INSTANCE.inetAddressFor(IetfInetUtil.INSTANCE.ipAddressFor(address)),
+                InetAddresses::increment)
+                .limit(Math.min(addressFamily > 0 ? (long) Math.pow(2, addressFamily) : 0, limit));
     }
 
     /**

@@ -33,6 +33,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ad
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionTemplateInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionTemplateOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainFilterInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainInputBuilder;
@@ -48,6 +50,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.De
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionTemplateInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionTemplateOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainFilterInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainInputBuilder;
@@ -748,48 +752,44 @@ public class RpcServiceImplTest {
         assertFalse(result.getResult().isResult());
 
         result =
-                service.deleteDomainFilter(
-                        new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                                .setDomainName(null)
-                                .setFilterName(null)
-                                .setFilterSpecific(null)
-                                .build()).get();
+                service.deleteDomainFilter(new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName(null)
+                        .setFilterName(null)
+                        .setFilterSpecific(null)
+                        .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
 
         result =
-                service.deleteDomainFilter(
-                        new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                                .setDomainName("dom")
-                                .setFilterName(null)
-                                .setFilterSpecific(null)
-                                .build()).get();
+                service.deleteDomainFilter(new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName("dom")
+                        .setFilterName(null)
+                        .setFilterSpecific(null)
+                        .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
 
         result =
-                service.deleteDomainFilter(
-                        new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                                .setDomainName("dom")
-                                .setFilterName("basic-filter")
-                                .setFilterSpecific(null)
-                                .build()).get();
+                service.deleteDomainFilter(new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName("dom")
+                        .setFilterName("basic-filter")
+                        .setFilterSpecific(null)
+                        .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
 
         result =
-                service.deleteDomainFilter(
-                        new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                                .setDomainName("dom")
-                                .setFilterName("basic-filter")
-                                .setFilterSpecific(FilterSpecific.AccessOrPrefixList)
-                                .build()).get();
+                service.deleteDomainFilter(new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName("dom")
+                        .setFilterName("basic-filter")
+                        .setFilterSpecific(FilterSpecific.AccessOrPrefixList)
+                        .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
@@ -854,5 +854,102 @@ public class RpcServiceImplTest {
         service.close();
         verify(node).shutdown();
         verify(datastoreAccess).close();
+    }
+
+    @Test public void testDeleteConnectionTemplate() throws Exception {
+        RpcResult<DeleteConnectionTemplateOutput>
+                result =
+                service.deleteConnectionTemplate(
+                        new DeleteConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.deleteConnectionTemplate(
+                        new DeleteConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0")).build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.deleteConnectionTemplate(
+                        new DeleteConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                                .setDomainName("domain")
+                                .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.deleteConnectionTemplate(
+                        new DeleteConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                                .setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()))
+                                .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.deleteConnectionTemplate(
+                        new DeleteConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                                .setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()))
+                                .setDomainName("default")
+                                .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertTrue(result.getResult().isResult());
+    }
+
+    @Test public void testAddConnectionTemplate() throws Exception {
+        RpcResult<AddConnectionTemplateOutput>
+                result =
+                service.addConnectionTemplate(
+                        new AddConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.addConnectionTemplate(
+                        new AddConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0")).build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.addConnectionTemplate(new AddConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                        .setDomainName("default")
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.addConnectionTemplate(new AddConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                        .setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()))
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.addConnectionTemplate(new AddConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                        .setDomainName("default")
+                        .setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()))
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertTrue(result.getResult().isResult());
     }
 }
