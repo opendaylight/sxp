@@ -140,6 +140,34 @@ module sxp-node {
         }
     }
 
+    grouping sxp-connection-template-fields {
+        leaf template-prefix {
+            type inet:ip-prefix;
+            mandatory true;
+            description "Ip prefix of the remote peers";
+        }
+        leaf template-password {
+            type string;
+            description "SXP password can be up to 80 ASCII characters";
+        }
+        leaf template-tcp-port {
+            type inet:port-number;
+            default "64999";
+            description "Port of the connected peers";
+        }
+        leaf template-mode {
+            type sxppt:connection-mode;
+            description "Mode of the connection, i.e. uni-directional or bi-directional
+                        communication";
+        }
+        leaf template-version {
+            type sxppt:version;
+            default "version4";
+            description "Negotiated and running SXP version between peers";
+        }
+        description "SXP connections to dedicated peers";
+    }
+
     grouping sxp-connection-fields {
         leaf peer-address {
             type inet:ip-address;
@@ -184,6 +212,15 @@ module sxp-node {
                 uses sxp-connection-peer-fields;
                 uses capabilities-fields;
                 description "SXP connections to dedicated peers";
+            }
+        }
+    }
+
+    grouping sxp-connection-templates-fields {
+        container connection-templates {
+            list connection-template {
+                key "template-prefix";
+                uses sxp-connection-template-fields;
             }
         }
     }
@@ -247,6 +284,7 @@ module sxp-node {
         }
         uses sxp-databases-fields;
         uses sxp-connections-fields;
+        uses sxp-connection-templates-fields;
         container domain-filters {
             list domain-filter {
                 key "filter-specific filter-name";
