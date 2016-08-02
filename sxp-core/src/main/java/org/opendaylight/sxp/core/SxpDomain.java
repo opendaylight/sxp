@@ -12,13 +12,13 @@ import com.google.common.base.Preconditions;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
 import org.opendaylight.sxp.util.database.SxpDatabase;
@@ -26,6 +26,8 @@ import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
+import org.opendaylight.sxp.util.inet.IpPrefixConv;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
@@ -34,10 +36,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpDom
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilterFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.domain.filter.fields.Domains;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.domain.filter.fields.domains.Domain;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpConnectionTemplateFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.opendaylight.sxp.util.ArraysUtil.getBitAddress;
 
 /**
  * SxpDomain class represent layer that isolate Connections
@@ -47,6 +52,7 @@ import org.slf4j.LoggerFactory;
 public class SxpDomain implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(SxpDomain.class.getName());
+
     private final MasterDatabaseInf masterDatabase;
     private final SxpDatabaseInf sxpDatabase;
     private final String name;
@@ -55,6 +61,7 @@ public class SxpDomain implements AutoCloseable {
             filters =
             new HashMap<>(FilterSpecific.values().length);
     private final Map<InetAddress, SxpConnection> connections = new HashMap<>();
+    private final Map<IpPrefix, SxpConnectionTemplateFields> templates = new HashMap<>();
 
     /**
      * @param name           Name of Domain
@@ -484,6 +491,59 @@ public class SxpDomain implements AutoCloseable {
         synchronized (connections) {
             return connections.get(Preconditions.checkNotNull(address).getAddress());
         }
+    }
+
+    /**
+     * @param template ConnectionTemplate to be added
+     * @param <T>      Any type extending SxpConnectionTemplateFields
+     * @return if Template was successfully added
+     */
+    public <T extends SxpConnectionTemplateFields> boolean addConnectionTemplate(T template) {
+        synchronized (templates) {
+            if (templates.containsKey(Preconditions.checkNotNull(template).getTemplatePrefix())) {
+                return false;
+            }
+            templates.put(template.getTemplatePrefix(), template);
+        }
+        return true;
+    }
+
+    /**
+     * @param templatePrefix IpPrefix specifying Template
+     * @return Removed Template or null
+     */
+    public SxpConnectionTemplateFields removeConnectionTemplate(IpPrefix templatePrefix) {
+        synchronized (templates) {
+            if (templates.containsKey(templatePrefix)) {
+                return templates.get(templatePrefix);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @param address InetSocketAddress as corresponding substance of Template prefix
+     * @return Associated Template
+     */
+    public SxpConnectionTemplateFields getTemplate(InetSocketAddress address) {
+        final BitSet bitAddress = getBitAddress(Preconditions.checkNotNull(address).getAddress().getHostAddress());
+        synchronized (templates) {
+            for (IpPrefix ipPrefix : templates.keySet()) {
+                boolean found = true;
+                final BitSet prefixMatch = getBitAddress(IpPrefixConv.toString(ipPrefix).split("/")[0]);
+                final int prefixMask = Integer.parseInt(IpPrefixConv.toString(ipPrefix).split("/")[1]);
+                for (int i = 0; i < prefixMask; i++) {
+                    if (bitAddress.get(i) != prefixMatch.get(i)) {
+                        found = false;
+                        break;
+                    }
+                }
+                if (found) {
+                    return templates.get(ipPrefix);
+                }
+            }
+        }
+        return null;
     }
 
     /**

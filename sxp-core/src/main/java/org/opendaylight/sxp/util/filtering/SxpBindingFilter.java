@@ -116,18 +116,6 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
     }
 
     /**
-     * @param ip String representation of ip address
-     * @return BitSet representing ip address
-     */
-    protected static BitSet getBitAddress(String ip) {
-        byte[] address = InetAddresses.forString(ip).getAddress();
-        for (int i = 0; i < address.length; i++) {
-            address[i] = ArraysUtil.reverseBitsByte(address[i]);
-        }
-        return BitSet.valueOf(address);
-    }
-
-    /**
      * Generate wrapper for SxpFilter containing logic and
      * sort entries in SxlFilter according their sequence
      *

@@ -18,6 +18,7 @@ import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPromiseNotifier;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -34,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
+import org.opendaylight.sxp.core.handler.ConnectionDecoder;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -149,7 +151,10 @@ public class SxpNode {
     }
 
     private final HandlerFactory handlerFactoryClient = new HandlerFactory(MessageDecoder.createClientProfile(this));
-    private final HandlerFactory handlerFactoryServer = new HandlerFactory(MessageDecoder.createServerProfile(this));
+    private final HandlerFactory
+            handlerFactoryServer =
+            new HandlerFactory(new ChannelInboundHandler[] {new ConnectionDecoder(this),
+                    MessageDecoder.createServerProfile(this)});
 
     private SxpNodeIdentityBuilder nodeBuilder;
     private NodeId nodeId;
