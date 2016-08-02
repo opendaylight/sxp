@@ -13,11 +13,17 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.handler.ConnectionDecoder;
+import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
@@ -58,7 +64,21 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
      */
     public static SxpDatastoreNode createInstance(NodeId nodeId, DatastoreAccess datastoreAccess,
             SxpNodeIdentity node) {
-        return new SxpDatastoreNode(nodeId, datastoreAccess, node);
+        SxpDatastoreNode sxpNode = new SxpDatastoreNode(nodeId, datastoreAccess, node);
+        sxpNode.handlerFactoryServer.addDecoder(new ConnectionDecoder(sxpNode) {
+
+            @Override protected void addConnection(String domain, Connection connection) {
+                Preconditions.checkNotNull(connection);
+                datastoreAccess.checkAndPut(SxpDatastoreNode.getIdentifier(NodeIdConv.toString(owner.getNodeId()))
+                                .child(SxpDomains.class)
+                                .child(SxpDomain.class, new SxpDomainKey(Preconditions.checkNotNull(domain)))
+                                .child(Connections.class)
+                                .child(Connection.class,
+                                        new ConnectionKey(connection.getPeerAddress(), connection.getTcpPort())), connection,
+                        LogicalDatastoreType.OPERATIONAL, false);
+            }
+        }, HandlerFactory.Position.Begin);
+        return sxpNode;
     }
 
     private final DatastoreAccess datastoreAccess;

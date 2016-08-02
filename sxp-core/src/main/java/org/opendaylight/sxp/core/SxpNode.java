@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
+import org.opendaylight.sxp.core.handler.ConnectionDecoder;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -41,7 +42,9 @@ import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.ConnectFacade;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.Security;
+import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
 import org.opendaylight.sxp.util.database.SxpDatabase;
+import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.node.DomainNotFoundException;
@@ -96,7 +99,7 @@ public class SxpNode {
      * @return New instance of SxpNode
      */
     public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node) {
-        return new SxpNode(nodeId, node, new ThreadsWorker());
+        return createInstance(nodeId, node, new MasterDatabaseImpl(), new SxpDatabaseImpl(), new ThreadsWorker());
     }
 
     /**
@@ -145,11 +148,16 @@ public class SxpNode {
                     .getSxpPeerGroup()
                     .forEach(g -> sxpNode.addPeerGroup(new SxpPeerGroupBuilder(g).build()));
         }
+        sxpNode.handlerFactoryServer.addDecoder(new ConnectionDecoder(sxpNode), HandlerFactory.Position.Begin);
         return sxpNode;
     }
 
-    private final HandlerFactory handlerFactoryClient = new HandlerFactory(MessageDecoder.createClientProfile(this));
-    private final HandlerFactory handlerFactoryServer = new HandlerFactory(MessageDecoder.createServerProfile(this));
+    protected final HandlerFactory
+            handlerFactoryClient =
+            HandlerFactory.instanceAddDecoder(MessageDecoder.createClientProfile(this), HandlerFactory.Position.End);
+    protected final HandlerFactory
+            handlerFactoryServer =
+            HandlerFactory.instanceAddDecoder(MessageDecoder.createServerProfile(this), HandlerFactory.Position.End);
 
     private SxpNodeIdentityBuilder nodeBuilder;
     private NodeId nodeId;

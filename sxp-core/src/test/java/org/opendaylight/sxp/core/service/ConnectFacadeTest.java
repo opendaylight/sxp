@@ -9,6 +9,8 @@
 package org.opendaylight.sxp.core.service;
 
 import io.netty.channel.Channel;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,9 +21,6 @@ import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -39,7 +38,10 @@ import static org.mockito.Mockito.when;
         }
 
         @Test public void testCreateClient() throws Exception {
-                HandlerFactory handlerFactory = new HandlerFactory(MessageDecoder.createClientProfile(sxpNode));
+                HandlerFactory
+                        handlerFactory =
+                        HandlerFactory.instanceAddDecoder(MessageDecoder.createClientProfile(sxpNode),
+                                HandlerFactory.Position.End);
 
                 SxpConnection connection = mock(SxpConnection.class);
                 when(connection.getPassword()).thenReturn("passwd");
@@ -54,7 +56,10 @@ import static org.mockito.Mockito.when;
         }
 
         @Test public void testCreateServer() throws Exception {
-                HandlerFactory handlerFactory = new HandlerFactory(MessageDecoder.createServerProfile(sxpNode));
+                HandlerFactory
+                        handlerFactory =
+                        HandlerFactory.instanceAddDecoder(MessageDecoder.createServerProfile(sxpNode),
+                                HandlerFactory.Position.End);
 
                 Channel channel = ConnectFacade.createServer(sxpNode, handlerFactory).channel();
                 assertTrue(channel.isOpen());
