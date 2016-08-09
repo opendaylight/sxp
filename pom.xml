@@ -51,10 +51,10 @@
         <restconf.version>1.5.0-SNAPSHOT</restconf.version>
 
         <!-- Yang Module Versions -->
-        <ietf-yang-types.version>2013.07.15.7-SNAPSHOT</ietf-yang-types.version>
+        <ietf-yang-types.version>2013.07.15.10-SNAPSHOT</ietf-yang-types.version>
         <ietf-inet-types.version>1.2.0-SNAPSHOT</ietf-inet-types.version>
-        <yang-ext.version>2013.09.07.7-SNAPSHOT</yang-ext.version>
-        <yang-nt.version>2013.10.21.7-SNAPSHOT</yang-nt.version>
+        <yang-ext.version>2013.09.07.10-SNAPSHOT</yang-ext.version>
+        <yang-nt.version>2013.10.21.10-SNAPSHOT</yang-nt.version>
 
         <!-- EPOLL artifacts -->
         <os.detected.classifier>linux-x86_64</os.detected.classifier>
