@@ -15,6 +15,7 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.core.Configuration;
@@ -116,10 +117,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({MasterDatastoreImpl.class, DatastoreAccess.class, SxpNode.class})
-public class RpcServiceImplTest {
+public class SxpRpcServiceImplTest {
 
     private static SxpNode node;
-    private static RpcServiceImpl service;
+    private static SxpRpcServiceImpl service;
     private static DatastoreAccess datastoreAccess;
     private MasterDatabaseInf masterDatabase;
 
@@ -132,7 +133,8 @@ public class RpcServiceImplTest {
                 any(LogicalDatastoreType.class), anyBoolean())).thenReturn(true);
         when(datastoreAccess.checkAndMerge(any(InstanceIdentifier.class), any(DataObject.class),
                 any(LogicalDatastoreType.class), anyBoolean())).thenReturn(true);
-
+        PowerMockito.mockStatic(DatastoreAccess.class);
+        PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
         when(node.getNodeId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
         ArrayList<SxpPeerGroup> sxpPeerGroups = new ArrayList<>();
         sxpPeerGroups.add(mock(SxpPeerGroup.class));
@@ -151,7 +153,7 @@ public class RpcServiceImplTest {
                 .thenReturn(
                         mock(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class));
         Configuration.register(node);
-        service = new RpcServiceImpl(datastoreAccess);
+        service = new SxpRpcServiceImpl(mock(DataBroker.class));
         masterDatabase = mock(MasterDatastoreImpl.class);
         when(node.getBindingMasterDatabase()).thenReturn(masterDatabase);
     }
