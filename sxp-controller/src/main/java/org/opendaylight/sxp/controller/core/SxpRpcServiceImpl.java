@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
@@ -164,11 +165,11 @@ import org.slf4j.LoggerFactory;
 
 import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
 
-public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
+public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
     private final DatastoreAccess datastoreAccess;
 
-    private static final Logger LOG = LoggerFactory.getLogger(RpcServiceImpl.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(SxpRpcServiceImpl.class.getName());
 
     /**
      * @param requestedNodeId NodeId to be converted
@@ -178,8 +179,8 @@ public class RpcServiceImpl implements SxpControllerService, AutoCloseable {
         return requestedNodeId != null ? NodeIdConv.toString(requestedNodeId) : null;
     }
 
-    public RpcServiceImpl(DatastoreAccess datastoreAccess) {
-        this.datastoreAccess = datastoreAccess;
+    public SxpRpcServiceImpl(DataBroker broker) {
+        this.datastoreAccess = DatastoreAccess.getInstance(broker);
     }
 
     private ExecutorService executor = Executors.newFixedThreadPool(1);
