@@ -178,10 +178,10 @@ public class SxpDomain implements AutoCloseable {
                             domain);
                     getConnections().stream().filter(SxpConnection::isModeListener).forEach(c -> {
                         propagateToSharedSxpDatabases(Collections.emptyList(),
-                                getSxpDatabase().getBindings(c.getNodeIdRemote())
+                                getSxpDatabase().getBindings(c.getId())
                                         .stream()
                                         .filter(filter)
-                                        .collect(Collectors.toList()), domain, c.getNodeIdRemote(),
+                                        .collect(Collectors.toList()), domain, c.getId(),
                                 c.getFilter(FilterType.Inbound));
                     });
                 });
@@ -234,10 +234,10 @@ public class SxpDomain implements AutoCloseable {
                                 .filter(bindingFilter)
                                 .collect(Collectors.toList()), Collections.emptyList(), domain);
                         getConnections().stream().filter(SxpConnection::isModeListener).forEach(c -> {
-                            propagateToSharedSxpDatabases(getSxpDatabase().getBindings(c.getNodeIdRemote())
+                            propagateToSharedSxpDatabases(getSxpDatabase().getBindings(c.getId())
                                             .stream()
                                             .filter(bindingFilter)
-                                            .collect(Collectors.toList()), Collections.emptyList(), domain, c.getNodeIdRemote(),
+                                            .collect(Collectors.toList()), Collections.emptyList(), domain, c.getId(),
                                     c.getFilter(FilterType.Inbound));
                         });
                     });
@@ -280,10 +280,10 @@ public class SxpDomain implements AutoCloseable {
                             .filter(oldFilter)
                             .collect(Collectors.toList()), Collections.emptyList(), domain);
                     getConnections().stream().filter(SxpConnection::isModeListener).forEach(c -> {
-                        propagateToSharedSxpDatabases(getSxpDatabase().getBindings(c.getNodeIdRemote())
+                        propagateToSharedSxpDatabases(getSxpDatabase().getBindings(c.getId())
                                         .stream()
                                         .filter(oldFilter)
-                                        .collect(Collectors.toList()), Collections.emptyList(), domain, c.getNodeIdRemote(),
+                                        .collect(Collectors.toList()), Collections.emptyList(), domain, c.getId(),
                                 c.getFilter(FilterType.Inbound));
                     });
                 });
@@ -307,13 +307,13 @@ public class SxpDomain implements AutoCloseable {
                             .filter(b -> !oldFilter.test(b) && newFilter.test(b))
                             .collect(Collectors.toList()), domain);
                     getConnections().stream().filter(SxpConnection::isModeListener).forEach(c -> {
-                        propagateToSharedSxpDatabases(getSxpDatabase().getBindings(c.getNodeIdRemote())
+                        propagateToSharedSxpDatabases(getSxpDatabase().getBindings(c.getId())
                                         .stream()
                                         .filter(b -> oldFilter.test(b) && !newFilter.test(b))
-                                        .collect(Collectors.toList()), getSxpDatabase().getBindings(c.getNodeIdRemote())
+                                        .collect(Collectors.toList()), getSxpDatabase().getBindings(c.getId())
                                         .stream()
                                         .filter(b -> !oldFilter.test(b) && newFilter.test(b))
-                                        .collect(Collectors.toList()), domain, c.getNodeIdRemote(),
+                                        .collect(Collectors.toList()), domain, c.getId(),
                                 c.getFilter(FilterType.Inbound));
                     });
                 });
@@ -334,10 +334,10 @@ public class SxpDomain implements AutoCloseable {
                             .filter(oldFilter)
                             .collect(Collectors.toList()), Collections.emptyList(), domain);
                     getConnections().stream().filter(SxpConnection::isModeListener).forEach(c -> {
-                        propagateToSharedSxpDatabases(getSxpDatabase().getBindings(c.getNodeIdRemote())
+                        propagateToSharedSxpDatabases(getSxpDatabase().getBindings(c.getId())
                                         .stream()
                                         .filter(oldFilter)
-                                        .collect(Collectors.toList()), Collections.emptyList(), domain, c.getNodeIdRemote(),
+                                        .collect(Collectors.toList()), Collections.emptyList(), domain, c.getId(),
                                 c.getFilter(FilterType.Inbound));
                     });
                 });

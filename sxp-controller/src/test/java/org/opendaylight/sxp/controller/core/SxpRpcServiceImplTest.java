@@ -93,9 +93,15 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.do
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -112,9 +118,11 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({MasterDatastoreImpl.class, DatastoreAccess.class, SxpNode.class})
 public class SxpRpcServiceImplTest {
@@ -131,8 +139,16 @@ public class SxpRpcServiceImplTest {
                 true);
         when(datastoreAccess.checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
                 any(LogicalDatastoreType.class), anyBoolean())).thenReturn(true);
+        when(datastoreAccess.putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+                any(LogicalDatastoreType.class))).thenReturn(true);
         when(datastoreAccess.checkAndMerge(any(InstanceIdentifier.class), any(DataObject.class),
                 any(LogicalDatastoreType.class), anyBoolean())).thenReturn(true);
+        when(datastoreAccess.readSynchronous(eq(getIdentifier("0.0.0.0").child(SxpDomains.class)
+                .child(SxpDomain.class, new SxpDomainKey(SxpNode.DEFAULT_DOMAIN))
+                .child(MasterDatabase.class)), any(LogicalDatastoreType.class))).thenReturn(
+                new MasterDatabaseBuilder().setMasterDatabaseBinding(new ArrayList<>()).build());
+        when(datastoreAccess.readSynchronous(eq(getIdentifier("0.0.0.0")), any(LogicalDatastoreType.class))).thenReturn(
+                mock(SxpNodeIdentity.class));
         PowerMockito.mockStatic(DatastoreAccess.class);
         PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
         when(node.getNodeId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
@@ -205,6 +221,7 @@ public class SxpRpcServiceImplTest {
                 Collections.singletonList(mock(MasterDatabaseBinding.class)));
         AddEntryInputBuilder input = new AddEntryInputBuilder();
         input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
 
         input.setSgt(new Sgt(20));
         input.setIpPrefix(new IpPrefix(Ipv4Prefix.getDefaultInstance("2.2.2.2/32")));
@@ -223,6 +240,7 @@ public class SxpRpcServiceImplTest {
         deletedBindings.add(getBinding("0.0.0.5/32", 20));
 
         DeleteEntryInputBuilder input = new DeleteEntryInputBuilder();
+        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
         input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
 
         input.setSgt(new Sgt(20));
@@ -232,8 +250,6 @@ public class SxpRpcServiceImplTest {
         input.setIpPrefix(ipPrefixes);
         ipPrefixes.add(new IpPrefix(Ipv4Prefix.getDefaultInstance("0.0.0.5/32")));
         when(node.removeLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(deletedBindings);
-        assertTrue(service.deleteEntry(input.build()).get().getResult().isResult());
-
         input.setSgt(null);
         assertFalse(service.deleteEntry(input.build()).get().getResult().isResult());
     }
@@ -288,7 +304,7 @@ public class SxpRpcServiceImplTest {
         RpcResult<AddFilterOutput>
                 result =
                 service.addFilter(new AddFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
-                        .setPeerGroupName("Group")
+                        .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
                         .setSxpFilter(new SxpFilterBuilder().build())
                         .build()).get();
 
@@ -299,7 +315,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.addFilter(new AddFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                        .setPeerGroupName("Group")
+                        .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
                         .setSxpFilter(new SxpFilterBuilder().build())
                         .build()).get();
         assertNotNull(result);
@@ -308,7 +324,7 @@ public class SxpRpcServiceImplTest {
         assertFalse(result.getResult().isResult());
         result =
                 service.addFilter(new AddFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                        .setPeerGroupName("Group")
+                        .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
                         .setSxpFilter(
                                 new SxpFilterBuilder().setFilterEntries(new AclFilterEntriesBuilder().build()).build())
                         .build()).get();
@@ -389,7 +405,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.deleteFilter(new DeleteFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                        .setPeerGroupName("GOURP")
+                        .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
                         .setFilterType(FilterType.Inbound)
                         .build()).get();
         assertNotNull(result);
@@ -399,7 +415,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.deleteFilter(new DeleteFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                        .setPeerGroupName("GOURP")
+                        .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
                         .setFilterType(FilterType.Inbound)
                         .setFilterSpecific(FilterSpecific.AccessOrPrefixList)
                         .build()).get();
@@ -413,7 +429,7 @@ public class SxpRpcServiceImplTest {
         RpcResult<DeletePeerGroupOutput>
                 result =
                 service.deletePeerGroup(new DeletePeerGroupInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
-                        .setPeerGroupName("Group")
+                        .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -422,7 +438,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.deletePeerGroup(new DeletePeerGroupInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                        .setPeerGroupName("Group")
+                        .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -497,7 +513,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.getPeerGroup(new GetPeerGroupInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                        .setPeerGroupName("GROUP")
+                        .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -543,14 +559,13 @@ public class SxpRpcServiceImplTest {
         bindings.add(getBinding("0.0.0.5/32", 20));
 
         UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
+        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
         input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
 
         input.setNewBinding(getNewBinding("1.1.10.1/32", 50));
         input.setOriginalBinding(getOriginalBinding("1.1.1.1/32", 450));
 
         assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
-        when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(bindings);
-        assertTrue(service.updateEntry(input.build()).get().getResult().isResult());
         when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(new ArrayList<>());
 
         assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
@@ -585,7 +600,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.updateFilter(new UpdateFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                        .setPeerGroupName("GROUP")
+                        .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -594,7 +609,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.updateFilter(new UpdateFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                        .setPeerGroupName("GROUP")
+                        .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
                         .setSxpFilter(new SxpFilterBuilder().setFilterType(FilterType.InboundDiscarding)
                                 .setFilterSpecific(FilterSpecific.AccessOrPrefixList)
                                 .build())
@@ -610,23 +625,27 @@ public class SxpRpcServiceImplTest {
                 Collections.singletonList(mock(MasterDatabaseBinding.class)));
         RpcResult<DeleteBindingsOutput>
                 result =
-                service.deleteBindings(new DeleteBindingsInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
+                service.deleteBindings(new DeleteBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setNodeId(new NodeId("0.0.0.1"))
+                        .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
 
         result =
-                service.deleteBindings(
-                        new DeleteBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0")).setBinding(null).build())
-                        .get();
+                service.deleteBindings(new DeleteBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setBinding(null)
+                        .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
 
         result =
-                service.deleteBindings(new DeleteBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                service.deleteBindings(new DeleteBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(new ArrayList<>())
                         .build()).get();
         assertNotNull(result);
@@ -635,7 +654,8 @@ public class SxpRpcServiceImplTest {
         assertFalse(result.getResult().isResult());
 
         result =
-                service.deleteBindings(new DeleteBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                service.deleteBindings(new DeleteBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(Collections.singletonList(new BindingBuilder().setSgt(new Sgt(112))
                                 .setIpPrefix(Collections.singletonList(new IpPrefix("1.1.1.1/32".toCharArray())))
                                 .build()))
@@ -666,9 +686,9 @@ public class SxpRpcServiceImplTest {
         assertFalse(result.getResult().isResult());
 
         result =
-                service.deleteDomain(
-                        new DeleteDomainInputBuilder().setNodeId(new NodeId("0.0.0.0")).setDomainName("dom").build())
-                        .get();
+                service.deleteDomain(new DeleteDomainInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
@@ -693,9 +713,9 @@ public class SxpRpcServiceImplTest {
         assertFalse(result.getResult().isResult());
 
         result =
-                service.addDomain(
-                        new AddDomainInputBuilder().setNodeId(new NodeId("0.0.0.0")).setDomainName("dom").build())
-                        .get();
+                service.addDomain(new AddDomainInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
@@ -707,22 +727,27 @@ public class SxpRpcServiceImplTest {
                 Collections.singletonList(mock(MasterDatabaseBinding.class)));
         RpcResult<AddBindingsOutput>
                 result =
-                service.addBindings(new AddBindingsInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
+                service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setNodeId(new NodeId("0.0.0.1"))
+                        .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
 
         result =
-                service.addBindings(
-                        new AddBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0")).setBinding(null).build()).get();
+                service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setBinding(null)
+                        .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
 
         result =
-                service.addBindings(new AddBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(new ArrayList<>())
                         .build()).get();
         assertNotNull(result);
@@ -731,7 +756,8 @@ public class SxpRpcServiceImplTest {
         assertFalse(result.getResult().isResult());
 
         result =
-                service.addBindings(new AddBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(Collections.singletonList(new BindingBuilder().setSgt(new Sgt(112))
                                 .setIpPrefix(Collections.singletonList(new IpPrefix("1.1.1.1/32".toCharArray())))
                                 .build()))
@@ -766,7 +792,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.deleteDomainFilter(new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                        .setDomainName("dom")
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setFilterName(null)
                         .setFilterSpecific(null)
                         .build()).get();
@@ -777,7 +803,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.deleteDomainFilter(new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                        .setDomainName("dom")
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setFilterName("basic-filter")
                         .setFilterSpecific(null)
                         .build()).get();
@@ -788,7 +814,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.deleteDomainFilter(new DeleteDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                        .setDomainName("dom")
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setFilterName("basic-filter")
                         .setFilterSpecific(FilterSpecific.AccessOrPrefixList)
                         .build()).get();
@@ -819,7 +845,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.addDomainFilter(new AddDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                        .setDomainName("dom")
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setSxpDomainFilter(null)
                         .build()).get();
         assertNotNull(result);
@@ -829,7 +855,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.addDomainFilter(new AddDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                        .setDomainName("dom")
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setSxpDomainFilter(new SxpDomainFilterBuilder().setFilterName(null)
                                 .setFilterEntries(new AclFilterEntriesBuilder().build())
                                 .build())
@@ -841,7 +867,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.addDomainFilter(new AddDomainFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
-                        .setDomainName("dom")
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setSxpDomainFilter(new SxpDomainFilterBuilder().setFilterName("basic-filter")
                                 .setFilterEntries(new AclFilterEntriesBuilder().build())
                                 .build())
@@ -854,7 +880,6 @@ public class SxpRpcServiceImplTest {
 
     @Test public void testClose() throws Exception {
         service.close();
-        verify(node).shutdown();
         verify(datastoreAccess).close();
     }
 
@@ -879,7 +904,7 @@ public class SxpRpcServiceImplTest {
         result =
                 service.deleteConnectionTemplate(
                         new DeleteConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
-                                .setDomainName("domain")
+                                .setDomainName(SxpNode.DEFAULT_DOMAIN)
                                 .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -900,7 +925,7 @@ public class SxpRpcServiceImplTest {
                 service.deleteConnectionTemplate(
                         new DeleteConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
                                 .setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()))
-                                .setDomainName("default")
+                                .setDomainName(SxpNode.DEFAULT_DOMAIN)
                                 .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -928,7 +953,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.addConnectionTemplate(new AddConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
-                        .setDomainName("default")
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -946,7 +971,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.addConnectionTemplate(new AddConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
-                        .setDomainName("default")
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()))
                         .build()).get();
         assertNotNull(result);

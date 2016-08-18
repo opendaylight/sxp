@@ -9,15 +9,25 @@
 package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Preconditions;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.SxpConnection;
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.ConnectionDecoder;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
+import org.opendaylight.sxp.util.database.SxpDatabase;
+import org.opendaylight.sxp.util.exception.node.DomainNotFoundException;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainKey;
@@ -118,9 +128,10 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
         return identity != null ? identity : super.getNodeIdentity();
     }
 
-    @Override public void addConnection(Connection connection, String domain) {
-        addConnection(SxpDatastoreConnection.create(datastoreAccess, this, Preconditions.checkNotNull(connection),
-                Preconditions.checkNotNull(domain)));
+    @Override public SxpConnection addConnection(Connection connection, String domain) {
+        return addConnection(
+                SxpDatastoreConnection.create(datastoreAccess, this, Preconditions.checkNotNull(connection),
+                        Preconditions.checkNotNull(domain)));
     }
 
     @Override protected Security setPassword(final Security security) {
@@ -132,12 +143,52 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
         return nodeSecurity;
     }
 
+    @Override public List<MasterDatabaseBinding> putLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings,
+            String domainName) throws DomainNotFoundException {
+
+        final org.opendaylight.sxp.core.SxpDomain sxpDomain = getDomain(domainName);
+        if (sxpDomain == null)
+            throw new DomainNotFoundException(getName(), "Domain " + domainName + " not found");
+        synchronized (sxpDomain) {
+            svcBindingDispatcher.propagateUpdate(null, bindings, getAllOnSpeakerConnections(domainName));
+            sxpDomain.pushToSharedMasterDatabases(Collections.emptyList(), bindings);
+        }
+        return bindings;
+    }
+
+    @Override public List<MasterDatabaseBinding> removeLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings,
+            String domainName) throws DomainNotFoundException {
+
+        final org.opendaylight.sxp.core.SxpDomain sxpDomain = getDomain(domainName);
+        if (sxpDomain == null)
+            throw new DomainNotFoundException(getName(), "Domain " + domainName + " not found");
+        Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(this, domainName);
+        synchronized (sxpDomain) {
+            svcBindingDispatcher.propagateUpdate(bindings, sxpDomain.getMasterDatabase()
+                            .addBindings(SxpDatabase.getReplaceForBindings(bindings, sxpDomain.getSxpDatabase(), filterMap)),
+                    getAllOnSpeakerConnections(domainName));
+            sxpDomain.pushToSharedMasterDatabases(bindings, Collections.emptyList());
+        }
+        return bindings;
+    }
+
     public DatastoreAccess getDatastoreAccess() {
         return datastoreAccess;
     }
 
+    @Override public synchronized SxpNode shutdown() {
+        datastoreAccess.close();
+        return super.shutdown();
+    }
+
     @Override public void close() {
         datastoreAccess.close();
+        setTimer(TimerType.RetryOpenTimer, 0);
+        getAllConnections().forEach(c -> {
+            if (c instanceof SxpDatastoreConnection) {
+                ((SxpDatastoreConnection) c).close();
+            }
+        });
         shutdown();
     }
 }

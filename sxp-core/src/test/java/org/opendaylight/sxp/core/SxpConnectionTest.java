@@ -293,7 +293,7 @@ public class SxpConnectionTest {
 
                 sxpConnection = SxpConnection.create(sxpNode, connection, DOMAIN_NAME);
                 sxpConnection.shutdown();
-                verify(sxpDatabase).deleteBindings(sxpConnection.getNodeIdRemote());
+                verify(sxpDatabase).deleteBindings(sxpConnection.getId());
                 assertEquals(ConnectionState.Off, sxpConnection.getState());
 
                 sxpConnection = SxpConnection.create(sxpNode, connection1, DOMAIN_NAME);

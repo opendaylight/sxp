@@ -82,16 +82,13 @@ public final class ConfigLoader {
         if (configuration == null || configuration.getSxpNode() == null)
             return;
         configuration.getSxpNode().stream().forEach(n -> {
-            if (n.getNodeId() == null) {
-                return;
+            final String nodeId = NodeIdConv.toString(n.getNodeId());
+            if (initTopologyNode(nodeId, LogicalDatastoreType.CONFIGURATION, datastoreAccess)) {
+                datastoreAccess.checkAndPut(NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class, new NodeKey(
+                                new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
+                                        nodeId))).augmentation(SxpNodeIdentity.class), parseNode(n),
+                        LogicalDatastoreType.CONFIGURATION, false);
             }
-            String nodeId = NodeIdConv.toString(n.getNodeId());
-            SxpNodeIdentity identity = parseNode(n);
-            initTopologyNode(nodeId, LogicalDatastoreType.CONFIGURATION, datastoreAccess);
-            datastoreAccess.putSynchronous(NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class, new NodeKey(
-                            new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
-                                    nodeId))).augmentation(SxpNodeIdentity.class), identity,
-                    LogicalDatastoreType.CONFIGURATION);
         });
     }
 

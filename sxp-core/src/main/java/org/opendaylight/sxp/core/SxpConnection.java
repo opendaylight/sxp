@@ -113,6 +113,8 @@ public class SxpConnection {
 
     private final SxpNode owner;
     protected final String domain;
+    private final NodeId connectionId;
+
 
     protected HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(5);
     private final Map<FilterType, Map<FilterSpecific, SxpBindingFilter<?,? extends SxpFilterFields>>>
@@ -153,7 +155,7 @@ public class SxpConnection {
             //Adds all Bindings learned from peer to MasterDB and sends it to All Listeners
             owner.getWorker().executeTaskInSequence(() -> {
                 synchronized (sxpDomain) {
-                    List<SxpDatabaseBinding> bindingsAdd = sxpDomain.getSxpDatabase().getBindings(getNodeIdRemote());
+                    List<SxpDatabaseBinding> bindingsAdd = sxpDomain.getSxpDatabase().getBindings(getId());
                     if (getFilter(filterType) != null) {
                         bindingsAdd.removeIf(b -> !getFilter(filterType).test(b));
                     }
@@ -172,11 +174,11 @@ public class SxpConnection {
                 synchronized (sxpDomain) {
                     List<SxpDatabaseBinding>
                             bindingsDelete =
-                            SxpDatabase.filterDatabase(sxpDomain.getSxpDatabase(), getNodeIdRemote(),
+                            SxpDatabase.filterDatabase(sxpDomain.getSxpDatabase(), getId(),
                                     getFilter(filterType));
 
                     if (filterType.equals(FilterType.InboundDiscarding)) {
-                        sxpDomain.getSxpDatabase().deleteBindings(getNodeIdRemote(), bindingsDelete);
+                        sxpDomain.getSxpDatabase().deleteBindings(getId(), bindingsDelete);
                     }
                     getOwner().getSvcBindingDispatcher()
                             .propagateUpdate(sxpDomain.getMasterDatabase().deleteBindings(bindingsDelete),
@@ -185,7 +187,7 @@ public class SxpConnection {
                                                     sxpDomain.getSxpDatabase(), filterMap)),
                                     owner.getAllOnSpeakerConnections(getDomainName()));
                     getOwner().getDomain(getDomainName())
-                            .pushToSharedSxpDatabases(getNodeIdRemote(), getFilter(filterType), bindingsDelete,
+                            .pushToSharedSxpDatabases(getId(), getFilter(filterType), bindingsDelete,
                                     Collections.emptyList());
                 }
                 return null;
@@ -260,6 +262,7 @@ public class SxpConnection {
                 new InetSocketAddress(Search.getAddress(connectionBuilder.getPeerAddress()),
                         connectionBuilder.getTcpPort() != null ? connectionBuilder.getTcpPort()
                                 .getValue() : Configuration.getConstants().getPort());
+        this.connectionId = new NodeId(connectionBuilder.getPeerAddress().getIpv4Address());
         for (FilterType filterType : FilterType.values()) {
             bindingFilterMap.put(filterType, new HashMap<>());
         }
@@ -390,7 +393,7 @@ public class SxpConnection {
         // before the delete hold down timer expiration, a reconcile timer is
         // started to clean up old mappings that didn’t get informed to be
         // removed because of the loss of connectivity.
-        context.getOwner().getBindingSxpDatabase(getDomainName()).reconcileBindings(getNodeIdRemote());
+        context.getOwner().getBindingSxpDatabase(getDomainName()).reconcileBindings(getId());
     }
 
     /**
@@ -641,6 +644,13 @@ public class SxpConnection {
      */
     public NodeId getNodeIdRemote() {
         return getConnection().getNodeId();
+    }
+
+    /**
+     * @return Gets Id of assigned for this connection
+     */
+    public NodeId getId() {
+        return connectionId;
     }
 
     /**
@@ -1141,7 +1151,7 @@ public class SxpConnection {
      */
     public void setStateDeleteHoldDown() {
         setState(ConnectionState.DeleteHoldDown);
-        owner.getBindingSxpDatabase(getDomainName()).setReconciliation(getNodeIdRemote());
+        owner.getBindingSxpDatabase(getDomainName()).setReconciliation(getId());
     }
 
     /**
@@ -1295,6 +1305,7 @@ public class SxpConnection {
         if (isModeListener()) {
             LOG.info("{} PURGE bindings ", this);
             BindingHandler.processPurgeAllMessageSync(this);
+
         } else if (isModeSpeaker() && isStateOn()) {
             BindingDispatcher.sendPurgeAllMessageSync(this);
         }
