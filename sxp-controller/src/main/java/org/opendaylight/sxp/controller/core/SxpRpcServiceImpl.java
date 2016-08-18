@@ -181,6 +181,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
     public SxpRpcServiceImpl(DataBroker broker) {
         this.datastoreAccess = DatastoreAccess.getInstance(broker);
+        LOG.info("RpcService started for {}", this.getClass().getSimpleName());
     }
 
     private ExecutorService executor = Executors.newFixedThreadPool(1);
