@@ -52,7 +52,7 @@ public class SxpControllerModule
         return false;
     }
 
-    @SuppressWarnings("unchecked") @Override public java.lang.AutoCloseable createInstance() {
+    @Override public java.lang.AutoCloseable createInstance() {
         try (DatastoreAccess datastoreAccess = DatastoreAccess.getInstance(getDataBrokerDependency())) {
             ConfigLoader configLoader = new ConfigLoader(datastoreAccess);
             if (initTopology(datastoreAccess, LogicalDatastoreType.OPERATIONAL) && initTopology(datastoreAccess,

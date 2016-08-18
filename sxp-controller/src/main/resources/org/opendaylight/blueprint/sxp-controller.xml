@@ -5,6 +5,8 @@
 
     <reference id="dataBroker" interface="org.opendaylight.controller.md.sal.binding.api.DataBroker"
                odl:type="default"/>
+    <reference id="clusterSingletonServiceProvider"
+               interface="org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvider"/>
 
     <!-- Modules /-->
     <bean id="sxpRpcService" class="org.opendaylight.sxp.controller.core.SxpRpcServiceImpl"
@@ -15,6 +17,7 @@
           class="org.opendaylight.controller.config.yang.sxp.controller.conf.SxpControllerInstance"
           destroy-method="close">
         <argument ref="dataBroker"/>
+        <argument ref="clusterSingletonServiceProvider"/>
     </bean>
     <!-- Services -->
     <service ref="sxpRpcService"
