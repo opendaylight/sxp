@@ -98,7 +98,7 @@ public class BindingHandlerTest {
                 worker = mock(ThreadsWorker.class);
                 when(connection.getOwner()).thenReturn(sxpNode);
                 when(connection.getDomainName()).thenReturn("default");
-                when(connection.getNodeIdRemote()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
+                when(connection.getId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
                 when(connection.getOwnerId()).thenReturn(NodeId.getDefaultInstance("1.1.1.1"));
                 PowerMockito.when(sxpNode.getWorker()).thenReturn(worker);
                 List<CapabilityType> capabilities = new ArrayList<>();
@@ -411,7 +411,7 @@ public class BindingHandlerTest {
 
                 add.clear();
                 dell.clear();
-                when(connection.getNodeIdRemote()).thenReturn(NodeId.getDefaultInstance("0.0.0.1"));
+                when(connection.getId()).thenReturn(NodeId.getDefaultInstance("0.0.0.1"));
 
                 dell.add(getBinding("5.5.5.5/32", 20, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
                 dell.add(getBinding("15.5.15.0/24", 30, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));

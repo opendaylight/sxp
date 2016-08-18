@@ -93,6 +93,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.do
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
@@ -112,9 +113,11 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
 
 @RunWith(PowerMockRunner.class) @PrepareForTest({MasterDatastoreImpl.class, DatastoreAccess.class, SxpNode.class})
 public class SxpRpcServiceImplTest {
@@ -133,6 +136,8 @@ public class SxpRpcServiceImplTest {
                 any(LogicalDatastoreType.class), anyBoolean())).thenReturn(true);
         when(datastoreAccess.checkAndMerge(any(InstanceIdentifier.class), any(DataObject.class),
                 any(LogicalDatastoreType.class), anyBoolean())).thenReturn(true);
+        when(datastoreAccess.readSynchronous(eq(getIdentifier("0.0.0.0")), any(LogicalDatastoreType.class))).thenReturn(
+                mock(SxpNodeIdentity.class));
         PowerMockito.mockStatic(DatastoreAccess.class);
         PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
         when(node.getNodeId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
@@ -205,6 +210,7 @@ public class SxpRpcServiceImplTest {
                 Collections.singletonList(mock(MasterDatabaseBinding.class)));
         AddEntryInputBuilder input = new AddEntryInputBuilder();
         input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+        input.setDomainName("GROUP");
 
         input.setSgt(new Sgt(20));
         input.setIpPrefix(new IpPrefix(Ipv4Prefix.getDefaultInstance("2.2.2.2/32")));
@@ -223,6 +229,7 @@ public class SxpRpcServiceImplTest {
         deletedBindings.add(getBinding("0.0.0.5/32", 20));
 
         DeleteEntryInputBuilder input = new DeleteEntryInputBuilder();
+        input.setDomainName("GROUP");
         input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
 
         input.setSgt(new Sgt(20));
@@ -232,8 +239,6 @@ public class SxpRpcServiceImplTest {
         input.setIpPrefix(ipPrefixes);
         ipPrefixes.add(new IpPrefix(Ipv4Prefix.getDefaultInstance("0.0.0.5/32")));
         when(node.removeLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(deletedBindings);
-        assertTrue(service.deleteEntry(input.build()).get().getResult().isResult());
-
         input.setSgt(null);
         assertFalse(service.deleteEntry(input.build()).get().getResult().isResult());
     }
@@ -543,14 +548,13 @@ public class SxpRpcServiceImplTest {
         bindings.add(getBinding("0.0.0.5/32", 20));
 
         UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
+        input.setDomainName("GROUP");
         input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
 
         input.setNewBinding(getNewBinding("1.1.10.1/32", 50));
         input.setOriginalBinding(getOriginalBinding("1.1.1.1/32", 450));
 
         assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
-        when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(bindings);
-        assertTrue(service.updateEntry(input.build()).get().getResult().isResult());
         when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(new ArrayList<>());
 
         assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
@@ -707,22 +711,27 @@ public class SxpRpcServiceImplTest {
                 Collections.singletonList(mock(MasterDatabaseBinding.class)));
         RpcResult<AddBindingsOutput>
                 result =
-                service.addBindings(new AddBindingsInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
-        assertNotNull(result);
-        assertTrue(result.isSuccessful());
-        assertNotNull(result.getResult());
-        assertFalse(result.getResult().isResult());
-
-        result =
                 service.addBindings(
-                        new AddBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0")).setBinding(null).build()).get();
+                        new AddBindingsInputBuilder().setDomainName("GROUP").setNodeId(new NodeId("0.0.0.1")).build())
+                        .get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
 
         result =
-                service.addBindings(new AddBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                service.addBindings(new AddBindingsInputBuilder().setDomainName("GROUP")
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setBinding(null)
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+
+        result =
+                service.addBindings(new AddBindingsInputBuilder().setDomainName("GROUP")
+                        .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(new ArrayList<>())
                         .build()).get();
         assertNotNull(result);
@@ -731,7 +740,8 @@ public class SxpRpcServiceImplTest {
         assertFalse(result.getResult().isResult());
 
         result =
-                service.addBindings(new AddBindingsInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+                service.addBindings(new AddBindingsInputBuilder().setDomainName("GROUP")
+                        .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(Collections.singletonList(new BindingBuilder().setSgt(new Sgt(112))
                                 .setIpPrefix(Collections.singletonList(new IpPrefix("1.1.1.1/32".toCharArray())))
                                 .build()))
@@ -854,7 +864,6 @@ public class SxpRpcServiceImplTest {
 
     @Test public void testClose() throws Exception {
         service.close();
-        verify(node).shutdown();
         verify(datastoreAccess).close();
     }
 

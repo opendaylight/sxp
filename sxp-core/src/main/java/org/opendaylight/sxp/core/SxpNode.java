@@ -165,8 +165,8 @@ public class SxpNode {
     private Channel serverChannel;
     protected InetAddress sourceIp;
 
-    private final BindingDispatcher svcBindingDispatcher;
-    private final BindingHandler svcBindingHandler;
+    protected final BindingDispatcher svcBindingDispatcher;
+    protected final BindingHandler svcBindingHandler;
     private final ThreadsWorker worker;
 
     /**
@@ -209,7 +209,7 @@ public class SxpNode {
     /**
      * @param connection Adds connection and update MD5 keys if needed
      */
-    protected void addConnection(SxpConnection connection) {
+    protected SxpConnection addConnection(SxpConnection connection) {
         synchronized (peerGroupMap) {
             for (SxpPeerGroup peerGroup : getPeerGroup(connection)) {
                 for (SxpFilter filter : peerGroup.getSxpFilter()) {
@@ -220,11 +220,12 @@ public class SxpNode {
         synchronized (sxpDomains) {
             if (!sxpDomains.containsKey(connection.getDomainName())) {
                 LOG.warn("{} Domain {} does not exist", this, connection.getDomainName());
-                return;
+                throw new DomainNotFoundException(getName(), "Domain " + connection.getDomainName() + " not found");
             }
             sxpDomains.get(connection.getDomainName()).putConnection(connection);
         }
         updateMD5keys(connection);
+        return connection;
     }
 
     /**
@@ -613,8 +614,8 @@ public class SxpNode {
      *                   if domain does no exist connection wont be added
      * @throws IllegalArgumentException If Connection exist in Node
      */
-    public void addConnection(Connection connection, String domain) {
-        addConnection(
+    public SxpConnection addConnection(Connection connection, String domain) {
+        return addConnection(
                 SxpConnection.create(this, Preconditions.checkNotNull(connection), Preconditions.checkNotNull(domain)));
     }
 

@@ -21,6 +21,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
@@ -40,7 +41,13 @@ public class ConnectionsListener extends ListListener<SxpDomain, Connections, Co
         switch (c.getModificationType()) {
             case WRITE:
                 if (c.getDataBefore() == null) {
-                    sxpNode.addConnection(c.getDataAfter(), domainName);
+                    if (c.getDataAfter() != null && c.getDataAfter().getTimestampUpdateOrKeepAliveMessage() != null && (
+                            ConnectionMode.Both.equals(c.getDataAfter().getMode()) || ConnectionMode.Listener.equals(
+                                    c.getDataAfter().getMode()))) {
+                        sxpNode.addConnection(c.getDataAfter(), domainName).setDeleteHoldDownTimer();
+                    } else {
+                        sxpNode.addConnection(c.getDataAfter(), domainName);
+                    }
                     break;
                 } else if (c.getDataAfter() == null) {
                     sxpNode.removeConnection(getConnection(c.getDataBefore()));

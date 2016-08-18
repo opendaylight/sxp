@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nonnull;
+import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
@@ -39,7 +40,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
 
-public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdentity> {
+public class NodeIdentityListener implements ClusteredDataTreeChangeListener<SxpNodeIdentity> {
 
     public static final InstanceIdentifier<Topology>
             SUBSCRIBED_PATH =
@@ -150,10 +151,7 @@ public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdent
                         });
                         break;
                     case DELETE:
-                        SxpNode node = Configuration.unRegister(Preconditions.checkNotNull(nodeId));
-                        if (node instanceof SxpDatastoreNode) {
-                            ((SxpDatastoreNode) node).close();
-                        }
+                        Configuration.unRegister(Preconditions.checkNotNull(nodeId)).shutdown();
                         break;
                 }
             }

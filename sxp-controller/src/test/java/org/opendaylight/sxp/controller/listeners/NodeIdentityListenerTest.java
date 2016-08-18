@@ -154,7 +154,7 @@ public class NodeIdentityListenerTest {
                         createIdentity(true, "0.0.0.0", 64999, Version.Version4, 120), null));
 
         identityListener.onDataTreeChanged(modificationList);
-        verify(sxpNode).close();
+        verify(sxpNode).shutdown();
     }
 
     @Test public void testOnDataTreeChanged_4() throws Exception {
