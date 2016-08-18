@@ -182,7 +182,7 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
         Map<NodeId, SxpBindingFilter> map = new HashMap<>();
         node.getAllConnections(Preconditions.checkNotNull(domain)).forEach(c -> {
             if (c.isModeListener()) {
-                map.put(c.getNodeIdRemote(), c.getFilter(FilterType.Inbound));
+                map.put(c.getId(), c.getFilter(FilterType.Inbound));
             }
         });
         return map;

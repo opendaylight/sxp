@@ -144,25 +144,25 @@ import static org.mockito.Mockito.verify;
 
     @Test public void testLoad() throws Exception {
         configLoader.load(null);
-        verify(access, never()).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.CONFIGURATION));
+        verify(access, never()).checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.CONFIGURATION), anyBoolean());
 
         SxpController controller = new SxpController();
         configLoader.load(controller);
-        verify(access, never()).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.CONFIGURATION));
+        verify(access, never()).checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.CONFIGURATION), anyBoolean());
 
         controller.setSxpNode(new ArrayList<>());
         configLoader.load(controller);
-        verify(access, never()).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.CONFIGURATION));
+        verify(access, never()).checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.CONFIGURATION), anyBoolean());
 
         controller.getSxpNode().add(getNode(null));
         controller.getSxpNode().add(getNode("0.0.0.0"));
         controller.getSxpNode().add(getNode("1.1.1.1"));
         configLoader.load(controller);
-        verify(access, times(2)).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.CONFIGURATION));
+        verify(access, times(6)).checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.CONFIGURATION), anyBoolean());
     }
 
     @Test public void testParseMasterDatabase() throws Exception {

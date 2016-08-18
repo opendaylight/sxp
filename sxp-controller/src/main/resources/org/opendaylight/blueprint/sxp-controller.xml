@@ -4,7 +4,9 @@
            odl:use-default-for-reference-types="true">
 
     <reference id="dataBroker" interface="org.opendaylight.controller.md.sal.binding.api.DataBroker"
-               odl:type="default"/>
+               odl:type="pingpong"/>
+    <reference id="clusterSingletonServiceProvider"
+               interface="org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvider"/>
 
     <!-- Modules /-->
     <bean id="sxpRpcService" class="org.opendaylight.sxp.controller.core.SxpRpcServiceImpl"
@@ -12,13 +14,15 @@
         <argument ref="dataBroker"/>
     </bean>
     <bean id="sxpControllerInstance"
-          class="org.opendaylight.controller.config.yang.sxp.controller.conf.SxpControllerInstance"
-          destroy-method="close">
+          class="org.opendaylight.controller.config.yang.sxp.controller.conf.SxpControllerInstance">
         <argument ref="dataBroker"/>
+        <argument ref="clusterSingletonServiceProvider"/>
     </bean>
     <!-- Services -->
     <service ref="sxpRpcService"
              interface="org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.SxpControllerService"/>
+    <service ref="sxpControllerInstance"
+             interface="org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService"/>
     <!-- RPC implementations -->
     <odl:rpc-implementation ref="sxpRpcService"/>
 </blueprint>
