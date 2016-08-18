@@ -280,7 +280,7 @@ public final class BindingHandler {
                 SxpDatabase.getInboundFilters(connection.getOwner(), connection.getDomainName());
         final SxpDomain sxpDomain = connection.getOwner().getDomain(connection.getDomainName());
         synchronized (sxpDomain) {
-            List<SxpDatabaseBinding> removed = sxpDomain.getSxpDatabase().deleteBindings(connection.getNodeIdRemote()),
+            List<SxpDatabaseBinding> removed = sxpDomain.getSxpDatabase().deleteBindings(connection.getId()),
                     replace =
                             SxpDatabase.getReplaceForBindings(removed, sxpDomain.getSxpDatabase(), filterMap);
             connection.propagateUpdate(sxpDomain.getMasterDatabase().deleteBindings(removed),
@@ -312,11 +312,11 @@ public final class BindingHandler {
         List<SxpConnection> sxpConnections = sxpNode.getAllOnSpeakerConnections(domain.getName());
         synchronized (domain) {
             if (databaseDelete != null && !databaseDelete.isEmpty()) {
-                removed = sxpDatabase.deleteBindings(connection.getNodeIdRemote(), databaseDelete);
+                removed = sxpDatabase.deleteBindings(connection.getId(), databaseDelete);
                 replace = SxpDatabase.getReplaceForBindings(removed, sxpDatabase, filterMap);
             }
             if (databaseAdd != null && !databaseAdd.isEmpty()) {
-                added = sxpDatabase.addBinding(connection.getNodeIdRemote(), databaseAdd);
+                added = sxpDatabase.addBinding(connection.getId(), databaseAdd);
                 if (filter != null)
                     added.removeIf(b -> !filter.test(b));
             }
@@ -324,7 +324,7 @@ public final class BindingHandler {
             List<MasterDatabaseBinding> deletedMaster = masterDatabase.deleteBindings(removed),
                     addedMaster = masterDatabase.addBindings(added);
             dispatcher.propagateUpdate(deletedMaster, addedMaster, sxpConnections);
-            domain.pushToSharedSxpDatabases(connection.getNodeIdRemote(), filter, removed, added);
+            domain.pushToSharedSxpDatabases(connection.getId(), filter, removed, added);
             if (!removed.isEmpty() || !added.isEmpty()) {
                 LOG.info(connection.getOwnerId() + "[Deleted/Added] bindings [{}/{}]", deletedMaster.size(),
                         addedMaster.size(), replace.size());
