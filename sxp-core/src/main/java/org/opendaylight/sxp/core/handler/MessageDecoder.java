@@ -13,6 +13,8 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.SimpleChannelInboundHandler;
+import java.io.IOException;
+import java.net.SocketAddress;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpConnection.ChannelHandlerContextType;
 import org.opendaylight.sxp.core.SxpNode;
@@ -28,9 +30,6 @@ import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateE
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.net.SocketAddress;
 
 /** Handles server and client sides of a channel. */
 @Sharable
@@ -188,24 +187,15 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
             ctx.close();
             return;
         }
-        // Connection is already functional, do not add new channel context.
-        if (connection.isStateOn() && (!connection.isModeBoth() || connection.isBidirectionalBoth())) {
-            ctx.close();
-            return;
-        }
         if (profile.equals(Profile.Server)) {
             // System.out.println("L" + ctx.channel().remoteAddress());
             connection.setInetSocketAddresses(ctx.channel().localAddress());
             connection.addChannelHandlerContext(ctx);
             return;
         }
-
-        // System.out.println("R" + ctx.channel().remoteAddress());
         connection.setInetSocketAddresses(ctx.channel().localAddress());
         connection.addChannelHandlerContext(ctx);
-        if (!connection.isModeBoth() || !connection.isStateOn(ChannelHandlerContextType.ListenerContext)) {
-            connection.getContext().executeChannelActivationStrategy(ctx, connection);
-        }
+        connection.getContext().executeChannelActivationStrategy(ctx, connection);
     }
 
     @Override

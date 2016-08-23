@@ -12,6 +12,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
+import java.net.SocketAddress;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -22,19 +23,14 @@ import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
-import org.opendaylight.sxp.util.exception.connection.IncompatiblePeerModeException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownSxpConnectionException;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-
-import java.net.SocketAddress;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
@@ -68,10 +64,6 @@ import static org.mockito.Mockito.when;
         }
 
         @Test public void testChannelActive() throws Exception {
-                when(connection.isStateOn()).thenReturn(true);
-                decoder.channelActive(channelHandlerContext);
-                verify(channelHandlerContext).close();
-
                 when(connection.isStateOn()).thenReturn(false);
                 when(connection.isModeBoth()).thenReturn(false);
                 decoder.channelActive(channelHandlerContext);
@@ -83,22 +75,26 @@ import static org.mockito.Mockito.when;
                 when(connection.isStateOn(Matchers.<SxpConnection.ChannelHandlerContextType>any())).thenReturn(true);
                 decoder.channelActive(channelHandlerContext);
                 verify(connection, times(2)).addChannelHandlerContext(any(ChannelHandlerContext.class));
-                verify(context).executeChannelActivationStrategy(any(ChannelHandlerContext.class),
+                verify(context, times(2)).executeChannelActivationStrategy(any(ChannelHandlerContext.class),
                         any(SxpConnection.class));
 
                 when(connection.isStateOn(Matchers.<SxpConnection.ChannelHandlerContextType>any())).thenReturn(false);
                 decoder.channelActive(channelHandlerContext);
                 verify(connection, times(3)).addChannelHandlerContext(any(ChannelHandlerContext.class));
-                verify(context, times(2)).executeChannelActivationStrategy(any(ChannelHandlerContext.class),
+                verify(context, times(3)).executeChannelActivationStrategy(any(ChannelHandlerContext.class),
                         any(SxpConnection.class));
 
                 decoder = MessageDecoder.createServerProfile(sxpNode);
                 decoder.channelActive(channelHandlerContext);
                 verify(connection, times(4)).addChannelHandlerContext(any(ChannelHandlerContext.class));
-                verify(context, times(2)).executeChannelActivationStrategy(any(ChannelHandlerContext.class),
+                verify(context, times(3)).executeChannelActivationStrategy(any(ChannelHandlerContext.class),
                         any(SxpConnection.class));
 
                 when(sxpNode.getConnection(any(SocketAddress.class))).thenReturn(null);
+                decoder.channelActive(channelHandlerContext);
+                verify(channelHandlerContext, times(1)).close();
+
+                when(connection.isStateOn()).thenReturn(true);
                 decoder.channelActive(channelHandlerContext);
                 verify(channelHandlerContext, times(2)).close();
         }
