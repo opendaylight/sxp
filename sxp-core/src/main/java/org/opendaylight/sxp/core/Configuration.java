@@ -11,8 +11,11 @@ package org.opendaylight.sxp.core;
 import com.google.common.base.Preconditions;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.CapabilitiesBuilder;
@@ -29,12 +32,12 @@ public final class Configuration {
 
     public static final boolean NETTY_LOGGER_HANDLER = false;
 
-    private static HashMap<String, SxpNode> nodes = new HashMap<>();
+    private static Map<String, SxpNode> nodes = new HashMap<>();
 
     public static final boolean SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS = true;
 
     public static final String TOPOLOGY_NAME = "sxp";
-    
+
     static {
         _initializeLogger();
     }
@@ -92,8 +95,8 @@ public final class Configuration {
     /**
      * @return Currently added SxpNodes
      */
-    public synchronized static HashMap<String, SxpNode> getNodes() {
-        return nodes;
+    public synchronized static Collection<SxpNode> getNodes() {
+        return Collections.unmodifiableCollection(nodes.values());
     }
 
     /**

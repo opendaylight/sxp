@@ -84,9 +84,9 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         NodeIdentityListener datastoreListener = new NodeIdentityListener(datastoreAccess);
         //noinspection unchecked
         datastoreListener.addSubListener(
-                new DomainListener(datastoreAccess).addSubListener(new ConnectionsListener(datastoreAccess))
-                        .addSubListener(new MasterDatabaseListener(datastoreAccess))
+                new DomainListener(datastoreAccess).addSubListener(new MasterDatabaseListener(datastoreAccess))
                         .addSubListener(new DomainFilterListener(datastoreAccess))
+                        .addSubListener(new ConnectionsListener(datastoreAccess))
                         .addSubListener(new ConnectionTemplateListener(datastoreAccess)));
         //noinspection unchecked
         datastoreListener.addSubListener(
@@ -102,7 +102,7 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         LOG.warn("Clustering provider closed service for {}", this.getClass().getSimpleName());
         dataChangeListenerRegistrations.forEach(ListenerRegistration<DataTreeChangeListener>::close);
         dataChangeListenerRegistrations.clear();
-        Configuration.getNodes().values().forEach(n -> {
+        Configuration.getNodes().forEach(n -> {
             if (n instanceof SxpDatastoreNode) {
                 ((SxpDatastoreNode) n).close();
             } else {

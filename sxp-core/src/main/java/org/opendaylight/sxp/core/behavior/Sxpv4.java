@@ -266,10 +266,6 @@ public final class Sxpv4 extends SxpLegacy {
                     // Replace the existing one.
                     connection.closeChannelHandlerContextComplements(ctx);
                     connection.setReconciliationTimer();
-                } else if (connection.isStatePendingOn()) {
-                    // Close the current channel.
-                    connection.closeChannelHandlerContext(ctx);
-                    return;
                 }
                 connection.markChannelHandlerContext(ctx);
                 // Setup connection parameters.
