@@ -26,6 +26,10 @@
         <feature version='[4.0.37,5.0.0)'>odl-netty</feature>
         <bundle>mvn:org.opendaylight.sxp/sxp-core/{{VERSION}}</bundle>
     </feature>
+    <feature name='odl-sxp-robot' version='${project.version}' description='OpenDaylight :: Robot :: CSIT'>
+        <feature version='${project.version}'>odl-sxp-core</feature>
+        <bundle>mvn:org.opendaylight.sxp/sxp-robot/{{VERSION}}</bundle>
+    </feature>
     <feature name='odl-sxp-controller' version='${project.version}' description='OpenDaylight :: Sxp :: Controller'>
         <feature version='${project.version}'>odl-sxp-api</feature>
         <feature version='${project.version}'>odl-sxp-core</feature>

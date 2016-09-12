@@ -10,6 +10,7 @@ package org.opendaylight.sxp.controller.listeners.sublisteners;
 
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,12 +18,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.spi.ContainerListener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
@@ -66,44 +69,53 @@ public class MasterDatabaseListener extends ContainerListener<SxpDomain, MasterD
 
     @Override
     protected void handleConfig(DataObjectModification<MasterDatabase> c, InstanceIdentifier<SxpDomain> identifier) {
-        List<MasterDatabaseBinding> removed = new ArrayList<>(), added = new ArrayList<>();
-        getChanges(c, removed, added);
-        if (removed.isEmpty() && added.isEmpty()) {
-            return;
-        }
-        final org.opendaylight.sxp.core.SxpDomain
-                domain =
-                Configuration.getRegisteredNode(identifier.firstKeyOf(Node.class).getNodeId().getValue())
-                        .getDomain(identifier.firstKeyOf(SxpDomain.class).getDomainName());
-        synchronized (domain) {
-            MasterDatabase
-                    database =
-                    datastoreAccess.readSynchronous(identifier.child(MasterDatabase.class),
-                            LogicalDatastoreType.OPERATIONAL);
-            if (database != null && database.getMasterDatabaseBinding() != null) {
-                Set<IpPrefix> delete = removed.stream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
-                database.getMasterDatabaseBinding().removeIf(b -> delete.contains(b.getIpPrefix()));
-                database.getMasterDatabaseBinding().addAll(added);
-                datastoreAccess.putSynchronous(identifier.child(MasterDatabase.class), database,
-                        LogicalDatastoreType.OPERATIONAL);
-            } else {
-                LOG.error("Failed to get MasterDatabase from Datastore for domain {}", domain);
-            }
+        final SxpNode sxpNode = Configuration.getRegisteredNode(identifier.firstKeyOf(Node.class).getNodeId().getValue());
+        if (sxpNode != null) {
+            sxpNode.getWorker().executeTaskInSequence(() -> {
+                final List<MasterDatabaseBinding> removed = new ArrayList<>(), added = new ArrayList<>();
+                getChanges(c, removed, added);
+                if (!removed.isEmpty() || !added.isEmpty()) {
+                    Object monitor = (monitor = sxpNode.getDomain(identifier.firstKeyOf(SxpDomain.class).getDomainName())) == null ? new Object() : monitor;
+                    synchronized (monitor) {
+                        MasterDatabase
+                                database =
+                                datastoreAccess.readSynchronous(identifier.child(MasterDatabase.class),
+                                        LogicalDatastoreType.OPERATIONAL);
+                        if (database != null && database.getMasterDatabaseBinding() != null) {
+                            Set<IpPrefix> delete = removed.stream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
+                            database.getMasterDatabaseBinding().removeIf(b -> delete.contains(b.getIpPrefix()));
+                            database.getMasterDatabaseBinding().addAll(added);
+                            datastoreAccess.putSynchronous(identifier.child(MasterDatabase.class), database,
+                                    LogicalDatastoreType.OPERATIONAL);
+                        } else {
+                            datastoreAccess.putSynchronous(identifier.child(MasterDatabase.class), c.getDataAfter(),
+                                    LogicalDatastoreType.OPERATIONAL);
+                        }
+                    }
+                }
+                return null;
+            }, ThreadsWorker.WorkerType.INBOUND);
+        } else {
+            datastoreAccess.putSynchronous(identifier.child(MasterDatabase.class), c.getDataAfter(),
+                    LogicalDatastoreType.OPERATIONAL);
         }
     }
 
     @Override
     protected void handleOperational(DataObjectModification<MasterDatabase> c, InstanceIdentifier<SxpDomain> identifier,
             SxpNode sxpNode) {
-        final String domainName = identifier.firstKeyOf(SxpDomain.class).getDomainName();
-        List<MasterDatabaseBinding> removed = new ArrayList<>(), added = new ArrayList<>();
-        getChanges(c, removed, added);
-        if (!removed.isEmpty()) {
-            sxpNode.removeLocalBindingsMasterDatabase(removed, domainName);
-        }
-        if (!added.isEmpty()) {
-            sxpNode.putLocalBindingsMasterDatabase(added, domainName);
-        }
+        sxpNode.getWorker().executeTaskInSequence(() -> {
+            final String domainName = identifier.firstKeyOf(SxpDomain.class).getDomainName();
+            List<MasterDatabaseBinding> removed = new ArrayList<>(), added = new ArrayList<>();
+            getChanges(c, removed, added);
+            if (!removed.isEmpty()) {
+                sxpNode.removeLocalBindingsMasterDatabase(removed, domainName);
+            }
+            if (!added.isEmpty()) {
+                sxpNode.putLocalBindingsMasterDatabase(added, domainName);
+            }
+            return null;
+        }, ThreadsWorker.WorkerType.OUTBOUND);
     }
 
     private boolean isLocalBinding(MasterDatabaseBinding binding) {
@@ -115,7 +127,8 @@ public class MasterDatabaseListener extends ContainerListener<SxpDomain, MasterD
         return false;
     }
 
-    @Override protected InstanceIdentifier<MasterDatabase> getIdentifier(MasterDatabase d,
+    @Override
+    protected InstanceIdentifier<MasterDatabase> getIdentifier(MasterDatabase d,
             InstanceIdentifier<SxpDomain> parentIdentifier) {
         return parentIdentifier.child(MasterDatabase.class);
     }

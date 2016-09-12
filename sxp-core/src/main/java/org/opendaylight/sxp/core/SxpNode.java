@@ -1026,7 +1026,7 @@ public class SxpNode {
 
         final int connectionsAllSize = getAllConnections().size();
         final int connectionsOnSize = getAllOnConnections().size();
-        final List<SxpConnection> connections = getAllOffConnections();
+        final List<SxpConnection> connections = filterConnections(c -> c.isStateOff() || c.isStateDeleteHoldDown());
 
         worker.executeTask(new Runnable() {
 
@@ -1281,9 +1281,7 @@ public class SxpNode {
      * Shutdown all Connections
      */
     public void shutdownConnections() {
-        synchronized (sxpDomains) {
-            sxpDomains.values().forEach(SxpDomain::close);
-        }
+        getDomains().forEach(SxpDomain::close);
     }
 
     private final AtomicBoolean serverChannelInit = new AtomicBoolean(false);
@@ -1321,7 +1319,7 @@ public class SxpNode {
      * @param connection Connection containing password for MD5 key update
      */
     private void updateMD5keys(final SxpConnection connection) {
-        if (connection.getPassword() != null && !connection.getPassword().isEmpty()) {
+        if (connection.getPassword() != null && !connection.getPassword().trim().isEmpty()) {
             updateMD5keys();
         }
     }
@@ -1362,7 +1360,7 @@ public class SxpNode {
 
     @Override public String toString() {
         return "[" + (
-                getNodeIdentity().getName() != null && !getNodeIdentity().getName().isEmpty() ?
-                        getNodeIdentity().getName() + ":" : "") + NodeIdConv.toString(nodeId) + "]";
+                nodeBuilder.getName() != null && !nodeBuilder.getName().isEmpty() ?
+                        nodeBuilder.getName() + ":" : "") + NodeIdConv.toString(nodeId) + "]";
     }
 }

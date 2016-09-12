@@ -11,9 +11,13 @@ package org.opendaylight.sxp.controller.listeners.sublisteners;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.Callable;
+
+import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -22,6 +26,7 @@ import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
@@ -58,12 +63,18 @@ public class MasterDatabaseListenerTest {
 
     private MasterDatabaseListener identityListener;
     private DatastoreAccess datastoreAccess;
+    private ArgumentCaptor<Callable> taskCaptor;
+    private ThreadsWorker threadsWorker;
     private SxpNode sxpNode;
 
     @Before public void setUp() throws Exception {
         datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
         identityListener = new MasterDatabaseListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
+        threadsWorker = mock(ThreadsWorker.class);
+        taskCaptor = ArgumentCaptor.forClass(Callable.class);
+        when(threadsWorker.executeTaskInSequence(taskCaptor.capture(), any(ThreadsWorker.WorkerType.class))).thenReturn(mock(ListenableFuture.class));
+        when(sxpNode.getWorker()).thenReturn(threadsWorker);
         when(sxpNode.getDomain(anyString())).thenReturn(mock(org.opendaylight.sxp.core.SxpDomain.class));
         when(sxpNode.shutdown()).thenReturn(sxpNode);
         when(datastoreAccess.readSynchronous(eq(SxpDatastoreNode.getIdentifier("0.0.0.0")
@@ -109,6 +120,7 @@ public class MasterDatabaseListenerTest {
     @Test public void testHandleConfig_1() throws Exception {
         identityListener.handleConfig(getObjectModification(getMasterDatabase(null), getMasterDatabase(null)),
                 getIdentifier());
+        taskCaptor.getValue().call();
         verify(datastoreAccess, never()).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
     }
@@ -117,6 +129,7 @@ public class MasterDatabaseListenerTest {
         identityListener.handleConfig(
                 getObjectModification(getMasterDatabase(null), getMasterDatabase(getBinding("1.1.1.1/32", 1))),
                 getIdentifier());
+        taskCaptor.getValue().call();
         verify(datastoreAccess).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
     }
@@ -126,6 +139,7 @@ public class MasterDatabaseListenerTest {
                 getObjectModification(getMasterDatabase(null), getMasterDatabase(getBinding("1.1.1.1/32", 1))),
                 getIdentifier(), sxpNode);
 
+        taskCaptor.getValue().call();
         verify(sxpNode).putLocalBindingsMasterDatabase(anyList(), anyString());
         verify(sxpNode, never()).removeLocalBindingsMasterDatabase(anyList(), anyString());
     }
@@ -134,6 +148,7 @@ public class MasterDatabaseListenerTest {
         identityListener.handleOperational(getObjectModification(getMasterDatabase(getBinding("1.1.1.1/32", 1)),
                 getMasterDatabase(getBinding("1.1.1.1/32", 1))), getIdentifier(), sxpNode);
 
+        taskCaptor.getValue().call();
         verify(sxpNode, never()).putLocalBindingsMasterDatabase(anyList(), anyString());
         verify(sxpNode, never()).removeLocalBindingsMasterDatabase(anyList(), anyString());
     }
@@ -143,6 +158,7 @@ public class MasterDatabaseListenerTest {
                 getObjectModification(getMasterDatabase(getBinding("1.1.1.1/32", 1)), getMasterDatabase(null)),
                 getIdentifier(), sxpNode);
 
+        taskCaptor.getValue().call();
         verify(sxpNode, never()).putLocalBindingsMasterDatabase(anyList(), anyString());
         verify(sxpNode).removeLocalBindingsMasterDatabase(anyList(), anyString());
     }
@@ -153,6 +169,7 @@ public class MasterDatabaseListenerTest {
                         getMasterDatabase(getBinding("1.1.1.1/32", 1), getBinding("1.1.10.1/32", 100))),
                 getIdentifier(), sxpNode);
 
+        taskCaptor.getValue().call();
         verify(sxpNode).putLocalBindingsMasterDatabase(anyList(), anyString());
         verify(sxpNode).removeLocalBindingsMasterDatabase(anyList(), anyString());
     }

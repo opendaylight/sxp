@@ -279,12 +279,14 @@ public final class BindingHandler {
                 filterMap =
                 SxpDatabase.getInboundFilters(connection.getOwner(), connection.getDomainName());
         final SxpDomain sxpDomain = connection.getOwner().getDomain(connection.getDomainName());
+        SxpBindingFilter<?, ? extends SxpFilterFields> filter = connection.getFilter(FilterType.Inbound);
         synchronized (sxpDomain) {
             List<SxpDatabaseBinding> removed = sxpDomain.getSxpDatabase().deleteBindings(connection.getId()),
                     replace =
                             SxpDatabase.getReplaceForBindings(removed, sxpDomain.getSxpDatabase(), filterMap);
             connection.propagateUpdate(sxpDomain.getMasterDatabase().deleteBindings(removed),
-                    sxpDomain.getMasterDatabase().addBindings(replace));
+                    sxpDomain.getMasterDatabase().addBindings(replace), sxpDomain.getConnections());
+            sxpDomain.pushToSharedSxpDatabases(connection.getId(), filter, removed, replace);
         }
     }
 
