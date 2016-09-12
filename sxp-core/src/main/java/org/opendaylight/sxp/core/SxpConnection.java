@@ -258,6 +258,7 @@ public class SxpConnection {
         this.owner = Preconditions.checkNotNull(owner);
         this.domain = Preconditions.checkNotNull(domain);
         this.connectionBuilder = new ConnectionBuilder(Preconditions.checkNotNull(connection));
+        this.connectionBuilder.setState(ConnectionState.Off);
         this.remoteAddress =
                 new InetSocketAddress(Search.getAddress(connectionBuilder.getPeerAddress()),
                         connectionBuilder.getTcpPort() != null ? connectionBuilder.getTcpPort()
@@ -367,9 +368,15 @@ public class SxpConnection {
         }, ThreadsWorker.WorkerType.INBOUND, this);
     }
 
-    public <T extends SxpBindingFields> void propagateUpdate(List<T> deleteBindings, List<T> addBindings) {
-        owner.getSvcBindingDispatcher()
-                .propagateUpdate(deleteBindings, addBindings, owner.getAllOnSpeakerConnections(getDomainName()));
+    /**
+     * @param deleteBindings Bindings to be deleted
+     * @param addBindings    Bindings that will be added
+     * @param connections    SxpConnections to which change will be propagated
+     * @param <T>            Any type extending SxpBindingFields
+     */
+    public <T extends SxpBindingFields> void propagateUpdate(List<T> deleteBindings, List<T> addBindings,
+            List<SxpConnection> connections) {
+        owner.getSvcBindingDispatcher().propagateUpdate(deleteBindings, addBindings, connections);
     }
 
     /**

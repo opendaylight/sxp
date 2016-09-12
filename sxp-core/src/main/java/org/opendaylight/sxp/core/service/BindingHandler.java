@@ -284,7 +284,7 @@ public final class BindingHandler {
                     replace =
                             SxpDatabase.getReplaceForBindings(removed, sxpDomain.getSxpDatabase(), filterMap);
             connection.propagateUpdate(sxpDomain.getMasterDatabase().deleteBindings(removed),
-                    sxpDomain.getMasterDatabase().addBindings(replace));
+                    sxpDomain.getMasterDatabase().addBindings(replace), sxpDomain.getConnections());
         }
     }
 

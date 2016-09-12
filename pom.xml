@@ -19,10 +19,12 @@
         <module>sxp-api</module>
         <module>sxp-controller</module>
         <module>sxp-core</module>
+        <module>sxp-csit</module>
         <!-- Karaf -->
         <module>sxp-config</module>
         <module>features</module>
         <module>sxp-karaf</module>
+
     </modules>
 
     <properties>

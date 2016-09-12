@@ -96,7 +96,6 @@ public class ConnectFacade {
         if (!Epoll.isAvailable()) {
             throw new UnsupportedOperationException(Epoll.unavailabilityCause().getCause());
         }
-        final EventLoopGroup bossGroup = new EpollEventLoopGroup(1);
         Map<InetAddress, byte[]> keyMapping = new HashMap<>();
         ServerBootstrap bootstrap = new ServerBootstrap();
         node.getDomains().forEach(d -> d.getConnectionTemplates().forEach(t -> {
@@ -113,7 +112,7 @@ public class ConnectFacade {
         keyMapping.remove(node.getSourceIp());
         bootstrap.channel(EpollServerSocketChannel.class);
         bootstrap.option(EpollChannelOption.TCP_MD5SIG, keyMapping);
-        bootstrap.group(bossGroup, eventLoopGroup);
+        bootstrap.group(eventLoopGroup);
         if (Configuration.NETTY_LOGGER_HANDLER) {
             bootstrap.handler(new LoggingHandler(LogLevel.INFO));
         }
@@ -124,8 +123,6 @@ public class ConnectFacade {
                 ch.pipeline().addLast(hf.getEncoders());
             }
         });
-        ChannelFuture channelFuture = bootstrap.bind(node.getSourceIp(), node.getServerPort());
-        channelFuture.channel().closeFuture().addListener(future -> bossGroup.shutdownGracefully());
-        return channelFuture;
+        return bootstrap.bind(node.getSourceIp(), node.getServerPort());
     }
 }

@@ -13,23 +13,16 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelOutboundHandler;
 import io.netty.handler.codec.bytes.ByteArrayEncoder;
-import java.util.Arrays;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
  * HandlerFactory class represent unification for decoders and encoders used
  */
 public final class HandlerFactory {
 
-    public enum Position {Begin, End}
-
-
-    protected ChannelInboundHandler[] decoders;
-    protected ChannelOutboundHandler[] encoders;
-
-    public HandlerFactory() {
-        decoders = new ChannelInboundHandler[1];
-        encoders = new ChannelOutboundHandler[1];
-    }
+    protected Deque<ChannelInboundHandler> decoders = new ArrayDeque<>();
+    protected Deque<ChannelOutboundHandler> encoders = new ArrayDeque<>();
 
     public static HandlerFactory instanceAddDecoder(ChannelInboundHandler decoder, Position pos) {
         return new HandlerFactory().addDecoder(decoder, pos);
@@ -43,13 +36,9 @@ public final class HandlerFactory {
         Preconditions.checkNotNull(decoder);
         Preconditions.checkNotNull(pos);
         if (Position.End.equals(pos)) {
-            decoders = Arrays.copyOf(decoders, decoders.length + 1);
-            decoders[decoders.length - 1] = decoder;
+            decoders.addLast(decoder);
         } else {
-            ChannelInboundHandler[] decoders_ = decoders;
-            decoders = new ChannelInboundHandler[decoders.length + 1];
-            System.arraycopy(decoders_, 0, decoders, 1, decoders_.length);
-            decoders[1] = decoder;
+            decoders.addFirst(decoder);
         }
         return this;
     }
@@ -58,13 +47,9 @@ public final class HandlerFactory {
         Preconditions.checkNotNull(encoder);
         Preconditions.checkNotNull(pos);
         if (Position.End.equals(pos)) {
-            encoders = Arrays.copyOf(encoders, encoders.length + 1);
-            encoders[encoders.length - 1] = encoder;
+            encoders.addLast(encoder);
         } else {
-            ChannelOutboundHandler[] encoders_ = encoders;
-            encoders = new ChannelOutboundHandler[encoders.length + 1];
-            System.arraycopy(encoders_, 0, encoders, 1, encoders_.length);
-            encoders[1] = encoder;
+            encoders.addFirst(encoder);
         }
         return this;
     }
@@ -73,15 +58,21 @@ public final class HandlerFactory {
      * @return Gets all decoders
      */
     public synchronized ChannelHandler[] getDecoders() {
-        decoders[0] = new LengthFieldBasedFrameDecoderImpl();
-        return decoders;
+        decoders.addFirst(new LengthFieldBasedFrameDecoderImpl());
+        ChannelHandler[] out = decoders.toArray(new ChannelHandler[decoders.size()]);
+        decoders.pollFirst();
+        return out;
     }
 
     /**
      * @return Gets all encoders
      */
     public synchronized ChannelHandler[] getEncoders() {
-        encoders[0] = new ByteArrayEncoder();
-        return encoders;
+        encoders.addFirst(new ByteArrayEncoder());
+        ChannelHandler[] out = encoders.toArray(new ChannelHandler[encoders.size()]);
+        encoders.pollFirst();
+        return out;
     }
+
+    public enum Position {Begin, End}
 }

@@ -86,7 +86,7 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
     }
 
     @Override public void onDataTreeChanged(@Nonnull Collection<DataTreeModification<SxpNodeIdentity>> changes) {
-        changes.stream().forEach(c -> {
+        changes.forEach(c -> {
             final String nodeId = c.getRootPath().getRootIdentifier().firstKeyOf(Node.class).getNodeId().getValue();
             final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
             if (LogicalDatastoreType.CONFIGURATION.equals(c.getRootPath().getDatastoreType())) {

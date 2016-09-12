@@ -475,9 +475,9 @@ public class SxpDomain implements AutoCloseable {
     /**
      * @return Unmodifiable collection of SxpConnections in this domain
      */
-    public Collection<SxpConnection> getConnections() {
+    public List<SxpConnection> getConnections() {
         synchronized (connections) {
-            return Collections.unmodifiableCollection(connections.values());
+            return Collections.unmodifiableList(new ArrayList<>(connections.values()));
         }
     }
 
@@ -599,8 +599,6 @@ public class SxpDomain implements AutoCloseable {
     }
 
     @Override public void close() {
-        synchronized (connections) {
-            connections.values().forEach(SxpConnection::shutdown);
-        }
+        getConnections().forEach(SxpConnection::shutdown);
     }
 }
