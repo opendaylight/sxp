@@ -102,7 +102,7 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         LOG.warn("Clustering provider closed service for {}", this.getClass().getSimpleName());
         dataChangeListenerRegistrations.forEach(ListenerRegistration<DataTreeChangeListener>::close);
         dataChangeListenerRegistrations.clear();
-        Configuration.getNodes().values().forEach(n -> {
+        Configuration.getNodes().forEach(n -> {
             if (n instanceof SxpDatastoreNode) {
                 ((SxpDatastoreNode) n).close();
             } else {
