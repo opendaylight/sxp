@@ -1,0 +1,7 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Abdelilah Essiari <aessiari@cisco.com>
+Submitted-by: Abdelilah Essiari <aessiari@cisco.com>
+Submitted-at: Wed, 21 Sep 2016 15:48:55 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/45903
+Project: sxp
+Branch: refs/heads/stable/boron
