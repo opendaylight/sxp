@@ -9,10 +9,12 @@
 package org.opendaylight.sxp.csit;
 
 import com.google.common.base.Preconditions;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.csit.libraries.AbstractLibrary;
 import org.opendaylight.sxp.csit.libraries.ConnectionTestLibrary;
@@ -26,18 +28,9 @@ import org.robotframework.remoteserver.library.RemoteLibrary;
 /**
  * Remote Robot library server providing libraries to robot framework
  */
-public class LibraryServer extends RemoteServer implements BundleActivator {
+public class LibraryServer extends RemoteServer implements RobotLibraryServer {
 
     private static Map<String, SxpNode> nodes = new ConcurrentHashMap<>();
-
-    /**
-     * Robot Remote library server
-     */
-    public LibraryServer() {
-        setPort(8270);
-        addLibrary(new ConnectionTestLibrary());
-        addLibrary(new ExportTestLibrary());
-    }
 
     /**
      * @return All SxpNodes in library server
@@ -76,21 +69,7 @@ public class LibraryServer extends RemoteServer implements BundleActivator {
         return nodes.get(Preconditions.checkNotNull(id));
     }
 
-    /**
-     * Adds Library to Remote library server
-     *
-     * @param library Library to be added
-     * @return RemoteLibrary callback
-     */
-    public RemoteLibrary addLibrary(AbstractLibrary library) {
+    @Override public RemoteLibrary addLibrary(AbstractLibrary library) {
         return putLibrary(Preconditions.checkNotNull(library).getUrl(), library);
-    }
-
-    @Override public void start(BundleContext context) throws Exception {
-        start();
-    }
-
-    @Override public void stop(BundleContext context) throws Exception {
-        stop();
     }
 }

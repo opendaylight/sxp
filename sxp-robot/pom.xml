@@ -13,9 +13,6 @@
         <dependency>
             <groupId>com.github.aenniw</groupId>
             <artifactId>jrobotremoteserver</artifactId>
-            <version>jrobotremoteserver-3.1</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/jrobotremoteserver-3.2-SNAPSHOT.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.sxp</groupId>
@@ -40,7 +37,6 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Bundle-Activator>org.opendaylight.sxp.csit.LibraryServer</Bundle-Activator>
                         <Embed-Dependency>*;artifactId=jrobotremoteserver</Embed-Dependency>
                     </instructions>
                 </configuration>

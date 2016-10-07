@@ -9,13 +9,16 @@
 package org.opendaylight.sxp.csit.libraries;
 
 import com.google.common.base.Preconditions;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.stream.Stream;
+
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.csit.LibraryServer;
+import org.opendaylight.sxp.csit.RobotLibraryServer;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
@@ -40,6 +43,13 @@ import org.slf4j.LoggerFactory;
 
     public final static String SOURCE = "source";
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectionTestLibrary.class.getName());
+
+    /**
+     * @param libraryServer Server where Library will be added
+     */
+    protected AbstractLibrary(RobotLibraryServer libraryServer) {
+        Preconditions.checkNotNull(libraryServer).addLibrary(this);
+    }
 
     /**
      * @param val String containing Version

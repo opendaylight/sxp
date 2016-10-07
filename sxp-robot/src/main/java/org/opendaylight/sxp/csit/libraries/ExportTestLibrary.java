@@ -9,14 +9,17 @@
 package org.opendaylight.sxp.csit.libraries;
 
 import com.google.common.base.Preconditions;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.csit.LibraryServer;
+import org.opendaylight.sxp.csit.RobotLibraryServer;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.inet.Search;
@@ -48,6 +51,13 @@ import org.robotframework.javalib.annotation.RobotKeywords;
     public final static String DESTINATION = "destination";
     private final AtomicLong bindingsReceived = new AtomicLong(0), exportTimeEnd = new AtomicLong(0);
     private long exportTimeBegin, totalOfBindings;
+
+    /**
+     * @param libraryServer Server where Library will be added
+     */
+    public ExportTestLibrary(RobotLibraryServer libraryServer) {
+        super(libraryServer);
+    }
 
     /**
      * @return Amount of bindings that were processed

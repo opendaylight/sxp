@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xmlns:odl="http://opendaylight.org/xmlns/blueprint/v1.0.0"
+           odl:use-default-for-reference-types="true">
+    <!-- Modules /-->
+    <bean id="sxpRorbotLibraryService" class="org.opendaylight.sxp.csit.LibraryServer" init-method="start"
+          destroy-method="stop">
+        <property name="port" value="8270"/>
+        <property name="host" value="0.0.0.0"/>
+    </bean>
+    <bean id="sxpExportTestLibrary" class="org.opendaylight.sxp.csit.libraries.ExportTestLibrary">
+        <argument ref="sxpRorbotLibraryService"/>
+    </bean>
+    <bean id="sxpConnectionTestLibrary" class="org.opendaylight.sxp.csit.libraries.ConnectionTestLibrary">
+        <argument ref="sxpRorbotLibraryService"/>
+    </bean>
+    <!-- Services -->
+    <service ref="sxpRorbotLibraryService" interface="org.opendaylight.sxp.csit.RobotLibraryServer"/>
+    <!-- RPC implementations -->
+</blueprint>
