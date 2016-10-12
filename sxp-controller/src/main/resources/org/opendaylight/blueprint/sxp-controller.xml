@@ -7,22 +7,25 @@
                odl:type="pingpong"/>
     <reference id="clusterSingletonServiceProvider"
                interface="org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvider"/>
+    <reference id="rpcRegistry"
+               interface="org.opendaylight.controller.sal.binding.api.RpcProviderRegistry"/>
 
     <!-- Modules /-->
-    <bean id="sxpRpcService" class="org.opendaylight.sxp.controller.core.SxpRpcServiceImpl"
+    <!--bean id="sxpRpcService" class="org.opendaylight.sxp.controller.core.SxpRpcServiceImpl"
           destroy-method="close">
         <argument ref="dataBroker"/>
-    </bean>
+    </bean-->
     <bean id="sxpControllerInstance"
           class="org.opendaylight.controller.config.yang.sxp.controller.conf.SxpControllerInstance">
         <argument ref="dataBroker"/>
+        <argument ref="rpcRegistry" />
         <argument ref="clusterSingletonServiceProvider"/>
     </bean>
     <!-- Services -->
-    <service ref="sxpRpcService"
-             interface="org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.SxpControllerService"/>
+    <!--service ref="sxpRpcService"
+             interface="org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.SxpControllerService"/-->
     <service ref="sxpControllerInstance"
              interface="org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService"/>
     <!-- RPC implementations -->
-    <odl:rpc-implementation ref="sxpRpcService"/>
+    <!--odl:rpc-implementation ref="sxpRpcService"/-->
 </blueprint>

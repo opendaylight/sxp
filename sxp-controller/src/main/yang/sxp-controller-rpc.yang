@@ -9,6 +9,7 @@ module sxp-controller {
     import sxp-node { prefix sxpnd; revision-date "2016-03-08"; }
     import sxp-filter { prefix sxpfl; revision-date "2015-09-11"; }
     import sxp-protocol { prefix sxppt; revision-date "2014-10-02"; }
+    import yang-ext { prefix ext; }
 
     organization "Cisco Systems, Inc.";
 
@@ -23,6 +24,20 @@ module sxp-controller {
                 "Reviewed revision of SXP controller model";
     }
 
+    identity sxp-routed-rpc-context {
+            description "Test Routed RPC Context";
+    }
+
+    list rpc-member {
+        config false;
+        leaf name {
+            type string;
+            description
+                "";
+        }
+        key "name";
+    }
+
     typedef config-persistence {
         type enumeration {
             enum pernament;
@@ -31,12 +46,20 @@ module sxp-controller {
         description "If the Configuration will be preserved after shutdown";
     }
 
+    grouping rpc-route {
+        leaf route {
+            type instance-identifier;
+            ext:context-reference sxp-routed-rpc-context;
+        }
+    }
+
     // **************
     // RPC Definition
     // **************
 
     rpc get-connections {
         input {
+            uses rpc-route;
             leaf requested-node {
                 type sxppt:node-id;
                 mandatory true;
@@ -55,6 +78,7 @@ module sxp-controller {
 
     rpc add-connection {
         input {
+            uses rpc-route;
             leaf config-persistence {
                 type config-persistence;
                 default "pernament";
@@ -81,6 +105,7 @@ module sxp-controller {
     rpc delete-connection {
         description "Delete a connection of a specified node";
         input {
+            uses rpc-route;
             leaf requested-node {
                 type sxppt:node-id;
                 mandatory true;
@@ -112,6 +137,7 @@ module sxp-controller {
         status "deprecated";
         description "Add a new IP-SGT binding into a node's master database";
         input {
+            uses rpc-route;
             leaf config-persistence {
                 type config-persistence;
                 default "pernament";
@@ -147,6 +173,7 @@ module sxp-controller {
         status "deprecated";
         description "Update an IP-SGT binding in a node's master database";
         input {
+            uses rpc-route;
             leaf config-persistence {
                 type config-persistence;
                 default "pernament";
@@ -197,6 +224,7 @@ module sxp-controller {
         status "deprecated";
         description "Delete an IP-SGT binding in a node's master database";
         input {
+            uses rpc-route;
             leaf requested-node {
                 type sxppt:node-id;
                 mandatory true;
@@ -228,6 +256,7 @@ module sxp-controller {
         description "RPC returns IP-SGT bindings configuration of a specified
                 node";
         input {
+            uses rpc-route;
             leaf requested-node {
                 type sxppt:node-id;
                 mandatory true;
@@ -253,6 +282,7 @@ module sxp-controller {
     rpc add-peer-group {
         description "Add new PeerGroup in specified Node";
         input {
+            uses rpc-route;
             leaf config-persistence {
                 type config-persistence;
                 default "pernament";
@@ -274,6 +304,7 @@ module sxp-controller {
     rpc delete-peer-group {
         description "Removes PeerGroup in specified node";
         input {
+            uses rpc-route;
             leaf requested-node {
                 type sxppt:node-id;
                 mandatory true;
@@ -295,6 +326,7 @@ module sxp-controller {
     rpc get-peer-group {
         description "Gets PerGroup with specified name on node";
         input {
+            uses rpc-route;
             leaf requested-node {
                 type sxppt:node-id;
                 mandatory true;
@@ -314,6 +346,7 @@ module sxp-controller {
     rpc get-peer-groups {
         description "Gets all PeerGroups on specified node";
         input {
+            uses rpc-route;
             leaf requested-node {
                 type sxppt:node-id;
                 mandatory true;
@@ -328,6 +361,7 @@ module sxp-controller {
     rpc add-filter {
         description "Add new filter to PeerGroup";
         input {
+            uses rpc-route;
             leaf config-persistence {
                 type config-persistence;
                 default "pernament";
@@ -354,6 +388,7 @@ module sxp-controller {
     rpc delete-filter {
         description "Removes filter from PeerGroup";
         input {
+            uses rpc-route;
             leaf requested-node {
                 type sxppt:node-id;
                 mandatory true;
@@ -382,6 +417,7 @@ module sxp-controller {
     rpc update-filter {
         description "Updates Filter in specified PeerGroup";
         input {
+            uses rpc-route;
             leaf config-persistence {
                 type config-persistence;
                 default "pernament";
@@ -408,6 +444,7 @@ module sxp-controller {
     rpc add-node {
         description "Create a new connection for a specified node";
         input {
+            uses rpc-route;
             leaf config-persistence {
                 type config-persistence;
                 default "pernament";
@@ -430,6 +467,7 @@ module sxp-controller {
     rpc delete-node {
         description "Delete a node from ODL";
         input {
+            uses rpc-route;
             leaf node-id {
                 type sxppt:node-id;
                 mandatory true;
@@ -446,6 +484,7 @@ module sxp-controller {
     rpc add-domain {
         description "Add Domain into node";
         input {
+            uses rpc-route;
             leaf config-persistence {
                 type config-persistence;
                 default "pernament";
@@ -472,6 +511,7 @@ module sxp-controller {
     rpc delete-domain {
         description "Delete a domain from node";
         input {
+            uses rpc-route;
             leaf node-id {
                 type sxppt:node-id;
                 mandatory true;
@@ -492,6 +532,7 @@ module sxp-controller {
     rpc add-bindings {
         description "Add bindings to node";
         input {
+            uses rpc-route;
             leaf config-persistence {
                 type config-persistence;
                 default "pernament";
@@ -517,6 +558,7 @@ module sxp-controller {
     rpc delete-bindings {
         description "Delete bindings from node";
         input {
+            uses rpc-route;
             leaf node-id {
                 type sxppt:node-id;
                 mandatory true;
@@ -538,6 +580,7 @@ module sxp-controller {
     rpc add-domain-filter {
         description "Add new filter to Domain";
         input {
+            uses rpc-route;
             leaf config-persistence {
                 type config-persistence;
                 default "pernament";
@@ -563,6 +606,7 @@ module sxp-controller {
     rpc delete-domain-filter {
         description "Removes filter from domain";
         input {
+            uses rpc-route;
             leaf requested-node {
                 type sxppt:node-id;
                 mandatory true;
@@ -590,6 +634,7 @@ module sxp-controller {
     rpc add-connection-template {
         description "Delete a domain from node";
         input {
+            uses rpc-route;
             leaf config-persistence {
                 type config-persistence;
                 default "pernament";
@@ -616,6 +661,7 @@ module sxp-controller {
     rpc delete-connection-template {
         description "Delete a domain from node";
         input {
+            uses rpc-route;
             leaf node-id {
                 type sxppt:node-id;
                 mandatory true;
