@@ -45,15 +45,6 @@ module sxp-controller-conf {
                 }
             }
 
-            container rpc-registry {
-                uses config:service-ref {
-                    refine type {
-                        mandatory true;
-                        config:required-identity mdsal:binding-rpc-registry;
-                    }
-                }
-            }
-
             container data-broker {
                 uses config:service-ref {
                     refine type {

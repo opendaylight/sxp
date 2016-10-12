@@ -101,6 +101,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ge
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.RpcMember;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.SxpControllerService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateEntryInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateEntryOutput;
@@ -170,9 +171,14 @@ import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifie
 
 public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
-    private final DatastoreAccess datastoreAccess;
-
     private static final Logger LOG = LoggerFactory.getLogger(SxpRpcServiceImpl.class.getName());
+    private final DatastoreAccess datastoreAccess;
+    private ExecutorService executor = Executors.newFixedThreadPool(1);
+
+    public SxpRpcServiceImpl(DataBroker broker) {
+        this.datastoreAccess = DatastoreAccess.getInstance(broker);
+        LOG.warn("RpcService started for {}", this.getClass().getSimpleName());
+    }
 
     /**
      * @param requestedNodeId NodeId to be converted
@@ -182,12 +188,9 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         return requestedNodeId != null ? NodeIdConv.toString(requestedNodeId) : null;
     }
 
-    public SxpRpcServiceImpl(DataBroker broker) {
-        this.datastoreAccess = DatastoreAccess.getInstance(broker);
-        LOG.info("RpcService started for {}", this.getClass().getSimpleName());
+    public static InstanceIdentifier<?> getRpcRegistrationPath() {
+        return InstanceIdentifier.builder(RpcMember.class).build();
     }
-
-    private ExecutorService executor = Executors.newFixedThreadPool(1);
 
     /**
      * @param nodeId         NodeId specifying Node where task will be executed
