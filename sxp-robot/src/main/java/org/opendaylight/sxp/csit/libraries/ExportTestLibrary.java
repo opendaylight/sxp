@@ -71,14 +71,14 @@ import org.robotframework.javalib.annotation.RobotKeywords;
      */
     @RobotKeyword("Get Export Time") @ArgumentNames({}) public synchronized double getExportTime() {
         long time = exportTimeEnd.get();
-        return time == 0 ? 0 : (time - exportTimeBegin) / 1000f;
+        return time == 0 ? 1 : (time - exportTimeBegin) / 1000f;
     }
 
     /**
      * @return If all bindings were exported
      */
     @RobotKeyword("All Exported") @ArgumentNames({}) public synchronized boolean getAllExported() {
-        return totalOfBindings == bindingsReceived.get();
+        return totalOfBindings <= bindingsReceived.get();
     }
 
     /**
@@ -86,7 +86,7 @@ import org.robotframework.javalib.annotation.RobotKeywords;
      */
     @RobotKeyword("Set Export Amount") @ArgumentNames({"amount"}) public synchronized void setExportAmount(
             String amount) {
-        totalOfBindings = Long.parseLong(amount);
+        totalOfBindings = (long) Double.parseDouble(amount);
     }
 
     /**
@@ -108,7 +108,7 @@ import org.robotframework.javalib.annotation.RobotKeywords;
                         .setTcpPort(new PortNumber(Integer.parseInt(port)))
                         .setSecurity(new SecurityBuilder().setPassword(
                                 password == null || password.isEmpty() ? null : password).build())
-                        .setTimers(new TimersBuilder().setRetryOpenTime(1).build())
+                        .setTimers(new TimersBuilder().setRetryOpenTime(5).build())
                         .build(), new MasterDatabaseImpl(), new SxpDatabaseImpl() {
 
                     @Override public synchronized <T extends SxpBindingFields> List<SxpDatabaseBinding> deleteBindings(

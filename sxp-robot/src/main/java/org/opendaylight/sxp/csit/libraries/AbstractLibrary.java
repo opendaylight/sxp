@@ -195,7 +195,7 @@ import org.slf4j.LoggerFactory;
                         .setTcpPort(new PortNumber(Integer.parseInt(port)))
                         .setSecurity(new SecurityBuilder().setPassword(
                                 password == null || password.isEmpty() ? null : password).build())
-                        .setTimers(new TimersBuilder().setRetryOpenTime(1).build())
+                        .setTimers(new TimersBuilder().setRetryOpenTime(5).build())
                         .build()));
     }
 

@@ -88,7 +88,7 @@ import org.robotframework.javalib.annotation.RobotKeywords;
                         .setTcpPort(new PortNumber(Integer.parseInt(port)))
                         .setSecurity(new SecurityBuilder().setPassword(
                                 password == null || password.isEmpty() ? null : password).build())
-                        .setTimers(new TimersBuilder().setRetryOpenTime(1).build())
+                        .setTimers(new TimersBuilder().setRetryOpenTime(5).build())
                         .build(), worker) {
 
             @Override protected SxpConnection addConnection(SxpConnection connection) {
