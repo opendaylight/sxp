@@ -281,7 +281,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
         return getResponse(nodeId, output.build(), () -> {
             LOG.info("RpcDeleteDomainFilter event | {}", input.toString());
-            if (input.getDomainName() != null) {
+            if (input.getDomainName() != null && input.getFilterName() != null) {
                 if (input.getFilterSpecific() != null) {
                     InstanceIdentifier
                             identifier =
@@ -310,7 +310,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                                                     .child(DomainFilters.class)
                                                     .child(DomainFilter.class, new DomainFilterKey(f.getFilterName(),
                                                             f.getFilterSpecific()));
-                                    output.setResult(datastoreAccess.checkAndDelete(identifier,
+                                    output.setResult(output.isResult() || datastoreAccess.checkAndDelete(identifier,
                                             LogicalDatastoreType.CONFIGURATION) || datastoreAccess.checkAndDelete(
                                             identifier, LogicalDatastoreType.OPERATIONAL));
                                 });

@@ -113,7 +113,8 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                     case DELETE:
                         datastoreAccess.checkAndDelete(c.getRootPath().getRootIdentifier(),
                                 LogicalDatastoreType.OPERATIONAL);
-                        datastoreAccess.close();
+                        if (!this.datastoreAccess.equals(datastoreAccess))
+                            datastoreAccess.close();
                         break;
                 }
             } else {
