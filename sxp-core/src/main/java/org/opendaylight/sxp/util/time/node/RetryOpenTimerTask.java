@@ -32,7 +32,7 @@ public class RetryOpenTimerTask extends SxpTimerTask<Void> {
     }
 
     @Override public Void call() {
-        if (owner.isEnabled() && !owner.getAllOffConnections().isEmpty()) {
+        if (owner.isEnabled() && owner.getAllConnections().size() != owner.getAllOnConnections().size()) {
             LOG.debug(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
             owner.openConnections();
         }
