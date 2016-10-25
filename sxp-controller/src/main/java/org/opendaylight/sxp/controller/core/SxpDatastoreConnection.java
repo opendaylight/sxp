@@ -53,7 +53,8 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
         SxpDatastoreConnection
                 datastoreConnection =
                 new SxpDatastoreConnection(datastoreAccess, owner, connection, domain);
-        datastoreConnection.setCapabilities(Configuration.getCapabilities(datastoreConnection.getVersion()));
+        datastoreConnection.setCapabilities(
+                Configuration.getCapabilities(Preconditions.checkNotNull(datastoreConnection.getVersion())));
         return datastoreConnection;
     }
 
