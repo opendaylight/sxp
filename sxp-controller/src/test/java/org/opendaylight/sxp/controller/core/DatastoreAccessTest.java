@@ -289,6 +289,9 @@ public class DatastoreAccessTest {
                 when(optional.get()).thenReturn(mock(DataObject.class));
 
                 assertTrue(access.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+
+                when(writeTransaction.submit()).thenThrow(ExecutionException.class);
+                assertFalse(access.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
         }
 
         @Test public void testClose() throws Exception {

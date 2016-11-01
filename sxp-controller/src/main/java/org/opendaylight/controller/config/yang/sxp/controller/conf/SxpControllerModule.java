@@ -38,8 +38,4 @@ public class SxpControllerModule
         }
         return NoopAutoCloseable.INSTANCE;
     }
-
-    @Override public void customValidation() {
-        // Add custom validation form module attributes here.
-    }
 }
