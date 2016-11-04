@@ -11,7 +11,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.github.aenniw</groupId>
+            <groupId>com.github.ombre42</groupId>
             <artifactId>jrobotremoteserver</artifactId>
         </dependency>
         <dependency>
@@ -19,9 +19,8 @@
             <artifactId>sxp-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
+            <groupId>org.robotframework</groupId>
+            <artifactId>javalib-core</artifactId>
         </dependency>
     </dependencies>
 
@@ -35,11 +34,6 @@
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Embed-Dependency>*;artifactId=jrobotremoteserver</Embed-Dependency>
-                    </instructions>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

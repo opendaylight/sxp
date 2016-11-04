@@ -28,6 +28,13 @@
     </feature>
     <feature name='odl-sxp-robot' version='${project.version}' description='OpenDaylight :: Robot :: CSIT'>
         <feature version='${project.version}'>odl-sxp-core</feature>
+        <feature>jetty</feature>
+        <bundle>wrap:mvn:org.robotframework/javalib-core/{{VERSION}}</bundle>
+        <bundle>wrap:mvn:com.github.ombre42/jrobotremoteserver/{{VERSION}}</bundle>
+        <bundle>wrap:mvn:org.apache.xmlrpc/xmlrpc-server/{{VERSION}}</bundle>
+        <bundle>wrap:mvn:org.apache.xmlrpc/xmlrpc-common/{{VERSION}}</bundle>
+        <bundle>wrap:mvn:org.apache.ws.commons.util/ws-commons-util/{{VERSION}}</bundle>
+        <bundle>mvn:commons-lang/commons-lang/{{VERSION}}</bundle>
         <bundle>mvn:org.opendaylight.sxp/sxp-robot/{{VERSION}}</bundle>
     </feature>
     <feature name='odl-sxp-controller' version='${project.version}' description='OpenDaylight :: Sxp :: Controller'>

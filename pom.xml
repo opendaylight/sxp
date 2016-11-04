@@ -61,10 +61,6 @@
 
         <!-- EPOLL artifacts -->
         <os.detected.classifier>linux-x86_64</os.detected.classifier>
-
-        <!-- Robot framework artifacts -->
-        <jrobotremoteserver.version>jrobotremoteserver-3.2</jrobotremoteserver.version>
-
     </properties>
     <build>
         <plugins>
@@ -270,16 +266,15 @@
 
             <!-- CSIT testing dependency-->
             <dependency>
-                <groupId>com.github.aenniw</groupId>
+                <groupId>com.github.ombre42</groupId>
                 <artifactId>jrobotremoteserver</artifactId>
-                <version>${jrobotremoteserver.version}</version>
+                <version>3.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.robotframework</groupId>
+                <artifactId>javalib-core</artifactId>
+                <version>1.2.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
-    <repositories>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-    </repositories>
 </project>
