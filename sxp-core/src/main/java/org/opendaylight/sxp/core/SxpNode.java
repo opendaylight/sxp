@@ -1026,17 +1026,14 @@ public class SxpNode {
 
         final int connectionsAllSize = getAllConnections().size();
         final int connectionsOnSize = getAllOnConnections().size();
-        final List<SxpConnection> connections = getAllOffConnections();
+        final List<SxpConnection>
+                connections =
+                filterConnections(c -> c.isStateOff() || c.isStateDeleteHoldDown() || c.isStatePendingOn());
 
-        worker.executeTask(new Runnable() {
-
-            @Override public void run() {
-                LOG.info(node + " Open connections [X/O/All=\"" + connections.size() + "/" + connectionsOnSize + "/"
-                        + connectionsAllSize + "\"]");
-                for (final SxpConnection connection : connections) {
-                    openConnection(connection);
-                }
-            }
+        worker.executeTask(() -> {
+            LOG.info(node + " Open connections [X/O/All=\"" + connections.size() + "/" + connectionsOnSize + "/"
+                    + connectionsAllSize + "\"]");
+            connections.forEach(this::openConnection);
         }, ThreadsWorker.WorkerType.DEFAULT);
     }
 
@@ -1046,7 +1043,8 @@ public class SxpNode {
      * @param connection Connection containing necessary information for connecting to peer
      */
     public void openConnection(final SxpConnection connection) {
-        if (Preconditions.checkNotNull(connection).isStateOff() && isEnabled()) {
+        if (!Preconditions.checkNotNull(connection).isStateOn() && isEnabled()) {
+            connection.closeChannelHandlerContextComplements(null);
             ConnectFacade.createClient(this, connection, handlerFactoryClient);
         }
     }
