@@ -127,6 +127,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroupKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.MessageBufferingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomainsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpPeerGroups;
@@ -813,6 +814,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                     identityBuilder.setSecurity(new SecurityBuilder().build());
                 if (identityBuilder.getTimers() == null)
                     identityBuilder.setTimers(new TimersBuilder().build());
+                if (identityBuilder.getMessageBuffering() == null)
+                    identityBuilder.setMessageBuffering(new MessageBufferingBuilder().build());
                 ConfigLoader.initTopologyNode(nodeId, getDatastoreType(input.getConfigPersistence()), datastoreAccess);
                 output.setResult(datastoreAccess.checkAndPut(NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class,
                         new NodeKey(

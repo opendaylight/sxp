@@ -165,7 +165,7 @@ import org.slf4j.LoggerFactory;
         try {
             return method.isPresent() ? method.get().invoke(this, args) : null;
         } catch (IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
+            LOG.error("Error executing keyword {} [{}]", keywordName, args, e);
         }
         return null;
     }

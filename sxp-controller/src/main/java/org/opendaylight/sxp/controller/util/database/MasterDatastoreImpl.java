@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -40,7 +41,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 public final class MasterDatastoreImpl extends MasterDatabase {
 
     private final DatastoreAccess datastoreAccess;
-    private final String nodeId,domain;
+    private final String nodeId, domain;
 
     public MasterDatastoreImpl(DatastoreAccess datastoreAccess, String nodeId, String domain) {
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
@@ -119,8 +120,20 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         if (bindings == null || bindings.isEmpty() || datastoreType == null) {
             return added;
         }
-        added.addAll(filterIncomingBindings(bindings,
-                t -> datastoreAccess.readSynchronous(getIdentifierBuilder(t).build(), LogicalDatastoreType.OPERATIONAL),
+        final Map<IpPrefix, MasterDatabaseBinding> databaseMaster;
+        org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase
+                database =
+                datastoreAccess.readSynchronous(getIdentifierBuilder().build(), datastoreType);
+        if (Objects.nonNull(database) && Objects.nonNull(database.getMasterDatabaseBinding())
+                && !database.getMasterDatabaseBinding().isEmpty()) {
+            databaseMaster =
+                    database.getMasterDatabaseBinding()
+                            .parallelStream()
+                            .collect(Collectors.toMap(SxpBindingFields::getIpPrefix, b -> b));
+        } else {
+            databaseMaster = new HashMap<>();
+        }
+        added.addAll(filterIncomingBindings(bindings, databaseMaster::get,
                 p -> datastoreAccess.checkAndDelete(getIdentifierBuilder(p).build(),
                         LogicalDatastoreType.OPERATIONAL)).values());
         if (!added.isEmpty()) {

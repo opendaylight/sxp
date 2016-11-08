@@ -1230,6 +1230,16 @@ public class SxpNode {
     }
 
     /**
+     * Set max number of Add update messages to be merged together.
+     *
+     * @param size Size which will be used for message joining
+     * @throws IllegalArgumentException If size of message merge is bellow 1
+     */
+    public void setMessageMergeSize(int size) throws IllegalArgumentException {
+        svcBindingHandler.setBufferLimit(size);
+    }
+
+    /**
      * Gets Execution handler of current Node
      *
      * @return ThreadsWorker reference

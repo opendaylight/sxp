@@ -9,10 +9,13 @@
 package org.opendaylight.sxp.controller.listeners;
 
 import com.google.common.base.Preconditions;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nonnull;
+
 import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
@@ -146,6 +149,16 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                             Configuration.getRegisteredNode(nodeId).shutdown().start();
                         } else if (checkDifference(c, SxpNodeIdentityFields::getTimers)) {
                             Configuration.getRegisteredNode(nodeId).shutdownConnections();
+                        } else if (Objects.nonNull(c.getRootNode().getDataAfter().getMessageBuffering())
+                                && checkDifference(c, n -> n.getMessageBuffering().getOutBuffer())) {
+                            Configuration.getRegisteredNode(nodeId)
+                                    .setMessagePartitionSize(
+                                            c.getRootNode().getDataAfter().getMessageBuffering().getOutBuffer());
+                        } else if (Objects.nonNull(c.getRootNode().getDataAfter().getMessageBuffering())
+                                && checkDifference(c, n -> n.getMessageBuffering().getInBuffer())) {
+                            Configuration.getRegisteredNode(nodeId)
+                                    .setMessageMergeSize(
+                                            c.getRootNode().getDataAfter().getMessageBuffering().getInBuffer());
                         }
                         subListeners.forEach(l -> {
                             l.handleChange(l.getModifications(c), c.getRootPath().getDatastoreType(),
