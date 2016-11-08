@@ -192,7 +192,6 @@ module sxp-filter {
 
     grouping sgt-match-fields {
         choice sgt-match {
-            mandatory "true";
             case sgt-matches {
                 leaf-list matches {
                     type sxpdb:sgt;
@@ -227,6 +226,7 @@ module sxp-filter {
             description "Wildcard mask applied to address";
         }
         container mask {
+            presence "Extended ACL is used for filtering";
             leaf address-mask {
                 type inet:ip-address;
                 mandatory true;
@@ -247,6 +247,7 @@ module sxp-filter {
             description "Prefix specifying filter";
         }
         container mask {
+            presence "Extended PL is used for filtering";
             leaf mask-range {
                 type mask-range-operator;
                 mandatory true;
@@ -272,6 +273,7 @@ module sxp-filter {
             description "Specifying order of each entry.";
         }
         container acl-match {
+            presence "ACL match will be used for filtering";
             uses acl-match-fields;
         }
         uses sgt-match-fields;
@@ -289,6 +291,7 @@ module sxp-filter {
             description "Specifying order of each entry.";
         }
         container prefix-list-match {
+            presence "PL match will be used for filtering";
             uses prefix-list-match-fields;
         }
         uses sgt-match-fields;
