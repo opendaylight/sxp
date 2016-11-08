@@ -418,6 +418,7 @@ module sxp-controller {
                 description "SXP node ID";
             }
             uses sxpnd:sxp-node-identity-fields;
+            uses sxpnd:sxp-node-buffering-fields;
             uses sxpdb:master-database-configuration;
         }
         output {

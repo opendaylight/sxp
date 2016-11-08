@@ -22,6 +22,7 @@ import org.opendaylight.sxp.csit.RobotLibraryServer;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.MessageBufferingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
@@ -165,7 +166,7 @@ import org.slf4j.LoggerFactory;
         try {
             return method.isPresent() ? method.get().invoke(this, args) : null;
         } catch (IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
+            LOG.error("Error executing keyword {} [{}]", keywordName, args, e);
         }
         return null;
     }
@@ -229,7 +230,7 @@ import org.slf4j.LoggerFactory;
      */
     @RobotKeyword("Clean Library") @ArgumentNames({}) public synchronized void cleanLibrary() throws Exception {
         LibraryServer.getNodes().forEach(SxpNode::shutdown);
-        LibraryServer.getNodes().forEach(n -> LibraryServer.removeNode(n.getNodeId()));
+        LibraryServer.clearNodes();
         close();
     }
 }

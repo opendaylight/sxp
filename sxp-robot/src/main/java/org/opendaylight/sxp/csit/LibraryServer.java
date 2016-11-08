@@ -40,6 +40,13 @@ public class LibraryServer extends RemoteServer implements RobotLibraryServer {
     }
 
     /**
+     * @return All SxpNodes in library server
+     */
+    public static void clearNodes() {
+        nodes.clear();
+    }
+
+    /**
      * Puts Node of specific Id
      *
      * @param node Puts SxpNode into library server
