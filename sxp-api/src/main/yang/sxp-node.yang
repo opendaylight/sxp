@@ -109,6 +109,21 @@ module sxp-node {
         }
     }
 
+    grouping sxp-node-buffering-fields {
+        leaf out-buffer {
+            type int32 {
+                range "1..150";
+            }
+            default 150;
+            description "Buffer size for outgoing update messages";
+        }
+        leaf in-buffer {
+            type int32;
+            default 1000;
+            description "Buffer size for incomming update messages";
+        }
+    }
+
     grouping sxp-databases-fields {
         container sxp-database {
             config false;
@@ -318,6 +333,9 @@ module sxp-node {
         }
         container sxp-peer-groups {
             uses sxpfl:sxp-peer-groups;
+        }
+        container message-buffering {
+            uses sxp-node-buffering-fields;
         }
     }
 }

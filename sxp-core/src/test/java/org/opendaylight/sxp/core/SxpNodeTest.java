@@ -721,4 +721,16 @@ public class SxpNodeTest {
                 exception.expect(DomainNotFoundException.class);
                 node.getBindingSxpDatabase("badDomain");
         }
+
+        @Test public void testSetMessageMergeSize() throws Exception {
+                node.setMessageMergeSize(25);
+                exception.expect(IllegalArgumentException.class);
+                node.setMessageMergeSize(0);
+        }
+
+        @Test public void testSetMessagePartitionSize() throws Exception {
+                node.setMessagePartitionSize(25);
+                exception.expect(IllegalArgumentException.class);
+                node.setMessagePartitionSize(250);
+        }
 }

@@ -19,6 +19,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPromiseNotifier;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -29,11 +30,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
+
 import org.opendaylight.sxp.core.handler.ConnectionDecoder;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
@@ -65,6 +68,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.MessageBufferingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilter;
@@ -188,7 +192,14 @@ public class SxpNode {
         this.nodeId = Preconditions.checkNotNull(nodeId);
         this.worker = Preconditions.checkNotNull(worker);
         this.svcBindingDispatcher = new BindingDispatcher(this);
-        this.svcBindingHandler = new BindingHandler(this, this.svcBindingDispatcher);
+        if (Objects.nonNull(node.getMessageBuffering()) && Objects.nonNull(node.getMessageBuffering().getInBuffer())
+                && Objects.nonNull(node.getMessageBuffering().getOutBuffer())) {
+            this.svcBindingHandler =
+                    new BindingHandler(this, this.svcBindingDispatcher, node.getMessageBuffering().getInBuffer());
+            setMessagePartitionSize(node.getMessageBuffering().getOutBuffer());
+        } else {
+            this.svcBindingHandler = new BindingHandler(this, this.svcBindingDispatcher);
+        }
     }
 
     /**
@@ -1230,6 +1241,16 @@ public class SxpNode {
     }
 
     /**
+     * Set max number of Add update messages to be merged together.
+     *
+     * @param size Size which will be used for message joining
+     * @throws IllegalArgumentException If size of message merge is bellow 1
+     */
+    public void setMessageMergeSize(int size) throws IllegalArgumentException {
+        svcBindingHandler.setBufferLimit(size);
+    }
+
+    /**
      * Gets Execution handler of current Node
      *
      * @return ThreadsWorker reference
@@ -1358,7 +1379,7 @@ public class SxpNode {
 
     @Override public String toString() {
         return "[" + (
-                nodeBuilder.getName() != null && !nodeBuilder.getName().isEmpty() ?
-                        nodeBuilder.getName() + ":" : "") + NodeIdConv.toString(nodeId) + "]";
+                nodeBuilder.getName() != null && !nodeBuilder.getName().isEmpty() ? nodeBuilder.getName() + ":" : "")
+                + NodeIdConv.toString(nodeId) + "]";
     }
 }
