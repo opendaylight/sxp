@@ -10,10 +10,19 @@ package org.opendaylight.sxp.core.service;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
+
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpDomain;
@@ -65,8 +74,10 @@ import org.slf4j.LoggerFactory;
 public final class BindingHandler {
 
     protected static final Logger LOG = LoggerFactory.getLogger(BindingHandler.class.getName());
+    private final AtomicInteger bufferLimit = new AtomicInteger(1);
     private final SxpNode sxpNode;
     private final BindingDispatcher dispatcher;
+    private final Map<SxpConnection, Deque<DecodedMessage>> buffer = new HashMap<>();
 
     /**
      * @param node       Owner of Handler
@@ -75,6 +86,32 @@ public final class BindingHandler {
     public BindingHandler(SxpNode node, BindingDispatcher dispatcher) {
         this.sxpNode = Preconditions.checkNotNull(node);
         this.dispatcher = Preconditions.checkNotNull(dispatcher);
+
+    }
+
+    /**
+     * @param node       Owner of Handler
+     * @param dispatcher Dispatcher service used for sending Bindings
+     * @param bufferSize  Size which will be used for message joining
+     */
+    public BindingHandler(SxpNode node, BindingDispatcher dispatcher, int bufferSize) {
+        this.sxpNode = Preconditions.checkNotNull(node);
+        this.dispatcher = Preconditions.checkNotNull(dispatcher);
+        setBufferLimit(bufferSize);
+    }
+
+    /**
+     * Set max number of Add update messages to be merged together.
+     *
+     * @param limit Size which will be used for message joining
+     * @throws IllegalArgumentException If size of message merge is bellow 1
+     */
+    public void setBufferLimit(int limit) {
+        if (limit > 0) {
+            bufferLimit.set(limit);
+        } else {
+            throw new IllegalArgumentException("Buffer limit must be at least 1");
+        }
     }
 
     /**
@@ -85,9 +122,9 @@ public final class BindingHandler {
      * @param bindings List of bindings to be checked
      * @return SxpDatabase without loops
      */
-    public static <T extends SxpBindingFields> List<T> loopDetection(NodeId nodeId, List<T> bindings) {
-        if (nodeId != null && bindings != null && !bindings.isEmpty()) {
-            bindings.removeIf(b -> NodeIdConv.getPeerSequence(b.getPeerSequence()).contains(nodeId));
+    public static <T extends SxpBindingFields> Stream<T> loopDetection(NodeId nodeId, Stream<T> bindings) {
+        if (nodeId != null && bindings != null) {
+            return bindings.filter(b -> !NodeIdConv.getPeerSequence(b.getPeerSequence()).contains(nodeId));
         }
         return bindings;
     }
@@ -95,17 +132,16 @@ public final class BindingHandler {
     /**
      * Parse UpdateMessageLegacy and process addition of Bindings into new SxpDatabase
      *
-     * @param message UpdateMessageLegacy containing data to be proceed
-     * @param filter SxpBinding filter that will be applied to bindings
+     * @param message      UpdateMessageLegacy containing data to be proceed
+     * @param filter       SxpBinding filter that will be applied to bindings
      * @param nodeIdRemote
      * @return List of new Bindings
-     * @throws TlvNotFoundException               If Tlv isn't present in message
+     * @throws TlvNotFoundException If Tlv isn't present in message
      */
     public static List<SxpDatabaseBinding> processMessageAddition(UpdateMessageLegacy message, SxpBindingFilter filter,
-            NodeId nodeIdRemote)
-            throws TlvNotFoundException {
+            NodeId nodeIdRemote) throws TlvNotFoundException {
         List<SxpDatabaseBinding> bindings = new ArrayList<>();
-        List<Peer> peers=new ArrayList<>();
+        List<Peer> peers = new ArrayList<>();
         peers.add(new PeerBuilder().setSeq(0).setNodeId(Preconditions.checkNotNull(nodeIdRemote)).build());
         SxpDatabaseBindingBuilder
                 bindingBuilder =
@@ -134,7 +170,7 @@ public final class BindingHandler {
      * Parse UpdateMessage and process addition of Bindings into new SxpDatabase
      *
      * @param message UpdateMessage containing data to be proceed
-     * @param filter SxpBinding filter that will be applied to bindings
+     * @param filter  SxpBinding filter that will be applied to bindings
      * @return List of new Bindings
      */
     public static List<SxpDatabaseBinding> processMessageAddition(UpdateMessage message, SxpBindingFilter filter) {
@@ -190,7 +226,7 @@ public final class BindingHandler {
      * Parse UpdateMessage and process deletion of Bindings into new SxpDatabase
      *
      * @param message UpdateMessage containing data to be proceed
-     * @return List of deleted Bindings
+     * @return List of delBindings Bindings
      */
     public static List<SxpDatabaseBinding> processMessageDeletion(UpdateMessage message) {
         List<IpPrefix> prefixes = new ArrayList<>();
@@ -235,7 +271,7 @@ public final class BindingHandler {
      * Parse UpdateMessageLegacy and process deletion of Bindings into new SxpDatabase
      *
      * @param message UpdateMessageLegacy containing data to be proceed
-     * @return List of deleted Bindings
+     * @return List of delBindings Bindings
      */
     public static List<SxpDatabaseBinding> processMessageDeletion(UpdateMessageLegacy message) {
         List<SxpDatabaseBinding> bindings = new ArrayList<>();
@@ -296,15 +332,70 @@ public final class BindingHandler {
      * @param databaseDelete Bindings received as delete
      * @param databaseAdd    Bindings received as add
      * @param connection     SxpConnection on which bindings were received
-     * @param <T>            Any type extending SxpBindingFields
      */
-    public <T extends SxpBindingFields> void processUpdate(List<T> databaseDelete, List<T> databaseAdd,
+    public <T extends SxpBindingFields> void processUpdate(final List<T> databaseDelete, final List<T> databaseAdd,
+            final SxpConnection connection) {
+        final Deque<DecodedMessage> deque;
+        final DecodedMessage message = new DecodedMessage(databaseDelete, databaseAdd);
+        synchronized (buffer) {
+            if (!buffer.containsKey(connection)) {
+                buffer.put(connection, (deque = new ArrayDeque<>()));
+            } else {
+                deque = buffer.get(connection);
+            }
+        }
+        deque.addLast(message);
+        if (deque.size() == 1) {
+            connection.getOwner()
+                    .getWorker()
+                    .executeTaskInSequence(() -> updateMessageCallback(message, connection, deque),
+                            ThreadsWorker.WorkerType.INBOUND, connection);
+        }
+    }
+
+    /**
+     * @param message    Decoded message that will be proceed
+     * @param connection Connection on which message was received
+     * @param deque      Buffer containing Update messages from peer
+     * @return Message that was proceed
+     */
+    private DecodedMessage updateMessageCallback(final DecodedMessage message, final SxpConnection connection,
+            final Deque<DecodedMessage> deque) {
+        if (message == null || connection == null || deque == null) {
+            return new DecodedMessage(Collections.emptyList(), Collections.emptyList());
+        }
+        deque.pollFirst();
+        boolean startNewCallback = false;
+        for (int i = 0; !deque.isEmpty(); i++) {
+            if ((startNewCallback = deque.peekFirst().containsDeleteBindings() || i >= bufferLimit.get() - 1)) {
+                break;
+            }
+            message.joinAddBindings(deque.pollFirst().getAddBindings());
+        }
+        pushUpdate(message.getDelBindings(), message.getAddBindings(), connection);
+        if (startNewCallback) {
+            connection.getOwner()
+                    .getWorker()
+                    .executeTaskInSequence(() -> updateMessageCallback(deque.peekFirst(), connection, deque),
+                            ThreadsWorker.WorkerType.INBOUND, connection);
+        }
+        return message;
+    }
+
+    /**
+     * Handle received bindings and add them into Sxp/MasterDatabase
+     *
+     * @param databaseDelete Bindings received as delete
+     * @param databaseAdd    Bindings received as add
+     * @param connection     SxpConnection on which bindings were received
+     */
+    private void pushUpdate(Stream<SxpBindingFields> databaseDelete, Stream<SxpBindingFields> databaseAdd,
             SxpConnection connection) {
-        final SxpDomain domain = sxpNode.getDomain(connection.getDomainName());
+        final SxpDomain domain = sxpNode.getDomain(Objects.requireNonNull(connection).getDomainName());
         final SxpDatabaseInf sxpDatabase = domain.getSxpDatabase();
         final MasterDatabaseInf masterDatabase = domain.getMasterDatabase();
         // Loop detection.
-        if (Preconditions.checkNotNull(connection).getCapabilities().contains(CapabilityType.LoopDetection)) {
+        if (connection.getCapabilities().contains(CapabilityType.LoopDetection)) {
             databaseAdd = loopDetection(connection.getOwnerId(), databaseAdd);
         }
         Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(sxpNode, domain.getName());
@@ -313,24 +404,72 @@ public final class BindingHandler {
         List<SxpDatabaseBinding> added = new ArrayList<>(), removed = new ArrayList<>(), replace = new ArrayList<>();
         List<SxpConnection> sxpConnections = sxpNode.getAllOnSpeakerConnections(domain.getName());
         synchronized (domain) {
-            if (databaseDelete != null && !databaseDelete.isEmpty()) {
-                removed = sxpDatabase.deleteBindings(connection.getId(), databaseDelete);
+            if (Objects.nonNull(databaseDelete)) {
+                removed = sxpDatabase.deleteBindings(connection.getId(), databaseDelete.collect(Collectors.toList()));
                 replace = SxpDatabase.getReplaceForBindings(removed, sxpDatabase, filterMap);
             }
-            if (databaseAdd != null && !databaseAdd.isEmpty()) {
-                added = sxpDatabase.addBinding(connection.getId(), databaseAdd);
+            if (Objects.nonNull(databaseAdd)) {
+                added = sxpDatabase.addBinding(connection.getId(), databaseAdd.collect(Collectors.toList()));
                 if (filter != null)
                     added.removeIf(b -> !filter.test(b));
             }
             added.addAll(replace);
             List<MasterDatabaseBinding> deletedMaster = masterDatabase.deleteBindings(removed),
-                    addedMaster = masterDatabase.addBindings(added);
+                    addedMaster =
+                            masterDatabase.addBindings(added);
             dispatcher.propagateUpdate(deletedMaster, addedMaster, sxpConnections);
             domain.pushToSharedSxpDatabases(connection.getId(), filter, removed, added);
             if (!removed.isEmpty() || !added.isEmpty()) {
                 LOG.info(connection.getOwnerId() + "[Deleted/Added] bindings [{}/{}]", deletedMaster.size(),
                         addedMaster.size(), replace.size());
             }
+        }
+    }
+
+    /**
+     * UpdateMessage wrapper
+     */
+    private class DecodedMessage {
+
+        private final boolean containsDeleteBindings;
+        private Stream<SxpBindingFields> addBindings, delBindings;
+
+        /**
+         * @param deleted Bindings to delete
+         * @param added   Bindings to add
+         */
+        DecodedMessage(List<? extends SxpBindingFields> deleted, List<? extends SxpBindingFields> added) {
+            this.delBindings = (Stream<SxpBindingFields>) Objects.requireNonNull(deleted).stream();
+            this.addBindings = (Stream<SxpBindingFields>) Objects.requireNonNull(added).stream();
+            this.containsDeleteBindings = !deleted.isEmpty();
+        }
+
+        /**
+         * @return Bindings that will be addBindings
+         */
+        Stream<SxpBindingFields> getAddBindings() {
+            return addBindings;
+        }
+
+        /**
+         * @param stream Stream to be addBindings to dded bindings
+         */
+        private void joinAddBindings(Stream<SxpBindingFields> stream) {
+            addBindings = Stream.concat(addBindings, Objects.requireNonNull(stream));
+        }
+
+        /**
+         * @return Bindings that will be delBindings
+         */
+        Stream<SxpBindingFields> getDelBindings() {
+            return delBindings;
+        }
+
+        /**
+         * @return If message contains any binding to be delBindings
+         */
+        boolean containsDeleteBindings() {
+            return containsDeleteBindings;
         }
     }
 }

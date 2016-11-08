@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.core.service;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -15,8 +16,11 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
@@ -83,9 +87,11 @@ import static org.mockito.Mockito.when;
 @RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class, BindingDispatcher.class})
 public class BindingHandlerTest {
 
+        @Rule public ExpectedException exception = ExpectedException.none();
         private static SxpNode sxpNode;
         private static SxpConnection connection;
         private static ThreadsWorker worker;
+        private ArgumentCaptor<Callable> taskCaptor;
         private static SxpDatabaseInf sxpDatabaseInf;
         private static MasterDatabaseInf masterDatabaseInf;
         private static BindingHandler handler;
@@ -96,6 +102,9 @@ public class BindingHandlerTest {
                 connection = mock(SxpConnection.class);
 
                 worker = mock(ThreadsWorker.class);
+                taskCaptor = ArgumentCaptor.forClass(Callable.class);
+                when(worker.executeTaskInSequence(taskCaptor.capture(), any(ThreadsWorker.WorkerType.class),
+                        any(SxpConnection.class))).thenReturn(mock(ListenableFuture.class));
                 when(connection.getOwner()).thenReturn(sxpNode);
                 when(connection.getDomainName()).thenReturn("default");
                 when(connection.getId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
@@ -150,7 +159,10 @@ public class BindingHandlerTest {
                 peerList.add(getPeer("127.0.3.2", 2));
                 bindings.add(getBinding("15.15.15.15/32", 10, new PeerSequenceBuilder().setPeer(peerList).build()));
 
-                List<SxpBindingFields> bindings_ = BindingHandler.loopDetection(new NodeId("127.0.2.1"), bindings);
+                List<SxpBindingFields>
+                        bindings_ =
+                        BindingHandler.loopDetection(new NodeId("127.0.2.1"), bindings.stream())
+                                .collect(Collectors.toList());
                 assertNotNull(bindings);
                 assertEquals(1, bindings_.size());
                 assertEquals("5.5.5.5/32", IpPrefixConv.toString(bindings_.get(0).getIpPrefix()));
@@ -405,7 +417,9 @@ public class BindingHandlerTest {
                 add.add(getBinding("15.5.15.0/24", 40, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
                 add.add(getBinding("5.0.5.50/32", 120, new PeerSequenceBuilder().setPeer(peerList).build()));
 
-                handler.processUpdate(dell, add, connection);
+                for (int i = 0; i < 5; i++)
+                        handler.processUpdate(dell, add, connection);
+                taskCaptor.getValue().call();
                 assertDatabase(sxpDatabaseInf.getBindings(), getIpPrefixes("5.5.5.5/32", "15.5.15.0/24"));
                 assertDatabase(masterDatabaseInf.getBindings(), getIpPrefixes("5.5.5.5/32", "15.5.15.0/24"));
 
@@ -417,7 +431,9 @@ public class BindingHandlerTest {
                 dell.add(getBinding("15.5.15.0/24", 30, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
                 add.add(getBinding("55.2.0.0/16", 10, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
                 add.add(getBinding("5.5.0.0/32", 80, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
-                handler.processUpdate(dell, add, connection);
+                for (int i = 0; i < 5; i++)
+                        handler.processUpdate(dell, add, connection);
+                taskCaptor.getValue().call();
 
                 assertDatabase(masterDatabaseInf.getBindings(),
                         getIpPrefixes("5.5.5.5/32", "55.2.0.0/16", "5.5.0.0/32", "15.5.15.0/24"));
@@ -427,8 +443,17 @@ public class BindingHandlerTest {
 
                 dell.add(getBinding("55.2.0.0/16", 10, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
                 dell.add(getBinding("5.5.0.0/32", 80, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
-                handler.processUpdate(dell, add, connection);
+                for (int i = 0; i < 5; i++)
+                        handler.processUpdate(dell, add, connection);
+                taskCaptor.getValue().call();
 
                 assertDatabase(masterDatabaseInf.getBindings(), getIpPrefixes("5.5.5.5/32", "15.5.15.0/24"));
+        }
+
+
+        @Test public void testSetBufferLimit() throws Exception {
+                handler.setBufferLimit(25);
+                exception.expect(IllegalArgumentException.class);
+                handler.setBufferLimit(-10);
         }
 }

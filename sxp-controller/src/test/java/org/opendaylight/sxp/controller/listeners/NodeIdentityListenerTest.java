@@ -11,6 +11,7 @@ package org.opendaylight.sxp.controller.listeners;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,6 +29,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.MessageBufferingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomainsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
@@ -44,6 +46,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.eq;
@@ -113,6 +116,11 @@ public class NodeIdentityListenerTest {
 
     private SxpNodeIdentity createIdentity(boolean enabled, String ip, int port, Version version,
             int deleteHoldDownTimer) {
+        return createIdentity(enabled, ip, port, version, deleteHoldDownTimer, 50, 150);
+    }
+
+    private SxpNodeIdentity createIdentity(boolean enabled, String ip, int port, Version version,
+            int deleteHoldDownTimer, int inBuffer, int outBuffer) {
         SxpNodeIdentityBuilder builder = new SxpNodeIdentityBuilder();
         builder.setCapabilities(Configuration.getCapabilities(Version.Version4));
         builder.setSecurity(new SecurityBuilder().build());
@@ -123,6 +131,8 @@ public class NodeIdentityListenerTest {
         builder.setTcpPort(new PortNumber(port));
         builder.setSourceIp(new IpAddress(ip.toCharArray()));
         builder.setTimers(new TimersBuilder().setDeleteHoldDownTime(deleteHoldDownTimer).build());
+        builder.setMessageBuffering(
+                new MessageBufferingBuilder().setInBuffer(inBuffer).setOutBuffer(outBuffer).build());
         return builder.build();
     }
 
@@ -289,5 +299,45 @@ public class NodeIdentityListenerTest {
 
         identityListener.onDataTreeChanged(modificationList);
         verify(datastoreAccess).checkAndDelete(any(InstanceIdentifier.class), eq(LogicalDatastoreType.OPERATIONAL));
+    }
+
+    @Test public void testOnDataTreeChanged_16() throws Exception {
+        List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
+        modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
+                LogicalDatastoreType.OPERATIONAL,
+                createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 150),
+                createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 150)));
+
+        identityListener.onDataTreeChanged(modificationList);
+        verify(sxpNode, never()).setMessageMergeSize(anyInt());
+        modificationList.clear();
+
+        modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
+                LogicalDatastoreType.OPERATIONAL,
+                createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 1, 150),
+                createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 150)));
+
+        identityListener.onDataTreeChanged(modificationList);
+        verify(sxpNode).setMessageMergeSize(anyInt());
+    }
+
+    @Test public void testOnDataTreeChanged_17() throws Exception {
+        List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
+        modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
+                LogicalDatastoreType.OPERATIONAL,
+                createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 150),
+                createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 150)));
+
+        identityListener.onDataTreeChanged(modificationList);
+        verify(sxpNode, never()).setMessagePartitionSize(anyInt());
+        modificationList.clear();
+
+        modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
+                LogicalDatastoreType.OPERATIONAL,
+                createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 50),
+                createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 150)));
+
+        identityListener.onDataTreeChanged(modificationList);
+        verify(sxpNode).setMessagePartitionSize(anyInt());
     }
 }
