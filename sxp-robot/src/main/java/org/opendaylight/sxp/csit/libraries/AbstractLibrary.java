@@ -44,12 +44,19 @@ import org.slf4j.LoggerFactory;
 
     public final static String SOURCE = "source";
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectionTestLibrary.class.getName());
+    protected final ConnectionTimersBuilder connectionTimers = new ConnectionTimersBuilder();
 
     /**
      * @param libraryServer Server where Library will be added
      */
     protected AbstractLibrary(RobotLibraryServer libraryServer) {
         Preconditions.checkNotNull(libraryServer).addLibrary(this);
+        connectionTimers.setDeleteHoldDownTime(180)
+                .setHoldTime(90)
+                .setHoldTimeMax(60)
+                .setHoldTimeMax(120)
+                .setHoldTimeMinAcceptable(60)
+                .setReconciliationTime(120);
     }
 
     /**
@@ -101,7 +108,7 @@ import org.slf4j.LoggerFactory;
      * @param password Password for TCP-MD5
      * @return SxpNode where connection was added
      */
-    public static SxpNode addConnection(SxpNode node, Version version, ConnectionMode mode, String ip, String port,
+    public SxpNode addConnection(SxpNode node, Version version, ConnectionMode mode, String ip, String port,
             String password) {
         Preconditions.checkNotNull(node)
                 .addConnection(new ConnectionBuilder().setVersion(version)
@@ -109,13 +116,7 @@ import org.slf4j.LoggerFactory;
                         .setMode(mode)
                         .setTcpPort(new PortNumber(Integer.parseInt(Preconditions.checkNotNull(port))))
                         .setCapabilities(Configuration.getCapabilities(version))
-                        .setConnectionTimers(new ConnectionTimersBuilder().setDeleteHoldDownTime(180)
-                                .setHoldTime(90)
-                                .setHoldTimeMax(60)
-                                .setHoldTimeMax(120)
-                                .setHoldTimeMinAcceptable(60)
-                                .setReconciliationTime(120)
-                                .build())
+                        .setConnectionTimers(connectionTimers.build())
                         .setPassword(password == null || password.isEmpty() ? null : password)
                         .build(), SxpNode.DEFAULT_DOMAIN);
         return node;

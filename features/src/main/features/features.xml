@@ -35,6 +35,8 @@
         <bundle>wrap:mvn:org.apache.xmlrpc/xmlrpc-common/{{VERSION}}</bundle>
         <bundle>wrap:mvn:org.apache.ws.commons.util/ws-commons-util/{{VERSION}}</bundle>
         <bundle>mvn:commons-lang/commons-lang/{{VERSION}}</bundle>
+        <bundle>mvn:com.fasterxml.jackson.core/jackson-annotations/{{VERSION}}</bundle>
+        <bundle>mvn:com.fasterxml.jackson.core/jackson-databind/{{VERSION}}</bundle>
         <bundle>mvn:org.opendaylight.sxp/sxp-robot/{{VERSION}}</bundle>
     </feature>
     <feature name='odl-sxp-controller' version='${project.version}' description='OpenDaylight :: Sxp :: Controller'>
