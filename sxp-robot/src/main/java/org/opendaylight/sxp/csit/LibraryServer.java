@@ -9,21 +9,19 @@
 package org.opendaylight.sxp.csit;
 
 import com.google.common.base.Preconditions;
+import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.csit.libraries.AbstractLibrary;
+import org.opendaylight.sxp.csit.libraries.ConnectionTestLibrary;
+import org.opendaylight.sxp.csit.libraries.DeviceTestLibrary;
+import org.opendaylight.sxp.csit.libraries.ExportTestLibrary;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.robotframework.remoteserver.RemoteServer;
+import org.robotframework.remoteserver.library.RemoteLibrary;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.csit.libraries.AbstractLibrary;
-import org.opendaylight.sxp.csit.libraries.ConnectionTestLibrary;
-import org.opendaylight.sxp.csit.libraries.ExportTestLibrary;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.osgi.framework.BundleActivator;
-import org.osgi.framework.BundleContext;
-import org.robotframework.remoteserver.RemoteServer;
-import org.robotframework.remoteserver.library.RemoteLibrary;
 
 /**
  * Remote Robot library server providing libraries to robot framework
@@ -31,6 +29,17 @@ import org.robotframework.remoteserver.library.RemoteLibrary;
 public class LibraryServer extends RemoteServer implements RobotLibraryServer {
 
     private static Map<String, SxpNode> nodes = new ConcurrentHashMap<>();
+
+    public static void main(String[] args) throws Exception {
+        RemoteServer.configureLogging();
+        LibraryServer server = new LibraryServer();
+        server.setHost("127.0.0.1");
+        server.setPort(8270);
+        ConnectionTestLibrary connectionTestLibrary = new ConnectionTestLibrary(server);
+        DeviceTestLibrary deviceTestLibrary = new DeviceTestLibrary(server);
+        ExportTestLibrary exportTestLibrary = new ExportTestLibrary(server);
+        server.start();
+    }
 
     /**
      * @return All SxpNodes in library server
