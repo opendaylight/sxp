@@ -14,6 +14,9 @@
     <bean id="sxpConnectionTestLibrary" class="org.opendaylight.sxp.csit.libraries.ConnectionTestLibrary">
         <argument ref="sxpRorbotLibraryService"/>
     </bean>
+    <bean id="sxpDeviceTestLibrary" class="org.opendaylight.sxp.csit.libraries.DeviceTestLibrary">
+        <argument ref="sxpRorbotLibraryService"/>
+    </bean>
     <!-- Services -->
     <service ref="sxpRorbotLibraryService" interface="org.opendaylight.sxp.csit.RobotLibraryServer"/>
     <!-- RPC implementations -->
