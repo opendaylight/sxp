@@ -253,18 +253,10 @@ public class DatastoreAccessTest {
                 InstanceIdentifier identifier = InstanceIdentifier.create(DataObject.class);
 
                 when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-                assertTrue(access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL,
-                        false));
-                assertFalse(
-                        access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL, true));
 
                 when(optional.isPresent()).thenReturn(true);
                 when(optional.get()).thenReturn(mock(DataObject.class));
 
-                assertTrue(
-                        access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL, true));
-                assertFalse(access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL,
-                        false));
         }
 
         @Test public void testCheckAndDelete() throws Exception {

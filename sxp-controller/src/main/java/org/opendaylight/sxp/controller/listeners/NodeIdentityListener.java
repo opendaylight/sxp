@@ -97,10 +97,10 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                     case WRITE:
                         if (c.getRootNode().getDataBefore() == null) {
                             ConfigLoader.initTopologyNode(nodeId, LogicalDatastoreType.OPERATIONAL, datastoreAccess);
-                            datastoreAccess.putSynchronous(c.getRootPath().getRootIdentifier(),
-                                    c.getRootNode().getDataAfter(), LogicalDatastoreType.OPERATIONAL);
+                            datastoreAccess.merge(c.getRootPath().getRootIdentifier(), c.getRootNode().getDataAfter(),
+                                    LogicalDatastoreType.OPERATIONAL);
                         } else if (c.getRootNode().getDataAfter() != null) {
-                            datastoreAccess.mergeSynchronous(c.getRootPath().getRootIdentifier(),
+                            datastoreAccess.merge(c.getRootPath().getRootIdentifier(),
                                     new SxpNodeIdentityBuilder(c.getRootNode().getDataAfter()).setSxpDomains(null)
                                             .setSxpPeerGroups(null)
                                             .build(), LogicalDatastoreType.OPERATIONAL);
@@ -116,8 +116,6 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                     case DELETE:
                         datastoreAccess.checkAndDelete(c.getRootPath().getRootIdentifier(),
                                 LogicalDatastoreType.OPERATIONAL);
-                        if (!this.datastoreAccess.equals(datastoreAccess))
-                            datastoreAccess.close();
                         break;
                 }
             } else {
