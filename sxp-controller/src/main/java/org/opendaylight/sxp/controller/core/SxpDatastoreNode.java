@@ -9,9 +9,11 @@
 package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Preconditions;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
@@ -112,8 +114,10 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
             if (!sxpDomains.containsKey(domain.getDomainName()))
                 sxpDomains.put(domain.getDomainName(),
                         org.opendaylight.sxp.core.SxpDomain.createInstance(this, domain.getDomainName(),
-                                new SxpDatastoreImpl(datastoreAccess, nodeId, domain.getDomainName()),
-                                new MasterDatastoreImpl(datastoreAccess, nodeId, domain.getDomainName())));
+                                new SxpDatastoreImpl(DatastoreAccess.getInstance(datastoreAccess), nodeId,
+                                        domain.getDomainName()),
+                                new MasterDatastoreImpl(DatastoreAccess.getInstance(datastoreAccess), nodeId,
+                                        domain.getDomainName())));
             else
                 return false;
         }
@@ -172,6 +176,9 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
         return bindings;
     }
 
+    /**
+     * @return DatastoreAccess assigned to current node
+     */
     public DatastoreAccess getDatastoreAccess() {
         return datastoreAccess;
     }

@@ -10,6 +10,7 @@ package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,9 +23,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
+import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
@@ -219,12 +222,25 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
     /**
      * @param nodeId SxpNode identifier
-     * @return DatastoreAcces associated with SxpNode or default if nothing found
+     * @return DatastoreAccess associated with SxpNode or default if nothing found
      */
     private DatastoreAccess getDatastoreAccess(String nodeId) {
         SxpNode node = Configuration.getRegisteredNode(nodeId);
         if (node instanceof SxpDatastoreNode) {
             return ((SxpDatastoreNode) node).getDatastoreAccess();
+        }
+        return datastoreAccess;
+    }
+
+    /**
+     * @param nodeId     SxpNode identifier
+     * @param domainName Domain identifier
+     * @return DatastoreAccess associated with SxpNode or default if nothing found
+     */
+    private DatastoreAccess getDatastoreAccess(String nodeId, String domainName) {
+        SxpNode node = Configuration.getRegisteredNode(nodeId);
+        if (node.getDomain(domainName).getMasterDatabase() instanceof MasterDatastoreImpl) {
+            return ((MasterDatastoreImpl) node.getDomain(domainName).getMasterDatabase()).getDatastoreAccess();
         }
         return datastoreAccess;
     }
@@ -346,7 +362,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
     @Override public Future<RpcResult<AddEntryOutput>> addEntry(final AddEntryInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
-        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
+        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId, input.getDomainName());
         final AddEntryOutputBuilder output = new AddEntryOutputBuilder().setResult(false);
 
         return getResponse(nodeId, output.build(), () -> {
@@ -466,6 +482,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     @Override public Future<RpcResult<DeleteBindingsOutput>> deleteBindings(DeleteBindingsInput input) {
         final String nodeId = getNodeId(input.getNodeId());
         final DeleteBindingsOutputBuilder output = new DeleteBindingsOutputBuilder().setResult(false);
+        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId, input.getDomainName());
 
         return getResponse(nodeId, output.build(), () -> {
             LOG.info("RpcDeleteBindings event | {}", input.toString());
@@ -533,6 +550,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     @Override public Future<RpcResult<DeleteEntryOutput>> deleteEntry(final DeleteEntryInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DeleteEntryOutputBuilder output = new DeleteEntryOutputBuilder().setResult(false);
+        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId, input.getDomainName());
 
         return getResponse(nodeId, output.build(), () -> {
             LOG.info("RpcDeleteEntry event | {}", input.toString());
@@ -858,6 +876,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     @Override public Future<RpcResult<AddBindingsOutput>> addBindings(AddBindingsInput input) {
         final String nodeId = getNodeId(input.getNodeId());
         final AddBindingsOutputBuilder output = new AddBindingsOutputBuilder().setResult(false);
+        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId, input.getDomainName());
 
         return getResponse(nodeId, output.build(), () -> {
             LOG.info("RpcAddBindings event | {}", input.toString());
@@ -897,7 +916,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
     @Override public Future<RpcResult<UpdateEntryOutput>> updateEntry(final UpdateEntryInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
-        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
+        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId, input.getDomainName());
         final UpdateEntryOutputBuilder output = new UpdateEntryOutputBuilder().setResult(false);
 
         return getResponse(nodeId, output.build(), () -> {

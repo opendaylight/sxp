@@ -9,6 +9,7 @@
 package org.opendaylight.sxp.controller.util.database;
 
 import com.google.common.base.Preconditions;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
@@ -75,6 +77,13 @@ public final class MasterDatastoreImpl extends MasterDatabase {
     private InstanceIdentifier.InstanceIdentifierBuilder<MasterDatabaseBinding> getIdentifierBuilder(
             IpPrefix ipPrefix) {
         return getIdentifierBuilder().child(MasterDatabaseBinding.class, new MasterDatabaseBindingKey(ipPrefix));
+    }
+
+    /**
+     * @return DatastoreAccess assigned to current node
+     */
+    public DatastoreAccess getDatastoreAccess() {
+        return datastoreAccess;
     }
 
     @Override synchronized public List<MasterDatabaseBinding> getBindings() {
@@ -137,7 +146,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
                 p -> datastoreAccess.checkAndDelete(getIdentifierBuilder(p).build(),
                         LogicalDatastoreType.OPERATIONAL)).values());
         if (!added.isEmpty()) {
-            datastoreAccess.mergeSynchronous(getIdentifierBuilder().build(),
+            datastoreAccess.merge(getIdentifierBuilder().build(),
                     new MasterDatabaseBuilder().setMasterDatabaseBinding(added).build(), datastoreType);
         }
         return added;
@@ -175,7 +184,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
             }
         });
         database.getMasterDatabaseBinding().addAll(bindingMap.values());
-        datastoreAccess.putSynchronous(getIdentifierBuilder().build(), database, datastoreType);
+        datastoreAccess.put(getIdentifierBuilder().build(), database, datastoreType);
         return removed;
     }
 

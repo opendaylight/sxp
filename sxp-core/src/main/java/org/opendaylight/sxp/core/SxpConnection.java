@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.core.messaging.AttributeList;
@@ -102,7 +103,7 @@ public class SxpConnection {
         return sxpConnection;
     }
 
-    private ConnectionBuilder connectionBuilder;
+    protected ConnectionBuilder connectionBuilder;
     private Context context;
 
     private final List<ChannelHandlerContext> initCtxs = new ArrayList<>(2);
@@ -269,9 +270,10 @@ public class SxpConnection {
         for (FilterType filterType : FilterType.values()) {
             bindingFilterMap.put(filterType, new HashMap<>());
         }
-        this.context =
-                new Context(owner,
-                        connectionBuilder.getVersion() != null ? connectionBuilder.getVersion() : owner.getVersion());
+        if (!Objects.nonNull(connectionBuilder.getVersion())) {
+            connectionBuilder.setVersion(owner.getVersion());
+        }
+        this.context = new Context(owner, connectionBuilder.getVersion());
     }
 
     /**
@@ -300,13 +302,6 @@ public class SxpConnection {
      */
     protected void setVersion(Version version) {
         connectionBuilder.setVersion(Preconditions.checkNotNull(version));
-    }
-
-    /**
-     * @return Connections containing configuration of local peer
-     */
-    public Connection getConnection() {
-        return connectionBuilder.build();
     }
 
     /**
@@ -495,10 +490,10 @@ public class SxpConnection {
      * @return Gets all supported getCapabilities
      */
     public List<CapabilityType> getCapabilities() {
-        if (getConnection().getCapabilities() == null || getConnection().getCapabilities().getCapability() == null) {
+        if (connectionBuilder.getCapabilities() == null || connectionBuilder.getCapabilities().getCapability() == null) {
             return new ArrayList<>();
         }
-        return getConnection().getCapabilities().getCapability();
+        return connectionBuilder.getCapabilities().getCapability();
     }
 
     /**
@@ -571,62 +566,62 @@ public class SxpConnection {
      * @return Gets HoldTime value or zero if disabled
      */
     public int getHoldTime() {
-        if (getConnection().getConnectionTimers() == null
-                || getConnection().getConnectionTimers().getHoldTime() == null) {
+        if (connectionBuilder.getConnectionTimers() == null
+                || connectionBuilder.getConnectionTimers().getHoldTime() == null) {
             return getOwner().getHoldTime();
         }
-        return getConnection().getConnectionTimers().getHoldTime();
+        return connectionBuilder.getConnectionTimers().getHoldTime();
     }
 
     /**
      * @return Gets HoldTimeMax value or zero if disabled
      */
     public int getHoldTimeMax() {
-        if (getConnection().getConnectionTimers() == null
-                || getConnection().getConnectionTimers().getHoldTimeMax() == null) {
+        if (connectionBuilder.getConnectionTimers() == null
+                || connectionBuilder.getConnectionTimers().getHoldTimeMax() == null) {
             return getOwner().getHoldTimeMax();
         }
-        return getConnection().getConnectionTimers().getHoldTimeMax();
+        return connectionBuilder.getConnectionTimers().getHoldTimeMax();
     }
 
     /**
      * @return Gets HoldTimeMin value or zero if disabled
      */
     public int getHoldTimeMin() {
-        if (getConnection().getConnectionTimers() == null
-                || getConnection().getConnectionTimers().getHoldTimeMin() == null) {
+        if (connectionBuilder.getConnectionTimers() == null
+                || connectionBuilder.getConnectionTimers().getHoldTimeMin() == null) {
             return getOwner().getHoldTimeMin();
         }
-        return getConnection().getConnectionTimers().getHoldTimeMin();
+        return connectionBuilder.getConnectionTimers().getHoldTimeMin();
     }
 
     /**
      * @return Gets HoldTimeMinAcceptable value or zero if disabled
      */
     public int getHoldTimeMinAcceptable() {
-        if (getConnection().getConnectionTimers() == null
-                || getConnection().getConnectionTimers().getHoldTimeMinAcceptable() == null) {
+        if (connectionBuilder.getConnectionTimers() == null
+                || connectionBuilder.getConnectionTimers().getHoldTimeMinAcceptable() == null) {
             return getOwner().getHoldTimeMinAcceptable();
         }
-        return getConnection().getConnectionTimers().getHoldTimeMinAcceptable();
+        return connectionBuilder.getConnectionTimers().getHoldTimeMinAcceptable();
     }
 
     /**
      * @return Gets KeepAlive value or zero if disabled
      */
     public int getKeepaliveTime() {
-        if (getConnection().getConnectionTimers() == null
-                || getConnection().getConnectionTimers().getKeepAliveTime() == null) {
+        if (connectionBuilder.getConnectionTimers() == null
+                || connectionBuilder.getConnectionTimers().getKeepAliveTime() == null) {
             return getOwner().getKeepAliveTime();
         }
-        return getConnection().getConnectionTimers().getKeepAliveTime();
+        return connectionBuilder.getConnectionTimers().getKeepAliveTime();
     }
 
     /**
      * @return Gets Mode of connection
      */
     public ConnectionMode getMode() {
-        return getConnection().getMode() != null ? getConnection().getMode() : ConnectionMode.None;
+        return connectionBuilder.getMode() != null ? connectionBuilder.getMode() : ConnectionMode.None;
     }
 
     /**
@@ -652,7 +647,7 @@ public class SxpConnection {
      * @return Gets NodeId of Peer Node
      */
     public NodeId getNodeIdRemote() {
-        return getConnection().getNodeId();
+        return connectionBuilder.getNodeId();
     }
 
     /**
@@ -680,26 +675,26 @@ public class SxpConnection {
      * @return Gets password used by connection
      */
     public String getPassword() {
-        return getConnection().getPassword() != null && !getConnection().getPassword()
-                .isEmpty() ? getConnection().getPassword() : getOwner().getPassword();
+        return connectionBuilder.getPassword() != null && !connectionBuilder.getPassword()
+                .isEmpty() ? connectionBuilder.getPassword() : getOwner().getPassword();
     }
 
     /**
      * @return Gets Reconciliation timer period or zero if disabled
      */
     public int getReconciliationTime() {
-        if (getConnection().getConnectionTimers() == null
-                || getConnection().getConnectionTimers().getReconciliationTime() == null) {
+        if (connectionBuilder.getConnectionTimers() == null
+                || connectionBuilder.getConnectionTimers().getReconciliationTime() == null) {
             return 0;
         }
-        return getConnection().getConnectionTimers().getReconciliationTime();
+        return connectionBuilder.getConnectionTimers().getReconciliationTime();
     }
 
     /**
      * @return Gets current state of connection
      */
     public ConnectionState getState() {
-        return getConnection().getState();
+        return connectionBuilder.getState();
     }
 
     /**
@@ -723,14 +718,14 @@ public class SxpConnection {
      * @return Gets KeepAlive timestamp
      */
     public long getTimestampUpdateOrKeepAliveMessage() {
-        return TimeConv.toLong(getConnection().getTimestampUpdateOrKeepAliveMessage());
+        return TimeConv.toLong(connectionBuilder.getTimestampUpdateOrKeepAliveMessage());
     }
 
     /**
      * @return Gets connection version
      */
     public Version getVersion() {
-        return getConnection().getVersion();
+        return connectionBuilder.getVersion();
     }
 
     /**
@@ -1069,7 +1064,7 @@ public class SxpConnection {
      * Start DeleteHoldDown timer and if Reconciliation timer is started stop it
      */
     public void setDeleteHoldDownTimer() {
-        setTimer(TimerType.DeleteHoldDownTimer, getConnection().getConnectionTimers().getDeleteHoldDownTime());
+        setTimer(TimerType.DeleteHoldDownTimer, connectionBuilder.getConnectionTimers().getDeleteHoldDownTime());
         ListenableScheduledFuture<?> ctReconciliation = getTimer(TimerType.ReconciliationTimer);
         if (ctReconciliation != null && !ctReconciliation.isDone()) {
             LOG.info("{} Stopping Reconciliation timer cause | Connection DOWN.", this);
@@ -1085,7 +1080,7 @@ public class SxpConnection {
      */
     public void setHoldTime(int value) {
         ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder(
-                getConnection().getConnectionTimers());
+                connectionBuilder.getConnectionTimers());
         connectionTimersBuilder.setHoldTime(value);
         setTimers(connectionTimersBuilder.build());
     }
@@ -1097,7 +1092,7 @@ public class SxpConnection {
      */
     public void setHoldTimeMin(int value) {
         ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder(
-                getConnection().getConnectionTimers());
+                connectionBuilder.getConnectionTimers());
         connectionTimersBuilder.setHoldTimeMin(value);
         setTimers(connectionTimersBuilder.build());
     }
@@ -1109,7 +1104,7 @@ public class SxpConnection {
      */
     public void setHoldTimeMinAcceptable(int value) {
         ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder(
-                getConnection().getConnectionTimers());
+                connectionBuilder.getConnectionTimers());
         connectionTimersBuilder.setHoldTimeMinAcceptable(value);
         setTimers(connectionTimersBuilder.build());
     }
@@ -1135,7 +1130,7 @@ public class SxpConnection {
      */
     public void setKeepaliveTime(int value) {
         ConnectionTimersBuilder connectionTimersBuilder = new ConnectionTimersBuilder(
-                getConnection().getConnectionTimers());
+                connectionBuilder.getConnectionTimers());
         connectionTimersBuilder.setKeepAliveTime(value);
         setTimers(connectionTimersBuilder.build());
     }

@@ -638,7 +638,6 @@ public class SxpConnectionTest {
                                 DOMAIN_NAME);
                 assertFalse(sxpConnection.getCapabilities().isEmpty());
                 assertTrue(sxpConnection.getCapabilitiesRemote().isEmpty());
-                assertNotNull(sxpConnection.getConnection());
                 assertNotNull(sxpConnection.getContext());
 
                 assertEquals(-1, sxpConnection.getTimestampUpdateOrKeepAliveMessage());
