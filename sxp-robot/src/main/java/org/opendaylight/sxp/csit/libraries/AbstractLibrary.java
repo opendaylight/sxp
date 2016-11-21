@@ -9,12 +9,10 @@
 package org.opendaylight.sxp.csit.libraries;
 
 import com.google.common.base.Preconditions;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.stream.Stream;
-
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.csit.LibraryServer;
@@ -22,7 +20,6 @@ import org.opendaylight.sxp.csit.RobotLibraryServer;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.MessageBufferingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
@@ -44,11 +41,25 @@ import org.slf4j.LoggerFactory;
 
     public final static String SOURCE = "source";
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectionTestLibrary.class.getName());
+    protected final ConnectionTimersBuilder connectionTimers = new ConnectionTimersBuilder();
+
+    /**
+     * Abstract implementation of Robot library
+     */
+    protected AbstractLibrary() {
+        connectionTimers.setDeleteHoldDownTime(180)
+                .setHoldTime(90)
+                .setHoldTimeMax(60)
+                .setHoldTimeMax(120)
+                .setHoldTimeMinAcceptable(60)
+                .setReconciliationTime(120);
+    }
 
     /**
      * @param libraryServer Server where Library will be added
      */
     protected AbstractLibrary(RobotLibraryServer libraryServer) {
+        this();
         Preconditions.checkNotNull(libraryServer).addLibrary(this);
     }
 
@@ -101,7 +112,7 @@ import org.slf4j.LoggerFactory;
      * @param password Password for TCP-MD5
      * @return SxpNode where connection was added
      */
-    public static SxpNode addConnection(SxpNode node, Version version, ConnectionMode mode, String ip, String port,
+    public SxpNode addConnection(SxpNode node, Version version, ConnectionMode mode, String ip, String port,
             String password) {
         Preconditions.checkNotNull(node)
                 .addConnection(new ConnectionBuilder().setVersion(version)
@@ -109,13 +120,7 @@ import org.slf4j.LoggerFactory;
                         .setMode(mode)
                         .setTcpPort(new PortNumber(Integer.parseInt(Preconditions.checkNotNull(port))))
                         .setCapabilities(Configuration.getCapabilities(version))
-                        .setConnectionTimers(new ConnectionTimersBuilder().setDeleteHoldDownTime(180)
-                                .setHoldTime(90)
-                                .setHoldTimeMax(60)
-                                .setHoldTimeMax(120)
-                                .setHoldTimeMinAcceptable(60)
-                                .setReconciliationTime(120)
-                                .build())
+                        .setConnectionTimers(connectionTimers.build())
                         .setPassword(password == null || password.isEmpty() ? null : password)
                         .build(), SxpNode.DEFAULT_DOMAIN);
         return node;
