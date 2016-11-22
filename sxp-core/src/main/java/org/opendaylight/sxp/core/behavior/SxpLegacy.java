@@ -88,7 +88,6 @@ public class SxpLegacy implements Strategy {
         if (connection.isStateOn(type)) {
             switch (type) {
                 case ListenerContext:
-                    LOG.info(connection + " onChannelInactivation/setDeleteHoldDownTimer");
                     connection.setDeleteHoldDownTimer();
                     return;
                 case SpeakerContext:

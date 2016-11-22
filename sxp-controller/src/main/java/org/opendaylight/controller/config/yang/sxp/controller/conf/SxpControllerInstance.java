@@ -11,8 +11,10 @@ package org.opendaylight.controller.config.yang.sxp.controller.conf;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -78,7 +80,7 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         return false;
     }
 
-    @Override public void instantiateServiceInstance() {
+    @Override public synchronized void instantiateServiceInstance() {
         LOG.warn("Instantiating {}", this.getClass().getSimpleName());
         this.datastoreAccess = DatastoreAccess.getInstance(dataBroker);
         NodeIdentityListener datastoreListener = new NodeIdentityListener(datastoreAccess);
@@ -98,7 +100,7 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         dataChangeListenerRegistrations.add(datastoreListener.register(dataBroker, LogicalDatastoreType.OPERATIONAL));
     }
 
-    @Override public ListenableFuture<Void> closeServiceInstance() {
+    @Override public synchronized ListenableFuture<Void> closeServiceInstance() {
         LOG.warn("Clustering provider closed service for {}", this.getClass().getSimpleName());
         dataChangeListenerRegistrations.forEach(ListenerRegistration<DataTreeChangeListener>::close);
         dataChangeListenerRegistrations.clear();

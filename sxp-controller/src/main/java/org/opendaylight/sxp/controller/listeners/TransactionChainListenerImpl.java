@@ -11,22 +11,37 @@ package org.opendaylight.sxp.controller.listeners;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionChain;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionChainListener;
+import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
+
+/**
+ * TransactionChanListener class provides loggings of transaction events and chain restoration upon failures
+ */
 public class TransactionChainListenerImpl implements TransactionChainListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(TransactionChainListenerImpl.class);
+    private final DatastoreAccess datastoreAccess;
 
-    @Override
-    public void onTransactionChainFailed(TransactionChain<?, ?> transactionChain,
-            AsyncTransaction<?, ?> asyncTransaction, Throwable throwable) {
-            LOG.warn("Transaction chain failed ", throwable);
+    /**
+     * @param datastoreAccess DatastoreAccess that will be associated with Listener
+     */
+    public TransactionChainListenerImpl(DatastoreAccess datastoreAccess) {
+        this.datastoreAccess = Objects.requireNonNull(datastoreAccess);
     }
 
-    @Override
-    public void onTransactionChainSuccessful(TransactionChain<?, ?> transactionChain) {
-            if (LOG.isTraceEnabled())
-                    LOG.trace("Transaction chain Success");
+    @Override public void onTransactionChainFailed(TransactionChain<?, ?> transactionChain,
+            AsyncTransaction<?, ?> asyncTransaction, Throwable throwable) {
+        datastoreAccess.reinitializeChain();
+        LOG.warn("{} Transaction chain failed creating new one.", datastoreAccess);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Transaction chain failed ", throwable);
+    }
+
+    @Override public void onTransactionChainSuccessful(TransactionChain<?, ?> transactionChain) {
+        if (LOG.isTraceEnabled())
+            LOG.trace("Transaction chain Success");
     }
 }

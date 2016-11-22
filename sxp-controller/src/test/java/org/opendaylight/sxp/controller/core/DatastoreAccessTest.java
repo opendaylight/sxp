@@ -19,11 +19,11 @@ import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
+import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
 import org.opendaylight.sxp.controller.listeners.TransactionChainListenerImpl;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
-import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -140,20 +140,6 @@ public class DatastoreAccessTest {
                 access.read(null, null);
         }
 
-        @Test public void testDeleteSynchronous() throws Exception {
-                WriteTransaction transaction = mock(WriteTransaction.class);
-                when(transaction.submit()).thenReturn(mock(CheckedFuture.class));
-                InstanceIdentifier identifier = mock(InstanceIdentifier.class);
-
-                when(transactionChain.newWriteOnlyTransaction()).thenReturn(transaction);
-                assertTrue(access.deleteSynchronous(identifier, LogicalDatastoreType.OPERATIONAL));
-
-                verify(transaction).delete(LogicalDatastoreType.OPERATIONAL, identifier);
-
-                when(transaction.submit()).thenThrow(ExecutionException.class);
-                assertFalse(access.deleteSynchronous(identifier, LogicalDatastoreType.OPERATIONAL));
-        }
-
         @Test public void testMergeSynchronous() throws Exception {
                 WriteTransaction transaction = mock(WriteTransaction.class);
                 when(transaction.submit()).thenReturn(mock(CheckedFuture.class));
@@ -165,7 +151,7 @@ public class DatastoreAccessTest {
 
                 verify(transaction).merge(LogicalDatastoreType.OPERATIONAL, identifier, dataObject);
 
-                when(transaction.submit()).thenThrow(ExecutionException.class);
+                when(transaction.submit()).thenThrow(TransactionCommitFailedException.class);
                 assertFalse(access.mergeSynchronous(identifier, dataObject, LogicalDatastoreType.OPERATIONAL));
         }
 
@@ -180,7 +166,7 @@ public class DatastoreAccessTest {
 
                 verify(transaction).put(LogicalDatastoreType.OPERATIONAL, identifier, dataObject);
 
-                when(transaction.submit()).thenThrow(ExecutionException.class);
+                when(transaction.submit()).thenThrow(TransactionCommitFailedException.class);
                 assertFalse(access.putSynchronous(identifier, dataObject, LogicalDatastoreType.OPERATIONAL));
         }
 
@@ -190,7 +176,7 @@ public class DatastoreAccessTest {
                 when(optional.get()).thenReturn(mock(DataObject.class));
 
                 CheckedFuture future = mock(CheckedFuture.class);
-                when(future.get()).thenReturn(optional);
+                when(future.checkedGet()).thenReturn(optional);
 
                 ReadOnlyTransaction transaction = mock(ReadOnlyTransaction.class);
                 when(transaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(
@@ -203,7 +189,7 @@ public class DatastoreAccessTest {
                 verify(transaction).read(LogicalDatastoreType.OPERATIONAL, identifier);
 
                 when(transaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenThrow(
-                        ExecutionException.class);
+                        ReadFailedException.class);
                 assertNull(access.readSynchronous(identifier, LogicalDatastoreType.OPERATIONAL));
         }
 
@@ -215,7 +201,7 @@ public class DatastoreAccessTest {
 
                 CheckedFuture future = mock(CheckedFuture.class);
                 Optional optional = mock(Optional.class);
-                when(future.get()).thenReturn(optional);
+                when(future.checkedGet()).thenReturn(optional);
                 when(readOnlyTransaction.read(any(LogicalDatastoreType.class),
                         any(InstanceIdentifier.class))).thenReturn(future);
                 when(writeTransaction.submit()).thenReturn(mock(CheckedFuture.class));
@@ -245,7 +231,7 @@ public class DatastoreAccessTest {
 
                 CheckedFuture future = mock(CheckedFuture.class);
                 Optional optional = mock(Optional.class);
-                when(future.get()).thenReturn(optional);
+                when(future.checkedGet()).thenReturn(optional);
                 when(readOnlyTransaction.read(any(LogicalDatastoreType.class),
                         any(InstanceIdentifier.class))).thenReturn(future);
                 when(writeTransaction.submit()).thenReturn(mock(CheckedFuture.class));
@@ -253,18 +239,10 @@ public class DatastoreAccessTest {
                 InstanceIdentifier identifier = InstanceIdentifier.create(DataObject.class);
 
                 when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-                assertTrue(access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL,
-                        false));
-                assertFalse(
-                        access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL, true));
 
                 when(optional.isPresent()).thenReturn(true);
                 when(optional.get()).thenReturn(mock(DataObject.class));
 
-                assertTrue(
-                        access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL, true));
-                assertFalse(access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL,
-                        false));
         }
 
         @Test public void testCheckAndDelete() throws Exception {
@@ -275,7 +253,7 @@ public class DatastoreAccessTest {
 
                 CheckedFuture future = mock(CheckedFuture.class);
                 Optional optional = mock(Optional.class);
-                when(future.get()).thenReturn(optional);
+                when(future.checkedGet()).thenReturn(optional);
                 when(readOnlyTransaction.read(any(LogicalDatastoreType.class),
                         any(InstanceIdentifier.class))).thenReturn(future);
                 when(writeTransaction.submit()).thenReturn(mock(CheckedFuture.class));
@@ -290,7 +268,8 @@ public class DatastoreAccessTest {
 
                 assertTrue(access.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
 
-                when(writeTransaction.submit()).thenThrow(ExecutionException.class);
+                when(future.isCancelled()).thenReturn(true);
+                when(writeTransaction.submit()).thenReturn(future);
                 assertFalse(access.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
         }
 

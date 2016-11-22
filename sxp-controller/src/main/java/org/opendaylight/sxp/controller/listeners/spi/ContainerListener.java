@@ -9,8 +9,10 @@
 package org.opendaylight.sxp.controller.listeners.spi;
 
 import com.google.common.base.Preconditions;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -63,7 +65,7 @@ public abstract class ContainerListener<P extends DataObject, C extends ChildOf<
     /**
      * @param c          Container modification object
      * @param identifier InstanceIdentifier pointing to Parent of Container
-     * @param sxpNode
+     * @param sxpNode    SxpNode provided may be null
      */
     protected abstract void handleOperational(DataObjectModification<C> c, final InstanceIdentifier<P> identifier,
             SxpNode sxpNode);
@@ -85,10 +87,10 @@ public abstract class ContainerListener<P extends DataObject, C extends ChildOf<
         switch (c.getModificationType()) {
             case WRITE:
                 if (c.getDataBefore() == null)
-                    datastoreAccess.putSynchronous(getIdentifier(c.getDataAfter(), identifier), c.getDataAfter(),
+                    datastoreAccess.put(getIdentifier(c.getDataAfter(), identifier), c.getDataAfter(),
                             LogicalDatastoreType.OPERATIONAL);
                 else
-                    datastoreAccess.mergeSynchronous(getIdentifier(c.getDataAfter(), identifier), c.getDataAfter(),
+                    datastoreAccess.merge(getIdentifier(c.getDataAfter(), identifier), c.getDataAfter(),
                             LogicalDatastoreType.OPERATIONAL);
             case SUBTREE_MODIFIED:
                 if (c.getDataAfter() != null)

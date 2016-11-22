@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -23,6 +24,7 @@ import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.spi.ContainerListener;
+import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
@@ -69,26 +71,40 @@ public class MasterDatabaseListener extends ContainerListener<SxpDomain, MasterD
 
     @Override
     protected void handleConfig(DataObjectModification<MasterDatabase> c, InstanceIdentifier<SxpDomain> identifier) {
-        final SxpNode sxpNode = Configuration.getRegisteredNode(identifier.firstKeyOf(Node.class).getNodeId().getValue());
+        final SxpNode
+                sxpNode =
+                Configuration.getRegisteredNode(identifier.firstKeyOf(Node.class).getNodeId().getValue());
         if (sxpNode != null) {
             sxpNode.getWorker().executeTaskInSequence(() -> {
                 final List<MasterDatabaseBinding> removed = new ArrayList<>(), added = new ArrayList<>();
                 getChanges(c, removed, added);
                 if (!removed.isEmpty() || !added.isEmpty()) {
-                    Object monitor = (monitor = sxpNode.getDomain(identifier.firstKeyOf(SxpDomain.class).getDomainName())) == null ? new Object() : monitor;
+                    final String domainName = identifier.firstKeyOf(SxpDomain.class).getDomainName();
+                    final DatastoreAccess
+                            datastoreAccess =
+                            Objects.nonNull(sxpNode.getDomain(domainName)) && Objects.nonNull(
+                                    sxpNode.getDomain(domainName)
+                                            .getMasterDatabase()) ? ((MasterDatastoreImpl) sxpNode.getDomain(domainName)
+                                    .getMasterDatabase()).getDatastoreAccess() : this.datastoreAccess;
+                    final Object
+                            monitor =
+                            Objects.isNull(sxpNode.getDomain(domainName)) ? new Object() : sxpNode.getDomain(
+                                    domainName);
                     synchronized (monitor) {
                         MasterDatabase
                                 database =
                                 datastoreAccess.readSynchronous(identifier.child(MasterDatabase.class),
                                         LogicalDatastoreType.OPERATIONAL);
                         if (database != null && database.getMasterDatabaseBinding() != null) {
-                            Set<IpPrefix> delete = removed.stream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
+                            Set<IpPrefix>
+                                    delete =
+                                    removed.stream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
                             database.getMasterDatabaseBinding().removeIf(b -> delete.contains(b.getIpPrefix()));
                             database.getMasterDatabaseBinding().addAll(added);
-                            datastoreAccess.putSynchronous(identifier.child(MasterDatabase.class), database,
+                            datastoreAccess.put(identifier.child(MasterDatabase.class), database,
                                     LogicalDatastoreType.OPERATIONAL);
                         } else {
-                            datastoreAccess.putSynchronous(identifier.child(MasterDatabase.class), c.getDataAfter(),
+                            datastoreAccess.put(identifier.child(MasterDatabase.class), c.getDataAfter(),
                                     LogicalDatastoreType.OPERATIONAL);
                         }
                     }
@@ -96,7 +112,7 @@ public class MasterDatabaseListener extends ContainerListener<SxpDomain, MasterD
                 return null;
             }, ThreadsWorker.WorkerType.INBOUND);
         } else {
-            datastoreAccess.putSynchronous(identifier.child(MasterDatabase.class), c.getDataAfter(),
+            datastoreAccess.put(identifier.child(MasterDatabase.class), c.getDataAfter(),
                     LogicalDatastoreType.OPERATIONAL);
         }
     }
@@ -127,8 +143,7 @@ public class MasterDatabaseListener extends ContainerListener<SxpDomain, MasterD
         return false;
     }
 
-    @Override
-    protected InstanceIdentifier<MasterDatabase> getIdentifier(MasterDatabase d,
+    @Override protected InstanceIdentifier<MasterDatabase> getIdentifier(MasterDatabase d,
             InstanceIdentifier<SxpDomain> parentIdentifier) {
         return parentIdentifier.child(MasterDatabase.class);
     }
