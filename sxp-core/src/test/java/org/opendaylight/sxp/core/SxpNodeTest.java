@@ -114,6 +114,8 @@ public class SxpNodeTest {
                         mock(ListenableFuture.class));
                 when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(
                         mock(ListenableFuture.class));
+                when(worker.executeTaskInSequence(any(Callable.class), any(ThreadsWorker.WorkerType.class),
+                        any(SxpConnection.class))).thenReturn(mock(ListenableFuture.class));
                 timers = getNodeTimers();
                 nodeIdentity = mock(SxpNodeIdentity.class);
                 when(nodeIdentity.getTimers()).thenReturn(timers);

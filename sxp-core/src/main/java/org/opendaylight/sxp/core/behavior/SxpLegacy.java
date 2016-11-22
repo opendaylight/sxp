@@ -199,7 +199,7 @@ public class SxpLegacy implements Strategy {
         } else if (message instanceof ErrorMessage) {
             throw new ErrorMessageReceivedException(((ErrorMessage) message).getInformation());
         } else if (message instanceof PurgeAllMessage) {
-            BindingHandler.processPurgeAllMessage(connection);
+            connection.getOwner().getSvcBindingHandler().processPurgeAllMessage(connection);
             return;
         }
         LOG.warn("{} Cannot handle message, ignoring: {}", connection, MessageFactory.toString(message));

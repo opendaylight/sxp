@@ -19,6 +19,8 @@ import org.mockito.Matchers;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
+import org.opendaylight.sxp.core.service.BindingDispatcher;
+import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
@@ -44,7 +46,8 @@ import java.util.concurrent.Callable;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
-@RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class, Context.class}) public class SxpLegacyTest {
+@RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class, Context.class, BindingDispatcher.class})
+public class SxpLegacyTest {
 
         @Rule public ExpectedException exception = ExpectedException.none();
 
@@ -64,6 +67,8 @@ import static org.mockito.Mockito.*;
                         new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 5));
                 PowerMockito.mockStatic(LegacyMessageFactory.class);
                 sxpNode = PowerMockito.mock(SxpNode.class);
+                PowerMockito.when(sxpNode.getSvcBindingHandler())
+                        .thenReturn(new BindingHandler(sxpNode, mock(BindingDispatcher.class)));
                 when(connection.getOwner()).thenReturn(sxpNode);
                 Context context = PowerMockito.mock(Context.class);
                 PowerMockito.when(context.getOwner()).thenReturn(sxpNode);

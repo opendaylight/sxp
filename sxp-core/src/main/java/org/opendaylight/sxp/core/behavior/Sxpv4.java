@@ -333,7 +333,7 @@ public final class Sxpv4 extends SxpLegacy {
         } else if (message instanceof ErrorMessage) {
             throw new ErrorMessageReceivedException(((ErrorMessage) message).getInformation());
         } else if (message instanceof PurgeAllMessage) {
-            BindingHandler.processPurgeAllMessage(connection);
+            connection.getOwner().getSvcBindingHandler().processPurgeAllMessage(connection);
             return;
         } else if (message instanceof KeepaliveMessage) {
             connection.setUpdateOrKeepaliveMessageTimestamp();

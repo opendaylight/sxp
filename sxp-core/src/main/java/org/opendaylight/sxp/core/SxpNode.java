@@ -1063,14 +1063,14 @@ public class SxpNode {
     /**
      * @return BindingDispatcher routine used by current Node
      */
-    BindingDispatcher getSvcBindingDispatcher() {
+    public BindingDispatcher getSvcBindingDispatcher() {
         return svcBindingDispatcher;
     }
 
     /**
      * @return BindingHandler routine used by current Node
      */
-    BindingHandler getSvcBindingHandler() {
+    public BindingHandler getSvcBindingHandler() {
         return svcBindingHandler;
     }
 

@@ -92,7 +92,7 @@ public final class BindingHandler {
     /**
      * @param node       Owner of Handler
      * @param dispatcher Dispatcher service used for sending Bindings
-     * @param bufferSize  Size which will be used for message joining
+     * @param bufferSize Size which will be used for message joining
      */
     public BindingHandler(SxpNode node, BindingDispatcher dispatcher, int bufferSize) {
         this.sxpNode = Preconditions.checkNotNull(node);
@@ -298,32 +298,28 @@ public final class BindingHandler {
      *
      * @param connection SxpConnection for which PurgeAll will be proceed
      */
-    public static ListenableFuture<Void> processPurgeAllMessage(final SxpConnection connection) {
+    public ListenableFuture<Void> processPurgeAllMessage(final SxpConnection connection) {
+        synchronized (buffer) {
+            if (buffer.containsKey(connection)) {
+                buffer.get(connection).clear();
+            }
+        }
         return Preconditions.checkNotNull(connection).getOwner().getWorker().executeTaskInSequence(() -> {
-            processPurgeAllMessageSync(connection);
+            final Map<NodeId, SxpBindingFilter>
+                    filterMap =
+                    SxpDatabase.getInboundFilters(connection.getOwner(), connection.getDomainName());
+            final SxpDomain sxpDomain = connection.getOwner().getDomain(connection.getDomainName());
+            SxpBindingFilter<?, ? extends SxpFilterFields> filter = connection.getFilter(FilterType.Inbound);
+            synchronized (sxpDomain) {
+                List<SxpDatabaseBinding> removed = sxpDomain.getSxpDatabase().deleteBindings(connection.getId()),
+                        replace =
+                                SxpDatabase.getReplaceForBindings(removed, sxpDomain.getSxpDatabase(), filterMap);
+                connection.propagateUpdate(sxpDomain.getMasterDatabase().deleteBindings(removed),
+                        sxpDomain.getMasterDatabase().addBindings(replace), sxpDomain.getConnections());
+                sxpDomain.pushToSharedSxpDatabases(connection.getId(), filter, removed, replace);
+            }
             return null;
         }, ThreadsWorker.WorkerType.INBOUND, connection);
-    }
-
-    /**
-     * Add Purge to inbound message queue and proceed it
-     *
-     * @param connection SxpConnection for which PurgeAll will be proceed
-     */
-    public static void processPurgeAllMessageSync(final SxpConnection connection) {
-        final Map<NodeId, SxpBindingFilter>
-                filterMap =
-                SxpDatabase.getInboundFilters(connection.getOwner(), connection.getDomainName());
-        final SxpDomain sxpDomain = connection.getOwner().getDomain(connection.getDomainName());
-        SxpBindingFilter<?, ? extends SxpFilterFields> filter = connection.getFilter(FilterType.Inbound);
-        synchronized (sxpDomain) {
-            List<SxpDatabaseBinding> removed = sxpDomain.getSxpDatabase().deleteBindings(connection.getId()),
-                    replace =
-                            SxpDatabase.getReplaceForBindings(removed, sxpDomain.getSxpDatabase(), filterMap);
-            connection.propagateUpdate(sxpDomain.getMasterDatabase().deleteBindings(removed),
-                    sxpDomain.getMasterDatabase().addBindings(replace), sxpDomain.getConnections());
-            sxpDomain.pushToSharedSxpDatabases(connection.getId(), filter, removed, replace);
-        }
     }
 
     /**
@@ -367,7 +363,7 @@ public final class BindingHandler {
         deque.pollFirst();
         boolean startNewCallback = false;
         for (int i = 0; !deque.isEmpty(); i++) {
-            if ((startNewCallback = deque.peekFirst().containsDeleteBindings() || i >= bufferLimit.get() - 1)) {
+            if ((startNewCallback = deque.peekFirst().useNewBuffer() || i >= bufferLimit.get() - 1)) {
                 break;
             }
             message.joinAddBindings(deque.pollFirst().getAddBindings());
@@ -431,7 +427,7 @@ public final class BindingHandler {
      */
     private class DecodedMessage {
 
-        private final boolean containsDeleteBindings;
+        private boolean useNewBuffer;
         private Stream<SxpBindingFields> addBindings, delBindings;
 
         /**
@@ -441,7 +437,7 @@ public final class BindingHandler {
         DecodedMessage(List<? extends SxpBindingFields> deleted, List<? extends SxpBindingFields> added) {
             this.delBindings = (Stream<SxpBindingFields>) Objects.requireNonNull(deleted).stream();
             this.addBindings = (Stream<SxpBindingFields>) Objects.requireNonNull(added).stream();
-            this.containsDeleteBindings = !deleted.isEmpty();
+            this.useNewBuffer = !deleted.isEmpty();
         }
 
         /**
@@ -466,10 +462,17 @@ public final class BindingHandler {
         }
 
         /**
-         * @return If message contains any binding to be delBindings
+         * @return If message contains any binding to be delBindings or is Purge all was proceed before this message
          */
-        boolean containsDeleteBindings() {
-            return containsDeleteBindings;
+        boolean useNewBuffer() {
+            return useNewBuffer;
+        }
+
+        /**
+         * Mark Message to be handled only as beginning of new buffer
+         */
+        void setPurgeAllProceeded() {
+            useNewBuffer = true;
         }
     }
 }

@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.core.messaging.AttributeList;
@@ -877,7 +878,7 @@ public class SxpConnection {
      */
     public void purgeBindings() {
         // Get message relevant peer node ID.
-        getOwner().getWorker().addListener(BindingHandler.processPurgeAllMessage(this), () -> {
+        getOwner().getWorker().addListener(getOwner().getSvcBindingHandler().processPurgeAllMessage(this), () -> {
             try {
                 setStateOff(getChannelHandlerContext(ChannelHandlerContextType.ListenerContext));
             } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
@@ -1312,9 +1313,12 @@ public class SxpConnection {
      */
     public synchronized void shutdown() {
         if (isModeListener()) {
-            LOG.info("{} PURGE bindings ", this);
-            BindingHandler.processPurgeAllMessageSync(this);
-
+            try {
+                getOwner().getSvcBindingHandler().processPurgeAllMessage(this).get();
+                LOG.info("{} PURGE bindings ", this);
+            } catch (InterruptedException | ExecutionException e) {
+                LOG.warn("{} Error PURGE bindings ", this);
+            }
         } else if (isModeSpeaker() && isStateOn()) {
             BindingDispatcher.sendPurgeAllMessageSync(this);
         }
