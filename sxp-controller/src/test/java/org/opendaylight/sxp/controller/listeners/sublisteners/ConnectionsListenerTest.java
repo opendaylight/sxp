@@ -167,7 +167,7 @@ public class ConnectionsListenerTest {
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null,
                         getConnection("1.1.1.2", ConnectionState.On, 56)))), LogicalDatastoreType.CONFIGURATION,
                 getIdentifier());
-        verify(datastoreAccess).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess).put(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
 
         identityListener.handleChange(Collections.singletonList(getObjectModification(
@@ -175,7 +175,7 @@ public class ConnectionsListenerTest {
                         getConnection("1.1.1.2", ConnectionState.On, 57),
                         getConnection("1.1.1.2", ConnectionState.On, 56)))), LogicalDatastoreType.CONFIGURATION,
                 getIdentifier());
-        verify(datastoreAccess).mergeSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess).merge(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
 
         identityListener.handleChange(Collections.singletonList(getObjectModification(

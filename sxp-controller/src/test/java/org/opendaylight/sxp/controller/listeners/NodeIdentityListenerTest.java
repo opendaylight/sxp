@@ -270,7 +270,7 @@ public class NodeIdentityListenerTest {
                         null, createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12)));
 
         identityListener.onDataTreeChanged(modificationList);
-        verify(datastoreAccess).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess).merge(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
         verify(datastoreAccess, never()).checkAndDelete(any(InstanceIdentifier.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
@@ -285,7 +285,7 @@ public class NodeIdentityListenerTest {
 
         identityListener.onDataTreeChanged(modificationList);
         verify(listener).handleChange(anyList(), any(LogicalDatastoreType.class), any(InstanceIdentifier.class));
-        verify(datastoreAccess).mergeSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess).merge(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
         verify(datastoreAccess, never()).checkAndDelete(any(InstanceIdentifier.class),
                 eq(LogicalDatastoreType.OPERATIONAL));

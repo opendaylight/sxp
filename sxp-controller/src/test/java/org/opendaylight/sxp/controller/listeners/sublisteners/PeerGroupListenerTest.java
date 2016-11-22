@@ -153,13 +153,13 @@ public class PeerGroupListenerTest {
         identityListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, getPeerGroup("GR", 2)))),
                 LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess).put(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
 
         identityListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getPeerGroup("GR", 2),
                         getPeerGroup("GR", 3)))), LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess).mergeSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess).merge(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
 
         identityListener.handleChange(Collections.singletonList(getObjectModification(

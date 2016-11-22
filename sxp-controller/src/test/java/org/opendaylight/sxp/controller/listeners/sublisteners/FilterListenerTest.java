@@ -157,13 +157,13 @@ public class FilterListenerTest {
         identityListener.handleChange(Collections.singletonList(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, getSxpFilter(5))),
                 LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess).put(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
 
         identityListener.handleChange(Collections.singletonList(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getSxpFilter(5), getSxpFilter(6))),
                 LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess).mergeSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess).merge(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
 
         identityListener.handleChange(Collections.singletonList(

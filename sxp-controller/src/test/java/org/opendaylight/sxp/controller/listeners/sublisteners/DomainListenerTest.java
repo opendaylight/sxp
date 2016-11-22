@@ -156,13 +156,13 @@ public class DomainListenerTest {
         identityListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, getDomain("global")))),
                 LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess).put(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
 
         identityListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getDomain("global"),
                         getDomain("global")))), LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess).mergeSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess).merge(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
 
         identityListener.handleChange(Collections.singletonList(getObjectModification(
