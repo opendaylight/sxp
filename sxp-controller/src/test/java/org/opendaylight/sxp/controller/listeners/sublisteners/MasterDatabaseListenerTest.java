@@ -130,7 +130,7 @@ public class MasterDatabaseListenerTest {
                 getObjectModification(getMasterDatabase(null), getMasterDatabase(getBinding("1.1.1.1/32", 1))),
                 getIdentifier());
         taskCaptor.getValue().call();
-        verify(datastoreAccess).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess).put(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
     }
 
