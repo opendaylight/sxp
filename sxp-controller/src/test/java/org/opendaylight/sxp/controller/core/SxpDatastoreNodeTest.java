@@ -13,6 +13,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
@@ -61,6 +63,9 @@ public class SxpDatastoreNodeTest {
     @Before public void setUp() throws Exception {
         nodeIdentity = mock(SxpNodeIdentity.class);
         datastoreAccess = mock(DatastoreAccess.class);
+        PowerMockito.mockStatic(DatastoreAccess.class);
+        PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
+        PowerMockito.when(DatastoreAccess.getInstance(any(DatastoreAccess.class))).thenReturn(datastoreAccess);
         when(nodeIdentity.getVersion()).thenReturn(Version.Version4);
         Security security = mock(Security.class);
         when(security.getPassword()).thenReturn("default");

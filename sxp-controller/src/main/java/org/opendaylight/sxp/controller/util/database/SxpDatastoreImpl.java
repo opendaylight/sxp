@@ -9,9 +9,11 @@
 package org.opendaylight.sxp.controller.util.database;
 
 import com.google.common.base.Preconditions;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
@@ -44,24 +46,22 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.SxpDatabase {
 
     private final DatastoreAccess datastoreAccess;
-    private final String nodeId,domain;
+    private final String nodeId, domain;
 
     public SxpDatastoreImpl(DatastoreAccess datastoreAccess, String nodeId, String domain) {
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
         this.nodeId = Preconditions.checkNotNull(nodeId);
         this.domain = Preconditions.checkNotNull(domain);
         List<BindingDatabase> databases = new ArrayList<>();
-        databases.add(
-            new BindingDatabaseBuilder().setBindingType(BindingDatabase.BindingType.ActiveBindings)
-                .setBindingSources(
-                    new BindingSourcesBuilder().setBindingSource(new ArrayList<>()).build())
+        databases.add(new BindingDatabaseBuilder().setBindingType(BindingDatabase.BindingType.ActiveBindings)
+                .setBindingSources(new BindingSourcesBuilder().setBindingSource(new ArrayList<>()).build())
                 .build());
-        databases.add(new BindingDatabaseBuilder()
-            .setBindingType(BindingDatabase.BindingType.ReconciledBindings).setBindingSources(
-                new BindingSourcesBuilder().setBindingSource(new ArrayList<>()).build()).build());
-        datastoreAccess.putSynchronous(getIdentifierBuilder().build(),
-            new SxpDatabaseBuilder().setBindingDatabase(databases).build(),
-            LogicalDatastoreType.OPERATIONAL);
+        databases.add(new BindingDatabaseBuilder().setBindingType(BindingDatabase.BindingType.ReconciledBindings)
+                .setBindingSources(new BindingSourcesBuilder().setBindingSource(new ArrayList<>()).build())
+                .build());
+        if (!datastoreAccess.mergeSynchronous(getIdentifierBuilder().build(),
+                new SxpDatabaseBuilder().setBindingDatabase(databases).build(), LogicalDatastoreType.OPERATIONAL))
+            LOG.error("Error creating SXP database");
     }
 
     /**
@@ -84,9 +84,8 @@ public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.S
      * @return InstanceIdentifier pointing to specific BindingDatabase
      */
     private InstanceIdentifier.InstanceIdentifierBuilder<BindingDatabase> getIdentifierBuilder(
-        BindingDatabase.BindingType bindingType) {
-        return getIdentifierBuilder()
-            .child(BindingDatabase.class, new BindingDatabaseKey(bindingType));
+            BindingDatabase.BindingType bindingType) {
+        return getIdentifierBuilder().child(BindingDatabase.class, new BindingDatabaseKey(bindingType));
     }
 
     /**
@@ -95,33 +94,39 @@ public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.S
      * @return InstanceIdentifier pointing to specific Binding source
      */
     private InstanceIdentifier.InstanceIdentifierBuilder<BindingSource> getIdentifierBuilder(
-        BindingDatabase.BindingType bindingType, NodeId nodeId) {
-        return getIdentifierBuilder()
-            .child(BindingDatabase.class, new BindingDatabaseKey(bindingType))
-            .child(BindingSources.class).child(BindingSource.class, new BindingSourceKey(nodeId));
+            BindingDatabase.BindingType bindingType, NodeId nodeId) {
+        return getIdentifierBuilder().child(BindingDatabase.class, new BindingDatabaseKey(bindingType))
+                .child(BindingSources.class)
+                .child(BindingSource.class, new BindingSourceKey(nodeId));
+    }
+
+    /**
+     * @return DatastoreAccess assigned to current node
+     */
+    public DatastoreAccess getDatastoreAccess() {
+        return datastoreAccess;
     }
 
     @Override protected boolean putBindings(NodeId nodeId, BindingDatabase.BindingType bindingType,
             List<SxpDatabaseBinding> bindings) {
-        return datastoreAccess.mergeSynchronous(getIdentifierBuilder(bindingType, nodeId).build(),
+        return !datastoreAccess.merge(getIdentifierBuilder(bindingType, nodeId).build(),
                 new BindingSourceBuilder().setSourceId(nodeId)
                         .setSxpDatabaseBindings(
                                 new SxpDatabaseBindingsBuilder().setSxpDatabaseBinding(bindings).build())
-                        .build(), LogicalDatastoreType.OPERATIONAL);
+                        .build(), LogicalDatastoreType.OPERATIONAL).isCancelled();
     }
 
-    @Override
-    protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType) {
-        BindingDatabase result = datastoreAccess
-            .readSynchronous(getIdentifierBuilder(bindingType).build(),
-                LogicalDatastoreType.OPERATIONAL);
+    @Override protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType) {
+        BindingDatabase
+                result =
+                datastoreAccess.readSynchronous(getIdentifierBuilder(bindingType).build(),
+                        LogicalDatastoreType.OPERATIONAL);
         List<SxpDatabaseBinding> bindings = new ArrayList<>();
         if (result != null && result.getBindingSources() != null
-            && result.getBindingSources().getBindingSource() != null) {
-            result.getBindingSources().getBindingSource().stream().forEach(s -> {
-                if (s.getSxpDatabaseBindings() != null
-                    && s.getSxpDatabaseBindings().getSxpDatabaseBinding() != null && !s
-                    .getSxpDatabaseBindings().getSxpDatabaseBinding().isEmpty()) {
+                && result.getBindingSources().getBindingSource() != null) {
+            result.getBindingSources().getBindingSource().forEach(s -> {
+                if (s.getSxpDatabaseBindings() != null && s.getSxpDatabaseBindings().getSxpDatabaseBinding() != null
+                        && !s.getSxpDatabaseBindings().getSxpDatabaseBinding().isEmpty()) {
                     bindings.addAll(s.getSxpDatabaseBindings().getSxpDatabaseBinding());
                 }
             });
@@ -129,26 +134,24 @@ public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.S
         return bindings;
     }
 
-    @Override
-    protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType,
-        NodeId nodeId) {
-        BindingSource result = datastoreAccess
-            .readSynchronous(getIdentifierBuilder(bindingType, nodeId).build(),
-                LogicalDatastoreType.OPERATIONAL);
+    @Override protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType, NodeId nodeId) {
+        BindingSource
+                result =
+                datastoreAccess.readSynchronous(getIdentifierBuilder(bindingType, nodeId).build(),
+                        LogicalDatastoreType.OPERATIONAL);
         if (result != null && result.getSxpDatabaseBindings() != null) {
             return result.getSxpDatabaseBindings().getSxpDatabaseBinding();
         }
         return new ArrayList<>();
     }
 
-    @Override
-    protected boolean deleteBindings(NodeId nodeId, BindingDatabase.BindingType bindingType) {
+    @Override protected boolean deleteBindings(NodeId nodeId, BindingDatabase.BindingType bindingType) {
         return datastoreAccess.checkAndDelete(getIdentifierBuilder(bindingType, nodeId).build(),
-            LogicalDatastoreType.OPERATIONAL);
+                LogicalDatastoreType.OPERATIONAL);
     }
 
     @Override protected List<SxpDatabaseBinding> deleteBindings(NodeId nodeId, Set<IpPrefix> ipPrefixes,
-        BindingDatabase.BindingType bindingType) {
+            BindingDatabase.BindingType bindingType) {
         List<SxpDatabaseBinding> bindingList = getBindings(bindingType, nodeId), removed = new ArrayList<>();
         if (!bindingList.isEmpty() && bindingList.removeIf(b -> {
             boolean result = ipPrefixes.contains(b.getIpPrefix());
@@ -156,7 +159,7 @@ public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.S
                 removed.add(b);
             return result;
         })) {
-            datastoreAccess.putSynchronous(getIdentifierBuilder(bindingType, nodeId).build(),
+            datastoreAccess.put(getIdentifierBuilder(bindingType, nodeId).build(),
                     new BindingSourceBuilder().setSourceId(nodeId)
                             .setSxpDatabaseBindings(
                                     new SxpDatabaseBindingsBuilder().setSxpDatabaseBinding(bindingList).build())

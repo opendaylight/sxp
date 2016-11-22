@@ -136,7 +136,7 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
         if (datastoreAccess != null) {
             datastoreAccess.checkAndMerge(getIdentifier(), new ConnectionBuilder().setPeerAddress(address)
                     .setTcpPort(port)
-                    .setTimestampUpdateOrKeepAliveMessage(getConnection().getTimestampUpdateOrKeepAliveMessage())
+                    .setTimestampUpdateOrKeepAliveMessage(connectionBuilder.getTimestampUpdateOrKeepAliveMessage())
                     .build(), LogicalDatastoreType.OPERATIONAL, true);
         }
     }
