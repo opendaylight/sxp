@@ -141,8 +141,6 @@ public class SxpRpcServiceImplTest {
                 any(LogicalDatastoreType.class), anyBoolean())).thenReturn(true);
         when(datastoreAccess.putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
                 any(LogicalDatastoreType.class))).thenReturn(true);
-        when(datastoreAccess.checkAndMerge(any(InstanceIdentifier.class), any(DataObject.class),
-                any(LogicalDatastoreType.class), anyBoolean())).thenReturn(true);
         when(datastoreAccess.readSynchronous(eq(getIdentifier("0.0.0.0").child(SxpDomains.class)
                 .child(SxpDomain.class, new SxpDomainKey(SxpNode.DEFAULT_DOMAIN))
                 .child(MasterDatabase.class)), any(LogicalDatastoreType.class))).thenReturn(

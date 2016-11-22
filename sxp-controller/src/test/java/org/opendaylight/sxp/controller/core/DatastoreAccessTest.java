@@ -140,20 +140,6 @@ public class DatastoreAccessTest {
                 access.read(null, null);
         }
 
-        @Test public void testDeleteSynchronous() throws Exception {
-                WriteTransaction transaction = mock(WriteTransaction.class);
-                when(transaction.submit()).thenReturn(mock(CheckedFuture.class));
-                InstanceIdentifier identifier = mock(InstanceIdentifier.class);
-
-                when(transactionChain.newWriteOnlyTransaction()).thenReturn(transaction);
-                assertTrue(access.deleteSynchronous(identifier, LogicalDatastoreType.OPERATIONAL));
-
-                verify(transaction).delete(LogicalDatastoreType.OPERATIONAL, identifier);
-
-                when(transaction.submit()).thenThrow(ExecutionException.class);
-                assertFalse(access.deleteSynchronous(identifier, LogicalDatastoreType.OPERATIONAL));
-        }
-
         @Test public void testMergeSynchronous() throws Exception {
                 WriteTransaction transaction = mock(WriteTransaction.class);
                 when(transaction.submit()).thenReturn(mock(CheckedFuture.class));
@@ -253,18 +239,10 @@ public class DatastoreAccessTest {
                 InstanceIdentifier identifier = InstanceIdentifier.create(DataObject.class);
 
                 when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-                assertTrue(access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL,
-                        false));
-                assertFalse(
-                        access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL, true));
 
                 when(optional.isPresent()).thenReturn(true);
                 when(optional.get()).thenReturn(mock(DataObject.class));
 
-                assertTrue(
-                        access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL, true));
-                assertFalse(access.checkAndMerge(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL,
-                        false));
         }
 
         @Test public void testCheckAndDelete() throws Exception {
