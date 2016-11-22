@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.controller.util.database;
 
+import com.google.common.util.concurrent.Futures;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -52,20 +53,20 @@ public class MasterDatastoreImplTest {
 
     @BeforeClass public static void initClass() {
         access = PowerMockito.mock(DatastoreAccess.class);
-        PowerMockito.when(access.mergeSynchronous(any(InstanceIdentifier.class), any(MasterDatabase.class),
+        PowerMockito.when(access.merge(any(InstanceIdentifier.class), any(MasterDatabase.class),
                 any(LogicalDatastoreType.class))).then(invocation -> {
             ((MasterDatabase) invocation.getArguments()[1]).getMasterDatabaseBinding().stream().forEach(b -> {
                 databaseBindings_Op .put(b.getIpPrefix(), b);
             });
-            return null;
+            return Futures.immediateCheckedFuture(null);
         });
-        PowerMockito.when(access.putSynchronous(any(InstanceIdentifier.class), any(MasterDatabase.class),
+        PowerMockito.when(access.put(any(InstanceIdentifier.class), any(MasterDatabase.class),
                 any(LogicalDatastoreType.class))).then(invocation -> {
             databaseBindings_Op.clear();
             ((MasterDatabase) invocation.getArguments()[1]).getMasterDatabaseBinding().stream().forEach(b -> {
                 databaseBindings_Op.put(b.getIpPrefix(), b);
             });
-            return null;
+            return Futures.immediateCheckedFuture(null);
         });
         PowerMockito.when(access.readSynchronous(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
                 .then(invocation -> {

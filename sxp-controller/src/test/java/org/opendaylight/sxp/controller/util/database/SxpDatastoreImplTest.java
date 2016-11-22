@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.controller.util.database;
 
+import com.google.common.util.concurrent.Futures;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,7 +56,7 @@ import static org.mockito.Matchers.any;
 
     @BeforeClass public static void initClass() {
         access = PowerMockito.mock(DatastoreAccess.class);
-        PowerMockito.when(access.mergeSynchronous(any(InstanceIdentifier.class), any(BindingSource.class),
+        PowerMockito.when(access.merge(any(InstanceIdentifier.class), any(BindingSource.class),
                 any(LogicalDatastoreType.class))).then(invocation -> {
             InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
             if (identifier.getTargetType() == BindingSource.class) {
@@ -72,9 +73,9 @@ import static org.mockito.Matchers.any;
                         .addAll(((BindingSource) invocation.getArguments()[1]).getSxpDatabaseBindings()
                                 .getSxpDatabaseBinding());
             }
-            return null;
+            return Futures.immediateCheckedFuture(null);
         });
-        PowerMockito.when(access.putSynchronous(any(InstanceIdentifier.class), any(MasterDatabase.class),
+        PowerMockito.when(access.put(any(InstanceIdentifier.class), any(MasterDatabase.class),
                 any(LogicalDatastoreType.class))).then(invocation -> {
             InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
             if (identifier.getTargetType() == BindingSource.class) {
@@ -92,7 +93,7 @@ import static org.mockito.Matchers.any;
                         .addAll(((BindingSource) invocation.getArguments()[1]).getSxpDatabaseBindings()
                                 .getSxpDatabaseBinding());
             }
-            return null;
+            return Futures.immediateCheckedFuture(null);
         });
         PowerMockito.when(access.checkAndDelete(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
                 .then(invocation -> {
