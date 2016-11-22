@@ -31,6 +31,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Node
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
+import java.util.concurrent.ExecutionException;
+
 public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnection implements AutoCloseable {
 
     private final PortNumber port;
@@ -153,8 +155,12 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
 
     @Override public void close() {
         if (isModeListener()) {
-            LOG.info("{} PURGE bindings ", this);
-            BindingHandler.processPurgeAllMessageSync(this);
+            try {
+                getOwner().getSvcBindingHandler().processPurgeAllMessage(this).get();
+                LOG.info("{} PURGE bindings ", this);
+            } catch (InterruptedException | ExecutionException e) {
+                LOG.warn("{} Error PURGE bindings ", this);
+            }
         }
         setStateOff();
     }

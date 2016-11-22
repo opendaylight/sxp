@@ -400,7 +400,7 @@ public class BindingHandlerTest {
         }
 
         @Test public void testProcessPurgeAllMessage() throws Exception {
-                BindingHandler.processPurgeAllMessage(connection);
+                handler.processPurgeAllMessage(connection).get();
                 verify(worker).executeTaskInSequence(any(Callable.class), eq(ThreadsWorker.WorkerType.INBOUND),
                         eq(connection));
         }

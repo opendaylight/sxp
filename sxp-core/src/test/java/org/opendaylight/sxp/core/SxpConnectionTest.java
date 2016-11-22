@@ -24,7 +24,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
+import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.UpdateExportTask;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
@@ -108,6 +110,8 @@ public class SxpConnectionTest {
                 sxpNode = PowerMockito.mock(SxpNode.class);
                 sxpDatabase = mock(SxpDatabaseInf.class);
                 SxpDomain domain = mock(SxpDomain.class);
+                PowerMockito.when(sxpNode.getSvcBindingHandler())
+                        .thenReturn(new BindingHandler(sxpNode, mock(BindingDispatcher.class)));
                 PowerMockito.when(sxpNode.getDomain(anyString())).thenReturn(domain);
                 PowerMockito.when(sxpNode.getBindingSxpDatabase(anyString())).thenReturn(sxpDatabase);
                 when(domain.getSxpDatabase()).thenReturn(sxpDatabase);
@@ -286,13 +290,13 @@ public class SxpConnectionTest {
         @Test public void testShutdown() throws Exception {
                 Connection connection = mockConnection(ConnectionMode.Listener, ConnectionState.On);
                 Connection connection1 = mockConnection(ConnectionMode.Speaker, ConnectionState.On);
-
-                when(worker.executeTaskInSequence(any(Callable.class), any(ThreadsWorker.WorkerType.class),
-                        any(SxpConnection.class))).thenReturn(mock(ListenableFuture.class))
-                        .thenReturn(mock(ListenableFuture.class));
+                ArgumentCaptor<Callable> taskCaptor = ArgumentCaptor.forClass(Callable.class);
+                when(worker.executeTaskInSequence(taskCaptor.capture(), any(ThreadsWorker.WorkerType.class),
+                        any(SxpConnection.class))).thenReturn(mock(ListenableFuture.class));
 
                 sxpConnection = SxpConnection.create(sxpNode, connection, DOMAIN_NAME);
                 sxpConnection.shutdown();
+                taskCaptor.getValue().call();
                 verify(sxpDatabase).deleteBindings(sxpConnection.getId());
                 assertEquals(ConnectionState.Off, sxpConnection.getState());
 
