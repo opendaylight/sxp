@@ -9,19 +9,16 @@
 package org.opendaylight.sxp.csit;
 
 import com.google.common.base.Preconditions;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.csit.libraries.AbstractLibrary;
 import org.opendaylight.sxp.csit.libraries.ConnectionTestLibrary;
+import org.opendaylight.sxp.csit.libraries.DeviceTestLibrary;
 import org.opendaylight.sxp.csit.libraries.ExportTestLibrary;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.osgi.framework.BundleActivator;
-import org.osgi.framework.BundleContext;
 import org.robotframework.remoteserver.RemoteServer;
 import org.robotframework.remoteserver.library.RemoteLibrary;
 
@@ -31,6 +28,23 @@ import org.robotframework.remoteserver.library.RemoteLibrary;
 public class LibraryServer extends RemoteServer implements RobotLibraryServer {
 
     private static Map<String, SxpNode> nodes = new ConcurrentHashMap<>();
+
+    /**
+     * Standalone version used for remote testing purposes
+     *
+     * @param args Input args not used
+     * @throws Exception If JRobot server fails
+     */
+    public static void main(String[] args) throws Exception {
+        RemoteServer.configureLogging();
+        LibraryServer server = new LibraryServer();
+        server.setHost("0.0.0.0");
+        server.setPort(8270);
+        server.addLibrary(new ConnectionTestLibrary());
+        server.addLibrary(new DeviceTestLibrary());
+        server.addLibrary(new ExportTestLibrary());
+        server.start();
+    }
 
     /**
      * @return All SxpNodes in library server
