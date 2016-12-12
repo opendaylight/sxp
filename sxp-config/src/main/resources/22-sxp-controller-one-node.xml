@@ -12,19 +12,6 @@
                         binding:sxp-controller
                     </type>
                     <name>sxp-controller</name>
-                    <binding-broker>
-                        <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
-                            binding:binding-broker-osgi-registry
-                        </type>
-                        <name>binding-osgi-broker</name>
-                    </binding-broker>
-
-                    <rpc-registry>
-                        <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
-                            binding:binding-rpc-registry
-                        </type>
-                        <name>binding-rpc-broker</name>
-                    </rpc-registry>
 
                     <data-broker>
                         <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">

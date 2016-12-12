@@ -36,24 +36,6 @@ module sxp-controller-conf {
         case sxp-controller {
             when "/config:modules/config:module/config:type = 'sxp-controller'";
 
-            container binding-broker {
-                uses config:service-ref {
-                    refine type {
-                        mandatory true;
-                        config:required-identity mdsal:binding-broker-osgi-registry;
-                    }
-                }
-            }
-
-            container rpc-registry {
-                uses config:service-ref {
-                    refine type {
-                        mandatory true;
-                        config:required-identity mdsal:binding-rpc-registry;
-                    }
-                }
-            }
-
             container data-broker {
                 uses config:service-ref {
                     refine type {
