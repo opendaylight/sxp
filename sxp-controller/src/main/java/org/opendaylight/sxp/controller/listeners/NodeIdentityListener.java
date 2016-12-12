@@ -9,13 +9,11 @@
 package org.opendaylight.sxp.controller.listeners;
 
 import com.google.common.base.Preconditions;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-
 import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
@@ -143,9 +141,10 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                             } else {
                                 Configuration.getRegisteredNode(nodeId).shutdown();
                             }
-                        } else if (checkDifference(c, d -> d.getSecurity().getPassword()) || checkDifference(c,
-                                SxpNodeFields::getVersion) || checkDifference(c, SxpNodeFields::getTcpPort)
-                                || checkDifference(c, SxpNodeFields::getSourceIp)) {
+                        } else if (checkDifference(c,
+                                d -> Objects.nonNull(d.getSecurity()) ? d.getSecurity().getPassword() : null)
+                                || checkDifference(c, SxpNodeFields::getVersion) || checkDifference(c,
+                                SxpNodeFields::getTcpPort) || checkDifference(c, SxpNodeFields::getSourceIp)) {
                             Configuration.getRegisteredNode(nodeId).shutdown().start();
                         } else if (checkDifference(c, SxpNodeIdentityFields::getTimers)) {
                             Configuration.getRegisteredNode(nodeId).shutdownConnections();
