@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xmlns:odl="http://opendaylight.org/xmlns/blueprint/v1.0.0"
+           odl:use-default-for-reference-types="true">
+
+    <reference id="dataBroker" interface="org.opendaylight.controller.md.sal.binding.api.DataBroker"
+               odl:type="pingpong"/>
+    <reference id="broker" interface="org.opendaylight.controller.sal.binding.api.BindingAwareBroker"/>
+    <reference id="clusterSingletonServiceProvider"
+               interface="org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvider"/>
+
+    <reference id="sxpControllerInstance"
+               interface="org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService"/>
+
+    <!-- Modules /-->
+    <bean id="sxpRouteInstance" class="org.opendaylight.sxp.route.SxpRouteInstance">
+        <argument ref="broker"/>
+        <argument ref="sxpClusterRouteManager"/>
+    </bean>
+
+    <bean id="sxpClusterRouteManager" destroy-method="close"
+          class="org.opendaylight.sxp.route.core.SxpClusterRouteManager">
+        <argument ref="dataBroker"/>
+        <argument ref="clusterSingletonServiceProvider"/>
+    </bean>
+
+    <bean id="clusterSanityWatchdogInstance" destroy-method="close"
+          class="org.opendaylight.sxp.route.ClusterSanityWatchdogInstance">
+        <argument ref="dataBroker"/>
+        <argument ref="clusterSingletonServiceProvider"/>
+        <argument value="5"/>
+        <argument value="3"/>
+        <property name="services">
+            <list value-type="org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService">
+                <ref component-id="sxpClusterRouteManager"/>
+                <ref component-id="sxpControllerInstance"/>
+            </list>
+        </property>
+    </bean>
+</blueprint>

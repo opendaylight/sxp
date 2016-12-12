@@ -9,10 +9,8 @@
 package org.opendaylight.sxp.controller.listeners.spi;
 
 import com.google.common.base.Preconditions;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -129,14 +127,16 @@ public abstract class ContainerListener<P extends DataObject, C extends ChildOf<
                         handleConfig(modifiedChildContainer, identifier);
                         break;
                 }
-                if (!DataObjectModification.ModificationType.DELETE.equals(
-                        modifiedChildContainer.getModificationType()))
-                    subListeners.forEach(l -> {
-                        l.handleChange(l.getObjectModifications(modifiedChildContainer), logicalDatastoreType,
-                                getIdentifier(modifiedChildContainer.getDataBefore()
-                                                != null ? modifiedChildContainer.getDataBefore() : modifiedChildContainer.getDataAfter(),
-                                        identifier));
-                    });
+                try {
+                    if (!DataObjectModification.ModificationType.DELETE.equals(modifiedChildContainer.getModificationType()))
+                        subListeners.forEach(l -> {
+                            l.handleChange(l.getObjectModifications(modifiedChildContainer), logicalDatastoreType,
+                                    getIdentifier(modifiedChildContainer.getDataBefore() != null ? modifiedChildContainer.getDataBefore() : modifiedChildContainer.getDataAfter(),
+                                            identifier));
+                        });
+                } catch(IllegalStateException e){
+                    LOG.warn("{} {} modifications on child not found ", identifier, logicalDatastoreType, e);
+                }
             });
         }
     }

@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 @RobotKeywords public abstract class AbstractLibrary extends AnnotationLibrary implements AutoCloseable {
 
     public final static String SOURCE = "source";
-    protected static final Logger LOG = LoggerFactory.getLogger(ConnectionTestLibrary.class.getName());
+    protected static final Logger LOG = LoggerFactory.getLogger(AbstractLibrary.class.getName());
     protected final ConnectionTimersBuilder connectionTimers = new ConnectionTimersBuilder();
 
     /**

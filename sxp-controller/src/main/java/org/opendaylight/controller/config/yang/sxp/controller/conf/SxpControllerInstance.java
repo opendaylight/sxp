@@ -47,7 +47,7 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
 
     protected static final Logger LOG = LoggerFactory.getLogger(SxpControllerInstance.class);
 
-    private static final ServiceGroupIdentifier
+    public static final ServiceGroupIdentifier
             IDENTIFIER =
             ServiceGroupIdentifier.create(SxpControllerInstance.class.getName());
 
