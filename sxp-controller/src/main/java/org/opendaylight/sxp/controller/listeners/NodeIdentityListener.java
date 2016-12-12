@@ -140,9 +140,10 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                             } else {
                                 Configuration.getRegisteredNode(nodeId).shutdown();
                             }
-                        } else if (checkDifference(c, d -> d.getSecurity().getPassword()) || checkDifference(c,
-                                SxpNodeFields::getVersion) || checkDifference(c, SxpNodeFields::getTcpPort)
-                                || checkDifference(c, SxpNodeFields::getSourceIp)) {
+                        } else if (checkDifference(c,
+                                d -> Objects.nonNull(d.getSecurity()) ? d.getSecurity().getPassword() : null)
+                                || checkDifference(c, SxpNodeFields::getVersion) || checkDifference(c,
+                                SxpNodeFields::getTcpPort) || checkDifference(c, SxpNodeFields::getSourceIp)) {
                             Configuration.getRegisteredNode(nodeId).shutdown().start();
                         } else if (checkDifference(c, SxpNodeIdentityFields::getTimers)) {
                             Configuration.getRegisteredNode(nodeId).shutdownConnections();
