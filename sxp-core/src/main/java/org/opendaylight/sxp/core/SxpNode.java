@@ -19,24 +19,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPromiseNotifier;
-
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import javax.annotation.Nullable;
-
 import org.opendaylight.sxp.core.handler.ConnectionDecoder;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
@@ -68,7 +50,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.MessageBufferingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilter;
@@ -78,6 +59,23 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Node
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The source-group tag exchange protocol (SXP) aware node implementation. SXP
@@ -1266,7 +1264,7 @@ public class SxpNode {
      */
     private void channelInitializationWait(String logMsg) {
         try {
-            while (serverChannelInit.getAndSet(true)) {
+            for (int i = 0; serverChannelInit.getAndSet(true) && i < 3; i++) {
                 wait(THREAD_DELAY);
             }
         } catch (InterruptedException e) {
@@ -1315,20 +1313,25 @@ public class SxpNode {
         }
         this.sourceIp = InetAddresses.forString(Search.getAddress(getNodeIdentity().getSourceIp()));
         final SxpNode node = this;
-        ConnectFacade.createServer(node, handlerFactoryServer).addListener(new ChannelFutureListener() {
+        try {
+            ConnectFacade.createServer(node, handlerFactoryServer).addListener(new ChannelFutureListener() {
 
-            @Override public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                if (channelFuture.isSuccess()) {
-                    serverChannel = channelFuture.channel();
-                    LOG.info(node + " Server created [" + getSourceIp().getHostAddress() + ":" + getServerPort() + "]");
-                    node.setTimer(TimerType.RetryOpenTimer, node.getRetryOpenTime());
-                } else {
-                    LOG.error(node + " Server [" + node.getSourceIp().getHostAddress() + ":" + getServerPort()
-                            + "] Could not be created " + channelFuture.cause());
+                @Override public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                    if (channelFuture.isSuccess()) {
+                        serverChannel = channelFuture.channel();
+                        LOG.info(node + " Server created [" + getSourceIp().getHostAddress() + ":" + getServerPort()
+                                + "]");
+                        node.setTimer(TimerType.RetryOpenTimer, node.getRetryOpenTime());
+                    } else {
+                        LOG.error(node + " Server [" + node.getSourceIp().getHostAddress() + ":" + getServerPort()
+                                + "] Could not be created " + channelFuture.cause());
+                    }
+                    serverChannelInit.set(false);
                 }
-                serverChannelInit.set(false);
-            }
-        }).syncUninterruptibly();
+            }).syncUninterruptibly();
+        } catch (Exception e) {
+            LOG.debug("Failed to bind SxpNode {} to ip", this, e);
+        }
         return this;
     }
 
