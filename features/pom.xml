@@ -110,6 +110,11 @@
         <version>${project.version}</version>
     </dependency>
     <dependency>
+        <groupId>org.opendaylight.sxp</groupId>
+        <artifactId>sxp-cluster-route</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.opendaylight.sxp</groupId>
       <artifactId>sxp-config</artifactId>
       <version>${project.version}</version>

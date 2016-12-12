@@ -19,9 +19,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.slf4j.Logger;
@@ -55,7 +58,8 @@ public class ThreadsWorker {
             this.connection = Preconditions.checkNotNull(connection);
         }
 
-        @Override public boolean equals(Object o) {
+        @Override
+        public boolean equals(Object o) {
             if (this == o)
                 return true;
             if (o == null || getClass() != o.getClass())
@@ -64,7 +68,8 @@ public class ThreadsWorker {
             return workerType == queueKey.workerType && Objects.equals(connection, queueKey.connection);
         }
 
-        @Override public int hashCode() {
+        @Override
+        public int hashCode() {
             return Objects.hash(workerType, connection);
         }
     }
@@ -293,7 +298,8 @@ public class ThreadsWorker {
                 ListenableFuture<T> callback = future.getExecutor().submit(future.getTask());
                 callback.addListener(new Runnable() {
 
-                    @Override public void run() {
+                    @Override
+                    public void run() {
                         synchronized (dequeMap.get(key)) {
                             dequeMap.get(key).pollFirst();
                             sequenceRecursion(key);
@@ -318,7 +324,8 @@ public class ThreadsWorker {
             if (!future.isDone()) {
                 future.setFuture(future.getExecutor().submit(future.getTask())).addListener(new Runnable() {
 
-                    @Override public void run() {
+                    @Override
+                    public void run() {
                         synchronized (dequeMap.get(key)) {
                             dequeMap.get(key).pollFirst();
                             sequenceRecursion(key);
@@ -354,5 +361,16 @@ public class ThreadsWorker {
             }
             dequeMap.get(key).clear();
         }
+    }
+
+    public static ExecutorService generateExecutor(int threads) {
+        return new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue()) {
+
+            @Override
+            protected void afterExecute(Runnable runnable, Throwable throwable) {
+                super.afterExecute(runnable, throwable);
+                LOG.debug("Task {} failed with ", runnable, throwable);
+            }
+        };
     }
 }

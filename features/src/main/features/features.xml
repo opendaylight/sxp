@@ -51,5 +51,9 @@
         </configfile>
         <bundle>mvn:org.opendaylight.sxp/sxp-controller/{{VERSION}}</bundle>
     </feature>
-
+    <feature name='odl-sxp-route' version='${project.version}' description='OpenDaylight :: Sxp :: Cluster routing'>
+        <feature version='${project.version}'>odl-sxp-controller</feature>
+        <bundle>mvn:org.opendaylight.sxp/sxp-cluster-route/{{VERSION}}</bundle>
+        <bundle>mvn:org.apache.commons/commons-lang3/{{VERSION}}</bundle>
+    </feature>
 </features>

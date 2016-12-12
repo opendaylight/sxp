@@ -14,7 +14,8 @@
         <argument ref="dataBroker"/>
     </bean>
     <bean id="sxpControllerInstance"
-          class="org.opendaylight.controller.config.yang.sxp.controller.conf.SxpControllerInstance">
+          class="org.opendaylight.controller.config.yang.sxp.controller.conf.SxpControllerInstance"
+          destroy-method="close">
         <argument ref="dataBroker"/>
         <argument ref="clusterSingletonServiceProvider"/>
     </bean>

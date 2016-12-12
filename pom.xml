@@ -17,8 +17,9 @@
 
     <modules>
         <module>sxp-api</module>
-        <module>sxp-controller</module>
         <module>sxp-core</module>
+        <module>sxp-controller</module>
+        <module>sxp-cluster-route</module>
         <module>sxp-robot</module>
         <!-- Karaf -->
         <module>sxp-config</module>
