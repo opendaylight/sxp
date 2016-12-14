@@ -15,6 +15,9 @@ import org.opendaylight.sxp.route.core.SxpClusterRouteManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Purpose: registers {@link SxpClusterRouteManager} when all necessary services are ready
+ */
 public class SxpRouteInstance implements BindingAwareProvider {
 
     private static final Logger LOG = LoggerFactory.getLogger(SxpRouteInstance.class);

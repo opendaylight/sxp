@@ -34,7 +34,10 @@ import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-//TODO remove when cluster will always close its instances when switching
+/**
+ * Purpose: provides workaround for closing {@link ClusterSingletonService}, if {@link ClusterSingletonServiceProvider} does not close them
+ * TODO remove when cluster will always close its instances when switching
+ */
 public class ClusterSanityWatchdogInstance implements AutoCloseable, ClusterSingletonService {
 
     protected static final Logger LOG = LoggerFactory.getLogger(ClusterSanityWatchdogInstance.class);
@@ -49,6 +52,12 @@ public class ClusterSanityWatchdogInstance implements AutoCloseable, ClusterSing
     private ClusterSingletonServiceRegistration clusterServiceRegistration;
     private ListenableFuture<Boolean> timer = Futures.immediateCancelledFuture();
 
+    /**
+     * @param broker                          service providing access to Datastore
+     * @param clusterSingletonServiceProvider service used for registration
+     * @param period                          period of watchdog feed
+     * @param failLimit                       acceptable missed watchdog feeds
+     */
     public ClusterSanityWatchdogInstance(final DataBroker broker,
             final ClusterSingletonServiceProvider clusterSingletonServiceProvider, final int period,
             final int failLimit) {
@@ -75,6 +84,9 @@ public class ClusterSanityWatchdogInstance implements AutoCloseable, ClusterSing
         timer.cancel(true);
     }
 
+    /**
+     * @param task containing logic that determines if cluster is healthy
+     */
     private synchronized void schedule(final SxpTimerTask<Boolean> task) {
         if (!timer.isDone()) {
             LOG.warn("double scheduling occurred!");
@@ -108,6 +120,11 @@ public class ClusterSanityWatchdogInstance implements AutoCloseable, ClusterSing
         });
     }
 
+    /**
+     * Adds services that will be guarded by {@link ClusterSanityWatchdogInstance}
+     *
+     * @param services services that will be added
+     */
     public void setServices(List<ClusterSingletonService> services) {
         singletonServices.addAll(Objects.requireNonNull(services));
     }

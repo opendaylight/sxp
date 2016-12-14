@@ -13,17 +13,18 @@ import com.google.common.util.concurrent.ListenableScheduledFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.opendaylight.sxp.core.SxpConnection;
@@ -90,7 +91,7 @@ public class ThreadsWorker {
      * @param executorServiceOutbound  ExecutorService which will be used for executing outbound messaging behaviour
      */
     public ThreadsWorker(ScheduledExecutorService scheduledExecutorService, ExecutorService executorService,
-            ExecutorService executorServiceInbound, ExecutorService executorServiceOutbound) {
+                         ExecutorService executorServiceInbound, ExecutorService executorServiceOutbound) {
         for (WorkerType workerType : WorkerType.values()) {
             dequeMap.put(new QueueKey(workerType), new ArrayDeque<SettableListenableFuture>());
         }
@@ -225,7 +226,7 @@ public class ThreadsWorker {
      * @return ListenableFuture that can be used to extract result or cancel
      */
     public <T> ListenableFuture<T> executeTaskInSequence(final Callable<T> task, final WorkerType type,
-            final SxpConnection connection) {
+                                                         final SxpConnection connection) {
         return executeTaskInSequence(checkAndWrap(task), new QueueKey(type, connection));
     }
 
@@ -251,7 +252,7 @@ public class ThreadsWorker {
      * @param connection            SxpConnection specified as additional key
      */
     public void cancelTasksInSequence(final boolean mayInterruptIfRunning, final WorkerType type,
-            final SxpConnection connection) {
+                                      final SxpConnection connection) {
         cancelTasksInSequence(mayInterruptIfRunning, new QueueKey(type, connection));
     }
 
@@ -287,7 +288,7 @@ public class ThreadsWorker {
      */
     private <T> ListenableFuture<T> executeTaskInSequence(final Callable<T> task, final QueueKey key) {
         synchronized (dequeMap) {
-            if (!dequeMap.containsKey(key)) {
+            if (! dequeMap.containsKey(key)) {
                 dequeMap.put(key, new ArrayDeque<SettableListenableFuture>());
             }
         }
@@ -321,7 +322,7 @@ public class ThreadsWorker {
     private void sequenceRecursion(final QueueKey key) {
         SettableListenableFuture future = dequeMap.get(key).peekFirst();
         if (future != null) {
-            if (!future.isDone()) {
+            if (! future.isDone()) {
                 future.setFuture(future.getExecutor().submit(future.getTask())).addListener(new Runnable() {
 
                     @Override
@@ -355,7 +356,7 @@ public class ThreadsWorker {
         }
         synchronized (dequeMap.get(key)) {
             for (SettableListenableFuture task : dequeMap.get(key)) {
-                if (!task.isDone()) {
+                if (! task.isDone()) {
                     task.cancel(mayInterruptIfRunning);
                 }
             }
@@ -364,7 +365,20 @@ public class ThreadsWorker {
     }
 
     public static ExecutorService generateExecutor(int threads) {
-        return new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue()) {
+        return generateExecutor(threads, null);
+    }
+
+    public static ExecutorService generateExecutor(int threads, final String poolName) {
+        final ThreadFactory threadFactory;
+        if (poolName == null) {
+            threadFactory = Executors.defaultThreadFactory();
+        } else {
+            threadFactory = new ThreadFactoryBuilder()
+                    .setNameFormat(poolName + "-%d")
+                    .build();
+        }
+        return new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
+                threadFactory) {
 
             @Override
             protected void afterExecute(Runnable runnable, Throwable throwable) {

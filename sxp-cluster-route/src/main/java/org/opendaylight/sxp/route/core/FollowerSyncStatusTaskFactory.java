@@ -28,6 +28,10 @@ public class FollowerSyncStatusTaskFactory {
         this.consequentFailLimit = consequentFailLimit;
     }
 
+    /**
+     * @param datastoreAccess instance used for accessing data store
+     * @return Task for checking cluster health
+     */
     public FollowerSyncStatusTask createFollowerSyncStatusTask(final DatastoreAccess datastoreAccess) {
         return new FollowerSyncStatusTask(period, Objects.requireNonNull(datastoreAccess), consequentFailLimit);
     }

@@ -28,9 +28,11 @@ public class RoutingServiceFactoryTest {
 
     @Rule public ExpectedException noServiceThrown = ExpectedException.none();
     private RoutingDefinition routingDefinition;
+    private RoutingServiceFactory routingServiceFactory;
 
     @Before
     public void setUp() throws Exception {
+        routingServiceFactory = new RoutingServiceFactory();
         routingDefinition =
                 new RoutingDefinitionBuilder().setIpAddress(new IpAddress("0.0.0.0".toCharArray()))
                         .setInterface("eth0:0")
@@ -42,7 +44,7 @@ public class RoutingServiceFactoryTest {
     public void instantiateRoutingService_linux() throws Exception {
         changeOsIsLinuxField(true);
         try {
-            final Routing service = RoutingServiceFactory.instantiateRoutingService(routingDefinition);
+            final Routing service = routingServiceFactory.instantiateRoutingService(routingDefinition);
             Assert.assertNotNull(service);
         } catch (Exception e) {
             Assert.fail("expected to create a service, got exception instead: " + e.getMessage());
@@ -53,7 +55,7 @@ public class RoutingServiceFactoryTest {
     public void instantiateRoutingService_other() throws Exception {
         changeOsIsLinuxField(false);
         noServiceThrown.expect(UnsupportedOperationException.class);
-        RoutingServiceFactory.instantiateRoutingService(routingDefinition);
+        routingServiceFactory.instantiateRoutingService(routingDefinition);
     }
 
     private void changeOsIsLinuxField(final boolean mockedOsName) throws NoSuchFieldException, IllegalAccessException {
@@ -61,7 +63,7 @@ public class RoutingServiceFactoryTest {
         osNameField.setAccessible(true);
         Field modifiers = osNameField.getClass().getDeclaredField("modifiers");
         modifiers.setAccessible(true);
-        modifiers.setInt(osNameField, osNameField.getModifiers() & ~Modifier.FINAL);
+        modifiers.setInt(osNameField, osNameField.getModifiers() & ~ Modifier.FINAL);
         osNameField.set(null, mockedOsName);
     }
 
