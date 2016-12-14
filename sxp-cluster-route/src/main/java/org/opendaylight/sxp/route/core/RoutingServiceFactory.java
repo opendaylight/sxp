@@ -13,11 +13,18 @@ import org.opendaylight.sxp.route.spi.Routing;
 import org.opendaylight.sxp.route.spi.SystemCall;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinition;
 
+/**
+ * Purpose: provides instance of {@link Routing} based on OS type
+ */
 public class RoutingServiceFactory {
 
-    private static SystemCall processFunction = s -> Runtime.getRuntime().exec(s);
+    private SystemCall processFunction = s -> Runtime.getRuntime().exec(s);
 
-    public static Routing instantiateRoutingService(RoutingDefinition initializer) {
+    /**
+     * @param initializer configured {@link RoutingDefinition}
+     * @return OS dependent routing instance
+     */
+    public Routing instantiateRoutingService(RoutingDefinition initializer) {
         if (SystemUtils.IS_OS_LINUX) {
             return new LinuxRoutingService(processFunction, initializer);
         }

@@ -52,6 +52,17 @@ module sxp-cluster-route {
                 type ietf-yang:date-and-time;
                 config false;
             }
+            leaf consistent {
+                description "If this routing is consistent with system";
+                config false;
+                type boolean;
+                default true;
+            }
+            leaf info {
+                description "Explanation / cause of current state";
+                config false;
+                type string;
+            }
         }
     }
 }

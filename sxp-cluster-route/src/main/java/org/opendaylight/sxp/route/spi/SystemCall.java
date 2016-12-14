@@ -10,8 +10,16 @@ package org.opendaylight.sxp.route.spi;
 
 import java.io.IOException;
 
+/**
+ * Purpose: provides access to system CLI
+ */
 public interface SystemCall {
 
+    /**
+     * @param s Command that will be executed by system
+     * @return system callback associated with provided command
+     * @throws IOException If runtime providing execution is not available
+     */
     java.lang.Process execute(String s) throws IOException;
 
 }

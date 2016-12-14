@@ -8,7 +8,7 @@
 
 package org.opendaylight.sxp.route.core;
 
-import static org.opendaylight.sxp.route.core.SxpClusterRouteManager.addressToString;
+import static org.opendaylight.sxp.route.util.RouteUtil.addressToString;
 
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.TimeUnit;
@@ -171,6 +171,15 @@ public class LinuxRoutingServiceTest {
     }
 
     @Test
+    public void updateArpTableForCurrentService() throws Exception {
+        mockCommand(0);
+        Assert.assertTrue("Expected True as update was successful, got", service.updateArpTableForCurrentService());
+        mockCommand(255);
+        Assert.assertFalse("Expected False as update was not successful, got",
+                service.updateArpTableForCurrentService());
+    }
+
+    @Test
     public void createVirtualIpRegisteredMatch() throws Exception {
         Assert.assertEquals("(.*)inet addr:1\\.2\\.3\\.4(.*)Bcast:(.*)Mask:255\\.255\\.255\\.0(.*)",
                 service.createVirtualIpRegisteredMatch());
@@ -184,6 +193,11 @@ public class LinuxRoutingServiceTest {
     @Test
     public void createIfaceUpCmd() throws Exception {
         Assert.assertEquals("sudo ifconfig eth42:0 1.2.3.4 netmask 255.255.255.0 up", service.createIfaceUpCmd());
+    }
+
+    @Test
+    public void createPingArpCmd() throws Exception {
+        Assert.assertEquals("sudo arping -q -c 1 -S 1.2.3.4 -i eth42 -B", service.createPingArpCmd());
     }
 
     @Test

@@ -15,6 +15,9 @@ import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 
+/**
+ * Purpose: provides logic for checking if cluster nodes are healthy
+ */
 public class FollowerSyncStatusTask extends SxpTimerTask<Boolean> {
 
     private final DatastoreAccess datastoreAccess;

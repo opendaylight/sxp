@@ -18,10 +18,22 @@
         <argument ref="sxpClusterRouteManager"/>
     </bean>
 
+    <bean id="routingServiceFactory" class="org.opendaylight.sxp.route.core.RoutingServiceFactory"/>
+
+    <bean id="routeReactor" class="org.opendaylight.sxp.route.core.RouteReactorImpl">
+        <argument ref="dataBroker"/>
+        <argument ref="routingServiceFactory"/>
+    </bean>
+
+    <bean id="routeReactorZip" class="org.opendaylight.sxp.route.core.RouteReactorZipImpl">
+        <argument ref="routeReactor"/>
+    </bean>
+
     <bean id="sxpClusterRouteManager" destroy-method="close"
           class="org.opendaylight.sxp.route.core.SxpClusterRouteManager">
         <argument ref="dataBroker"/>
         <argument ref="clusterSingletonServiceProvider"/>
+        <argument ref="routeReactorZip"/>
     </bean>
 
     <bean id="clusterSanityWatchdogInstance" destroy-method="close"

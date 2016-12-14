@@ -8,7 +8,7 @@
 
 package org.opendaylight.sxp.route.core;
 
-import static org.opendaylight.sxp.route.core.SxpClusterRouteManager.addressToString;
+import static org.opendaylight.sxp.route.util.RouteUtil.addressToString;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.BufferedReader;
@@ -24,6 +24,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Purpose: reflect configuration of virtual address routing to network via Linux system calls
+ */
 public class LinuxRoutingService implements Routing {
 
     private static final Logger LOG = LoggerFactory.getLogger(LinuxRoutingService.class);
@@ -33,6 +36,10 @@ public class LinuxRoutingService implements Routing {
     private IpAddress netmask;
     private boolean isRouteActive = false;
 
+    /**
+     * @param systemCall  service providing system callbacks
+     * @param initializer configured {@link RoutingDefinition}
+     */
     public LinuxRoutingService(SystemCall systemCall, RoutingDefinition initializer) {
         Objects.requireNonNull(initializer);
         this.processFunction = Objects.requireNonNull(systemCall);
@@ -41,6 +48,10 @@ public class LinuxRoutingService implements Routing {
         this.interfaceName = Objects.requireNonNull(initializer.getInterface());
     }
 
+    /**
+     * @param command Command that will be executed
+     * @return Command stdout
+     */
     public String executeCommand(String command) {
         LOG.debug("Execute CMD {}", command);
         try {
@@ -54,6 +65,10 @@ public class LinuxRoutingService implements Routing {
         }
     }
 
+    /**
+     * @param command Command that will be executed
+     * @return Exit value of executed command
+     */
     public int executeCommandRC(String command) {
         LOG.debug("Execute CMD : {}", command);
         try {
@@ -113,6 +128,9 @@ public class LinuxRoutingService implements Routing {
         return result;
     }
 
+    /**
+     * @return Command for destroying virtual interface and ip-address
+     */
     @VisibleForTesting
     String createIfaceDownCmd() {
         return String.format("sudo ifconfig %s down", interfaceName);
@@ -129,12 +147,33 @@ public class LinuxRoutingService implements Routing {
         return (isRouteActive = executeCommandRC(createIfaceUpCmd()) == 0);
     }
 
+    @Override
+    public boolean updateArpTableForCurrentService() {
+        return executeCommandRC(createPingArpCmd()) == 0;
+    }
+
+    /**
+     * @return Command for creating virtual interface and ip-address
+     */
     @VisibleForTesting
     String createIfaceUpCmd() {
         return String.format("sudo ifconfig %s %s netmask %s up", interfaceName, addressToString(virtualIp),
                 addressToString(netmask));
     }
 
+    /**
+     * @return Command for update of device arp table
+     */
+    @VisibleForTesting
+    String createPingArpCmd() {
+        // TODO: Replace by specific ip addresses
+        return String.format("sudo arping -q -c 1 -S %s -i %s -B", addressToString(virtualIp),
+                interfaceName.split(":")[0]);
+    }
+
+    /**
+     * @return Regex match for testing if route is active
+     */
     @VisibleForTesting
     String createVirtualIpRegisteredMatch() {
         return String.format("(.*)inet addr:%s(.*)Bcast:(.*)Mask:%s(.*)",
