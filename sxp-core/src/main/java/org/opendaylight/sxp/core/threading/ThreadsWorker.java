@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -93,7 +94,7 @@ public class ThreadsWorker {
     public ThreadsWorker(ScheduledExecutorService scheduledExecutorService, ExecutorService executorService,
                          ExecutorService executorServiceInbound, ExecutorService executorServiceOutbound) {
         for (WorkerType workerType : WorkerType.values()) {
-            dequeMap.put(new QueueKey(workerType), new ArrayDeque<SettableListenableFuture>());
+            dequeMap.put(new QueueKey(workerType), new ArrayDeque<>());
         }
         this.scheduledExecutorService =
                 MoreExecutors.listeningDecorator(Preconditions.checkNotNull(scheduledExecutorService));
@@ -122,8 +123,8 @@ public class ThreadsWorker {
      * @param timers      Timer executor poll size
      */
     public ThreadsWorker(int inPool, int defaultPool, int outPool, int timers) {
-        this(Executors.newScheduledThreadPool(timers), Executors.newFixedThreadPool(defaultPool),
-                Executors.newFixedThreadPool(inPool), Executors.newFixedThreadPool(outPool));
+        this(generateScheduledExecutor(timers, "TIMERS"), generateExecutor(defaultPool, "DEFAULT"),
+                generateExecutor(inPool, "INBOUND"), generateExecutor(outPool, "OUTBOUND"));
     }
 
     /**
@@ -144,44 +145,6 @@ public class ThreadsWorker {
     }
 
     /**
-     * Perform checks on task and if debug mode is enabled
-     * wraps task in try catch and logs exceptions trowed by task
-     *
-     * @param callable Task that will be checked
-     * @param <T>      return type of Callable task
-     * @return Task ready for execution
-     */
-    private <T> Callable<T> checkAndWrap(Callable<T> callable) {
-        Preconditions.checkNotNull(callable);
-        return LOG.isDebugEnabled() ? () -> {
-            try {
-                return callable.call();
-            } catch (Exception e) {
-                LOG.error("{} error executing {}", this, callable, e);
-            }
-            return null;
-        } : callable;
-    }
-
-    /**
-     * Perform checks on task and if debug mode is enabled
-     * wraps task in try catch and logs exceptions trowed by task
-     *
-     * @param runnable Task that will be checked
-     * @return Task ready for execution
-     */
-    private Runnable checkAndWrap(Runnable runnable) {
-        Preconditions.checkNotNull(runnable);
-        return LOG.isDebugEnabled() ? () -> {
-            try {
-                runnable.run();
-            } catch (Exception e) {
-                LOG.error("{} error executing {}", this, runnable);
-            }
-        } : runnable;
-    }
-
-    /**
      * Schedule and execute task after specified period in ListeningScheduledExecutorService
      *
      * @param task   Callable task which will be scheduled
@@ -191,7 +154,7 @@ public class ThreadsWorker {
      * @throws NullPointerException If task is null
      */
     public <T> ListenableScheduledFuture<T> scheduleTask(Callable<T> task, int period, TimeUnit unit) {
-        return scheduledExecutorService.schedule(checkAndWrap(task), period, unit);
+        return scheduledExecutorService.schedule(Objects.requireNonNull(task), period, unit);
     }
 
     /**
@@ -203,7 +166,7 @@ public class ThreadsWorker {
      * @throws NullPointerException If task is null
      */
     public <T> ListenableFuture<T> executeTask(Callable<T> task, WorkerType type) {
-        return getExecutor(type).submit(checkAndWrap(task));
+        return getExecutor(type).submit(Objects.requireNonNull(task));
     }
 
     /**
@@ -214,7 +177,7 @@ public class ThreadsWorker {
      * @return ListenableFuture that can be used to extract result or cancel
      */
     public <T> ListenableFuture<T> executeTaskInSequence(final Callable<T> task, final WorkerType type) {
-        return executeTaskInSequence(checkAndWrap(task), new QueueKey(type));
+        return executeTaskInSequence(Objects.requireNonNull(task), new QueueKey(type));
     }
 
     /**
@@ -227,7 +190,7 @@ public class ThreadsWorker {
      */
     public <T> ListenableFuture<T> executeTaskInSequence(final Callable<T> task, final WorkerType type,
                                                          final SxpConnection connection) {
-        return executeTaskInSequence(checkAndWrap(task), new QueueKey(type, connection));
+        return executeTaskInSequence(Objects.requireNonNull(task), new QueueKey(type, connection));
     }
 
     /**
@@ -265,7 +228,7 @@ public class ThreadsWorker {
      * @throws NullPointerException If task is null
      */
     public ListenableFuture executeTask(Runnable task, WorkerType type) {
-        return getExecutor(type).submit(checkAndWrap(task));
+        return getExecutor(type).submit(Objects.requireNonNull(task));
     }
 
     /**
@@ -276,7 +239,7 @@ public class ThreadsWorker {
      * @throws NullPointerException If task or listener is null
      */
     public void addListener(ListenableFuture task, Runnable listener) {
-        Preconditions.checkNotNull(task).addListener(checkAndWrap(listener), executorService);
+        Preconditions.checkNotNull(task).addListener(Objects.requireNonNull(listener), executorService);
     }
 
     /**
@@ -289,7 +252,7 @@ public class ThreadsWorker {
     private <T> ListenableFuture<T> executeTaskInSequence(final Callable<T> task, final QueueKey key) {
         synchronized (dequeMap) {
             if (! dequeMap.containsKey(key)) {
-                dequeMap.put(key, new ArrayDeque<SettableListenableFuture>());
+                dequeMap.put(key, new ArrayDeque<>());
             }
         }
         synchronized (dequeMap.get(key)) {
@@ -297,14 +260,10 @@ public class ThreadsWorker {
             dequeMap.get(key).addLast(future);
             if (dequeMap.get(key).size() == 1) {
                 ListenableFuture<T> callback = future.getExecutor().submit(future.getTask());
-                callback.addListener(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        synchronized (dequeMap.get(key)) {
-                            dequeMap.get(key).pollFirst();
-                            sequenceRecursion(key);
-                        }
+                callback.addListener(() -> {
+                    synchronized (dequeMap.get(key)) {
+                        dequeMap.get(key).pollFirst();
+                        sequenceRecursion(key);
                     }
                 }, getExecutor(key.workerType));
                 return callback;
@@ -323,14 +282,10 @@ public class ThreadsWorker {
         SettableListenableFuture future = dequeMap.get(key).peekFirst();
         if (future != null) {
             if (! future.isDone()) {
-                future.setFuture(future.getExecutor().submit(future.getTask())).addListener(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        synchronized (dequeMap.get(key)) {
-                            dequeMap.get(key).pollFirst();
-                            sequenceRecursion(key);
-                        }
+                future.setFuture(future.getExecutor().submit(future.getTask())).addListener(() -> {
+                    synchronized (dequeMap.get(key)) {
+                        dequeMap.get(key).pollFirst();
+                        sequenceRecursion(key);
                     }
                 }, future.getExecutor());
             } else {
@@ -355,30 +310,50 @@ public class ThreadsWorker {
             }
         }
         synchronized (dequeMap.get(key)) {
-            for (SettableListenableFuture task : dequeMap.get(key)) {
-                if (! task.isDone()) {
-                    task.cancel(mayInterruptIfRunning);
-                }
-            }
+            dequeMap.get(key)
+                    .stream()
+                    .filter(task -> !task.isDone())
+                    .forEach(task -> task.cancel(mayInterruptIfRunning));
             dequeMap.get(key).clear();
         }
     }
 
-    public static ExecutorService generateExecutor(int threads) {
-        return generateExecutor(threads, null);
-    }
-
+    /**
+     * @param threads  num of uses threads
+     * @param poolName Pool name displayed in logs
+     * @return Customized thread poll
+     */
     public static ExecutorService generateExecutor(int threads, final String poolName) {
         final ThreadFactory threadFactory;
         if (poolName == null) {
             threadFactory = Executors.defaultThreadFactory();
         } else {
-            threadFactory = new ThreadFactoryBuilder()
-                    .setNameFormat(poolName + "-%d")
-                    .build();
+            threadFactory = new ThreadFactoryBuilder().setNameFormat(poolName + "-%d").build();
         }
         return new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
                 threadFactory) {
+
+            @Override
+            protected void afterExecute(Runnable runnable, Throwable throwable) {
+                super.afterExecute(runnable, throwable);
+                LOG.debug("Task {} failed with ", runnable, throwable);
+            }
+        };
+    }
+
+    /**
+     * @param threads  num of uses threads
+     * @param poolName Pool name displayed in logs
+     * @return Customized thread poll
+     */
+    public static ScheduledExecutorService generateScheduledExecutor(int threads, final String poolName) {
+        final ThreadFactory threadFactory;
+        if (poolName == null) {
+            threadFactory = Executors.defaultThreadFactory();
+        } else {
+            threadFactory = new ThreadFactoryBuilder().setNameFormat(poolName + "-%d").build();
+        }
+        return new ScheduledThreadPoolExecutor(threads, threadFactory) {
 
             @Override
             protected void afterExecute(Runnable runnable, Throwable throwable) {
