@@ -19,6 +19,22 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPromiseNotifier;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nullable;
 import org.opendaylight.sxp.core.handler.ConnectionDecoder;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
@@ -59,23 +75,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Node
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The source-group tag exchange protocol (SXP) aware node implementation. SXP
@@ -1053,8 +1052,13 @@ public class SxpNode {
      */
     public void openConnection(final SxpConnection connection) {
         if (!Preconditions.checkNotNull(connection).isStateOn() && isEnabled()) {
-            connection.closeChannelHandlerContextComplements(null);
-            ConnectFacade.createClient(this, connection, handlerFactoryClient);
+            if (!connection.isModeBoth()) {
+                connection.closeChannelHandlerContextComplements(null);
+            }
+            if (!connection.isModeBoth() || !connection.hasChannelHandlerContext(
+                    SxpConnection.ChannelHandlerContextType.ListenerContext)) {
+                ConnectFacade.createClient(this, connection, handlerFactoryClient);
+            }
         }
     }
 

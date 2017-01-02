@@ -40,6 +40,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterUpdatePolicy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
@@ -528,6 +529,7 @@ public class SxpConnectionTest {
                 when(bindingFilter.getIdentifier()).thenReturn(name);
                 SxpFilterBuilder builder = new SxpFilterBuilder();
                 builder.setFilterType(type);
+                builder.setFilterPolicy(FilterUpdatePolicy.AutoUpdate);
                 builder.setFilterSpecific(FilterSpecific.AccessOrPrefixList);
                 builder.setFilterEntries(mock(AclFilterEntries.class));
                 when(bindingFilter.getSxpFilter()).thenReturn(builder.build());

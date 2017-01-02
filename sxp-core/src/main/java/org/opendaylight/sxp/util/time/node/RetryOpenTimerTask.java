@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.util.time.node;
 
+import java.util.function.Predicate;
+import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
@@ -20,6 +22,15 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Conn
 public class RetryOpenTimerTask extends SxpTimerTask<Void> {
 
     private final SxpNode owner;
+    private static final Predicate<SxpConnection> inactiveConnection = sxpConnection -> {
+        if (!sxpConnection.isModeBoth() && ConnectionState.On.equals(sxpConnection.getState())) {
+            return false;
+        }
+        if (sxpConnection.isModeBoth() && sxpConnection.isBidirectionalBoth()) {
+            return false;
+        }
+        return true;
+    };
 
     /**
      * Constructor that sets timer period, and set node on which it will try to bring up Connections
@@ -33,10 +44,8 @@ public class RetryOpenTimerTask extends SxpTimerTask<Void> {
     }
 
     @Override public Void call() {
-        if (owner.isEnabled() && owner.getAllConnections()
-                .stream()
-                .anyMatch(c -> !ConnectionState.On.equals(c.getState()))) {
-            LOG.debug(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
+        LOG.debug(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
+        if (owner.isEnabled() && owner.getAllConnections().stream().anyMatch(inactiveConnection)) {
             owner.openConnections();
         }
         owner.setTimer(TimerType.RetryOpenTimer, getPeriod());

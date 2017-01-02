@@ -10,11 +10,12 @@ package org.opendaylight.sxp.core.behavior;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import java.net.UnknownHostException;
+import java.util.List;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpConnection.ChannelHandlerContextType;
 import org.opendaylight.sxp.core.messaging.AttributeList;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
-import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageCompositionException;
@@ -48,9 +49,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
-
-import java.net.UnknownHostException;
-import java.util.List;
 
 /**
  * Sxpv4 class provides logic for handling connection on Version 4
@@ -209,8 +207,9 @@ public final class Sxpv4 extends SxpLegacy {
         if(connection.isStateDeleteHoldDown()) {
             connection.setReconciliationTimer();
         }
-        if (!connection.isStateOn())
+        if (!connection.isStateOn()) {
             connection.setStatePendingOn();
+        }
     }
 
     @Override

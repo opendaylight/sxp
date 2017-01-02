@@ -32,6 +32,7 @@ public class ReconcilationTimerTask extends SxpTimerTask<Void> {
     }
 
     @Override public Void call() {
+        LOG.info(connection.getOwner() + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
         if (connection.isStateOn()) {
             LOG.info(connection.getOwner() + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
             connection.cleanUpBindings();

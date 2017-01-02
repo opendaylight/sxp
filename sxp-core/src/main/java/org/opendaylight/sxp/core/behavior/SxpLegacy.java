@@ -10,12 +10,13 @@ package org.opendaylight.sxp.core.behavior;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import java.net.UnknownHostException;
+import java.util.List;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
-import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
 import org.opendaylight.sxp.util.exception.connection.IncompatiblePeerVersionException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
@@ -40,9 +41,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageLegacy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
-
-import java.net.UnknownHostException;
-import java.util.List;
 
 /**
  * SxpLegacy class provides logic for handling connection on Version 1/2/3
@@ -78,8 +76,9 @@ public class SxpLegacy implements Strategy {
         if(connection.isStateDeleteHoldDown()) {
             connection.setReconciliationTimer();
         }
-        if (!connection.isStateOn())
+        if (!connection.isStateOn()) {
             connection.setStatePendingOn();
+        }
     }
 
     @Override

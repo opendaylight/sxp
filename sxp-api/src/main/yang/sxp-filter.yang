@@ -41,6 +41,14 @@ module sxp-filter {
         description "Type specifying logic used to filter bindings.";
     }
 
+    typedef filter-update-policy {
+        type enumeration {
+            enum auto-update;
+            enum manual-update;
+        }
+        description "Type specifying if changes in filter are propagated to peers automaticly.";
+    }
+
     typedef filter-entry-type {
         type enumeration {
             enum permit;
@@ -139,6 +147,10 @@ module sxp-filter {
         }
         leaf filter-specific {
             type filter-specific;
+        }
+        leaf filter-policy {
+            type filter-update-policy;
+            default manual-update;
         }
         uses filter-entries-fields;
     }
