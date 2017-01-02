@@ -11,7 +11,6 @@ package org.opendaylight.sxp.core;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.ChannelHandlerContext;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -22,7 +21,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
 import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.core.messaging.AttributeList;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
@@ -52,6 +50,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpB
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterUpdatePolicy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilterFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
@@ -150,11 +149,10 @@ public class SxpConnection {
         final SxpDomain sxpDomain = owner.getDomain(getDomainName());
         if (filterType.equals(FilterType.Outbound)) {
             //Sends PurgeAll, All bindings in this order
-            List<SxpConnection> connections = new ArrayList<>();
-            connections.add(this);
             owner.getWorker()
                     .addListener(BindingDispatcher.sendPurgeAllMessage(this), () -> getOwner().getSvcBindingDispatcher()
-                            .propagateUpdate(null, sxpDomain.getMasterDatabase().getBindings(), connections));
+                            .propagateUpdate(null, sxpDomain.getMasterDatabase().getBindings(),
+                                    Collections.singletonList(this)));
         } else if (filterRemoved && filterType.equals(FilterType.Inbound)) {
             //Adds all Bindings learned from peer to MasterDB and sends it to All Listeners
             owner.getWorker().executeTaskInSequence(() -> {
@@ -209,7 +207,9 @@ public class SxpConnection {
                 FilterType filterType = Preconditions.checkNotNull(filter.getSxpFilter()).getFilterType();
                 bindingFilterMap.get(filterType)
                         .put(Preconditions.checkNotNull(filter.getSxpFilter().getFilterSpecific()), filter);
-                updateFlagsForDatabase(filterType, false);
+                if (FilterUpdatePolicy.AutoUpdate.equals(filter.getSxpFilter().getFilterPolicy())) {
+                    updateFlagsForDatabase(filterType, false);
+                }
             }
         }
     }
@@ -243,7 +243,8 @@ public class SxpConnection {
             } else {
                 filters.add(bindingFilterMap.get(Preconditions.checkNotNull(filterType)).remove(specific));
             }
-            if (!filters.isEmpty()) {
+            if (!filters.isEmpty() && filters.stream()
+                    .allMatch(f -> FilterUpdatePolicy.AutoUpdate.equals(f.getSxpFilter().getFilterPolicy()))) {
                 updateFlagsForDatabase(filterType, true);
             }
         }
