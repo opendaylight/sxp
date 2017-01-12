@@ -204,6 +204,7 @@ public class SxpConnection {
     public void putFilter(SxpBindingFilter<?, ? extends SxpFilterFields> filter) {
         if (filter != null) {
             synchronized (bindingFilterMap) {
+                LOG.debug("{} put filter {}", this, filter.getSxpFilter());
                 FilterType filterType = Preconditions.checkNotNull(filter.getSxpFilter()).getFilterType();
                 bindingFilterMap.get(filterType)
                         .put(Preconditions.checkNotNull(filter.getSxpFilter().getFilterSpecific()), filter);
@@ -1342,7 +1343,8 @@ public class SxpConnection {
             } catch (InterruptedException | ExecutionException e) {
                 LOG.warn("{} Error PURGE bindings ", this);
             }
-        } else if (isModeSpeaker() && isStateOn()) {
+        }
+        if (isModeSpeaker() && isStateOn(ChannelHandlerContextType.SpeakerContext)) {
             BindingDispatcher.sendPurgeAllMessageSync(this);
         }
         setStateOff();
