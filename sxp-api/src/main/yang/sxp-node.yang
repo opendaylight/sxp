@@ -326,9 +326,11 @@ module sxp-node {
         ext:augment-identifier "sxp-node-identity";
         uses sxp-node-identity-fields;
         container sxp-domains {
+            presence "SXP domains containing bindings";
             list sxp-domain {
                 key "domain-name";
                 uses sxp-domain-fields;
+                min-elements 1;
             }
         }
         container sxp-peer-groups {
