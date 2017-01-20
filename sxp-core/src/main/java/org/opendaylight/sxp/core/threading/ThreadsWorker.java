@@ -336,7 +336,9 @@ public class ThreadsWorker {
             @Override
             protected void afterExecute(Runnable runnable, Throwable throwable) {
                 super.afterExecute(runnable, throwable);
-                LOG.debug("Task {} failed with ", runnable, throwable);
+                if (Objects.nonNull(throwable)) {
+                    LOG.debug("Task {} failed with {}", runnable, throwable);
+                }
             }
         };
     }
@@ -358,7 +360,9 @@ public class ThreadsWorker {
             @Override
             protected void afterExecute(Runnable runnable, Throwable throwable) {
                 super.afterExecute(runnable, throwable);
-                LOG.debug("Task {} failed with ", runnable, throwable);
+                if (Objects.nonNull(throwable)) {
+                    LOG.debug("Task {} failed with {}", runnable, throwable);
+                }
             }
         };
     }
