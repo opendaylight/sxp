@@ -1305,8 +1305,8 @@ public class SxpConnection {
         if (isModeListener()) {
             LOG.info("{} PURGE bindings ", this);
             BindingHandler.processPurgeAllMessageSync(this);
-
-        } else if (isModeSpeaker() && isStateOn()) {
+        }
+        if (isModeSpeaker() && isStateOn(ChannelHandlerContextType.SpeakerContext)) {
             BindingDispatcher.sendPurgeAllMessageSync(this);
         }
         setStateOff();
