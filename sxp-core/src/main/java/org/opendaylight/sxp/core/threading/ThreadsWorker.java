@@ -154,7 +154,8 @@ public class ThreadsWorker {
      * @throws NullPointerException If task is null
      */
     public <T> ListenableScheduledFuture<T> scheduleTask(Callable<T> task, int period, TimeUnit unit) {
-        return scheduledExecutorService.schedule(Objects.requireNonNull(task), period, unit);
+        LOG.debug("Scheduled task {} wit period {} {}", Objects.requireNonNull(task).getClass(), period, unit);
+        return scheduledExecutorService.schedule(task, period, unit);
     }
 
     /**
@@ -166,6 +167,7 @@ public class ThreadsWorker {
      * @throws NullPointerException If task is null
      */
     public <T> ListenableFuture<T> executeTask(Callable<T> task, WorkerType type) {
+        LOG.debug("Execute task {}", Objects.requireNonNull(task).getClass());
         return getExecutor(type).submit(Objects.requireNonNull(task));
     }
 
@@ -177,6 +179,7 @@ public class ThreadsWorker {
      * @return ListenableFuture that can be used to extract result or cancel
      */
     public <T> ListenableFuture<T> executeTaskInSequence(final Callable<T> task, final WorkerType type) {
+        LOG.debug("Execute in sequence task {}", Objects.requireNonNull(task).getClass());
         return executeTaskInSequence(Objects.requireNonNull(task), new QueueKey(type));
     }
 
