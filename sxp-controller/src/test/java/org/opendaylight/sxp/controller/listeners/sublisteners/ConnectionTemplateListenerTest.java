@@ -69,7 +69,6 @@ public class ConnectionTemplateListenerTest {
         when(sxpNode.getDomain(anyString())).thenReturn(domain);
         connection = mock(SxpConnection.class);
         when(sxpNode.getConnection(any(SocketAddress.class))).thenReturn(connection);
-        when(sxpNode.shutdown()).thenReturn(sxpNode);
         PowerMockito.mockStatic(Configuration.class);
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);

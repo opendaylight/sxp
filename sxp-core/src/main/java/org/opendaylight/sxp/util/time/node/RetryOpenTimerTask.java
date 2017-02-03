@@ -22,7 +22,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Conn
 public class RetryOpenTimerTask extends SxpTimerTask<Void> {
 
     private final SxpNode owner;
-    private static final Predicate<SxpConnection> inactiveConnection = sxpConnection -> {
+    public static final Predicate<SxpConnection> INACTIVE_CONNECTION_FILTER = sxpConnection -> {
         if (!sxpConnection.isModeBoth() && ConnectionState.On.equals(sxpConnection.getState())) {
             return false;
         }
@@ -45,7 +45,7 @@ public class RetryOpenTimerTask extends SxpTimerTask<Void> {
 
     @Override public Void call() {
         LOG.debug(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
-        if (owner.isEnabled() && owner.getAllConnections().stream().anyMatch(inactiveConnection)) {
+        if (owner.isEnabled() && owner.getAllConnections().stream().anyMatch(INACTIVE_CONNECTION_FILTER)) {
             owner.openConnections();
         }
         owner.setTimer(TimerType.RetryOpenTimer, getPeriod());
