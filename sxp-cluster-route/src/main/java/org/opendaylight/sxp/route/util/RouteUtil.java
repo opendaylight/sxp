@@ -49,8 +49,8 @@ public class RouteUtil {
             affectedNodes = Collections.emptyList();
         } else {
             affectedNodes = sxpNodes.stream()
-                    .filter(node -> Objects.nonNull(node)
-                            && node.getSourceIp().getHostAddress().equals(addressToString(virtualIp)))
+                    .filter(node -> Objects.nonNull(node) && Objects.nonNull(node.getSourceIp()) && addressToString(
+                            virtualIp).equals(node.getSourceIp().getHostAddress()))
                     .collect(Collectors.toList());
         }
         return affectedNodes;

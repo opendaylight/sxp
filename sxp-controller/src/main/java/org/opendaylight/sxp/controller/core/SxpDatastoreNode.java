@@ -10,6 +10,7 @@ package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Preconditions;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -183,7 +184,7 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
         return datastoreAccess;
     }
 
-    @Override public synchronized SxpNode shutdown() {
+    @Override public synchronized ListenableFuture shutdown() {
         datastoreAccess.close();
         return super.shutdown();
     }
@@ -197,5 +198,6 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
             }
         });
         shutdown();
+        getWorker().close();
     }
 }
