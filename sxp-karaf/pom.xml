@@ -5,6 +5,7 @@
     <groupId>org.opendaylight.odlparent</groupId>
     <artifactId>karaf-parent</artifactId>
     <version>1.8.0-SNAPSHOT</version>
+    <relativePath/>
   </parent>
   <groupId>org.opendaylight.sxp</groupId>
   <artifactId>sxp-karaf</artifactId>
