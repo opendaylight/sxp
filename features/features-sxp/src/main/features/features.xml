@@ -30,8 +30,8 @@
         <feature version='${project.version}'>odl-sxp-core</feature>
         <feature>jetty</feature>
         <bundle>wrap:mvn:org.robotframework/javalib-core/{{VERSION}}</bundle>
-        <bundle>wrap:mvn:com.github.ombre42/jrobotremoteserver/{{VERSION}}</bundle>
-        <bundle>wrap:mvn:org.apache.xmlrpc/xmlrpc-server/{{VERSION}}</bundle>
+        <bundle>wrap:mvn:com.github.ombre42/jrobotremoteserver/${jrobotremoteserver.version}</bundle>
+        <bundle>wrap:mvn:org.apache.xmlrpc/xmlrpc-server/${xmlrpc.version}</bundle>
         <bundle>wrap:mvn:org.apache.xmlrpc/xmlrpc-common/{{VERSION}}</bundle>
         <bundle>wrap:mvn:org.apache.ws.commons.util/ws-commons-util/{{VERSION}}</bundle>
         <bundle>mvn:commons-lang/commons-lang/{{VERSION}}</bundle>
@@ -41,7 +41,6 @@
         <bundle>mvn:org.opendaylight.sxp/sxp-robot/{{VERSION}}</bundle>
     </feature>
     <feature name='odl-sxp-controller' version='${project.version}' description='OpenDaylight :: Sxp :: Controller'>
-        <feature version='${project.version}'>odl-sxp-api</feature>
         <feature version='${project.version}'>odl-sxp-core</feature>
         <feature version='${mdsal.version}'>odl-mdsal-broker</feature>
         <feature>odl-restconf</feature>
@@ -54,6 +53,5 @@
     <feature name='odl-sxp-route' version='${project.version}' description='OpenDaylight :: Sxp :: Cluster routing'>
         <feature version='${project.version}'>odl-sxp-controller</feature>
         <bundle>mvn:org.opendaylight.sxp/sxp-cluster-route/{{VERSION}}</bundle>
-        <bundle>mvn:org.apache.commons/commons-lang3/{{VERSION}}</bundle>
     </feature>
 </features>
