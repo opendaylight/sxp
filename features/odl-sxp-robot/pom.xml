@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.opendaylight.odlparent</groupId>
+        <artifactId>single-feature-parent</artifactId>
+        <version>1.8.0-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
+    <packaging>feature</packaging>
+
+    <groupId>org.opendaylight.sxp</groupId>
+    <artifactId>odl-sxp-robot</artifactId>
+    <version>1.4.0-SNAPSHOT</version>
+
+    <name>Feature :: OpenDaylight :: Robot :: CSIT</name>
+    <properties>
+        <robotframework.javalib.version>1.2.1</robotframework.javalib.version>
+        <jrobotremoteserver.version>3.0</jrobotremoteserver.version>
+        <ws.commons.util.version>1.0.2</ws.commons.util.version>
+        <jetty.version>8.0.4.v20111024</jetty.version>
+        <xmlrpc.version>3.1.3</xmlrpc.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.opendaylight.odlparent</groupId>
+                <artifactId>features4-odlparent</artifactId>
+                <version>1.8.0-SNAPSHOT</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>odl-sxp-core</artifactId>
+            <version>${project.version}</version>
+            <type>xml</type>
+            <classifier>features</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlet</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.robotframework</groupId>
+            <artifactId>javalib-core</artifactId>
+            <version>${robotframework.javalib.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.xmlrpc</groupId>
+            <artifactId>xmlrpc-common</artifactId>
+            <version>${xmlrpc.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.ws.commons.util</groupId>
+            <artifactId>ws-commons-util</artifactId>
+            <version>${ws.commons.util.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>sxp-robot</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+</project>
