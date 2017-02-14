@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<features name="odl-sxp-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.2.0">
+    <feature name='odl-sxp-robot' version='${project.version}'>
+        <bundle>wrap:mvn:com.github.ombre42/jrobotremoteserver/${jrobotremoteserver.version}</bundle>
+        <bundle>wrap:mvn:org.apache.xmlrpc/xmlrpc-server/${xmlrpc.version}</bundle>
+    </feature>
+</features>
