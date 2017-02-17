@@ -14,11 +14,12 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Sets;
 import com.google.common.net.InetAddresses;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelPromiseNotifier;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -32,8 +33,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import org.opendaylight.sxp.core.handler.ConnectionDecoder;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
@@ -90,7 +92,6 @@ import org.slf4j.LoggerFactory;
 public class SxpNode {
 
     protected static final Logger LOG = LoggerFactory.getLogger(SxpNode.class.getName());
-    protected static final long THREAD_DELAY = 10;
     public static String DEFAULT_DOMAIN = "global";
 
     /**
@@ -166,6 +167,9 @@ public class SxpNode {
     protected final Map<String, SxpPeerGroupBuilder> peerGroupMap = new HashMap<>();
     protected final Map<String, SxpDomain> sxpDomains = new HashMap<>();
 
+    private final AtomicReference<ListenableFuture> openConnectionFuture = new AtomicReference<>();
+    private final AtomicReference<ListenableFuture<Boolean>> bindServerFuture = new AtomicReference<>();
+    private final AtomicInteger md5UpdateCounter = new AtomicInteger(0);
     private final ThreadsWorker worker;
     protected InetAddress sourceIp;
     private SslContextFactory sslContextFactory;
@@ -387,7 +391,9 @@ public class SxpNode {
         synchronized (peerGroupMap) {
             return Collections2.transform(peerGroupMap.values(), new Function<SxpPeerGroupBuilder, SxpPeerGroup>() {
 
-                @Nullable @Override public SxpPeerGroup apply(SxpPeerGroupBuilder input) {
+                @Nullable
+                @Override
+                public SxpPeerGroup apply(SxpPeerGroupBuilder input) {
                     return input != null ? input.build() : null;
                 }
             });
@@ -601,7 +607,8 @@ public class SxpNode {
      * @param connection Connection to be added
      * @throws IllegalArgumentException If Connection exist in Node
      */
-    @Deprecated public void addConnection(Connection connection) {
+    @Deprecated
+    public void addConnection(Connection connection) {
         addConnection(connection, DEFAULT_DOMAIN);
     }
 
@@ -623,7 +630,8 @@ public class SxpNode {
      *
      * @param connections Connections to be added
      */
-    @Deprecated public void addConnections(Connections connections) {
+    @Deprecated
+    public void addConnections(Connections connections) {
         addConnections(connections, DEFAULT_DOMAIN);
     }
 
@@ -752,7 +760,8 @@ public class SxpNode {
     /**
      * @return Gets all SxpConnections with state set to On and mode Listener or Both
      */
-    @Deprecated public List<SxpConnection> getAllOnListenerConnections() {
+    @Deprecated
+    public List<SxpConnection> getAllOnListenerConnections() {
         return getAllOnListenerConnections(null);
     }
 
@@ -770,7 +779,8 @@ public class SxpNode {
     /**
      * @return Gets all SxpConnections with state set to On and mode Speaker or Both
      */
-    @Deprecated public List<SxpConnection> getAllOnSpeakerConnections() {
+    @Deprecated
+    public List<SxpConnection> getAllOnSpeakerConnections() {
         return getAllOnSpeakerConnections(null);
     }
 
@@ -788,14 +798,16 @@ public class SxpNode {
     /**
      * @return Gets MasterDatabase that is used in Node
      */
-    @Deprecated public MasterDatabaseInf getBindingMasterDatabase() {
+    @Deprecated
+    public MasterDatabaseInf getBindingMasterDatabase() {
         return getBindingMasterDatabase(DEFAULT_DOMAIN);
     }
 
     /**
      * @return Gets SxpDatabase that is used in Node
      */
-    @Deprecated public SxpDatabaseInf getBindingSxpDatabase() {
+    @Deprecated
+    public SxpDatabaseInf getBindingSxpDatabase() {
         return getBindingSxpDatabase(DEFAULT_DOMAIN);
     }
 
@@ -856,13 +868,10 @@ public class SxpNode {
      * @return SxpConnection or null if Node doesn't contains address with specified port
      * @throws IllegalStateException If found more than 1 SxpConnection
      */
-    @Deprecated public SxpConnection getByPort(final int port) {
-        List<SxpConnection> sxpConnections = filterConnections(new Predicate<SxpConnection>() {
-
-            @Override public boolean apply(SxpConnection connection) {
-                return port == connection.getDestination().getPort();
-            }
-        });
+    @Deprecated
+    public SxpConnection getByPort(final int port) {
+        List<SxpConnection> sxpConnections = filterConnections(
+                connection -> port == connection.getDestination().getPort());
         if (sxpConnections.isEmpty()) {
             return null;
         } else if (sxpConnections.size() == 1) {
@@ -1009,31 +1018,33 @@ public class SxpNode {
      * @return If Node is enabled
      */
     public boolean isEnabled() {
-        return serverChannel != null && serverChannel.isActive();
+        return Objects.nonNull(serverChannel) && serverChannel.isActive();
     }
 
     /**
      * Start all Connections that are in state Off
      */
-    public void openConnections() {
-        // Server not created yet.
-        if (serverChannel == null) {
-            return;
+    public ListenableFuture openConnections() {
+        if (!isEnabled()) {
+            return Futures.immediateCancelledFuture();
         }
-
         final SxpNode node = this;
-
-        final int connectionsAllSize = getAllConnections().size();
-        final int connectionsOnSize = getAllOnConnections().size();
-        final List<SxpConnection>
-                connections =
-                filterConnections(c -> c.isStateOff() || c.isStateDeleteHoldDown() || c.isStatePendingOn());
-
-        worker.executeTask(() -> {
-            LOG.info(node + " Open connections [X/O/All=\"" + connections.size() + "/" + connectionsOnSize + "/"
-                    + connectionsAllSize + "\"]");
-            connections.forEach(this::openConnection);
-        }, ThreadsWorker.WorkerType.DEFAULT);
+        return openConnectionFuture.updateAndGet(listenableFuture -> {
+            if (Objects.isNull(listenableFuture) || listenableFuture.isDone()) {
+                return worker.executeTask(() -> {
+                    final int connectionsAllSize = getAllConnections().size(),
+                            connectionsOnSize =
+                                    getAllOnConnections().size();
+                    final List<SxpConnection>
+                            connections =
+                            filterConnections(RetryOpenTimerTask.INACTIVE_CONNECTION_FILTER::test);
+                    LOG.info("{} Open connections [X/O/All=\"{}/{}/{}\"]", node, connections.size(), connectionsOnSize,
+                            connectionsAllSize);
+                    connections.forEach(this::openConnection);
+                }, ThreadsWorker.WorkerType.DEFAULT);
+            }
+            return listenableFuture;
+        });
     }
 
     /**
@@ -1042,7 +1053,7 @@ public class SxpNode {
      * @param connection Connection containing necessary information for connecting to peer
      */
     public void openConnection(final SxpConnection connection) {
-        if (!Preconditions.checkNotNull(connection).isStateOn() && isEnabled()) {
+        if (isEnabled() && !Preconditions.checkNotNull(connection).isStateOn()) {
             if (!connection.isModeBoth()) {
                 connection.closeChannelHandlerContextComplements(null);
             }
@@ -1072,8 +1083,8 @@ public class SxpNode {
      *
      * @param bindings MasterDatabase containing bindings that will be added
      */
-    @Deprecated public List<MasterDatabaseBinding> putLocalBindingsMasterDatabase(
-            List<MasterDatabaseBinding> bindings) {
+    @Deprecated
+    public List<MasterDatabaseBinding> putLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings) {
         return putLocalBindingsMasterDatabase(bindings, DEFAULT_DOMAIN);
     }
 
@@ -1082,8 +1093,8 @@ public class SxpNode {
      *
      * @param bindings MasterDatabase containing bindings that will be removed
      */
-    @Deprecated public List<MasterDatabaseBinding> removeLocalBindingsMasterDatabase(
-            List<MasterDatabaseBinding> bindings) {
+    @Deprecated
+    public List<MasterDatabaseBinding> removeLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings) {
         return removeLocalBindingsMasterDatabase(bindings, DEFAULT_DOMAIN);
     }
 
@@ -1244,84 +1255,66 @@ public class SxpNode {
     }
 
     /**
-     * Blocking wait until previous operation on channel is done
-     *
-     * @param logMsg Message displayed if Error occurs
-     */
-    private void channelInitializationWait(String logMsg) {
-        try {
-            for (int i = 0; serverChannelInit.getAndSet(true) && i < 3; i++) {
-                wait(THREAD_DELAY);
-            }
-        } catch (InterruptedException e) {
-            LOG.warn("{} {} ", this, logMsg, e);
-        }
-    }
-
-    /**
-     * Administratively shutdown.
-     */
-    public synchronized SxpNode shutdown() {
-        // Wait until server channel ends its own initialization.
-        channelInitializationWait("Error while shut down");
-        setTimer(TimerType.RetryOpenTimer, 0);
-        shutdownConnections();
-        for (ThreadsWorker.WorkerType type : ThreadsWorker.WorkerType.values()) {
-            getWorker().cancelTasksInSequence(false, type);
-        }
-        if (serverChannel != null) {
-            ChannelFuture channelFuture = serverChannel.close();
-            if (channelFuture != null)
-                channelFuture.syncUninterruptibly();
-            serverChannel = null;
-        }
-        LOG.info(this + " Server stopped");
-        serverChannelInit.set(false);
-        return this;
-    }
-
-    /**
      * Shutdown all Connections
      */
     public void shutdownConnections() {
         getDomains().forEach(SxpDomain::close);
     }
 
-    private final AtomicBoolean serverChannelInit = new AtomicBoolean(false);
+    /**
+     * Administratively shutdown.
+     */
+    public ListenableFuture shutdown() {
+        return bindServerFuture.updateAndGet(new UnaryOperator<ListenableFuture<Boolean>>() {
+
+            @Override
+            public ListenableFuture<Boolean> apply(ListenableFuture<Boolean> listenableFuture) {
+                if (isEnabled() && (Objects.nonNull(listenableFuture))) {
+                    if (!listenableFuture.isDone()) {
+                        getWorker().addListener(listenableFuture, () -> shutdown());
+                    } else {
+                        return getWorker().executeTask(() -> {
+                            if (Objects.nonNull(serverChannel)) {
+                                serverChannel.close().awaitUninterruptibly();
+                                LOG.info(this + " Server stopped");
+                            }
+                            setTimer(TimerType.RetryOpenTimer, 0);
+                            shutdownConnections();
+                            return isEnabled();
+                        }, ThreadsWorker.WorkerType.DEFAULT);
+                    }
+                }
+                return listenableFuture;
+            }
+        });
+    }
 
     /**
      * Start SxpNode
      */
-    public synchronized SxpNode start() {
-        channelInitializationWait("Error while starting");
-        if (isEnabled()) {
-            return this;
-        }
+    public ListenableFuture<Boolean> start() {
         this.sourceIp = InetAddresses.forString(Search.getAddress(getNodeIdentity().getSourceIp()));
-        final SxpNode node = this;
-        try {
-            ConnectFacade.createServer(node, handlerFactoryServer).addListener(new ChannelFutureListener() {
-
-                @Override public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                    if (channelFuture.isSuccess()) {
-                        serverChannel = channelFuture.channel();
-                        LOG.info(node + " Server created [" + getSourceIp().getHostAddress() + ":" + getServerPort()
-                                + "]");
-                        node.setTimer(TimerType.RetryOpenTimer, node.getRetryOpenTime());
-                    } else {
-                        LOG.error(node + " Server [" + node.getSourceIp().getHostAddress() + ":" + getServerPort()
-                                + "] Could not be created " + channelFuture.cause());
-                    }
-                    serverChannelInit.set(false);
-                }
-            }).syncUninterruptibly();
-        } catch (Exception e) {
-            LOG.debug("Failed to bind SxpNode {} to ip", this, e);
-        }
-        return this;
+        return bindServerFuture.updateAndGet(listenableFuture -> {
+            if (!isEnabled() && (Objects.isNull(listenableFuture) || listenableFuture.isDone())) {
+                return getWorker().executeTask(() -> {
+                    final ChannelFuture channelFuture = ConnectFacade.createServer(this, handlerFactoryServer);
+                    channelFuture.addListener((ChannelFutureListener) serverFuture -> {
+                        if (serverFuture.isSuccess()) {
+                            serverChannel = serverFuture.channel();
+                            LOG.info("{} Server created [{}:{}]", this, getSourceIp().getHostAddress(),
+                                    getServerPort());
+                            setTimer(TimerType.RetryOpenTimer, getRetryOpenTime());
+                        } else {
+                            LOG.warn("{} Server [{}:{}] Could not be created", this, getSourceIp().getHostAddress(),
+                                    getServerPort(), serverFuture.cause());
+                        }
+                    });
+                    return channelFuture.syncUninterruptibly().isSuccess();
+                }, ThreadsWorker.WorkerType.DEFAULT);
+            }
+            return listenableFuture;
+        });
     }
-
-    private final AtomicInteger updateMD5counter = new AtomicInteger();
 
     /**
      * @param connection Connection containing password for MD5 key update
@@ -1336,35 +1329,29 @@ public class SxpNode {
     /**
      * Updates TCP-MD5 keys of SxpNode
      */
-    public synchronized void updateMD5keys() {
-        if (serverChannel != null && isEnabled() && updateMD5counter.incrementAndGet() == 1) {
-            serverChannel.close().addListener(createMD5updateListener(this)).syncUninterruptibly();
+    public void updateMD5keys() {
+        if (md5UpdateCounter.incrementAndGet() != 1) {
+            return;
         }
-    }
-
-    /**
-     * @param sxpNode Node where MD5 keys will be updated
-     * @return ChannelFutureListener callback
-     */
-    private ChannelFutureListener createMD5updateListener(final SxpNode sxpNode) {
-        channelInitializationWait("Error while Updating MD5");
-        if (serverChannel == null) {
-            updateMD5counter.set(0);
-            return new ChannelPromiseNotifier();
-        }
-        LOG.info("{} Updating MD5 keys", this);
-        return future -> ConnectFacade.createServer(sxpNode, handlerFactoryServer)
-                .addListener(new ChannelFutureListener() {
-
-                    @Override public void operationComplete(ChannelFuture future) throws Exception {
-                        serverChannel = future.channel();
-                        serverChannelInit.set(false);
-                        if (updateMD5counter.decrementAndGet() > 0) {
-                            updateMD5counter.set(1);
-                            serverChannel.close().addListener(createMD5updateListener(sxpNode)).syncUninterruptibly();
+        bindServerFuture.updateAndGet(listenableFuture -> {
+            if (isEnabled() && (Objects.nonNull(listenableFuture))) {
+                if (listenableFuture.isDone()) {
+                    return getWorker().executeTask(() -> {
+                        if (Objects.nonNull(serverChannel)) {
+                            serverChannel.close().awaitUninterruptibly();
                         }
-                    }
-                });
+                        md5UpdateCounter.set(0);
+                        serverChannel =
+                                ConnectFacade.createServer(this, handlerFactoryServer).awaitUninterruptibly().channel();
+                        if (md5UpdateCounter.getAndSet(0) > 0) {
+                            updateMD5keys();
+                        }
+                        return isEnabled();
+                    }, ThreadsWorker.WorkerType.DEFAULT);
+                }
+            }
+            return listenableFuture;
+        });
     }
 
     /**

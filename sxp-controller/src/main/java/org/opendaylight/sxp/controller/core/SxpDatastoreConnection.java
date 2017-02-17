@@ -12,7 +12,6 @@ import com.google.common.base.Preconditions;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
@@ -31,9 +30,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Node
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import java.util.concurrent.ExecutionException;
-
-public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnection implements AutoCloseable {
+public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnection {
 
     private final PortNumber port;
     private final IpAddress address;
@@ -57,6 +54,9 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
                 new SxpDatastoreConnection(datastoreAccess, owner, connection, domain);
         datastoreConnection.setCapabilities(
                 Configuration.getCapabilities(Preconditions.checkNotNull(datastoreConnection.getVersion())));
+        if (ConnectionState.On.equals(connection.getState())) {
+            datastoreConnection.setState(ConnectionState.AdministrativelyDown);
+        }
         return datastoreConnection;
     }
 
@@ -151,17 +151,5 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
                         LogicalDatastoreType.OPERATIONAL) : null;
         if (connection != null)
             setConnection(connection);
-    }
-
-    @Override public void close() {
-        if (isModeListener()) {
-            try {
-                getOwner().getSvcBindingHandler().processPurgeAllMessage(this).get();
-                LOG.info("{} PURGE bindings ", this);
-            } catch (InterruptedException | ExecutionException e) {
-                LOG.warn("{} Error PURGE bindings ", this);
-            }
-        }
-        setStateOff();
     }
 }
