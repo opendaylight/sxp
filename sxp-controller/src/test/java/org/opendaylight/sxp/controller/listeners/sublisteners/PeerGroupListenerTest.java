@@ -60,7 +60,6 @@ public class PeerGroupListenerTest {
         datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
         identityListener = new PeerGroupListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
-        when(sxpNode.shutdown()).thenReturn(sxpNode);
         PowerMockito.mockStatic(Configuration.class);
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);

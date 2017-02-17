@@ -8,6 +8,20 @@
 
 package org.opendaylight.sxp.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
@@ -79,20 +93,6 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @RunWith(PowerMockRunner.class) @PrepareForTest({ConnectFacade.class, BindingHandler.class})
 public class SxpNodeTest {
 
@@ -108,14 +108,14 @@ public class SxpNodeTest {
 
         @Before public void init() throws Exception {
                 worker = mock(ThreadsWorker.class);
+                ListenableFuture future = mock(ListenableFuture.class);
+                when(future.isDone()).thenReturn(true);
                 when(worker.scheduleTask(any(Callable.class), anyInt(), any(TimeUnit.class))).thenReturn(
                         mock(ListenableScheduledFuture.class));
-                when(worker.executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(
-                        mock(ListenableFuture.class));
-                when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(
-                        mock(ListenableFuture.class));
+                when(worker.executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(future);
+                when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(future);
                 when(worker.executeTaskInSequence(any(Callable.class), any(ThreadsWorker.WorkerType.class),
-                        any(SxpConnection.class))).thenReturn(mock(ListenableFuture.class));
+                        any(SxpConnection.class))).thenReturn(future);
                 timers = getNodeTimers();
                 nodeIdentity = mock(SxpNodeIdentity.class);
                 when(nodeIdentity.getTimers()).thenReturn(timers);
@@ -134,7 +134,9 @@ public class SxpNodeTest {
                 node =
                         SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), nodeIdentity, databaseProvider,
                                 sxpDatabaseProvider, worker);
-                PowerMockito.field(SxpNode.class, "serverChannel").set(node, mock(Channel.class));
+                Channel channel = mock(Channel.class);
+                when(channel.isActive()).thenReturn(true);
+                PowerMockito.field(SxpNode.class, "serverChannel").set(node, channel);
         }
 
         private Timers getNodeTimers() {
@@ -316,9 +318,12 @@ public class SxpNodeTest {
                 node.setTimer(TimerType.ReconciliationTimer, 50);
         }
 
-        @Test public void testShutdown() throws Exception {
-                node.shutdown();
-                assertNull(node.getTimer(TimerType.RetryOpenTimer));
+        @Test public void testStart() throws Exception {
+                final SxpNode node = SxpNode.createInstance(NodeIdConv.createNodeId("127.1.1.1"), nodeIdentity);
+
+                assertFalse(node.isEnabled());
+                assertTrue(node.start().get());
+                node.shutdown().get();
                 assertFalse(node.isEnabled());
         }
 
@@ -338,13 +343,6 @@ public class SxpNodeTest {
                 node.addConnection(mockConnection(ConnectionMode.Listener, ConnectionState.On));
                 node.shutdownConnections();
                 assertEquals(3, node.getAllOffConnections().size());
-        }
-
-        @Test public void testStart() throws Exception {
-                node.start();
-                assertTrue(node.isEnabled());
-                node.shutdown();
-                assertFalse(node.isEnabled());
         }
 
         private MasterDatabaseBinding getBinding(String prefix, int sgt) {

@@ -81,7 +81,7 @@ public final class ConfigLoader {
     public void load(SxpController configuration) {
         if (configuration == null || configuration.getSxpNode() == null)
             return;
-        configuration.getSxpNode().stream().forEach(n -> {
+        configuration.getSxpNode().forEach(n -> {
             final String nodeId = NodeIdConv.toString(n.getNodeId());
             if (initTopologyNode(nodeId, LogicalDatastoreType.CONFIGURATION, datastoreAccess)) {
                 datastoreAccess.checkAndPut(NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class, new NodeKey(
