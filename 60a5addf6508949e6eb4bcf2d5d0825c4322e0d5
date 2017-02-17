@@ -22,6 +22,30 @@
       "revId": "60a5addf6508949e6eb4bcf2d5d0825c4322e0d5",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fafc7978_82184a1f",
+        "filename": "features/odl-sxp-api/pom.xml",
+        "patchSetId": 4
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 3920
+      },
+      "writtenOn": "2017-02-17T13:27:53Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "fafc7978_00ca956d",
+      "range": {
+        "startLine": 47,
+        "startChar": 0,
+        "endLine": 53,
+        "endChar": 21
+      },
+      "revId": "60a5addf6508949e6eb4bcf2d5d0825c4322e0d5",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
     }
   ]
 }
