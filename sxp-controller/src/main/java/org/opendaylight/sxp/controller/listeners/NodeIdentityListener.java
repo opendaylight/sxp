@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.controller.listeners;
 
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
+
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,8 +40,6 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
-import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
 
 public class NodeIdentityListener implements ClusteredDataTreeChangeListener<SxpNodeIdentity> {
 
@@ -86,7 +86,8 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
         return datastoreAccess;
     }
 
-    @Override public void onDataTreeChanged(@Nonnull Collection<DataTreeModification<SxpNodeIdentity>> changes) {
+    @Override
+    public void onDataTreeChanged(@Nonnull Collection<DataTreeModification<SxpNodeIdentity>> changes) {
         changes.forEach(c -> {
             final String nodeId = c.getRootPath().getRootIdentifier().firstKeyOf(Node.class).getNodeId().getValue();
             final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
@@ -119,6 +120,7 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                         break;
                 }
             } else {
+                final SxpNode node = Configuration.getRegisteredNode(nodeId);
                 switch (c.getRootNode().getModificationType()) {
                     case WRITE:
                         if (c.getRootNode().getDataBefore() == null) {
@@ -137,27 +139,25 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                     case SUBTREE_MODIFIED:
                         if (checkDifference(c, SxpNodeFields::isEnabled)) {
                             if (Preconditions.checkNotNull(c.getRootNode().getDataAfter()).isEnabled()) {
-                                Configuration.getRegisteredNode(nodeId).start();
+                                node.start();
                             } else {
-                                Configuration.getRegisteredNode(nodeId).shutdown();
+                                node.shutdown();
                             }
                         } else if (checkDifference(c,
                                 d -> Objects.nonNull(d.getSecurity()) ? d.getSecurity().getPassword() : null)
                                 || checkDifference(c, SxpNodeFields::getVersion) || checkDifference(c,
                                 SxpNodeFields::getTcpPort) || checkDifference(c, SxpNodeFields::getSourceIp)) {
-                            Configuration.getRegisteredNode(nodeId).shutdown().start();
+                            node.getWorker().addListener(node.shutdown(), node::start);
                         } else if (checkDifference(c, SxpNodeIdentityFields::getTimers)) {
-                            Configuration.getRegisteredNode(nodeId).shutdownConnections();
+                            node.shutdownConnections();
                         } else if (Objects.nonNull(c.getRootNode().getDataAfter().getMessageBuffering())
                                 && checkDifference(c, n -> n.getMessageBuffering().getOutBuffer())) {
-                            Configuration.getRegisteredNode(nodeId)
-                                    .setMessagePartitionSize(
-                                            c.getRootNode().getDataAfter().getMessageBuffering().getOutBuffer());
+                            node.setMessagePartitionSize(
+                                    c.getRootNode().getDataAfter().getMessageBuffering().getOutBuffer());
                         } else if (Objects.nonNull(c.getRootNode().getDataAfter().getMessageBuffering())
                                 && checkDifference(c, n -> n.getMessageBuffering().getInBuffer())) {
-                            Configuration.getRegisteredNode(nodeId)
-                                    .setMessageMergeSize(
-                                            c.getRootNode().getDataAfter().getMessageBuffering().getInBuffer());
+                            node.setMessageMergeSize(
+                                    c.getRootNode().getDataAfter().getMessageBuffering().getInBuffer());
                         }
                         subListeners.forEach(l -> {
                             l.handleChange(l.getModifications(c), c.getRootPath().getDatastoreType(),
@@ -165,7 +165,12 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                         });
                         break;
                     case DELETE:
-                        Configuration.unRegister(Preconditions.checkNotNull(nodeId)).shutdown();
+                        Configuration.unRegister(Preconditions.checkNotNull(nodeId));
+                        if (node instanceof SxpDatastoreNode) {
+                            ((SxpDatastoreNode) node).close();
+                        } else {
+                            node.shutdown();
+                        }
                         break;
                 }
             }

@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 /**
  * ThreadsWorker class is used for executing and scheduling tasks inside SxpNode and SxpConnection
  */
-public class ThreadsWorker {
+public class ThreadsWorker implements AutoCloseable {
 
     /**
      * WorkerType enum is used for running task on specific executor
@@ -92,7 +92,7 @@ public class ThreadsWorker {
      * @param executorServiceOutbound  ExecutorService which will be used for executing outbound messaging behaviour
      */
     public ThreadsWorker(ScheduledExecutorService scheduledExecutorService, ExecutorService executorService,
-                         ExecutorService executorServiceInbound, ExecutorService executorServiceOutbound) {
+            ExecutorService executorServiceInbound, ExecutorService executorServiceOutbound) {
         for (WorkerType workerType : WorkerType.values()) {
             dequeMap.put(new QueueKey(workerType), new ArrayDeque<>());
         }
@@ -154,7 +154,8 @@ public class ThreadsWorker {
      * @throws NullPointerException If task is null
      */
     public <T> ListenableScheduledFuture<T> scheduleTask(Callable<T> task, int period, TimeUnit unit) {
-        return scheduledExecutorService.schedule(Objects.requireNonNull(task), period, unit);
+        LOG.debug("Scheduled task {} wit period {} {}", Objects.requireNonNull(task).getClass(), period, unit);
+        return scheduledExecutorService.schedule(task, period, unit);
     }
 
     /**
@@ -166,6 +167,7 @@ public class ThreadsWorker {
      * @throws NullPointerException If task is null
      */
     public <T> ListenableFuture<T> executeTask(Callable<T> task, WorkerType type) {
+        LOG.debug("Execute task {}", Objects.requireNonNull(task).getClass());
         return getExecutor(type).submit(Objects.requireNonNull(task));
     }
 
@@ -177,6 +179,7 @@ public class ThreadsWorker {
      * @return ListenableFuture that can be used to extract result or cancel
      */
     public <T> ListenableFuture<T> executeTaskInSequence(final Callable<T> task, final WorkerType type) {
+        LOG.debug("Execute in sequence task {}", Objects.requireNonNull(task).getClass());
         return executeTaskInSequence(Objects.requireNonNull(task), new QueueKey(type));
     }
 
@@ -189,7 +192,7 @@ public class ThreadsWorker {
      * @return ListenableFuture that can be used to extract result or cancel
      */
     public <T> ListenableFuture<T> executeTaskInSequence(final Callable<T> task, final WorkerType type,
-                                                         final SxpConnection connection) {
+            final SxpConnection connection) {
         return executeTaskInSequence(Objects.requireNonNull(task), new QueueKey(type, connection));
     }
 
@@ -215,7 +218,7 @@ public class ThreadsWorker {
      * @param connection            SxpConnection specified as additional key
      */
     public void cancelTasksInSequence(final boolean mayInterruptIfRunning, final WorkerType type,
-                                      final SxpConnection connection) {
+            final SxpConnection connection) {
         cancelTasksInSequence(mayInterruptIfRunning, new QueueKey(type, connection));
     }
 
@@ -251,7 +254,7 @@ public class ThreadsWorker {
      */
     private <T> ListenableFuture<T> executeTaskInSequence(final Callable<T> task, final QueueKey key) {
         synchronized (dequeMap) {
-            if (! dequeMap.containsKey(key)) {
+            if (!dequeMap.containsKey(key)) {
                 dequeMap.put(key, new ArrayDeque<>());
             }
         }
@@ -281,7 +284,7 @@ public class ThreadsWorker {
     private void sequenceRecursion(final QueueKey key) {
         SettableListenableFuture future = dequeMap.get(key).peekFirst();
         if (future != null) {
-            if (! future.isDone()) {
+            if (!future.isDone()) {
                 future.setFuture(future.getExecutor().submit(future.getTask())).addListener(() -> {
                     synchronized (dequeMap.get(key)) {
                         dequeMap.get(key).pollFirst();
@@ -361,9 +364,17 @@ public class ThreadsWorker {
             protected void afterExecute(Runnable runnable, Throwable throwable) {
                 super.afterExecute(runnable, throwable);
                 if (Objects.nonNull(throwable)) {
-                    LOG.debug("Task {} failed with {}", runnable, throwable);
+                    LOG.info("Task {} failed with {}", runnable, throwable);
                 }
             }
         };
+    }
+
+    @Override
+    public void close() {
+        scheduledExecutorService.shutdown();
+        executorService.shutdown();
+        executorServiceInbound.shutdown();
+        executorServiceOutbound.shutdown();
     }
 }

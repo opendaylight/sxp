@@ -8,10 +8,21 @@
 
 package org.opendaylight.sxp.controller.listeners;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,6 +36,7 @@ import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.listeners.spi.Listener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
@@ -45,34 +57,30 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({Configuration.class, DatastoreAccess.class})
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({Configuration.class, DatastoreAccess.class})
 public class NodeIdentityListenerTest {
 
     private NodeIdentityListener identityListener;
     private Listener listener;
     private DatastoreAccess datastoreAccess;
     private SxpDatastoreNode sxpNode;
+    private ThreadsWorker worker;
 
-    @Before public void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         datastoreAccess = mock(DatastoreAccess.class);
         listener = mock(Listener.class);
         identityListener = new NodeIdentityListener(datastoreAccess);
         identityListener.addSubListener(listener);
+        worker = new ThreadsWorker();
         sxpNode = mock(SxpDatastoreNode.class);
-        when(sxpNode.shutdown()).thenReturn(sxpNode);
         when(sxpNode.getDatastoreAccess()).thenReturn(datastoreAccess);
         PowerMockito.mockStatic(Configuration.class);
         PowerMockito.mockStatic(DatastoreAccess.class);
+        when(sxpNode.shutdown()).thenReturn(Futures.immediateFuture(false));
+        when(sxpNode.start()).thenReturn(Futures.immediateFuture(true));
+        when(sxpNode.getWorker()).thenReturn(worker);
         PowerMockito.when(DatastoreAccess.getInstance(any(DatastoreAccess.class))).thenReturn(datastoreAccess);
         PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(mock(DatastoreAccess.class));
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
@@ -81,7 +89,8 @@ public class NodeIdentityListenerTest {
         PowerMockito.when(Configuration.getConstants()).thenCallRealMethod();
     }
 
-    @Test public void testRegister() throws Exception {
+    @Test
+    public void testRegister() throws Exception {
         DataBroker dataBroker = mock(DataBroker.class);
         identityListener.register(dataBroker, LogicalDatastoreType.CONFIGURATION);
         verify(dataBroker).registerDataTreeChangeListener(any(DataTreeIdentifier.class), eq(identityListener));
@@ -136,7 +145,8 @@ public class NodeIdentityListenerTest {
         return builder.build();
     }
 
-    @Test public void testOnDataTreeChanged_1() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_1() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(
                 getTreeModification(DataObjectModification.ModificationType.WRITE, LogicalDatastoreType.OPERATIONAL,
@@ -147,7 +157,8 @@ public class NodeIdentityListenerTest {
         verify(listener).handleChange(anyList(), any(LogicalDatastoreType.class), any(InstanceIdentifier.class));
     }
 
-    @Test public void testOnDataTreeChanged_2() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_2() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(
                 getTreeModification(DataObjectModification.ModificationType.WRITE, LogicalDatastoreType.OPERATIONAL,
@@ -157,17 +168,19 @@ public class NodeIdentityListenerTest {
         verify(sxpNode).shutdown();
     }
 
-    @Test public void testOnDataTreeChanged_3() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_3() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(
                 getTreeModification(DataObjectModification.ModificationType.DELETE, LogicalDatastoreType.OPERATIONAL,
                         createIdentity(true, "0.0.0.0", 64999, Version.Version4, 120), null));
 
         identityListener.onDataTreeChanged(modificationList);
-        verify(sxpNode).shutdown();
+        verify(sxpNode).close();
     }
 
-    @Test public void testOnDataTreeChanged_4() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_4() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
                 LogicalDatastoreType.OPERATIONAL, createIdentity(true, "0.0.0.0", 64999, Version.Version4, 120),
@@ -175,11 +188,12 @@ public class NodeIdentityListenerTest {
 
         identityListener.onDataTreeChanged(modificationList);
         verify(sxpNode).shutdown();
-        verify(sxpNode).start();
+        verify(sxpNode, timeout(500)).start();
         verify(listener).handleChange(anyList(), any(LogicalDatastoreType.class), any(InstanceIdentifier.class));
     }
 
-    @Test public void testOnDataTreeChanged_5() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_5() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
                 LogicalDatastoreType.OPERATIONAL, createIdentity(true, "0.0.0.0", 64999, Version.Version4, 120),
@@ -187,11 +201,12 @@ public class NodeIdentityListenerTest {
 
         identityListener.onDataTreeChanged(modificationList);
         verify(sxpNode).shutdown();
-        verify(sxpNode).start();
+        verify(sxpNode, timeout(500)).start();
         verify(listener).handleChange(anyList(), any(LogicalDatastoreType.class), any(InstanceIdentifier.class));
     }
 
-    @Test public void testOnDataTreeChanged_6() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_6() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
                 LogicalDatastoreType.OPERATIONAL, createIdentity(true, "0.0.0.0", 64999, Version.Version4, 120),
@@ -199,11 +214,12 @@ public class NodeIdentityListenerTest {
 
         identityListener.onDataTreeChanged(modificationList);
         verify(sxpNode).shutdown();
-        verify(sxpNode).start();
+        verify(sxpNode, timeout(500)).start();
         verify(listener).handleChange(anyList(), any(LogicalDatastoreType.class), any(InstanceIdentifier.class));
     }
 
-    @Test public void testOnDataTreeChanged_7() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_7() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
                 LogicalDatastoreType.OPERATIONAL, createIdentity(true, "0.0.0.0", 64999, Version.Version4, 120),
@@ -213,7 +229,8 @@ public class NodeIdentityListenerTest {
         verify(sxpNode).shutdown();
     }
 
-    @Test public void testOnDataTreeChanged_8() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_8() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
                 LogicalDatastoreType.OPERATIONAL, createIdentity(false, "0.0.0.0", 64999, Version.Version4, 120),
@@ -223,7 +240,8 @@ public class NodeIdentityListenerTest {
         verify(sxpNode).start();
     }
 
-    @Test public void testOnDataTreeChanged_9() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_9() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
                 LogicalDatastoreType.OPERATIONAL, createIdentity(true, "0.0.0.0", 64999, Version.Version4, 120),
@@ -233,7 +251,8 @@ public class NodeIdentityListenerTest {
         verify(sxpNode).shutdownConnections();
     }
 
-    @Test public void testOnDataTreeChanged_10() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_10() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
                 LogicalDatastoreType.CONFIGURATION, null,
@@ -243,7 +262,8 @@ public class NodeIdentityListenerTest {
         verify(listener).handleChange(anyList(), any(LogicalDatastoreType.class), any(InstanceIdentifier.class));
     }
 
-    @Test public void testOnDataTreeChanged_11() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_11() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
                 LogicalDatastoreType.CONFIGURATION, createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12),
@@ -253,7 +273,8 @@ public class NodeIdentityListenerTest {
         verify(listener).handleChange(anyList(), any(LogicalDatastoreType.class), any(InstanceIdentifier.class));
     }
 
-    @Test public void testOnDataTreeChanged_12() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_12() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(
                 getTreeModification(DataObjectModification.ModificationType.DELETE, LogicalDatastoreType.CONFIGURATION,
@@ -263,7 +284,8 @@ public class NodeIdentityListenerTest {
         verify(datastoreAccess).checkAndDelete(any(InstanceIdentifier.class), eq(LogicalDatastoreType.OPERATIONAL));
     }
 
-    @Test public void testOnDataTreeChanged_13() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_13() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(
                 getTreeModification(DataObjectModification.ModificationType.WRITE, LogicalDatastoreType.CONFIGURATION,
@@ -276,7 +298,8 @@ public class NodeIdentityListenerTest {
                 eq(LogicalDatastoreType.OPERATIONAL));
     }
 
-    @Test public void testOnDataTreeChanged_14() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_14() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(
                 getTreeModification(DataObjectModification.ModificationType.WRITE, LogicalDatastoreType.CONFIGURATION,
@@ -291,7 +314,8 @@ public class NodeIdentityListenerTest {
                 eq(LogicalDatastoreType.OPERATIONAL));
     }
 
-    @Test public void testOnDataTreeChanged_15() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_15() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(
                 getTreeModification(DataObjectModification.ModificationType.WRITE, LogicalDatastoreType.CONFIGURATION,
@@ -301,11 +325,11 @@ public class NodeIdentityListenerTest {
         verify(datastoreAccess).checkAndDelete(any(InstanceIdentifier.class), eq(LogicalDatastoreType.OPERATIONAL));
     }
 
-    @Test public void testOnDataTreeChanged_16() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_16() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
-                LogicalDatastoreType.OPERATIONAL,
-                createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 150),
+                LogicalDatastoreType.OPERATIONAL, createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 150),
                 createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 150)));
 
         identityListener.onDataTreeChanged(modificationList);
@@ -313,19 +337,18 @@ public class NodeIdentityListenerTest {
         modificationList.clear();
 
         modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
-                LogicalDatastoreType.OPERATIONAL,
-                createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 1, 150),
+                LogicalDatastoreType.OPERATIONAL, createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 1, 150),
                 createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 150)));
 
         identityListener.onDataTreeChanged(modificationList);
         verify(sxpNode).setMessageMergeSize(anyInt());
     }
 
-    @Test public void testOnDataTreeChanged_17() throws Exception {
+    @Test
+    public void testOnDataTreeChanged_17() throws Exception {
         List<DataTreeModification<SxpNodeIdentity>> modificationList = new ArrayList<>();
         modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
-                LogicalDatastoreType.OPERATIONAL,
-                createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 150),
+                LogicalDatastoreType.OPERATIONAL, createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 150),
                 createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 150)));
 
         identityListener.onDataTreeChanged(modificationList);
@@ -333,8 +356,7 @@ public class NodeIdentityListenerTest {
         modificationList.clear();
 
         modificationList.add(getTreeModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
-                LogicalDatastoreType.OPERATIONAL,
-                createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 50),
+                LogicalDatastoreType.OPERATIONAL, createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 50),
                 createIdentity(true, "0.0.0.0", 64999, Version.Version3, 12, 50, 150)));
 
         identityListener.onDataTreeChanged(modificationList);

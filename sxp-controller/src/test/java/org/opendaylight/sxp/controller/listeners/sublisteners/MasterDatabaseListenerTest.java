@@ -76,7 +76,6 @@ public class MasterDatabaseListenerTest {
         when(threadsWorker.executeTaskInSequence(taskCaptor.capture(), any(ThreadsWorker.WorkerType.class))).thenReturn(mock(ListenableFuture.class));
         when(sxpNode.getWorker()).thenReturn(threadsWorker);
         when(sxpNode.getDomain(anyString())).thenReturn(mock(org.opendaylight.sxp.core.SxpDomain.class));
-        when(sxpNode.shutdown()).thenReturn(sxpNode);
         when(datastoreAccess.readSynchronous(eq(SxpDatastoreNode.getIdentifier("0.0.0.0")
                 .child(SxpDomains.class)
                 .child(SxpDomain.class, new SxpDomainKey(SxpNode.DEFAULT_DOMAIN))
