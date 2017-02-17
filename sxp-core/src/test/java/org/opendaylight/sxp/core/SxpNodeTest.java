@@ -111,14 +111,14 @@ public class SxpNodeTest {
     @Before
     public void init() throws Exception {
         worker = mock(ThreadsWorker.class);
+        ListenableFuture future = mock(ListenableFuture.class);
+        when(future.isDone()).thenReturn(true);
         when(worker.scheduleTask(any(Callable.class), anyInt(), any(TimeUnit.class))).thenReturn(
                 mock(ListenableScheduledFuture.class));
-        when(worker.executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(
-                mock(ListenableFuture.class));
-        when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(
-                mock(ListenableFuture.class));
+        when(worker.executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(future);
+        when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(future);
         when(worker.executeTaskInSequence(any(Callable.class), any(ThreadsWorker.WorkerType.class),
-                any(SxpConnection.class))).thenReturn(mock(ListenableFuture.class));
+                any(SxpConnection.class))).thenReturn(future);
         timers = getNodeTimers();
         nodeIdentity = mock(SxpNodeIdentity.class);
         when(nodeIdentity.getTimers()).thenReturn(timers);
@@ -137,7 +137,9 @@ public class SxpNodeTest {
         node =
                 SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), nodeIdentity, databaseProvider,
                         sxpDatabaseProvider, worker);
-        PowerMockito.field(SxpNode.class, "serverChannel").set(node, mock(Channel.class));
+        Channel channel = mock(Channel.class);
+        when(channel.isActive()).thenReturn(true);
+        PowerMockito.field(SxpNode.class, "serverChannel").set(node, channel);
     }
 
     private Timers getNodeTimers() {
@@ -340,13 +342,6 @@ public class SxpNodeTest {
     }
 
     @Test
-    public void testShutdown() throws Exception {
-        node.shutdown();
-        assertNull(node.getTimer(TimerType.RetryOpenTimer));
-        assertFalse(node.isEnabled());
-    }
-
-    @Test
     public void testShutdownConnections() throws Exception {
         when(worker.executeTaskInSequence(any(Callable.class), any(ThreadsWorker.WorkerType.class),
                 any(SxpConnection.class))).thenReturn(mock(ListenableFuture.class))
@@ -367,13 +362,14 @@ public class SxpNodeTest {
 
     @Test
     public void testStart() throws Exception {
-        node.start();
+        final SxpNode node = SxpNode.createInstance(NodeIdConv.createNodeId("127.1.1.1"), nodeIdentity);
+        node.start().get();
         for (int i = 0; i < 3 && !node.isEnabled(); i++) {
             TimeUnit.SECONDS.sleep(1);
         }
         assertTrue(node.isEnabled());
 
-        node.shutdown();
+        node.shutdown().get();
         for (int i = 0; i < 3 && node.isEnabled(); i++) {
             TimeUnit.SECONDS.sleep(1);
         }

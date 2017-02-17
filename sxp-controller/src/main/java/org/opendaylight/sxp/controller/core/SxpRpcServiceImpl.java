@@ -8,9 +8,10 @@
 
 package org.opendaylight.sxp.controller.core;
 
-import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.AbstractFuture;
+import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
 
+import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,14 +19,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import com.google.common.util.concurrent.Futures;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
@@ -172,8 +169,6 @@ import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
-
 public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
     private final DatastoreAccess datastoreAccess;
@@ -265,7 +260,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         return null;
     }
 
-    @Override public Future<RpcResult<AddConnectionOutput>> addConnection(final AddConnectionInput input) {
+    @Override
+    public Future<RpcResult<AddConnectionOutput>> addConnection(final AddConnectionInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final AddConnectionOutputBuilder output = new AddConnectionOutputBuilder().setResult(false);
@@ -287,7 +283,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<DeleteDomainFilterOutput>> deleteDomainFilter(DeleteDomainFilterInput input) {
+    @Override
+    public Future<RpcResult<DeleteDomainFilterOutput>> deleteDomainFilter(DeleteDomainFilterInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final DeleteDomainFilterOutputBuilder output = new DeleteDomainFilterOutputBuilder().setResult(false);
@@ -334,7 +331,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<AddDomainFilterOutput>> addDomainFilter(AddDomainFilterInput input) {
+    @Override
+    public Future<RpcResult<AddDomainFilterOutput>> addDomainFilter(AddDomainFilterInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final AddDomainFilterOutputBuilder output = new AddDomainFilterOutputBuilder().setResult(false);
@@ -356,7 +354,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<AddEntryOutput>> addEntry(final AddEntryInput input) {
+    @Override
+    public Future<RpcResult<AddEntryOutput>> addEntry(final AddEntryInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId, input.getDomainName());
         final AddEntryOutputBuilder output = new AddEntryOutputBuilder().setResult(false);
@@ -392,7 +391,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<AddFilterOutput>> addFilter(final AddFilterInput input) {
+    @Override
+    public Future<RpcResult<AddFilterOutput>> addFilter(final AddFilterInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final AddFilterOutputBuilder output = new AddFilterOutputBuilder().setResult(false);
@@ -411,7 +411,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<AddPeerGroupOutput>> addPeerGroup(final AddPeerGroupInput input) {
+    @Override
+    public Future<RpcResult<AddPeerGroupOutput>> addPeerGroup(final AddPeerGroupInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final AddPeerGroupOutputBuilder output = new AddPeerGroupOutputBuilder().setResult(false);
@@ -428,7 +429,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<DeleteConnectionTemplateOutput>> deleteConnectionTemplate(
+    @Override
+    public Future<RpcResult<DeleteConnectionTemplateOutput>> deleteConnectionTemplate(
             DeleteConnectionTemplateInput input) {
         final String nodeId = getNodeId(input.getNodeId());
         final DeleteConnectionTemplateOutputBuilder
@@ -452,7 +454,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<DeleteNodeOutput>> deleteNode(DeleteNodeInput input) {
+    @Override
+    public Future<RpcResult<DeleteNodeOutput>> deleteNode(DeleteNodeInput input) {
         final String nodeId = getNodeId(input.getNodeId());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final DeleteNodeOutputBuilder output = new DeleteNodeOutputBuilder().setResult(false);
@@ -475,13 +478,18 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<DeleteBindingsOutput>> deleteBindings(DeleteBindingsInput input) {
+    @Override
+    public Future<RpcResult<DeleteBindingsOutput>> deleteBindings(DeleteBindingsInput input) {
         final String nodeId = getNodeId(input.getNodeId());
         final DeleteBindingsOutputBuilder output = new DeleteBindingsOutputBuilder().setResult(false);
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId, input.getDomainName());
 
         return getResponse(nodeId, output.build(), () -> {
-            LOG.info("RpcDeleteBindings event | {}", input.toString());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("RpcDeleteBindings event | {}", input.toString());
+            } else {
+                LOG.info("RpcDeleteBindings event | {}", input.getNodeId());
+            }
             if (input.getDomainName() == null) {
                 LOG.warn("RpcDeleteEntry exception | Parameter 'domain-name' not defined");
                 return RpcResultBuilder.success(output.build()).build();
@@ -516,12 +524,14 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public void close() {
+    @Override
+    public void close() {
         executor.shutdown();
         datastoreAccess.close();
     }
 
-    @Override public Future<RpcResult<DeleteConnectionOutput>> deleteConnection(final DeleteConnectionInput input) {
+    @Override
+    public Future<RpcResult<DeleteConnectionOutput>> deleteConnection(final DeleteConnectionInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final DeleteConnectionOutputBuilder output = new DeleteConnectionOutputBuilder().setResult(false);
@@ -541,7 +551,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<DeleteEntryOutput>> deleteEntry(final DeleteEntryInput input) {
+    @Override
+    public Future<RpcResult<DeleteEntryOutput>> deleteEntry(final DeleteEntryInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DeleteEntryOutputBuilder output = new DeleteEntryOutputBuilder().setResult(false);
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId, input.getDomainName());
@@ -574,7 +585,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<DeleteFilterOutput>> deleteFilter(final DeleteFilterInput input) {
+    @Override
+    public Future<RpcResult<DeleteFilterOutput>> deleteFilter(final DeleteFilterInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final DeleteFilterOutputBuilder output = new DeleteFilterOutputBuilder().setResult(false);
@@ -622,7 +634,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<DeletePeerGroupOutput>> deletePeerGroup(final DeletePeerGroupInput input) {
+    @Override
+    public Future<RpcResult<DeletePeerGroupOutput>> deletePeerGroup(final DeletePeerGroupInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final DeletePeerGroupOutputBuilder output = new DeletePeerGroupOutputBuilder().setResult(false);
@@ -640,7 +653,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<DeleteDomainOutput>> deleteDomain(DeleteDomainInput input) {
+    @Override
+    public Future<RpcResult<DeleteDomainOutput>> deleteDomain(DeleteDomainInput input) {
         final String nodeId = getNodeId(input.getNodeId());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final DeleteDomainOutputBuilder output = new DeleteDomainOutputBuilder().setResult(false);
@@ -679,7 +693,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<GetConnectionsOutput>> getConnections(final GetConnectionsInput input) {
+    @Override
+    public Future<RpcResult<GetConnectionsOutput>> getConnections(final GetConnectionsInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final ConnectionsBuilder connectionsBuilder = new ConnectionsBuilder();
@@ -701,7 +716,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<GetNodeBindingsOutput>> getNodeBindings(final GetNodeBindingsInput input) {
+    @Override
+    public Future<RpcResult<GetNodeBindingsOutput>> getNodeBindings(final GetNodeBindingsInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final GetNodeBindingsOutputBuilder output = new GetNodeBindingsOutputBuilder().setBinding(new ArrayList<>());
@@ -747,7 +763,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<GetPeerGroupOutput>> getPeerGroup(final GetPeerGroupInput input) {
+    @Override
+    public Future<RpcResult<GetPeerGroupOutput>> getPeerGroup(final GetPeerGroupInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final GetPeerGroupOutputBuilder output = new GetPeerGroupOutputBuilder().setSxpPeerGroup(null);
@@ -770,7 +787,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<GetPeerGroupsOutput>> getPeerGroups(final GetPeerGroupsInput input) {
+    @Override
+    public Future<RpcResult<GetPeerGroupsOutput>> getPeerGroups(final GetPeerGroupsInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final GetPeerGroupsOutputBuilder output = new GetPeerGroupsOutputBuilder().setSxpPeerGroup(new ArrayList<>());
@@ -788,7 +806,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<AddNodeOutput>> addNode(AddNodeInput input) {
+    @Override
+    public Future<RpcResult<AddNodeOutput>> addNode(AddNodeInput input) {
         final AddNodeOutputBuilder output = new AddNodeOutputBuilder().setResult(false);
         return executor.submit(() -> {
             if (input.getNodeId() != null) {
@@ -844,7 +863,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<AddDomainOutput>> addDomain(AddDomainInput input) {
+    @Override
+    public Future<RpcResult<AddDomainOutput>> addDomain(AddDomainInput input) {
         final String nodeId = getNodeId(input.getNodeId());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final AddDomainOutputBuilder output = new AddDomainOutputBuilder().setResult(false);
@@ -867,15 +887,20 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<AddBindingsOutput>> addBindings(AddBindingsInput input) {
+    @Override
+    public Future<RpcResult<AddBindingsOutput>> addBindings(AddBindingsInput input) {
         final String nodeId = getNodeId(input.getNodeId());
         final AddBindingsOutputBuilder output = new AddBindingsOutputBuilder().setResult(false);
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId, input.getDomainName());
 
         return getResponse(nodeId, output.build(), () -> {
-            LOG.info("RpcAddBindings event | {}", input.toString());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("RpcAddBindings event | {}", input.toString());
+            } else {
+                LOG.info("RpcAddBindings event | {}", input.getNodeId());
+            }
             if (input.getDomainName() == null) {
-                LOG.warn("RpcDeleteEntry exception | Parameter 'domain-name' not defined");
+                LOG.warn("RpcAddEntry exception | Parameter 'domain-name' not defined");
                 return RpcResultBuilder.success(output.build()).build();
             }
             final MasterDatabase
@@ -908,7 +933,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<UpdateEntryOutput>> updateEntry(final UpdateEntryInput input) {
+    @Override
+    public Future<RpcResult<UpdateEntryOutput>> updateEntry(final UpdateEntryInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId, input.getDomainName());
         final UpdateEntryOutputBuilder output = new UpdateEntryOutputBuilder().setResult(false);
@@ -968,7 +994,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    @Override public Future<RpcResult<UpdateFilterOutput>> updateFilter(final UpdateFilterInput input) {
+    @Override
+    public Future<RpcResult<UpdateFilterOutput>> updateFilter(final UpdateFilterInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final UpdateFilterOutputBuilder output = new UpdateFilterOutputBuilder().setResult(false);
