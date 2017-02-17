@@ -820,7 +820,8 @@ public class SxpConnection {
      * @return If State is Off or in Both mode connections isn't in bidirectional mode
      */
     public boolean isStateOff() {
-        return getState().equals(ConnectionState.Off) || (isModeBoth() && !isBidirectionalBoth());
+        return ConnectionState.Off.equals(getState()) || ConnectionState.AdministrativelyDown.equals(getState()) || (
+                isModeBoth() && !isBidirectionalBoth());
     }
 
     /**

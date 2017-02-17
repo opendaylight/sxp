@@ -57,7 +57,6 @@ public class DomainListenerTest {
         datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
         identityListener = new DomainListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
-        when(sxpNode.shutdown()).thenReturn(sxpNode);
         when(sxpNode.removeDomain(anyString())).thenReturn(mock(org.opendaylight.sxp.core.SxpDomain.class));
         PowerMockito.mockStatic(Configuration.class);
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);

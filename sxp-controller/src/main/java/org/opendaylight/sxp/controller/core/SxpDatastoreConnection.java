@@ -9,10 +9,10 @@
 package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Preconditions;
+import java.util.concurrent.ExecutionException;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
@@ -30,8 +30,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
-import java.util.concurrent.ExecutionException;
 
 public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnection implements AutoCloseable {
 
@@ -57,6 +55,9 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
                 new SxpDatastoreConnection(datastoreAccess, owner, connection, domain);
         datastoreConnection.setCapabilities(
                 Configuration.getCapabilities(Preconditions.checkNotNull(datastoreConnection.getVersion())));
+        if (ConnectionState.On.equals(connection.getState())) {
+            datastoreConnection.setState(ConnectionState.AdministrativelyDown);
+        }
         return datastoreConnection;
     }
 
