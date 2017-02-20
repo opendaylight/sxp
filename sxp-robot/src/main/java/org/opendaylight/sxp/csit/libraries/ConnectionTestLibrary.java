@@ -8,9 +8,9 @@
 
 package org.opendaylight.sxp.csit.libraries;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
@@ -18,8 +18,12 @@ import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.csit.LibraryServer;
 import org.opendaylight.sxp.csit.RobotLibraryServer;
+import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
+import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
@@ -36,8 +40,7 @@ import org.robotframework.javalib.annotation.RobotKeywords;
 @RobotKeywords public class ConnectionTestLibrary extends AbstractLibrary {
 
     private final AtomicLong connectedPeers = new AtomicLong(0), connectingTimeEnd = new AtomicLong(0);
-    private final List<SxpConnection> peers = Collections.synchronizedList(new ArrayList<>());
-    private final ThreadsWorker worker = new ThreadsWorker(4, 4, 4, 1);
+    private final ThreadsWorker worker = new ThreadsWorker(10, 10, 10, 4);
     private long connectingTimeBegin, totalPeers;
 
     /**
@@ -58,7 +61,11 @@ import org.robotframework.javalib.annotation.RobotKeywords;
      * @return Sum of Sxp peers that are currently with state On
      */
     @RobotKeyword("Get Connected Peers") @ArgumentNames({}) public synchronized long getConnectedPeers() {
-        connectedPeers.set(peers.parallelStream().map(c -> c.isStateOn() ? 1 : 0).reduce(0, Integer::sum));
+        connectedPeers.set(LibraryServer.getNodes()
+                .stream()
+                .flatMap(sxpNode -> sxpNode.getAllConnections().stream())
+                .filter(SxpConnection::isStateOn)
+                .count());
         if (connectedPeers.get() >= totalPeers) {
             connectingTimeEnd.set(System.currentTimeMillis());
         }
@@ -86,7 +93,7 @@ import org.robotframework.javalib.annotation.RobotKeywords;
 
     @RobotKeyword("Add Node") @ArgumentNames({"node_id", "version", "port", "password"}) @Override
     public synchronized void addNode(String nodeId, String version, String port, String password) {
-        LibraryServer.putNode(new SxpNode(new NodeId(nodeId),
+        LibraryServer.putNode(SxpNode.createInstance(new NodeId(nodeId),
                 new SxpNodeIdentityBuilder().setSourceIp(new IpAddress(nodeId.toCharArray()))
                         .setCapabilities(Configuration.getCapabilities(Version.Version4))
                         .setEnabled(true)
@@ -94,14 +101,28 @@ import org.robotframework.javalib.annotation.RobotKeywords;
                         .setTcpPort(new PortNumber(Integer.parseInt(port)))
                         .setSecurity(new SecurityBuilder().setPassword(
                                 password == null || password.isEmpty() ? null : password).build())
-                        .setTimers(new TimersBuilder().setRetryOpenTime(5).build())
-                        .build(), worker) {
+                        .setTimers(new TimersBuilder().setHoldTime(90)
+                                .setHoldTimeMin(90)
+                                .setHoldTimeMax(180)
+                                .setHoldTimeMinAcceptable(120)
+                                .setReconciliationTime(120)
+                                .setDeleteHoldDownTime(120)
+                                .setRetryOpenTime(5 + (new Random().nextInt() % 10))
+                                .build())
+                        .build(), new MasterDatabaseImpl(), new SxpDatabaseImpl() {
 
-            @Override protected SxpConnection addConnection(SxpConnection connection) {
-                peers.add(connection);
-                return super.addConnection(connection);
-            }
-        });
+                    @Override
+                    public synchronized <T extends SxpBindingFields> List<SxpDatabaseBinding> deleteBindings(
+                            NodeId nodeId, List<T> bindings) {
+                        return Collections.emptyList();
+                    }
+
+                    @Override
+                    public synchronized <T extends SxpBindingFields> List<SxpDatabaseBinding> addBinding(NodeId nodeId,
+                            List<T> bindings) {
+                        return Collections.emptyList();
+                    }
+                }, worker));
         LibraryServer.getNode(nodeId).addDomain(new SxpDomainBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN).build());
     }
 
