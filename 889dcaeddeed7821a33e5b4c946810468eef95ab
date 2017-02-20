@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fafc7978_570e1e3c",
+        "filename": "features/odl-sxp-robot/pom.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 649
+      },
+      "writtenOn": "2017-02-20T15:50:57Z",
+      "side": 1,
+      "message": "This results in a lot of ancient jetty-related outdated crud being generated: https://logs.opendaylight.org/releng/jenkins092/sxp-verify-carbon-mvn33-openjdk8/71/archives/features/features4-sxp/target/feature/feature.xml.gz\n\nUse odl-karaf-feat-jetty to bring in a recent (9.2) version of jetty.",
+      "range": {
+        "startLine": 46,
+        "startChar": 0,
+        "endLine": 55,
+        "endChar": 21
+      },
+      "revId": "889dcaeddeed7821a33e5b4c946810468eef95ab",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
