@@ -46,9 +46,9 @@ import org.slf4j.LoggerFactory;
         super(libraryServer);
         connectionTimers.setDeleteHoldDownTime(180)
                 .setHoldTime(90)
-                .setHoldTimeMax(60)
-                .setHoldTimeMax(120)
-                .setHoldTimeMinAcceptable(60)
+                .setHoldTimeMin(90)
+                .setHoldTimeMax(180)
+                .setHoldTimeMinAcceptable(120)
                 .setReconciliationTime(120);
     }
 
