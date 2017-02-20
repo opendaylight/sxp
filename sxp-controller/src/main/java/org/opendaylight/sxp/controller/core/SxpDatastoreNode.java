@@ -9,11 +9,9 @@
 package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Preconditions;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
@@ -102,7 +100,7 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
      * @param node Node setup data
      */
     protected SxpDatastoreNode(NodeId nodeId, DatastoreAccess datastoreAccess, SxpNodeIdentity node) {
-        super(Preconditions.checkNotNull(nodeId), Preconditions.checkNotNull(node), new ThreadsWorker());
+        super(Preconditions.checkNotNull(nodeId), Preconditions.checkNotNull(node), new ThreadsWorker(4, 4, 4, 4));
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
         this.nodeId = NodeIdConv.toString(nodeId);
     }
