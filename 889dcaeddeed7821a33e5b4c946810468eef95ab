@@ -22,6 +22,30 @@
       "revId": "889dcaeddeed7821a33e5b4c946810468eef95ab",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fafc7978_04a454b8",
+        "filename": "features/odl-sxp-robot/pom.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 3920
+      },
+      "writtenOn": "2017-02-22T18:14:48Z",
+      "side": 1,
+      "message": "As one of dependencies [jrobotremoteserver] needs jetty 7.* or 8.* use of odl-karaf-feat-jetty was replaced. If there is plan to get rid of older version of jetty, it may be needed to replace this dependency if possible or contact maintainer about support for newer version of jetty ...",
+      "parentUuid": "fafc7978_570e1e3c",
+      "range": {
+        "startLine": 46,
+        "startChar": 0,
+        "endLine": 55,
+        "endChar": 21
+      },
+      "revId": "889dcaeddeed7821a33e5b4c946810468eef95ab",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
     }
   ]
 }
