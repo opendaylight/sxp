@@ -19,6 +19,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPromiseNotifier;
+import io.netty.handler.ssl.SslHandler;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -30,17 +31,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLEngine;
 import org.opendaylight.sxp.core.handler.ConnectionDecoder;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.ConnectFacade;
+import org.opendaylight.sxp.core.service.SslContextFactory;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.Security;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
@@ -196,6 +200,13 @@ public class SxpNode {
             setMessagePartitionSize(node.getMessageBuffering().getOutBuffer());
         } else {
             this.svcBindingHandler = new BindingHandler(this, this.svcBindingDispatcher);
+        }
+        if (Objects.nonNull(node.getSecurity()) && Objects.nonNull(node.getSecurity().getTls())) {
+            final Optional<SSLEngine>
+                    serverEngine =
+                    new SslContextFactory(node.getSecurity().getTls()).getServerContext();
+            serverEngine.ifPresent(sslEngine -> this.handlerFactoryServer.addEncoder(new SslHandler(sslEngine),
+                    HandlerFactory.Position.Begin));
         }
     }
 

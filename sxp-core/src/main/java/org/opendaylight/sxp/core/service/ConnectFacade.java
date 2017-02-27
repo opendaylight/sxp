@@ -36,6 +36,7 @@ import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.util.inet.Search;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SecurityType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,9 +63,15 @@ public class ConnectFacade {
         }
         Bootstrap bootstrap = new Bootstrap();
         if (connection.getPassword() != null && !connection.getPassword().isEmpty()) {
-            bootstrap.option(EpollChannelOption.TCP_MD5SIG,
-                    Collections.singletonMap(connection.getDestination().getAddress(),
-                            connection.getPassword().getBytes(StandardCharsets.US_ASCII)));
+            if (SecurityType.TLS.equals(connection.getSecurityType())) {
+                LOG.warn("{} TSL security", connection);
+            } else if (SecurityType.MD5.equals(connection.getSecurityType())) {
+                bootstrap.option(EpollChannelOption.TCP_MD5SIG,
+                        Collections.singletonMap(connection.getDestination().getAddress(),
+                                connection.getPassword().getBytes(StandardCharsets.US_ASCII)));
+            } else {
+                LOG.warn("{} Unknown security type {}", connection, connection.getSecurityType());
+            }
         }
         bootstrap.channel(EpollSocketChannel.class);
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, Configuration.NETTY_CONNECT_TIMEOUT_MILLIS);
