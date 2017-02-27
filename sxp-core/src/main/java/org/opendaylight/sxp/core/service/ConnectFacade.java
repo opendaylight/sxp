@@ -31,11 +31,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.util.inet.Search;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SecurityType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +47,9 @@ public class ConnectFacade {
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectFacade.class.getName());
 
     private static final Predicate<SxpConnection>
-            CONNECTION_ENTRY_WITH_PASSWORD =
-            input -> input.getPassword() != null && !input.getPassword().isEmpty();
+            CONNECTION_ENTRY_WITH_MD5_PASSWORD =
+            input -> Objects.nonNull(input) && SecurityType.Default.equals(input.getSecurityType()) && Objects.nonNull(
+                    input.getPassword()) && !input.getPassword().isEmpty();
 
     /**
      * Create new Connection to Peer
@@ -61,7 +64,9 @@ public class ConnectFacade {
             throw new UnsupportedOperationException(Epoll.unavailabilityCause().getCause());
         }
         Bootstrap bootstrap = new Bootstrap();
-        if (connection.getPassword() != null && !connection.getPassword().isEmpty()) {
+        if (SecurityType.Default.equals(connection.getSecurityType()) && connection.getPassword() != null && !connection
+                .getPassword()
+                .isEmpty()) {
             bootstrap.option(EpollChannelOption.TCP_MD5SIG,
                     Collections.singletonMap(connection.getDestination().getAddress(),
                             connection.getPassword().getBytes(StandardCharsets.US_ASCII)));
@@ -77,7 +82,13 @@ public class ConnectFacade {
         bootstrap.group(eventLoopGroup);
         bootstrap.handler(new ChannelInitializer<SocketChannel>() {
 
-            @Override protected void initChannel(SocketChannel ch) throws Exception {
+            @Override
+            protected void initChannel(SocketChannel ch) throws Exception {
+                if (SecurityType.TLS.equals(connection.getSecurityType())) {
+                    node.getSslContextFactory()
+                            .getClientContext()
+                            .ifPresent(sslContext -> ch.pipeline().addLast(sslContext.newHandler(ch.alloc())));
+                }
                 ch.pipeline().addLast(hf.getDecoders());
                 ch.pipeline().addLast(hf.getEncoders());
             }
@@ -99,13 +110,14 @@ public class ConnectFacade {
         Map<InetAddress, byte[]> keyMapping = new HashMap<>();
         ServerBootstrap bootstrap = new ServerBootstrap();
         node.getDomains().forEach(d -> d.getConnectionTemplates().forEach(t -> {
-            if (t.getTemplatePassword() != null && !t.getTemplatePassword().isEmpty()) {
+            if (SecurityType.Default.equals(t.getTemplateSecurityType()) && t.getTemplatePassword() != null
+                    && !t.getTemplatePassword().isEmpty()) {
                 final byte[] password = t.getTemplatePassword().getBytes(StandardCharsets.US_ASCII);
                 Search.expandPrefix(t.getTemplatePrefix())
                         .forEach(inetAddress -> keyMapping.put(inetAddress, password));
             }
         }));
-        Collections2.filter(node.getAllConnections(), CONNECTION_ENTRY_WITH_PASSWORD)
+        Collections2.filter(node.getAllConnections(), CONNECTION_ENTRY_WITH_MD5_PASSWORD)
                 .forEach(p -> keyMapping.put(p.getDestination().getAddress(),
                         p.getPassword().getBytes(StandardCharsets.US_ASCII)));
 
@@ -118,7 +130,14 @@ public class ConnectFacade {
         }
         bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
 
-            @Override protected void initChannel(SocketChannel ch) throws Exception {
+            @Override
+            protected void initChannel(SocketChannel ch) throws Exception {
+                final SxpConnection connection = node.getConnection(ch.remoteAddress());
+                if (Objects.nonNull(connection) && SecurityType.TLS.equals(connection.getSecurityType())) {
+                    node.getSslContextFactory()
+                            .getServerContext()
+                            .ifPresent(sslContext -> ch.pipeline().addLast(sslContext.newHandler(ch.alloc())));
+                }
                 ch.pipeline().addLast(hf.getDecoders());
                 ch.pipeline().addLast(hf.getEncoders());
             }

@@ -40,19 +40,102 @@ module sxp-node {
         description "Timer types with their default values";
     }
 
+    typedef path-type {
+        type enumeration {
+            enum "PATH";
+            enum "CLASSPATH";
+        }
+        description "SSL Certificate path type";
+    }
+
+    typedef store-type {
+        type enumeration {
+            enum "JKS";
+            enum "PKCS12";
+        }
+        description "Certificates store type";
+    }
+
+    typedef security-type {
+        type enumeration {
+            enum "Default";
+            enum "TLS";
+        }
+        description "Security protocol used for SXP peers";
+    }
+
     // ****************
     // Common Groupings
     // ****************
 
+    grouping tls-security-fields {
+        container keystore {
+            presence true;
+            leaf location {
+                description "keystore location";
+                type string;
+                mandatory true;
+            }
+            leaf type {
+                description "keystore type (JKS or PKCS12)";
+                type store-type;
+                mandatory true;
+            }
+            leaf path-type {
+                description "keystore path type (CLASSPATH or PATH)";
+                type path-type;
+                mandatory true;
+            }
+            leaf password {
+                description "password protecting keystore";
+                type string;
+                mandatory true;
+            }
+        }
+        container truststore {
+            presence true;
+            leaf location {
+                description "truststore location";
+                type string;
+                mandatory true;
+            }
+            leaf type {
+                description "truststore type (JKS or PKCS12)";
+                type store-type;
+                mandatory true;
+            }
+            leaf path-type {
+                description "truststore path type (CLASSPATH or PATH)";
+                type path-type;
+                mandatory true;
+            }
+            leaf password {
+                description "password protecting truststore";
+                type string;
+                mandatory true;
+            }
+        }
+        leaf certificate-password {
+            description "password protecting certificate";
+            type string;
+            mandatory true;
+        }
+    }
+
     grouping security-fields {
         leaf password {
             type string;
-            description "SXP password can be up to 80 ASCII characters";
+            description "SXP password for TCP-MD5 hashing can be up to 80 ASCII characters";
         }
         leaf md5-digest {
             type string;
             config false;
             description "16 bytes MD5 digest formed using the password as the key";
+        }
+        container tls {
+            presence true;
+            uses tls-security-fields;
+            description "SSL keystores definitions";
         }
     }
 
@@ -165,6 +248,11 @@ module sxp-node {
             type string;
             description "SXP password can be up to 80 ASCII characters";
         }
+        leaf template-security-type {
+            type security-type;
+            default "Default";
+            description "Security used for current SXP peer";
+        }
         leaf template-tcp-port {
             type inet:port-number;
             default "64999";
@@ -197,6 +285,11 @@ module sxp-node {
         leaf password {
             type string;
             description "SXP password can be up to 80 ASCII characters";
+        }
+        leaf security-type {
+            type security-type;
+            default "Default";
+            description "Security used for current SXP peer";
         }
         leaf mode {
             type sxppt:connection-mode;
