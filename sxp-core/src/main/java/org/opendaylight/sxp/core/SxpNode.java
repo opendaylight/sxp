@@ -41,6 +41,7 @@ import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.ConnectFacade;
+import org.opendaylight.sxp.core.service.SslContextFactory;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.Security;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
@@ -63,6 +64,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SecurityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
@@ -165,6 +167,11 @@ public class SxpNode {
 
     private Channel serverChannel;
     protected InetAddress sourceIp;
+    private final SslContextFactory sslContextFactory;
+
+    public SslContextFactory getSslContextFactory() {
+        return sslContextFactory;
+    }
 
     protected final BindingDispatcher svcBindingDispatcher;
     protected final BindingHandler svcBindingHandler;
@@ -197,6 +204,7 @@ public class SxpNode {
         } else {
             this.svcBindingHandler = new BindingHandler(this, this.svcBindingDispatcher);
         }
+        sslContextFactory = new SslContextFactory(node.getSecurity().getTls());
     }
 
     /**
@@ -1345,7 +1353,8 @@ public class SxpNode {
      * @param connection Connection containing password for MD5 key update
      */
     private void updateMD5keys(final SxpConnection connection) {
-        if (connection.getPassword() != null && !connection.getPassword().trim().isEmpty()) {
+        if (SecurityType.MD5.equals(connection.getSecurityType()) && Objects.nonNull(connection.getPassword())
+                && !connection.getPassword().trim().isEmpty()) {
             updateMD5keys();
         }
     }
