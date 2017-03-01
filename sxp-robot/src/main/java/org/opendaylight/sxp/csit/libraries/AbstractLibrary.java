@@ -9,14 +9,9 @@
 package org.opendaylight.sxp.csit.libraries;
 
 import com.google.common.base.Preconditions;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Optional;
-import java.util.stream.Stream;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.csit.LibraryServer;
-import org.opendaylight.sxp.csit.RobotLibraryServer;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
@@ -30,37 +25,31 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
 import org.robotframework.javalib.annotation.ArgumentNames;
 import org.robotframework.javalib.annotation.RobotKeyword;
 import org.robotframework.javalib.annotation.RobotKeywords;
-import org.robotframework.javalib.library.AnnotationLibrary;
+import org.robotframework.remoteserver.RemoteServer;
+import org.robotframework.remoteserver.library.AbstractClassLibrary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Abstract Robot library containing common support for libraries
  */
-@RobotKeywords public abstract class AbstractLibrary extends AnnotationLibrary implements AutoCloseable {
+@RobotKeywords public abstract class AbstractLibrary extends AbstractClassLibrary implements AutoCloseable {
 
     public final static String SOURCE = "source";
     protected static final Logger LOG = LoggerFactory.getLogger(AbstractLibrary.class.getName());
     protected final ConnectionTimersBuilder connectionTimers = new ConnectionTimersBuilder();
 
     /**
-     * Abstract implementation of Robot library
+     * @param libraryServer Server where Library will be added
      */
-    protected AbstractLibrary() {
+    protected AbstractLibrary(RemoteServer libraryServer) {
+        super(libraryServer);
         connectionTimers.setDeleteHoldDownTime(180)
                 .setHoldTime(90)
                 .setHoldTimeMax(60)
                 .setHoldTimeMax(120)
                 .setHoldTimeMinAcceptable(60)
                 .setReconciliationTime(120);
-    }
-
-    /**
-     * @param libraryServer Server where Library will be added
-     */
-    protected AbstractLibrary(RobotLibraryServer libraryServer) {
-        this();
-        Preconditions.checkNotNull(libraryServer).addLibrary(this);
     }
 
     /**
@@ -127,59 +116,10 @@ import org.slf4j.LoggerFactory;
     }
 
     /**
-     * @param obj Object containing some methods
-     * @return Stream of its methods
-     */
-    private Stream<Method> getMethods(Object obj) {
-        return Stream.concat(Stream.of(Preconditions.checkNotNull(obj).getClass().getDeclaredMethods()),
-                Stream.of(AbstractLibrary.class.getDeclaredMethods()));
-    }
-
-    /**
-     * @param keywordName Name of KeyWord
-     * @param obj         Object where to look for
-     * @return Method found
-     */
-    private Optional<Method> getMethod(String keywordName, Object obj) {
-        return getMethods(obj).filter(
-                m -> m.getAnnotation(RobotKeyword.class) != null && m.getAnnotation(RobotKeyword.class)
-                        .value()
-                        .equals(keywordName)).findFirst();
-    }
-
-    /**
      * @return Url on witch Library is placed
      */
-    public String getUrl() {
-        return "/" + getClass().getSimpleName();
-    }
-
-    @Override public String[] getKeywordArguments(String keywordName) {
-        Optional<Method> method = getMethod(Preconditions.checkNotNull(keywordName), this);
-        if (method.isPresent() && method.get().getAnnotation(ArgumentNames.class) != null) {
-            return method.get().getAnnotation(ArgumentNames.class).value();
-        }
-        return new String[0];
-    }
-
-    @Override public String getKeywordDocumentation(String keywordName) {
-        return "ODL-CSIT-LIBRARY";
-    }
-
-    @Override public Object runKeyword(String keywordName, Object[] args) {
-        Optional<Method> method = getMethod(Preconditions.checkNotNull(keywordName), this);
-        try {
-            return method.isPresent() ? method.get().invoke(this, args) : null;
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            LOG.error("Error executing keyword {} [{}]", keywordName, args, e);
-        }
-        return null;
-    }
-
-    @Override public String[] getKeywordNames() {
-        return getMethods(this).filter(m -> m.getAnnotation(RobotKeyword.class) != null)
-                .map(m -> m.getAnnotation(RobotKeyword.class).value())
-                .toArray(String[]::new);
+    @Override public String getURI() {
+        return getClass().getSimpleName();
     }
 
     /**
