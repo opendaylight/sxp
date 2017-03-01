@@ -26,6 +26,7 @@
       <mdsal.model.version>0.10.0-SNAPSHOT</mdsal.model.version>
       <restconf.version>1.5.0-SNAPSHOT</restconf.version>
       <yangtools.version>1.1.0-SNAPSHOT</yangtools.version>
+      <jrobot.version>3.4.1</jrobot.version>
    </properties>
     <dependencyManagement>
         <dependencies>
@@ -62,7 +63,6 @@
         <type>xml</type>
         <scope>runtime</scope>
     </dependency>
-
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>features-mdsal</artifactId>
@@ -85,6 +85,13 @@
     <dependency>
       <groupId>org.opendaylight.odlparent</groupId>
       <artifactId>features-odlparent</artifactId>
+      <classifier>features</classifier>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.github.aenniw</groupId>
+      <artifactId>jrobot-features</artifactId>
+      <version>${jrobot.version}</version>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>

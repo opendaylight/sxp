@@ -15,6 +15,7 @@
     <repository>mvn:org.opendaylight.controller/features-config/{{VERSION}}/xml/features</repository>
     <repository>mvn:org.opendaylight.netconf/features-restconf/{{VERSION}}/xml/features</repository>
     <repository>mvn:org.opendaylight.odlparent/features-odlparent/{{VERSION}}/xml/features</repository>
+    <repository>mvn:com.github.aenniw/jrobot-features/{{VERSION}}/xml/features</repository>
 
     <feature name='odl-sxp-api' version='${project.version}' description='OpenDaylight :: Sxp :: Api'>
         <feature version='${mdsal.model.version}'>odl-mdsal-models</feature>
@@ -28,16 +29,7 @@
     </feature>
     <feature name='odl-sxp-robot' version='${project.version}' description='OpenDaylight :: Robot :: CSIT'>
         <feature version='${project.version}'>odl-sxp-core</feature>
-        <feature>jetty</feature>
-        <bundle>wrap:mvn:org.robotframework/javalib-core/{{VERSION}}</bundle>
-        <bundle>wrap:mvn:com.github.ombre42/jrobotremoteserver/{{VERSION}}</bundle>
-        <bundle>wrap:mvn:org.apache.xmlrpc/xmlrpc-server/{{VERSION}}</bundle>
-        <bundle>wrap:mvn:org.apache.xmlrpc/xmlrpc-common/{{VERSION}}</bundle>
-        <bundle>wrap:mvn:org.apache.ws.commons.util/ws-commons-util/{{VERSION}}</bundle>
-        <bundle>mvn:commons-lang/commons-lang/{{VERSION}}</bundle>
-        <bundle>mvn:com.fasterxml.jackson.core/jackson-core/{{VERSION}}</bundle>
-        <bundle>mvn:com.fasterxml.jackson.core/jackson-annotations/{{VERSION}}</bundle>
-        <bundle>mvn:com.fasterxml.jackson.core/jackson-databind/{{VERSION}}</bundle>
+        <feature version='${jrobot.version}'>jrobot-remote-server</feature>
         <bundle>mvn:org.opendaylight.sxp/sxp-robot/{{VERSION}}</bundle>
     </feature>
     <feature name='odl-sxp-controller' version='${project.version}' description='OpenDaylight :: Sxp :: Controller'>

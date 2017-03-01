@@ -21,7 +21,6 @@ import java.util.Objects;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.csit.LibraryServer;
-import org.opendaylight.sxp.csit.RobotLibraryServer;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -39,6 +38,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
 import org.robotframework.javalib.annotation.ArgumentNames;
 import org.robotframework.javalib.annotation.RobotKeyword;
 import org.robotframework.javalib.annotation.RobotKeywords;
+import org.robotframework.remoteserver.RemoteServer;
 
 /**
  * Robot library used for emulation of resource low SXP device
@@ -48,16 +48,9 @@ import org.robotframework.javalib.annotation.RobotKeywords;
     private static final ObjectMapper pojoBindingsSerializer = new ObjectMapper();
 
     /**
-     * Robot library constructor
-     */
-    public DeviceTestLibrary() {
-        super();
-    }
-
-    /**
      * @param libraryServer Server where Library will be added
      */
-    public DeviceTestLibrary(RobotLibraryServer libraryServer) {
+    public DeviceTestLibrary(RemoteServer libraryServer) {
         super(libraryServer);
         connectionTimers.setReconciliationTime(0);
         connectionTimers.setDeleteHoldDownTime(0);

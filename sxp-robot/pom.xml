@@ -11,8 +11,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.github.ombre42</groupId>
-            <artifactId>jrobotremoteserver</artifactId>
+            <groupId>com.github.aenniw</groupId>
+            <artifactId>jrobot-remote-server</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.sxp</groupId>
@@ -64,7 +64,7 @@
                 <dependency>
                     <groupId>org.eclipse.jetty</groupId>
                     <artifactId>jetty-server</artifactId>
-                    <version>7.6.21.v20160908</version>
+                    <version>8.1.19.v20160209</version>
                 </dependency>
             </dependencies>
             <build>
