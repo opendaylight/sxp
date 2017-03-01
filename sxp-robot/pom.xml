@@ -11,8 +11,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.github.ombre42</groupId>
-            <artifactId>jrobotremoteserver</artifactId>
+            <groupId>com.github.aenniw</groupId>
+            <artifactId>jrobot-remote-server</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.sxp</groupId>

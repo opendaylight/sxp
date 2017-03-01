@@ -9,8 +9,10 @@
 package org.opendaylight.sxp.csit;
 
 import com.google.common.base.Preconditions;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.opendaylight.sxp.core.SxpNode;
@@ -20,14 +22,15 @@ import org.opendaylight.sxp.csit.libraries.DeviceTestLibrary;
 import org.opendaylight.sxp.csit.libraries.ExportTestLibrary;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.robotframework.remoteserver.RemoteServer;
-import org.robotframework.remoteserver.library.RemoteLibrary;
+import org.robotframework.remoteserver.RemoteServerImpl;
 
 /**
  * Remote Robot library server providing libraries to robot framework
  */
-public class LibraryServer extends RemoteServer implements RobotLibraryServer {
+public class LibraryServer extends RemoteServerImpl implements RemoteServer {
 
     private static Map<String, SxpNode> nodes = new ConcurrentHashMap<>();
+    private static List<AbstractLibrary> libraryList = new ArrayList<>();
 
     /**
      * Standalone version used for remote testing purposes
@@ -36,13 +39,12 @@ public class LibraryServer extends RemoteServer implements RobotLibraryServer {
      * @throws Exception If JRobot server fails
      */
     public static void main(String[] args) throws Exception {
-        RemoteServer.configureLogging();
         LibraryServer server = new LibraryServer();
         server.setHost("0.0.0.0");
         server.setPort(8270);
-        server.addLibrary(new ConnectionTestLibrary());
-        server.addLibrary(new DeviceTestLibrary());
-        server.addLibrary(new ExportTestLibrary());
+        libraryList.add(new ConnectionTestLibrary(server));
+        libraryList.add(new DeviceTestLibrary(server));
+        libraryList.add(new ExportTestLibrary(server));
         server.start();
     }
 
@@ -90,7 +92,4 @@ public class LibraryServer extends RemoteServer implements RobotLibraryServer {
         return nodes.get(Preconditions.checkNotNull(id));
     }
 
-    @Override public RemoteLibrary addLibrary(AbstractLibrary library) {
-        return putLibrary(Preconditions.checkNotNull(library).getUrl(), library);
-    }
 }
