@@ -17,7 +17,6 @@ import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.csit.LibraryServer;
-import org.opendaylight.sxp.csit.RobotLibraryServer;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
@@ -29,6 +28,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
 import org.robotframework.javalib.annotation.ArgumentNames;
 import org.robotframework.javalib.annotation.RobotKeyword;
 import org.robotframework.javalib.annotation.RobotKeywords;
+import org.robotframework.remoteserver.RemoteServer;
 
 /**
  * Robot library used for connectivity measuring
@@ -41,16 +41,9 @@ import org.robotframework.javalib.annotation.RobotKeywords;
     private long connectingTimeBegin, totalPeers;
 
     /**
-     * Robot library constructor
-     */
-    public ConnectionTestLibrary() {
-        super();
-    }
-
-    /**
      * @param libraryServer Server where Library will be added
      */
-    public ConnectionTestLibrary(RobotLibraryServer libraryServer) {
+    public ConnectionTestLibrary(RemoteServer libraryServer) {
         super(libraryServer);
     }
 
@@ -68,7 +61,7 @@ import org.robotframework.javalib.annotation.RobotKeywords;
     /**
      * @return Time elapsed to connect all peers or 0 if some peers are still in progress of connecting
      */
-    @RobotKeyword("Get Connect Time") @ArgumentNames({}) public synchronized double getExportTime() {
+    @RobotKeyword("Get Connect Time") @ArgumentNames({}) public synchronized double getConnectTime() {
         long time = connectingTimeEnd.get();
         return time == 0 ? 0 : (time - connectingTimeBegin) / 1000f;
     }

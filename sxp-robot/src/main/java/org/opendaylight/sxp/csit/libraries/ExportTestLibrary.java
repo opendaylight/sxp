@@ -17,7 +17,6 @@ import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.csit.LibraryServer;
-import org.opendaylight.sxp.csit.RobotLibraryServer;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.inet.Search;
@@ -40,6 +39,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
 import org.robotframework.javalib.annotation.ArgumentNames;
 import org.robotframework.javalib.annotation.RobotKeyword;
 import org.robotframework.javalib.annotation.RobotKeywords;
+import org.robotframework.remoteserver.RemoteServer;
 
 /**
  * Robot library used for Bindings export/forwarding measuring
@@ -51,23 +51,17 @@ import org.robotframework.javalib.annotation.RobotKeywords;
     private long exportTimeBegin, totalOfBindings;
 
     /**
-     * Robot library constructor
-     */
-    public ExportTestLibrary() {
-        super();
-    }
-
-    /**
      * @param libraryServer Server where Library will be added
      */
-    public ExportTestLibrary(RobotLibraryServer libraryServer) {
+    public ExportTestLibrary(RemoteServer libraryServer) {
         super(libraryServer);
     }
 
     /**
      * @return Amount of bindings that were processed
      */
-    @RobotKeyword("Get Bindings Exchange Count") @ArgumentNames({}) public synchronized long getExchangeCount() {
+    @RobotKeyword("Get Bindings Exchange Count") @ArgumentNames({})
+    public synchronized long getBindingsExchangeCount() {
         return bindingsReceived.get();
     }
 
@@ -82,7 +76,7 @@ import org.robotframework.javalib.annotation.RobotKeywords;
     /**
      * @return If all bindings were exported
      */
-    @RobotKeyword("All Exported") @ArgumentNames({}) public synchronized boolean getAllExported() {
+    @RobotKeyword("All Exported") @ArgumentNames({}) public synchronized boolean allExported() {
         return totalOfBindings <= bindingsReceived.get();
     }
 
