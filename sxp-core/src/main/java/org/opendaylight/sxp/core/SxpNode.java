@@ -41,6 +41,7 @@ import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.ConnectFacade;
+import org.opendaylight.sxp.core.service.SslContextFactory;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.Security;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
@@ -63,6 +64,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SecurityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
@@ -163,6 +165,7 @@ public class SxpNode {
     private SxpNodeIdentityBuilder nodeBuilder;
     private NodeId nodeId;
 
+    private SslContextFactory sslContextFactory;
     private Channel serverChannel;
     protected InetAddress sourceIp;
 
@@ -197,6 +200,7 @@ public class SxpNode {
         } else {
             this.svcBindingHandler = new BindingHandler(this, this.svcBindingDispatcher);
         }
+        setSecurity(node.getSecurity());
     }
 
     /**
@@ -204,14 +208,6 @@ public class SxpNode {
      */
     protected SxpNodeIdentity getNodeIdentity() {
         return nodeBuilder.build();
-    }
-
-    /**
-     * @param security Sets Security used for peers
-     */
-    protected void setSecurity(
-            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security security) {
-        nodeBuilder.setSecurity(Preconditions.checkNotNull(security));
     }
 
     /**
@@ -1166,28 +1162,19 @@ public class SxpNode {
     }
 
     /**
-     * Sets Security password used to connect
+     * Sets Security password used to connect, and new SslContext
      *
      * @param security Security to be set
-     * @return Newly set Security
      */
-    protected org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security setPassword(
+    public void setSecurity(
             org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security security) {
-        SecurityBuilder securityBuilder = new SecurityBuilder();
-        if (security == null || security.getPassword() == null || security.getPassword().isEmpty()) {
+        SecurityBuilder securityBuilder = new SecurityBuilder(security);
+        if (Objects.isNull(securityBuilder.getPassword())) {
             securityBuilder.setPassword("");
-            return securityBuilder.build();
         }
-
-        if (getNodeIdentity().getSecurity() != null && getNodeIdentity().getSecurity().getPassword() != null
-                && !getNodeIdentity().getSecurity().getPassword().isEmpty() && !getNodeIdentity().getSecurity()
-                .getPassword()
-                .equals(security.getPassword())) {
-            shutdownConnections();
-        }
-        securityBuilder.setPassword(security.getPassword());
-        securityBuilder.setMd5Digest(Security.getMD5s(security.getPassword()));
-        return securityBuilder.build();
+        this.sslContextFactory = new SslContextFactory(securityBuilder.getTls());
+        securityBuilder.setMd5Digest(Security.getMD5s(securityBuilder.getPassword()));
+        this.nodeBuilder.setSecurity(securityBuilder.build());
     }
 
     /**
@@ -1345,7 +1332,8 @@ public class SxpNode {
      * @param connection Connection containing password for MD5 key update
      */
     private void updateMD5keys(final SxpConnection connection) {
-        if (connection.getPassword() != null && !connection.getPassword().trim().isEmpty()) {
+        if (SecurityType.Default.equals(connection.getSecurityType()) && Objects.nonNull(connection.getPassword())
+                && !connection.getPassword().trim().isEmpty()) {
             updateMD5keys();
         }
     }
@@ -1382,6 +1370,13 @@ public class SxpNode {
                         }
                     }
                 });
+    }
+
+    /**
+     * @return ContextFactory used for establishing SSL connections
+     */
+    public SslContextFactory getSslContextFactory() {
+        return sslContextFactory;
     }
 
     @Override public String toString() {
