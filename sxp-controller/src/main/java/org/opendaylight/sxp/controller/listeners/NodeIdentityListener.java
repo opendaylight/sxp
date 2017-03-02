@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.controller.listeners;
 
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
+
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,8 +40,6 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
-import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
 
 public class NodeIdentityListener implements ClusteredDataTreeChangeListener<SxpNodeIdentity> {
 
@@ -143,7 +143,17 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                             }
                         } else if (checkDifference(c,
                                 d -> Objects.nonNull(d.getSecurity()) ? d.getSecurity().getPassword() : null)
-                                || checkDifference(c, SxpNodeFields::getVersion) || checkDifference(c,
+                                || checkDifference(c,
+                                d -> Objects.nonNull(d.getSecurity()) ? d.getSecurity().getTls() : null)) {
+                            Configuration.getRegisteredNode(nodeId).shutdown();
+                            if (Objects.nonNull(c.getRootNode().getDataAfter())) {
+                                Configuration.getRegisteredNode(nodeId)
+                                        .setSecurity(c.getRootNode().getDataAfter().getSecurity());
+                            } else {
+                                Configuration.getRegisteredNode(nodeId).setSecurity(null);
+                            }
+                            Configuration.getRegisteredNode(nodeId).start();
+                        } else if (checkDifference(c, SxpNodeFields::getVersion) || checkDifference(c,
                                 SxpNodeFields::getTcpPort) || checkDifference(c, SxpNodeFields::getSourceIp)) {
                             Configuration.getRegisteredNode(nodeId).shutdown().start();
                         } else if (checkDifference(c, SxpNodeIdentityFields::getTimers)) {
