@@ -11,6 +11,9 @@
     </parent>
     <artifactId>sxp-controller</artifactId>
     <packaging>bundle</packaging>
+    <!-- <name> formatting is used by autorelease to parse and notify projects on
+         build failure. Please do not modify this unless you have a good reason. -->
+    <name>ODL :: sxp :: ${project.artifactId}</name>
     <properties>
         <sonar.exclusions>**Exception.java**</sonar.exclusions>
     </properties>
