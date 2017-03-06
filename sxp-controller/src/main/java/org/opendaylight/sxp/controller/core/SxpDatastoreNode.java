@@ -9,11 +9,9 @@
 package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Preconditions;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
@@ -124,27 +122,10 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
         return true;
     }
 
-    @Override protected SxpNodeIdentity getNodeIdentity() {
-        SxpNodeIdentity
-                identity =
-                datastoreAccess == null ? null : datastoreAccess.readSynchronous(getIdentifier(nodeId),
-                        LogicalDatastoreType.OPERATIONAL);
-        return identity != null ? identity : super.getNodeIdentity();
-    }
-
     @Override public SxpConnection addConnection(Connection connection, String domain) {
         return addConnection(
                 SxpDatastoreConnection.create(datastoreAccess, this, Preconditions.checkNotNull(connection),
                         Preconditions.checkNotNull(domain)));
-    }
-
-    @Override protected Security setPassword(final Security security) {
-        Security nodeSecurity = super.setPassword(security);
-        if (datastoreAccess != null) {
-            datastoreAccess.checkAndMerge(getIdentifier(nodeId).child(Security.class), nodeSecurity,
-                    LogicalDatastoreType.OPERATIONAL, true);
-        }
-        return nodeSecurity;
     }
 
     @Override public List<MasterDatabaseBinding> putLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings,
