@@ -646,7 +646,8 @@ public class SxpNodeTest {
         }
 
         @Test public void testSetPassword() throws Exception {
-                assertEquals("test", node.setPassword(new SecurityBuilder().setPassword("test").build()).getPassword());
+                node.setSecurity(new SecurityBuilder().setPassword("test").build());
+                assertEquals("test", node.getPassword());
         }
 
         @Test public void testToString() throws Exception {
