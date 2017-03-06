@@ -41,6 +41,7 @@ import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.service.ConnectFacade;
+import org.opendaylight.sxp.core.service.SslContextFactory;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.Security;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
@@ -63,6 +64,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SecurityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
@@ -159,23 +161,18 @@ public class SxpNode {
     protected final HandlerFactory
             handlerFactoryServer =
             HandlerFactory.instanceAddDecoder(MessageDecoder.createServerProfile(this), HandlerFactory.Position.End);
-
-    private SxpNodeIdentityBuilder nodeBuilder;
-    private NodeId nodeId;
-
-    private Channel serverChannel;
-    protected InetAddress sourceIp;
-
     protected final BindingDispatcher svcBindingDispatcher;
     protected final BindingHandler svcBindingHandler;
-    private final ThreadsWorker worker;
-
-    /**
-     * Common timers setup.
-     */
-    private HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(6);
     protected final Map<String, SxpPeerGroupBuilder> peerGroupMap = new HashMap<>();
     protected final Map<String, SxpDomain> sxpDomains = new HashMap<>();
+
+    private final ThreadsWorker worker;
+    protected InetAddress sourceIp;
+    private SslContextFactory sslContextFactory;
+    private SxpNodeIdentityBuilder nodeBuilder;
+    private NodeId nodeId;
+    private Channel serverChannel;
+    private HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(6);
 
     /**
      * Default constructor that creates and start SxpNode using provided values
@@ -189,6 +186,8 @@ public class SxpNode {
         this.nodeId = Preconditions.checkNotNull(nodeId);
         this.worker = Preconditions.checkNotNull(worker);
         this.svcBindingDispatcher = new BindingDispatcher(this);
+        this.sslContextFactory =
+                new SslContextFactory(Objects.isNull(node.getSecurity()) ? null : node.getSecurity().getTls());
         if (Objects.nonNull(node.getMessageBuffering()) && Objects.nonNull(node.getMessageBuffering().getInBuffer())
                 && Objects.nonNull(node.getMessageBuffering().getOutBuffer())) {
             this.svcBindingHandler =
@@ -204,14 +203,6 @@ public class SxpNode {
      */
     protected SxpNodeIdentity getNodeIdentity() {
         return nodeBuilder.build();
-    }
-
-    /**
-     * @param security Sets Security used for peers
-     */
-    protected void setSecurity(
-            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security security) {
-        nodeBuilder.setSecurity(Preconditions.checkNotNull(security));
     }
 
     /**
@@ -1166,28 +1157,19 @@ public class SxpNode {
     }
 
     /**
-     * Sets Security password used to connect
+     * Sets Security password used to connect, and new SslContext
      *
      * @param security Security to be set
-     * @return Newly set Security
      */
-    protected org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security setPassword(
+    public void setSecurity(
             org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security security) {
-        SecurityBuilder securityBuilder = new SecurityBuilder();
-        if (security == null || security.getPassword() == null || security.getPassword().isEmpty()) {
+        SecurityBuilder securityBuilder = new SecurityBuilder(security);
+        if (Objects.isNull(securityBuilder.getPassword())) {
             securityBuilder.setPassword("");
-            return securityBuilder.build();
         }
-
-        if (getNodeIdentity().getSecurity() != null && getNodeIdentity().getSecurity().getPassword() != null
-                && !getNodeIdentity().getSecurity().getPassword().isEmpty() && !getNodeIdentity().getSecurity()
-                .getPassword()
-                .equals(security.getPassword())) {
-            shutdownConnections();
-        }
-        securityBuilder.setPassword(security.getPassword());
-        securityBuilder.setMd5Digest(Security.getMD5s(security.getPassword()));
-        return securityBuilder.build();
+        securityBuilder.setMd5Digest(Security.getMD5s(securityBuilder.getPassword()));
+        this.sslContextFactory = new SslContextFactory(securityBuilder.getTls());
+        this.nodeBuilder.setSecurity(securityBuilder.build());
     }
 
     /**
@@ -1345,7 +1327,8 @@ public class SxpNode {
      * @param connection Connection containing password for MD5 key update
      */
     private void updateMD5keys(final SxpConnection connection) {
-        if (connection.getPassword() != null && !connection.getPassword().trim().isEmpty()) {
+        if (SecurityType.Default.equals(connection.getSecurityType()) && Objects.nonNull(connection.getPassword())
+                && !connection.getPassword().trim().isEmpty()) {
             updateMD5keys();
         }
     }
@@ -1382,6 +1365,13 @@ public class SxpNode {
                         }
                     }
                 });
+    }
+
+    /**
+     * @return ContextFactory used for establishing SSL connections
+     */
+    public SslContextFactory getSslContextFactory() {
+        return sslContextFactory;
     }
 
     @Override public String toString() {

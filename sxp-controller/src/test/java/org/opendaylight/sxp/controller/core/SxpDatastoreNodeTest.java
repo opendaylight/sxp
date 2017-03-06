@@ -13,7 +13,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.core.SxpConnection;
@@ -25,7 +24,6 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
@@ -91,21 +89,6 @@ public class SxpDatastoreNodeTest {
         assertTrue(node.addDomain(new SxpDomainBuilder().setDomainName("private").build()));
         assertFalse(node.addDomain(new SxpDomainBuilder().setDomainName("private").build()));
         assertTrue(node.addDomain(new SxpDomainBuilder().setDomainName("test").build()));
-    }
-
-    @Test public void testGetNodeIdentity() throws Exception {
-        assertNotNull(node.getNodeIdentity());
-        verify(datastoreAccess).readSynchronous(eq(SxpDatastoreNode.getIdentifier(ID)),
-                any(LogicalDatastoreType.class));
-    }
-
-    @Test public void testSetPassword() throws Exception {
-        ArgumentCaptor<Security> captor = ArgumentCaptor.forClass(Security.class);
-        assertEquals("test", node.setPassword(new SecurityBuilder().setPassword("test").build()).getPassword());
-
-        verify(datastoreAccess, atLeastOnce()).checkAndMerge(any(InstanceIdentifier.class), captor.capture(),
-                any(LogicalDatastoreType.class), anyBoolean());
-        assertEquals("test", captor.getValue().getPassword());
     }
 
     @Test public void testAddConnection() throws Exception {

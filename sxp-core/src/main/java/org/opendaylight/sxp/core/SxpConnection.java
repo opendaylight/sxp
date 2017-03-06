@@ -52,6 +52,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.Filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterUpdatePolicy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilterFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SecurityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimers;
@@ -263,8 +264,11 @@ public class SxpConnection {
         this.owner = Preconditions.checkNotNull(owner);
         this.domain = Preconditions.checkNotNull(domain);
         this.connectionBuilder = new ConnectionBuilder(Preconditions.checkNotNull(connection));
-        if (connectionBuilder.getState() == null) {
+        if (Objects.isNull(connectionBuilder.getState())) {
             this.connectionBuilder.setState(ConnectionState.Off);
+        }
+        if (Objects.isNull(connectionBuilder.getSecurityType())) {
+            connectionBuilder.setSecurityType(SecurityType.Default);
         }
         this.remoteAddress =
                 new InetSocketAddress(Search.getAddress(connectionBuilder.getPeerAddress()),
@@ -697,6 +701,12 @@ public class SxpConnection {
     public String getPassword() {
         return connectionBuilder.getPassword() != null && !connectionBuilder.getPassword().isEmpty() ? connectionBuilder
                 .getPassword() : getOwner().getPassword();
+    }
+    /**
+     * @return Gets password used by connection
+     */
+    public SecurityType getSecurityType() {
+        return connectionBuilder.getSecurityType();
     }
 
     /**
