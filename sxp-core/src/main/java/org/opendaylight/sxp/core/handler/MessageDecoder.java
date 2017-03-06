@@ -13,8 +13,11 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.DecoderException;
 import java.io.IOException;
 import java.net.SocketAddress;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpConnection.ChannelHandlerContextType;
 import org.opendaylight.sxp.core.SxpNode;
@@ -253,6 +256,17 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
         final SxpConnection connection = owner.getConnection(ctx.channel().remoteAddress());
         if (connection == null) {
             LOG.warn(getLogMessage(owner, ctx, "Channel exception"));
+            return;
+        }
+        if (cause instanceof DecoderException) {
+            if (cause.getCause() instanceof SSLHandshakeException) {
+                LOG.warn("{} SSL invalid certificate {}", connection, cause.getCause().getMessage());
+            } else if (cause.getCause() instanceof SSLException) {
+                LOG.warn("{} SSL {} shutting down", connection, cause.getCause().getMessage());
+            } else {
+                LOG.warn("{} Decoder error {} shutting down", connection, cause);
+            }
+            connection.setStateOff(ctx);
             return;
         }
         if (cause instanceof IOException) {
