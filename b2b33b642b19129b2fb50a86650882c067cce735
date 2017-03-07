@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fafc7978_99e063ce",
+        "filename": "pom.xml",
+        "patchSetId": 4
+      },
+      "lineNbr": 269,
+      "author": {
+        "id": 2046
+      },
+      "writtenOn": "2017-03-07T16:17:32Z",
+      "side": 1,
+      "message": "Make sure karaf4 feature is updated as well.",
+      "range": {
+        "startLine": 269,
+        "startChar": 36,
+        "endLine": 269,
+        "endChar": 42
+      },
+      "revId": "b2b33b642b19129b2fb50a86650882c067cce735",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
