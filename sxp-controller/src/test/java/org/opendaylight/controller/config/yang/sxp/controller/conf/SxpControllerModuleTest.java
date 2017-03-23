@@ -10,9 +10,8 @@ package org.opendaylight.controller.config.yang.sxp.controller.conf;
 
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import org.junit.Before;
@@ -21,10 +20,7 @@ import org.junit.runner.RunWith;
 import org.opendaylight.controller.config.api.DependencyResolver;
 import org.opendaylight.controller.config.api.ModuleIdentifier;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
-import org.opendaylight.yangtools.yang.binding.DataObject;
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -45,6 +41,7 @@ public class SxpControllerModuleTest {
         dependencyResolver = mock(DependencyResolver.class);
         moduleIdentifier = mock(ModuleIdentifier.class);
         PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
+        SxpControllerModule.notifyBundleActivated();
     }
 
     @Test
@@ -53,10 +50,8 @@ public class SxpControllerModuleTest {
 
         AutoCloseable result = controllerModule.createInstance();
         assertNotNull(result);
-        verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.CONFIGURATION));
-        verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
+        verify(datastoreAccess, timeout(1000)).close();
+        result.close();
     }
 
     @Test
@@ -68,10 +63,8 @@ public class SxpControllerModuleTest {
 
         AutoCloseable result = controllerModule.createInstance();
         assertNotNull(result);
-        verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.CONFIGURATION));
-        verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
+        verify(datastoreAccess, timeout(1000)).close();
+        result.close();
     }
 
 }
