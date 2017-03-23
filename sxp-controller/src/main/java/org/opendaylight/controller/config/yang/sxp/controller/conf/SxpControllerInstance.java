@@ -92,6 +92,7 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         initTopology(datastoreAccess, LogicalDatastoreType.OPERATIONAL);
         dataChangeListenerRegistrations.add(datastoreListener.register(dataBroker, LogicalDatastoreType.CONFIGURATION));
         dataChangeListenerRegistrations.add(datastoreListener.register(dataBroker, LogicalDatastoreType.OPERATIONAL));
+        SxpControllerModule.notifyBundleActivated();
     }
 
     @Override
