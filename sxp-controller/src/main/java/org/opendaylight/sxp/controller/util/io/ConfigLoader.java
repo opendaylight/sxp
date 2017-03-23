@@ -49,7 +49,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
  *  ODL-Karaf @see http://localhost:8181/restconf/config/network-topology:network-topology/topology/sxp
  * </pre>
  */
-public final class ConfigLoader {
+public final class ConfigLoader implements AutoCloseable {
 
     private final DatastoreAccess datastoreAccess;
 
@@ -79,8 +79,9 @@ public final class ConfigLoader {
      * @param configuration Configuration containing data about SxpNode that will be written into DataStore
      */
     public void load(SxpController configuration) {
-        if (configuration == null || configuration.getSxpNode() == null)
+        if (configuration == null || configuration.getSxpNode() == null || configuration.getSxpNode().isEmpty()) {
             return;
+        }
         configuration.getSxpNode().forEach(n -> {
             final String nodeId = NodeIdConv.toString(n.getNodeId());
             if (initTopologyNode(nodeId, LogicalDatastoreType.CONFIGURATION, datastoreAccess)) {
@@ -246,5 +247,10 @@ public final class ConfigLoader {
             connectionsBuilder.setConnection(connections.getConnection());
         }
         return connectionsBuilder.build();
+    }
+
+    @Override
+    public void close() {
+        datastoreAccess.close();
     }
 }

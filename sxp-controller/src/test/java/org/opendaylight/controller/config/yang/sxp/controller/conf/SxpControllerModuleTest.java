@@ -45,6 +45,7 @@ public class SxpControllerModuleTest {
         dependencyResolver = mock(DependencyResolver.class);
         moduleIdentifier = mock(ModuleIdentifier.class);
         PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
+        SxpControllerModule.notifyBundleActivated();
     }
 
     @Test
@@ -53,10 +54,7 @@ public class SxpControllerModuleTest {
 
         AutoCloseable result = controllerModule.createInstance();
         assertNotNull(result);
-        verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.CONFIGURATION));
-        verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
+        verify(datastoreAccess).close();
     }
 
     @Test
@@ -68,10 +66,7 @@ public class SxpControllerModuleTest {
 
         AutoCloseable result = controllerModule.createInstance();
         assertNotNull(result);
-        verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.CONFIGURATION));
-        verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
+        verify(datastoreAccess).close();
     }
 
 }
