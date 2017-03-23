@@ -8,15 +8,19 @@
 
 package org.opendaylight.controller.config.yang.sxp.controller.conf;
 
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.opendaylight.controller.sal.common.util.NoopAutoCloseable;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
-
-import static org.opendaylight.controller.config.yang.sxp.controller.conf.SxpControllerInstance.initTopology;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SxpControllerModule
         extends org.opendaylight.controller.config.yang.sxp.controller.conf.AbstractSxpControllerModule {
+
+    protected static final Logger LOG = LoggerFactory.getLogger(SxpControllerModule.class);
+    private static final AtomicBoolean bundleActivatedOnNode = new AtomicBoolean(false);
 
     public SxpControllerModule(org.opendaylight.controller.config.api.ModuleIdentifier identifier,
             org.opendaylight.controller.config.api.DependencyResolver dependencyResolver) {
@@ -30,11 +34,29 @@ public class SxpControllerModule
         super(identifier, dependencyResolver, oldModule, oldInstance);
     }
 
-    @Override public java.lang.AutoCloseable createInstance() {
-        try (DatastoreAccess datastoreAccess = DatastoreAccess.getInstance(getDataBrokerDependency())) {
-            initTopology(datastoreAccess, LogicalDatastoreType.OPERATIONAL);
-            initTopology(datastoreAccess, LogicalDatastoreType.CONFIGURATION);
-            new ConfigLoader(datastoreAccess).load(getSxpController());
+    /**
+     * Notify ConfigSubsystem routine that SXP service is ready to accept initial configuration
+     */
+    public static void notifyBundleActivated() {
+        synchronized (bundleActivatedOnNode) {
+            bundleActivatedOnNode.set(true);
+            bundleActivatedOnNode.notify();
+        }
+    }
+
+    @Override
+    public java.lang.AutoCloseable createInstance() {
+        try (ConfigLoader configLoader = new ConfigLoader(DatastoreAccess.getInstance(getDataBrokerDependency()))) {
+            if (!bundleActivatedOnNode.get()) {
+                synchronized (bundleActivatedOnNode) {
+                    TimeUnit.SECONDS.timedWait(bundleActivatedOnNode, 180);
+                }
+            }
+            if (bundleActivatedOnNode.get()) {
+                configLoader.load(getSxpController());
+            }
+        } catch (InterruptedException e) {
+            LOG.warn("Cannot push initial configuration to DS", e);
         }
         return NoopAutoCloseable.INSTANCE;
     }
