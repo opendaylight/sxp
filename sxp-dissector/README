@@ -1,14 +1,8 @@
 = Lua dissector =
 
-This is a lua dissector for sxp4 protocol. Written for wireshark-2+ in lua-5.1.
+This is a lua dissector for sxp 1/2/3/4 protocol. Written for wireshark-2+ in lua-5.1.
 
 == Quickstart ==
 
 The easiest way is to copy or symlink this folder (containing all lua files) into ~/.wireshark/plugins.
 More info on https://wiki.wireshark.org/Lua (init.lua or -X lua-script:...)
-
-== TODO ==
-Implement messages:
-    PURGE_ALL
-    KEEP_ALIVE
-
