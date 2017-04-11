@@ -6,14 +6,14 @@
     <parent>
         <groupId>org.opendaylight.odlparent</groupId>
         <artifactId>single-feature-parent</artifactId>
-        <version>1.8.0-SNAPSHOT</version>
+        <version>1.9.0-SNAPSHOT</version>
         <relativePath/>
     </parent>
     <packaging>feature</packaging>
 
     <groupId>org.opendaylight.sxp</groupId>
     <artifactId>odl-sxp-controller</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>1.5.0-SNAPSHOT</version>
 
     <name>Feature :: OpenDaylight :: Sxp :: Controller</name>
     <properties>
@@ -25,14 +25,14 @@
             <dependency>
                 <groupId>org.opendaylight.controller</groupId>
                 <artifactId>features4-mdsal</artifactId>
-                <version>1.5.0-SNAPSHOT</version>
+                <version>1.6.0-SNAPSHOT</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>org.opendaylight.netconf</groupId>
                 <artifactId>features4-restconf</artifactId>
-                <version>1.5.0-SNAPSHOT</version>
+                <version>1.6.0-SNAPSHOT</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -50,14 +50,14 @@
         <dependency>
             <groupId>org.opendaylight.controller</groupId>
             <artifactId>odl-mdsal-broker</artifactId>
-            <version>1.5.0-SNAPSHOT</version>
+            <version>1.6.0-SNAPSHOT</version>
             <type>xml</type>
             <classifier>features</classifier>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.netconf</groupId>
             <artifactId>odl-restconf</artifactId>
-            <version>1.5.0-SNAPSHOT</version>
+            <version>1.6.0-SNAPSHOT</version>
             <type>xml</type>
             <classifier>features</classifier>
         </dependency>
