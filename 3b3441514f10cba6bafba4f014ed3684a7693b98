@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da01753e_2d219bb4",
+        "filename": "features/odl-sxp-controller/pom.xml",
+        "patchSetId": 7
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 2046
+      },
+      "writtenOn": "2017-04-24T14:13:29Z",
+      "side": 1,
+      "message": "Also add the same dependency block on sxp-config as in features/features-sxp/pom.xml",
+      "range": {
+        "startLine": 68,
+        "startChar": 20,
+        "endLine": 68,
+        "endChar": 21
+      },
+      "revId": "3b3441514f10cba6bafba4f014ed3684a7693b98",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
