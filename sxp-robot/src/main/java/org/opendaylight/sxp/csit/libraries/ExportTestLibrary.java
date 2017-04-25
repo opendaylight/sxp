@@ -148,10 +148,10 @@ import org.robotframework.remoteserver.RemoteServer;
         totalOfBindings =
                 totalOfBindings == 0 ?
                         getDestinationNodes() * exportBindings.size() : getDestinationNodes() * totalOfBindings;
+        exportTimeBegin = System.currentTimeMillis();
         LibraryServer.getNodes().stream().filter(node -> node != null && SOURCE.equals(node.getName())).forEach(n -> {
             new BindingDispatcher(n).propagateUpdate(Collections.emptyList(), exportBindings, n.getAllConnections());
         });
-        exportTimeBegin = System.currentTimeMillis();
     }
 
     /**
@@ -162,13 +162,13 @@ import org.robotframework.remoteserver.RemoteServer;
     @RobotKeyword("Initiate Simple Export") @ArgumentNames({"address"}) public synchronized void initiateSimpleExport(
             String address) {
         totalOfBindings = getDestinationNodes() * totalOfBindings;
+        exportTimeBegin = System.currentTimeMillis();
         LibraryServer.getNodes()
                 .stream()
                 .parallel()
                 .filter(node -> node != null && DESTINATION.equals(node.getName()))
                 .forEach(
                         node -> addConnection(node, Version.Version4, ConnectionMode.Listener, address, "64999", null));
-        exportTimeBegin = System.currentTimeMillis();
     }
 
     /**
