@@ -1,0 +1,8 @@
+Code-Review+1: Vratko Polák <vrpolak@cisco.com>
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Martin Mihálek <mamihale@cisco.com>
+Submitted-by: Martin Mihálek <mamihale@cisco.com>
+Submitted-at: Wed, 26 Apr 2017 06:03:45 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/55915
+Project: sxp
+Branch: refs/heads/stable/carbon
