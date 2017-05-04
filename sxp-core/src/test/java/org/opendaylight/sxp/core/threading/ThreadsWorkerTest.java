@@ -8,10 +8,22 @@
 
 package org.opendaylight.sxp.core.threading;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,18 +32,9 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.util.concurrent.AbstractExecutorService;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({MoreExecutors.class}) public class ThreadsWorkerTest {
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({MoreExecutors.class})
+public class ThreadsWorkerTest {
 
     private static ThreadsWorker worker;
     private static Callable callable;
@@ -41,7 +44,8 @@ import static org.mockito.Mockito.verify;
     private static ListeningScheduledExecutorService scheduledExecutorService;
     private static ListeningExecutorService executorService, executorServiceOutbound, executorServiceInbound;
 
-    @Before public void init() {
+    @Before
+    public void init() {
         callable = mock(Callable.class);
         runnable = mock(Runnable.class);
 
@@ -55,15 +59,18 @@ import static org.mockito.Mockito.verify;
                 .thenReturn(executorService, executorServiceInbound, executorServiceOutbound);
         PowerMockito.when(MoreExecutors.listeningDecorator(any(ScheduledExecutorService.class)))
                 .thenReturn(scheduledExecutorService);
-        worker = new ThreadsWorker();
     }
 
-    @Test public void testScheduleTask() throws Exception {
+    @Test
+    public void testScheduleTask() throws Exception {
+        worker = new ThreadsWorker();
         worker.scheduleTask(callable, 0, TimeUnit.SECONDS);
         verify(scheduledExecutorService).schedule(any(Callable.class), anyInt(), any(TimeUnit.class));
     }
 
-    @Test public void testExecuteTaskCallable() throws Exception {
+    @Test
+    public void testExecuteTaskCallable() throws Exception {
+        worker = new ThreadsWorker();
         worker.executeTask(callable, ThreadsWorker.WorkerType.DEFAULT);
         verify(executorService).submit(any(Callable.class));
 
@@ -74,7 +81,9 @@ import static org.mockito.Mockito.verify;
         verify(executorServiceInbound).submit(any(Callable.class));
     }
 
-    @Test public void testExecuteTaskRunnable() throws Exception {
+    @Test
+    public void testExecuteTaskRunnable() throws Exception {
+        worker = new ThreadsWorker();
         worker.executeTask(runnable, ThreadsWorker.WorkerType.DEFAULT);
         verify(executorService).submit(any(Runnable.class));
 
@@ -85,114 +94,92 @@ import static org.mockito.Mockito.verify;
         verify(executorServiceInbound).submit(any(Runnable.class));
     }
 
-    @Test public void testAddListener() throws Exception {
+    @Test
+    public void testAddListener() throws Exception {
+        worker = new ThreadsWorker();
         ListenableFuture future = mock(ListenableFuture.class);
         worker.addListener(future, runnable);
         verify(future).addListener(runnable, executorService);
     }
 
-    @Test public void testExecuteTaskInSequence_Ordering() throws Exception {
+    @Test
+    public void testExecuteTaskInSequence_Ordering() throws Exception {
         PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
         PowerMockito.when(MoreExecutors.listeningDecorator(any(ScheduledExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
-        final int[] monitor = {3, 10};
+        final CountDownLatch latch = new CountDownLatch(3);
+        final int[] samples = {3, 10};
 
-        worker.addListener(worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                for (int i = 0; i < 5000; i++) {
-                }
-                monitor[0] *= 5;
-                return null;
+        worker.addListener(worker.executeTaskInSequence((Callable<Void>) () -> {
+            samples[0] *= 5;
+            return null;
+        }, ThreadsWorker.WorkerType.DEFAULT), () -> {
+            synchronized (samples) {
+                samples[1] += 5;
             }
-        }, ThreadsWorker.WorkerType.DEFAULT), new Runnable() {
-
-            @Override public void run() {
-                monitor[1] += 5;
-            }
+            latch.countDown();
         });
 
-        worker.addListener(worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                monitor[0] += 4;
-                return null;
+        worker.addListener(worker.executeTaskInSequence((Callable<Void>) () -> {
+            samples[0] += 4;
+            return null;
+        }, ThreadsWorker.WorkerType.DEFAULT), () -> {
+            synchronized (samples) {
+                samples[1] += 4;
             }
-        }, ThreadsWorker.WorkerType.DEFAULT), new Runnable() {
-
-            @Override public void run() {
-                monitor[1] += 4;
-            }
+            latch.countDown();
         });
 
-        worker.addListener(worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                for (int i = 0; i < 5000; i++) {
-                }
-                monitor[0] *= 6;
-                return null;
+        worker.addListener(worker.executeTaskInSequence((Callable<Void>) () -> {
+            samples[0] *= 6;
+            return null;
+        }, ThreadsWorker.WorkerType.DEFAULT), () -> {
+            synchronized (samples) {
+                samples[1] += 6;
             }
-        }, ThreadsWorker.WorkerType.DEFAULT), new Runnable() {
-
-            @Override public void run() {
-                monitor[1] += 6;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
-            }
+            latch.countDown();
         });
 
-        synchronized (monitor) {
-            monitor.wait(5000L);
+        for (int i = 0; latch.getCount() != 0 && i < 10; i++) {
+            latch.await(1, TimeUnit.SECONDS);
         }
-        assertEquals(114, monitor[0]);
-        assertEquals(25, monitor[1]);
+
+        assertEquals(25, samples[1]);
+        assertEquals(114, samples[0]);
     }
 
-    @Test public void testExecuteTaskInSequence_Canceling() throws Exception {
+    @Test
+    public void testExecuteTaskInSequence_Canceling() throws Exception {
         PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
 
         final int[] monitor = {0, 0};
 
-        ListenableFuture future = worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                for (; monitor != null; ) {
-                }
-                return null;
+        ListenableFuture future = worker.executeTaskInSequence((Callable<Void>) () -> {
+            for (; monitor != null; ) {
             }
+            return null;
         }, ThreadsWorker.WorkerType.OUTBOUND);
 
-        ListenableFuture future_2 = worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                for (; monitor != null; ) {
-                }
-                return null;
+        ListenableFuture future_2 = worker.executeTaskInSequence((Callable<Void>) () -> {
+            for (; monitor != null; ) {
             }
+            return null;
         }, ThreadsWorker.WorkerType.OUTBOUND);
 
-        worker.addListener(future_2, new Runnable() {
-
-            @Override public void run() {
+        worker.addListener(future_2, () -> {
+            synchronized (monitor) {
                 monitor[0] += 5;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
+                monitor.notifyAll();
             }
         });
 
-        worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
+        worker.executeTaskInSequence((Callable<Void>) () -> {
+            synchronized (monitor) {
                 monitor[1] += 40;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
-                return null;
+                monitor.notifyAll();
             }
+            return null;
         }, ThreadsWorker.WorkerType.OUTBOUND);
 
         future_2.cancel(true);
@@ -208,47 +195,35 @@ import static org.mockito.Mockito.verify;
         assertEquals(40, monitor[1]);
     }
 
-    @Test public void testExecuteTaskInSequence_Get() throws Exception {
+    @Test
+    public void testExecuteTaskInSequence_Get() throws Exception {
         PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
 
         final int[] monitor = {0, 0};
 
-        ListenableFuture future = worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                for (; monitor != null; ) {
-                }
-                return null;
+        ListenableFuture future = worker.executeTaskInSequence((Callable<Void>) () -> {
+            for (; monitor != null; ) {
             }
+            return null;
         }, ThreadsWorker.WorkerType.INBOUND);
 
-        ListenableFuture future_2 = worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
+        ListenableFuture future_2 = worker.executeTaskInSequence((Callable<Void>) () -> {
+            synchronized (monitor) {
                 monitor[0] += 40;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
-                return null;
+                monitor.notifyAll();
             }
+            return null;
         }, ThreadsWorker.WorkerType.INBOUND);
 
-        worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
+        worker.executeTaskInSequence((Callable<Void>) () -> {
+            synchronized (monitor) {
                 monitor[1] += 80;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
-                return null;
+                monitor.notifyAll();
             }
+            return null;
         }, ThreadsWorker.WorkerType.INBOUND);
-        future_2.get(1L, TimeUnit.SECONDS);
-        future_2.get();
-        synchronized (monitor) {
-            monitor.wait(5000L);
-        }
+        future_2.get(500L, TimeUnit.MILLISECONDS);
         assertEquals(40, monitor[0]);
 
         future.cancel(true);
@@ -258,44 +233,36 @@ import static org.mockito.Mockito.verify;
         assertEquals(80, monitor[1]);
     }
 
-    @Test public void testCancelTasksInSequence() throws Exception {
+    @Test
+    public void testCancelTasksInSequence() throws Exception {
         PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
 
         final int[] monitor = {0, 0};
 
-        worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                for (; monitor != null; ) {
-                }
-                return null;
+        worker.executeTaskInSequence((Callable<Void>) () -> {
+            for (; monitor != null; ) {
             }
+            return null;
         }, ThreadsWorker.WorkerType.INBOUND);
 
-        worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
+        worker.executeTaskInSequence((Callable<Void>) () -> {
+            synchronized (monitor) {
                 monitor[0] += 40;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
-                return null;
+                monitor.notifyAll();
             }
+            return null;
         }, ThreadsWorker.WorkerType.INBOUND);
 
         worker.cancelTasksInSequence(true, ThreadsWorker.WorkerType.INBOUND);
         assertEquals(0, monitor[0]);
 
-        worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
+        worker.executeTaskInSequence((Callable<Void>) () -> {
+            synchronized (monitor) {
                 monitor[1] += 80;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
-                return null;
+                monitor.notifyAll();
             }
+            return null;
         }, ThreadsWorker.WorkerType.INBOUND);
 
         synchronized (monitor) {
@@ -305,108 +272,84 @@ import static org.mockito.Mockito.verify;
         assertEquals(80, monitor[1]);
     }
 
-    @Test public void testExecuteTaskInSequence_Ordering_Connection() throws Exception {
+    @Test
+    public void testExecuteTaskInSequence_Ordering_Connection() throws Exception {
         PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
         PowerMockito.when(MoreExecutors.listeningDecorator(any(ScheduledExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
-        final int[] monitor = {3, 10};
+        final CountDownLatch latch = new CountDownLatch(3);
+        final int[] samples = {3, 10};
 
-        worker.addListener(worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                for (int i = 0; i < 5000; i++) {
-                }
-                monitor[0] *= 5;
-                return null;
+        worker.addListener(worker.executeTaskInSequence((Callable<Void>) () -> {
+            samples[0] *= 5;
+            return null;
+        }, ThreadsWorker.WorkerType.DEFAULT, connection), () -> {
+            synchronized (samples) {
+                samples[1] += 5;
             }
-        }, ThreadsWorker.WorkerType.DEFAULT, connection), new Runnable() {
-
-            @Override public void run() {
-                monitor[1] += 5;
-            }
+            latch.countDown();
         });
 
-        worker.addListener(worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                monitor[0] += 4;
-                return null;
+        worker.addListener(worker.executeTaskInSequence((Callable<Void>) () -> {
+            samples[0] += 4;
+            return null;
+        }, ThreadsWorker.WorkerType.DEFAULT, connection), () -> {
+            synchronized (samples) {
+                samples[1] += 4;
             }
-        }, ThreadsWorker.WorkerType.DEFAULT, connection), new Runnable() {
-
-            @Override public void run() {
-                monitor[1] += 4;
-            }
+            latch.countDown();
         });
 
-        worker.addListener(worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                for (int i = 0; i < 5000; i++) {
-                }
-                monitor[0] *= 6;
-                return null;
+        worker.addListener(worker.executeTaskInSequence((Callable<Void>) () -> {
+            samples[0] *= 6;
+            return null;
+        }, ThreadsWorker.WorkerType.DEFAULT, connection), () -> {
+            synchronized (samples) {
+                samples[1] += 6;
             }
-        }, ThreadsWorker.WorkerType.DEFAULT, connection), new Runnable() {
-
-            @Override public void run() {
-                monitor[1] += 6;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
-            }
+            latch.countDown();
         });
 
-        synchronized (monitor) {
-            monitor.wait(10000L);
+        for (int i = 0; latch.getCount() != 0 && i < 10; i++) {
+            latch.await(1L, TimeUnit.SECONDS);
         }
-        assertEquals(114, monitor[0]);
-        assertEquals(25, monitor[1]);
+
+        assertEquals(114, samples[0]);
+        assertEquals(25, samples[1]);
     }
 
-    @Test public void testExecuteTaskInSequence_Canceling_Connection() throws Exception {
+    @Test
+    public void testExecuteTaskInSequence_Canceling_Connection() throws Exception {
         PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
 
         final int[] monitor = {0, 0};
 
-        ListenableFuture future = worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                for (; monitor != null; ) {
-                }
-                return null;
+        ListenableFuture future = worker.executeTaskInSequence((Callable<Void>) () -> {
+            for (; monitor != null; ) {
             }
+            return null;
         }, ThreadsWorker.WorkerType.OUTBOUND, connection);
 
-        ListenableFuture future_2 = worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                for (; monitor != null; ) {
-                }
-                return null;
+        ListenableFuture future_2 = worker.executeTaskInSequence((Callable<Void>) () -> {
+            for (; monitor != null; ) {
             }
+            return null;
         }, ThreadsWorker.WorkerType.OUTBOUND, connection);
 
-        worker.addListener(future_2, new Runnable() {
-
-            @Override public void run() {
+        worker.addListener(future_2, () -> {
+            synchronized (monitor) {
                 monitor[0] += 5;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
+                monitor.notifyAll();
             }
         });
 
-        worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
+        worker.executeTaskInSequence((Callable<Void>) () -> {
+            synchronized (monitor) {
                 monitor[1] += 40;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
-                return null;
+                monitor.notifyAll();
             }
+            return null;
         }, ThreadsWorker.WorkerType.OUTBOUND, connection);
 
         future_2.cancel(true);
@@ -422,47 +365,35 @@ import static org.mockito.Mockito.verify;
         assertEquals(40, monitor[1]);
     }
 
-    @Test public void testExecuteTaskInSequence_Get_Connection() throws Exception {
+    @Test
+    public void testExecuteTaskInSequence_Get_Connection() throws Exception {
         PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
 
         final int[] monitor = {0, 0};
 
-        ListenableFuture future = worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                for (; monitor != null; ) {
-                }
-                return null;
+        ListenableFuture future = worker.executeTaskInSequence((Callable<Void>) () -> {
+            for (; monitor != null; ) {
             }
+            return null;
         }, ThreadsWorker.WorkerType.INBOUND, connection);
 
-        ListenableFuture future_2 = worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
+        ListenableFuture future_2 = worker.executeTaskInSequence((Callable<Void>) () -> {
+            synchronized (monitor) {
                 monitor[0] += 40;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
-                return null;
+                monitor.notifyAll();
             }
+            return null;
         }, ThreadsWorker.WorkerType.INBOUND, connection);
 
-        worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
+        worker.executeTaskInSequence((Callable<Void>) () -> {
+            synchronized (monitor) {
                 monitor[1] += 80;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
-                return null;
+                monitor.notifyAll();
             }
+            return null;
         }, ThreadsWorker.WorkerType.INBOUND, connection);
-        future_2.get();
-        future_2.get(1L, TimeUnit.SECONDS);
-        synchronized (monitor) {
-            monitor.wait(5000L);
-        }
+        future_2.get(500L, TimeUnit.MILLISECONDS);
         assertEquals(40, monitor[0]);
 
         future.cancel(true);
@@ -472,44 +403,36 @@ import static org.mockito.Mockito.verify;
         assertEquals(80, monitor[1]);
     }
 
-    @Test public void testCancelTasksInSequence_Connection() throws Exception {
+    @Test
+    public void testCancelTasksInSequence_Connection() throws Exception {
         PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
 
         final int[] monitor = {0, 0};
 
-        worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
-                for (; monitor != null; ) {
-                }
-                return null;
+        worker.executeTaskInSequence((Callable<Void>) () -> {
+            for (; monitor != null; ) {
             }
+            return null;
         }, ThreadsWorker.WorkerType.INBOUND, connection);
 
-        worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
+        worker.executeTaskInSequence((Callable<Void>) () -> {
+            synchronized (monitor) {
                 monitor[0] += 40;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
-                return null;
+                monitor.notifyAll();
             }
+            return null;
         }, ThreadsWorker.WorkerType.INBOUND, connection);
 
         worker.cancelTasksInSequence(true, ThreadsWorker.WorkerType.INBOUND, connection);
         assertEquals(0, monitor[0]);
 
-        worker.executeTaskInSequence(new Callable<Void>() {
-
-            @Override public Void call() throws Exception {
+        worker.executeTaskInSequence((Callable<Void>) () -> {
+            synchronized (monitor) {
                 monitor[1] += 80;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
-                return null;
+                monitor.notifyAll();
             }
+            return null;
         }, ThreadsWorker.WorkerType.INBOUND, connection);
 
         synchronized (monitor) {
