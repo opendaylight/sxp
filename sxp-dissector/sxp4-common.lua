@@ -23,9 +23,13 @@ SXP_ATTRIBUTE_TYPES = {
     [0x06] = "capabilities",
     [0x07] = "hold-timer",
     [0x0b] = "add-IPv4-prefix",
+    [0x01] = "add-IPv4",
     [0x0c] = "add-IPv6-prefix",
-    [0x0d] = "delete-IPv4",
-    [0x0e] = "delete-IPv6",
+    [0x02] = "add-IPv6",
+    [0x0d] = "delete-IPv4-prefix",
+    [0x03] = "delete-IPv4",
+    [0x0e] = "delete-IPv6-prefix",
+    [0x04] = "delete-IPv6",
     [0x10] = "peer-sequence",
     [0x11] = "sgt"
 }
@@ -136,7 +140,8 @@ function process_attribute_header(payloadBuffer, subtree, offset)
         attr_type = payloadBuffer(offset, 3)
         attr_type_value = attr_type:uint()
         offset = offset + 3
-        attr_description = "non-compact type [" .. attr_type_value .. "]"
+        local attr_type_name = SXP_ATTRIBUTE_TYPES[attr_type_value]
+        attr_description = attr_type_name .. " [" .. attr_type_value .. "]"
         attr_length = payloadBuffer(offset, 4)
         offset = offset + 4
     end

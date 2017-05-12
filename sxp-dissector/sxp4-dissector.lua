@@ -9,8 +9,8 @@ require "sxp4-error-msg"
 
 -- create a function to dissect it
 function sxp4_proto.dissector(buffer, pinfo, tree)
-    pinfo.cols.protocol = "SXP4"
-    local subtree = tree:add(sxp4_proto, buffer(), "SXP4 Data")
+    pinfo.cols.protocol = "SXP"
+    local subtree = tree:add(sxp4_proto, buffer(), "SXP Data")
     local msg_length = buffer(0, 4)
     local msg_length_value = buffer(0, 4):uint()
     subtree:add(msg_length, "length: " .. msg_length:uint())
@@ -34,13 +34,13 @@ function sxp4_proto.dissector(buffer, pinfo, tree)
         handle_error_msg(payloadBuffer, subtree)
     elseif msg_type_value == 5 then
         -- PURGE_ALL
-        subtree = subtree:add(payloadBuffer, "TBD: PURGE_ALL")
+        subtree = subtree:add(payloadBuffer, "PURGE_ALL")
     elseif msg_type_value == 6 then
         -- KEEP_ALIVE
-        subtree = subtree:add(payloadBuffer, "TBD: KEEP_ALIVE")
+        subtree = subtree:add(payloadBuffer, "KEEP_ALIVE")
     end
 
-    pinfo.cols["info"] = "SXP4:" .. msg_type_value .. " -- " .. tostring(pinfo.cols["info"])
+    pinfo.cols["info"] = "SXP:" .. msg_type_value .. " -- " .. tostring(pinfo.cols["info"])
 
     return msg_length
 end
