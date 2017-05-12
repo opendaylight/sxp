@@ -172,7 +172,7 @@ import org.slf4j.LoggerFactory;
 public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
     private final DatastoreAccess datastoreAccess;
-    private ExecutorService executor = Executors.newFixedThreadPool(1);
+    private ExecutorService executor = ThreadsWorker.generateExecutor(1, "SXP-RPC");
     private static final Logger LOG = LoggerFactory.getLogger(SxpRpcServiceImpl.class.getName());
 
     /**

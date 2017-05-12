@@ -35,7 +35,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import org.opendaylight.sxp.core.handler.ConnectionDecoder;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
@@ -1265,27 +1264,24 @@ public class SxpNode {
      * Administratively shutdown.
      */
     public ListenableFuture shutdown() {
-        return bindServerFuture.updateAndGet(new UnaryOperator<ListenableFuture<Boolean>>() {
-
-            @Override
-            public ListenableFuture<Boolean> apply(ListenableFuture<Boolean> listenableFuture) {
-                if (isEnabled() && (Objects.nonNull(listenableFuture))) {
-                    if (!listenableFuture.isDone()) {
-                        getWorker().addListener(listenableFuture, () -> shutdown());
-                    } else {
-                        return getWorker().executeTask(() -> {
-                            if (Objects.nonNull(serverChannel)) {
-                                serverChannel.close().awaitUninterruptibly();
-                                LOG.info(this + " Server stopped");
-                            }
-                            setTimer(TimerType.RetryOpenTimer, 0);
-                            shutdownConnections();
-                            return isEnabled();
-                        }, ThreadsWorker.WorkerType.DEFAULT);
-                    }
+        final SxpNode node = this;
+        return bindServerFuture.updateAndGet(listenableFuture -> {
+            if (isEnabled() && (Objects.nonNull(listenableFuture))) {
+                if (!listenableFuture.isDone()) {
+                    getWorker().addListener(listenableFuture, node::shutdown);
+                } else {
+                    return getWorker().executeTask(() -> {
+                        if (Objects.nonNull(serverChannel)) {
+                            serverChannel.close().awaitUninterruptibly();
+                            LOG.info("{} Server stopped", node);
+                        }
+                        setTimer(TimerType.RetryOpenTimer, 0);
+                        shutdownConnections();
+                        return isEnabled();
+                    }, ThreadsWorker.WorkerType.DEFAULT);
                 }
-                return listenableFuture;
             }
+            return listenableFuture;
         });
     }
 

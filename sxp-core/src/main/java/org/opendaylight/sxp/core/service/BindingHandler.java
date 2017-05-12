@@ -10,7 +10,6 @@ package org.opendaylight.sxp.core.service;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,7 +21,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpDomain;
@@ -416,8 +414,8 @@ public final class BindingHandler {
             dispatcher.propagateUpdate(deletedMaster, addedMaster, sxpConnections);
             domain.pushToSharedSxpDatabases(connection.getId(), filter, removed, added);
             if (!removed.isEmpty() || !added.isEmpty()) {
-                LOG.info(connection.getOwnerId() + "[Deleted/Added] bindings [{}/{}]", deletedMaster.size(),
-                        addedMaster.size(), replace.size());
+                LOG.info("[{}] [Deleted/Added] bindings [{}/{}]", connection.getOwnerId().getValue(),
+                        deletedMaster.size(), addedMaster.size());
             }
         }
     }
