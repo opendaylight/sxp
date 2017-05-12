@@ -176,8 +176,8 @@ public class DomainFilterListenerTest {
         identityListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, getDomainFilter(5, 2)))),
                 LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess).put(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
+        verify(datastoreAccess).checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.OPERATIONAL), eq(false));
 
         identityListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getDomainFilter(5, 2),

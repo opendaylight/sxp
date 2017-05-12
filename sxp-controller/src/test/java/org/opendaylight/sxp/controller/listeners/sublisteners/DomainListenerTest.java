@@ -155,8 +155,8 @@ public class DomainListenerTest {
         identityListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, getDomain("global")))),
                 LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess).put(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
+        verify(datastoreAccess).checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.OPERATIONAL), eq(false));
 
         identityListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getDomain("global"),

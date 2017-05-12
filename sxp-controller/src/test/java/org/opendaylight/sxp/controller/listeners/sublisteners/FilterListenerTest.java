@@ -156,8 +156,8 @@ public class FilterListenerTest {
         identityListener.handleChange(Collections.singletonList(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, getSxpFilter(5))),
                 LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess).put(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
+        verify(datastoreAccess).checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.OPERATIONAL), eq(false));
 
         identityListener.handleChange(Collections.singletonList(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getSxpFilter(5), getSxpFilter(6))),

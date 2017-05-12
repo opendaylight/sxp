@@ -61,8 +61,8 @@ public class SxpControllerModule
             } catch (InterruptedException e) {
                 LOG.warn("Cannot push initial configuration to DS", e);
             }
+            worker.shutdown();
         });
-
         return worker::shutdown;
     }
 }
