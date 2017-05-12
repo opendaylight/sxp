@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.opendaylight.odlparent</groupId>
-    <artifactId>karaf-parent</artifactId>
+    <artifactId>karaf4-parent</artifactId>
     <version>1.9.0-SNAPSHOT</version>
     <relativePath/>
   </parent>
@@ -27,12 +27,12 @@
         <dependency>
             <groupId>org.apache.karaf.features</groupId>
             <artifactId>framework</artifactId>
-            <version>${karaf.version}</version>
+            <version>${karaf4.version}</version>
             <type>kar</type>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.sxp</groupId>
-            <artifactId>features</artifactId>
+            <artifactId>features4-sxp</artifactId>
             <version>${project.version}</version>
             <classifier>features</classifier>
             <type>xml</type>
