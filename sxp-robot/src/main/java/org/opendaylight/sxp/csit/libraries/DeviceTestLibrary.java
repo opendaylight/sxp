@@ -43,7 +43,8 @@ import org.robotframework.remoteserver.RemoteServer;
 /**
  * Robot library used for emulation of resource low SXP device
  */
-@RobotKeywords public class DeviceTestLibrary extends AbstractLibrary {
+@RobotKeywords
+public class DeviceTestLibrary extends AbstractLibrary {
 
     private static final ObjectMapper pojoBindingsSerializer = new ObjectMapper();
 
@@ -70,8 +71,10 @@ import org.robotframework.remoteserver.RemoteServer;
                 }));
     }
 
-    @RobotKeyword("Add Node") @ArgumentNames({"node_id", "version", "port", "password"}) @Override
-    public synchronized void addNode(String nodeId, String version, String port, String password) {
+    @RobotKeyword("Add Node")
+    @ArgumentNames({"node_id", "version", "port", "password"})
+    @Override
+    public synchronized void jrobotAddNode(String nodeId, String version, String port, String password) {
         LibraryServer.putNode(SxpNode.createInstance(new NodeId(nodeId),
                 new SxpNodeIdentityBuilder().setSourceIp(new IpAddress("0.0.0.0".toCharArray()))
                         .setCapabilities(Configuration.getCapabilities(Version.Version4))
@@ -95,8 +98,9 @@ import org.robotframework.remoteserver.RemoteServer;
      * @param nodeId NodeId of local SXP device
      * @return If specified peer si connected
      */
-    @RobotKeyword("Is Peer Connected") @ArgumentNames({"mode", "ip", "port", "node_id"})
-    public synchronized boolean isPeerConnected(String mode, String ip, String port, String nodeId) {
+    @RobotKeyword("Is Peer Connected")
+    @ArgumentNames({"mode", "ip", "port", "node_id"})
+    public synchronized boolean jrobotIsPeerConnected(String mode, String ip, String port, String nodeId) {
         return LibraryServer.getNode(Objects.requireNonNull(nodeId))
                 .getAllOnConnections()
                 .stream()
@@ -110,8 +114,9 @@ import org.robotframework.remoteserver.RemoteServer;
      * @return JSON formatted content of MasterDatabase
      * @throws JsonProcessingException If any error occurs during JSON generation
      */
-    @RobotKeyword("Get Master Database") @ArgumentNames({"node_id"}) public synchronized String getMasterDatabase(
-            String nodeId) throws JsonProcessingException {
+    @RobotKeyword("Get Master Database")
+    @ArgumentNames({"node_id"})
+    public synchronized String jrobotGetMasterDatabase(String nodeId) throws JsonProcessingException {
         SxpNode node = LibraryServer.getNode(Objects.requireNonNull(nodeId));
         if (Objects.isNull(node))
             return "{\"output\":{\"binding\":[]}}";
@@ -139,8 +144,9 @@ import org.robotframework.remoteserver.RemoteServer;
      * @param nodeId NodeId of local SXP device
      * @return If binding was successfully added
      */
-    @RobotKeyword("Add Binding") @ArgumentNames({"prefix", "sgt", "node_id"}) public synchronized boolean addBinding(
-            String prefix, String sgt, String nodeId) {
+    @RobotKeyword("Add Binding")
+    @ArgumentNames({"prefix", "sgt", "node_id"})
+    public synchronized boolean jrobotAddBinding(String prefix, String sgt, String nodeId) {
         return !LibraryServer.getNode(Objects.requireNonNull(nodeId))
                 .putLocalBindingsMasterDatabase(Collections.singletonList(getBinding(prefix, Integer.parseInt(sgt))),
                         SxpNode.DEFAULT_DOMAIN)
@@ -153,15 +159,17 @@ import org.robotframework.remoteserver.RemoteServer;
      * @param nodeId NodeId of local SXP device
      * @return If binding was successfully removed
      */
-    @RobotKeyword("Delete Binding") @ArgumentNames({"prefix", "sgt", "node_id"})
-    public synchronized boolean deleteBinding(String prefix, String sgt, String nodeId) {
+    @RobotKeyword("Delete Binding")
+    @ArgumentNames({"prefix", "sgt", "node_id"})
+    public synchronized boolean jrobotDeleteBinding(String prefix, String sgt, String nodeId) {
         return !LibraryServer.getNode(Objects.requireNonNull(nodeId))
                 .removeLocalBindingsMasterDatabase(Collections.singletonList(getBinding(prefix, Integer.parseInt(sgt))),
                         SxpNode.DEFAULT_DOMAIN)
                 .isEmpty();
     }
 
-    @Override public synchronized void close() {
+    @Override
+    public synchronized void close() {
         //NOP
     }
 }

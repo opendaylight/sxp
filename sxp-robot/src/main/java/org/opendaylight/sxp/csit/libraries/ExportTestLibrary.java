@@ -44,7 +44,8 @@ import org.robotframework.remoteserver.RemoteServer;
 /**
  * Robot library used for Bindings export/forwarding measuring
  */
-@RobotKeywords public class ExportTestLibrary extends AbstractLibrary {
+@RobotKeywords
+public class ExportTestLibrary extends AbstractLibrary {
 
     public final static String DESTINATION = "destination";
     private final AtomicLong bindingsReceived = new AtomicLong(0), exportTimeEnd = new AtomicLong(0);
@@ -60,15 +61,18 @@ import org.robotframework.remoteserver.RemoteServer;
     /**
      * @return Amount of bindings that were processed
      */
-    @RobotKeyword("Get Bindings Exchange Count") @ArgumentNames({})
-    public synchronized long getBindingsExchangeCount() {
+    @RobotKeyword("Get Bindings Exchange Count")
+    @ArgumentNames({})
+    public synchronized long jrobotGetBindingsExchangeCount() {
         return bindingsReceived.get();
     }
 
     /**
      * @return Time elapsed while exporting all bindings or 0 if exports is still in progress
      */
-    @RobotKeyword("Get Export Time") @ArgumentNames({}) public synchronized double getExportTime() {
+    @RobotKeyword("Get Export Time")
+    @ArgumentNames({})
+    public synchronized double jrobotGetExportTime() {
         long time = exportTimeEnd.get();
         return time == 0 ? 1 : (time - exportTimeBegin) / 1000f;
     }
@@ -76,15 +80,18 @@ import org.robotframework.remoteserver.RemoteServer;
     /**
      * @return If all bindings were exported
      */
-    @RobotKeyword("All Exported") @ArgumentNames({}) public synchronized boolean allExported() {
+    @RobotKeyword("All Exported")
+    @ArgumentNames({})
+    public synchronized boolean jrobotAllExported() {
         return totalOfBindings <= bindingsReceived.get();
     }
 
     /**
      * @param amount Amount of bindings that will be exported between nodes
      */
-    @RobotKeyword("Set Export Amount") @ArgumentNames({"amount"}) public synchronized void setExportAmount(
-            String amount) {
+    @RobotKeyword("Set Export Amount")
+    @ArgumentNames({"amount"})
+    public synchronized void jrobotSetExportAmount(String amount) {
         totalOfBindings = (long) Double.parseDouble(amount);
     }
 
@@ -96,8 +103,9 @@ import org.robotframework.remoteserver.RemoteServer;
      * @param port     Port of SxpNode
      * @param password Password used by TCP-MD5
      */
-    @RobotKeyword("Add Destination Node") @ArgumentNames({"node_id", "version", "port", "password"})
-    public synchronized void addDestinationNode(String nodeId, String version, String port, String password) {
+    @RobotKeyword("Add Destination Node")
+    @ArgumentNames({"node_id", "version", "port", "password"})
+    public synchronized void jrobotAddDestinationNode(String nodeId, String version, String port, String password) {
         LibraryServer.putNode(SxpNode.createInstance(new NodeId(nodeId),
                 new SxpNodeIdentityBuilder().setSourceIp(new IpAddress(nodeId.toCharArray()))
                         .setCapabilities(Configuration.getCapabilities(getVersion(version)))
@@ -110,7 +118,8 @@ import org.robotframework.remoteserver.RemoteServer;
                         .setTimers(new TimersBuilder().setRetryOpenTime(5).build())
                         .build(), new MasterDatabaseImpl(), new SxpDatabaseImpl() {
 
-                    @Override public synchronized <T extends SxpBindingFields> List<SxpDatabaseBinding> deleteBindings(
+                    @Override
+                    public synchronized <T extends SxpBindingFields> List<SxpDatabaseBinding> deleteBindings(
                             NodeId nodeId, List<T> bindings) {
                         if (bindingsReceived.addAndGet(-bindings.size()) == totalOfBindings) {
                             exportTimeEnd.set(System.currentTimeMillis());
@@ -135,8 +144,9 @@ import org.robotframework.remoteserver.RemoteServer;
      * @param prefix IpPrefix of binding that will be expanded and send
      * @param sgt    Sgt of binding
      */
-    @RobotKeyword("Initiate Export") @ArgumentNames({"prefix", "sgt"}) public synchronized void initiateExport(
-            String prefix, String sgt) {
+    @RobotKeyword("Initiate Export")
+    @ArgumentNames({"prefix", "sgt"})
+    public synchronized void jrobotInitiateExport(String prefix, String sgt) {
         final List<MasterDatabaseBinding>
                 exportBindings =
                 Search.expandBinding(new MasterDatabaseBindingBuilder().setPeerSequence(
@@ -159,15 +169,16 @@ import org.robotframework.remoteserver.RemoteServer;
      *
      * @param address Address of tested Node
      */
-    @RobotKeyword("Initiate Simple Export") @ArgumentNames({"address"}) public synchronized void initiateSimpleExport(
-            String address) {
+    @RobotKeyword("Initiate Simple Export")
+    @ArgumentNames({"address"})
+    public synchronized void jrobotInitiateSimpleExport(String address) {
         totalOfBindings = getDestinationNodes() * totalOfBindings;
         LibraryServer.getNodes()
                 .stream()
                 .parallel()
                 .filter(node -> node != null && DESTINATION.equals(node.getName()))
-                .forEach(
-                        node -> addConnection(node, Version.Version4, ConnectionMode.Listener, address, "64999", null));
+                .forEach(node -> jrobotAddConnection(node, Version.Version4, ConnectionMode.Listener, address, "64999",
+                        null));
         exportTimeBegin = System.currentTimeMillis();
     }
 
@@ -183,7 +194,8 @@ import org.robotframework.remoteserver.RemoteServer;
                 .reduce(0, Integer::sum);
     }
 
-    @Override public synchronized void close() {
+    @Override
+    public synchronized void close() {
         bindingsReceived.set(0);
         exportTimeEnd.set(0);
         exportTimeBegin = 0;
