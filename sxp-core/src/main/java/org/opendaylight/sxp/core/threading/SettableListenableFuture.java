@@ -127,16 +127,26 @@ public final class SettableListenableFuture<T> implements ListenableFuture<T> {
         return this;
     }
 
+    /**
+     * Future callback task and execution holder
+     */
     private final class ListenerTuple {
 
         private final Runnable listener;
         private final Executor executor;
 
+        /**
+         * @param listener Listener callback
+         * @param executor Executor used for execution of callback
+         */
         public ListenerTuple(Runnable listener, Executor executor) {
             this.listener = listener;
             this.executor = executor;
         }
 
+        /**
+         * Executes assigned callback
+         */
         public void execute() {
             executor.execute(listener);
         }
