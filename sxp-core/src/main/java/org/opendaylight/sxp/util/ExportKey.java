@@ -8,13 +8,12 @@
 
 package org.opendaylight.sxp.util;
 
+import java.util.List;
+import java.util.Objects;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-
-import java.util.List;
-import java.util.Objects;
 
 /**
  * ExportKey class used for grouping of connections for Binding export based on version export status and group name
@@ -36,19 +35,20 @@ public class ExportKey {
         this.capabilityTypes = connection.getCapabilitiesRemote();
     }
 
-    @Override public boolean equals(Object o) {
+    @Override
+    public boolean equals(Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
         ExportKey exportKey = (ExportKey) o;
-        return Objects.equals(version, exportKey.version) &&
-                Objects.equals(groupName, exportKey.groupName) &&
-                capabilityTypes.containsAll(exportKey.capabilityTypes) &&
-                exportKey.capabilityTypes.containsAll(capabilityTypes);
+        return Objects.equals(version, exportKey.version) && Objects.equals(groupName, exportKey.groupName)
+                && capabilityTypes.containsAll(exportKey.capabilityTypes) && exportKey.capabilityTypes.containsAll(
+                capabilityTypes);
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int hash = Objects.hash(version, groupName);
         for (CapabilityType type : capabilityTypes) {
             hash += Objects.hash(type);

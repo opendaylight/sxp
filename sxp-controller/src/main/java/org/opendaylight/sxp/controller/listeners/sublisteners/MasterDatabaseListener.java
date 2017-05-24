@@ -10,7 +10,6 @@ package org.opendaylight.sxp.controller.listeners.sublisteners;
 
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,7 +18,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
@@ -143,7 +141,8 @@ public class MasterDatabaseListener extends ContainerListener<SxpDomain, MasterD
         return false;
     }
 
-    @Override protected InstanceIdentifier<MasterDatabase> getIdentifier(MasterDatabase d,
+    @Override
+    protected InstanceIdentifier<MasterDatabase> getIdentifier(MasterDatabase d,
             InstanceIdentifier<SxpDomain> parentIdentifier) {
         return parentIdentifier.child(MasterDatabase.class);
     }

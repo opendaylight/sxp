@@ -14,7 +14,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
 /**
  * SXP supports various versions. The details of what is supported in each of
  * the version follows:
- * 
  * <pre>
  * +-----+----------+----------+------------+-----------+--------------+
  * | Ver | IPv4     | IPv6     | Subnet     | Loop      | SXP          |

@@ -73,7 +73,7 @@ public class SxpLegacy implements Strategy {
         ByteBuf message = LegacyMessageFactory.createOpen(connection.getVersion(), connectionMode);
         LOG.info("{} Sent OPEN {}", connection, MessageFactory.toString(message));
         ctx.writeAndFlush(message);
-        if(connection.isStateDeleteHoldDown()) {
+        if (connection.isStateDeleteHoldDown()) {
             connection.setReconciliationTimer();
         }
         if (!connection.isStateOn()) {
@@ -127,7 +127,7 @@ public class SxpLegacy implements Strategy {
      *
      * @param connection SxpConnection that will be updated
      */
-    private void setNodeIdRemote(SxpConnection connection){
+    private void setNodeIdRemote(SxpConnection connection) {
         try {
             connection.setNodeIdRemote(NodeIdConv.createNodeId(connection.getDestination().getAddress()));
         } catch (UnknownNodeIdException e) {
@@ -143,7 +143,7 @@ public class SxpLegacy implements Strategy {
         if (message instanceof OpenMessageLegacy) {
             OpenMessageLegacy _message = (OpenMessageLegacy) message;
             if (_message.getType().equals(MessageType.Open)) {
-                if(connection.isStateDeleteHoldDown()) {
+                if (connection.isStateDeleteHoldDown()) {
                     connection.setReconciliationTimer();
                 }
                 // The SXP-mode, if not configured explicitly within the device,

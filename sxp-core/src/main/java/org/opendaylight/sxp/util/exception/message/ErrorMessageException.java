@@ -29,7 +29,8 @@ public class ErrorMessageException extends Exception {
 
     private boolean legacy = true;
 
-    public ErrorMessageException(ErrorCode errorCode, ErrorSubCode errorSubCode, byte[] data, Exception carriedException) {
+    public ErrorMessageException(ErrorCode errorCode, ErrorSubCode errorSubCode, byte[] data,
+            Exception carriedException) {
         this.errorCode = errorCode;
         this.errorSubCode = errorSubCode;
         this.data = data == null ? null : data.clone();

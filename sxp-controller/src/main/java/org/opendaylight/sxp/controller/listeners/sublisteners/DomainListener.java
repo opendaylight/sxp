@@ -25,7 +25,8 @@ public class DomainListener extends ListListener<SxpNodeIdentity, SxpDomains, Sx
         super(datastoreAccess, SxpDomains.class);
     }
 
-    @Override protected void handleOperational(DataObjectModification<SxpDomain> c,
+    @Override
+    protected void handleOperational(DataObjectModification<SxpDomain> c,
             InstanceIdentifier<SxpNodeIdentity> identifier, SxpNode sxpNode) {
         LOG.trace("Operational Modification {} {}", getClass(), c.getModificationType());
         switch (c.getModificationType()) {
@@ -41,7 +42,8 @@ public class DomainListener extends ListListener<SxpNodeIdentity, SxpDomains, Sx
         }
     }
 
-    @Override protected InstanceIdentifier<SxpDomain> getIdentifier(SxpDomain d,
+    @Override
+    protected InstanceIdentifier<SxpDomain> getIdentifier(SxpDomain d,
             InstanceIdentifier<SxpNodeIdentity> parentIdentifier) {
         return parentIdentifier.child(SxpDomains.class).child(SxpDomain.class, new SxpDomainKey(d.getDomainName()));
     }

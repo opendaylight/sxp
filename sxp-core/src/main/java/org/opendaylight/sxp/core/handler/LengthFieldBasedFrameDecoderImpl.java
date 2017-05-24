@@ -9,7 +9,6 @@
 package org.opendaylight.sxp.core.handler;
 
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-
 import org.opendaylight.sxp.core.Configuration;
 
 /**

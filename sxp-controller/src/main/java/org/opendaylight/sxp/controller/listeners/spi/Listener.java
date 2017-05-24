@@ -156,12 +156,13 @@ public interface Listener<P extends DataObject, C extends DataObject> {
                 SgtMatches match_1 = (SgtMatches) match1, match_2 = (SgtMatches) match2;
                 if (match_1.getMatches() == null && match_2.getMatches() == null)
                     return false;
-                if (match_1.getMatches() == null || match_2.getMatches() == null ||
-                        match_1.getMatches().size() != match_2.getMatches().size())
+                if (match_1.getMatches() == null || match_2.getMatches() == null
+                        || match_1.getMatches().size() != match_2.getMatches().size())
                     return true;
                 Ordering<Sgt> ordering = new Ordering<Sgt>() {
 
-                    @Override public int compare(@Nullable Sgt left, @Nullable Sgt right) {
+                    @Override
+                    public int compare(@Nullable Sgt left, @Nullable Sgt right) {
                         return Integer.compare(left == null ? 0 : left.getValue(),
                                 right == null ? 0 : right.getValue());
                     }
@@ -216,7 +217,8 @@ public interface Listener<P extends DataObject, C extends DataObject> {
                     return true;
                 Ordering<AclEntry> ordering = new Ordering<AclEntry>() {
 
-                    @Override public int compare(@Nullable AclEntry left, @Nullable AclEntry right) {
+                    @Override
+                    public int compare(@Nullable AclEntry left, @Nullable AclEntry right) {
                         return Integer.compare(left == null ? 0 : left.getEntrySeq(),
                                 right == null ? 0 : right.getEntrySeq());
                     }
@@ -225,8 +227,7 @@ public interface Listener<P extends DataObject, C extends DataObject> {
                 Collections.sort(entries_1.getAclEntry(), ordering);
                 Collections.sort(entries_2.getAclEntry(), ordering);
                 for (int i = 0; i < entries_1.getAclEntry().size(); i++) {
-                    AclEntry entry1 = entries_1.getAclEntry().get(i),
-                            entry2 = entries_2.getAclEntry().get(i);
+                    AclEntry entry1 = entries_1.getAclEntry().get(i), entry2 = entries_2.getAclEntry().get(i);
                     if (!Objects.equals(entry1.getEntrySeq(), entry2.getEntrySeq()))
                         return true;
                     if (!Objects.equals(entry1.getEntryType(), entry2.getEntryType()))
@@ -238,7 +239,8 @@ public interface Listener<P extends DataObject, C extends DataObject> {
                 }
             } else if (entries1 instanceof PrefixListFilterEntries && entries2 instanceof PrefixListFilterEntries) {
                 PrefixListFilterEntries entries_1 = (PrefixListFilterEntries) entries1,
-                        entries_2 = (PrefixListFilterEntries) entries2;
+                        entries_2 =
+                                (PrefixListFilterEntries) entries2;
                 if (entries_1.getPrefixListEntry() == null && entries_2.getPrefixListEntry() == null)
                     return false;
                 if (entries_1.getPrefixListEntry() == null || entries_2.getPrefixListEntry() == null
@@ -246,7 +248,8 @@ public interface Listener<P extends DataObject, C extends DataObject> {
                     return true;
                 Ordering<PrefixListEntry> ordering = new Ordering<PrefixListEntry>() {
 
-                    @Override public int compare(@Nullable PrefixListEntry left, @Nullable PrefixListEntry right) {
+                    @Override
+                    public int compare(@Nullable PrefixListEntry left, @Nullable PrefixListEntry right) {
                         return Integer.compare(left == null ? 0 : left.getEntrySeq(),
                                 right == null ? 0 : right.getEntrySeq());
                     }
@@ -256,7 +259,8 @@ public interface Listener<P extends DataObject, C extends DataObject> {
                 Collections.sort(entries_2.getPrefixListEntry(), ordering);
                 for (int i = 0; i < entries_1.getPrefixListEntry().size(); i++) {
                     PrefixListEntry entry1 = entries_1.getPrefixListEntry().get(i),
-                            entry2 = entries_2.getPrefixListEntry().get(i);
+                            entry2 =
+                                    entries_2.getPrefixListEntry().get(i);
                     if (!Objects.equals(entry1.getEntrySeq(), entry2.getEntrySeq()))
                         return true;
                     if (!Objects.equals(entry1.getEntryType(), entry2.getEntryType()))
@@ -268,7 +272,8 @@ public interface Listener<P extends DataObject, C extends DataObject> {
                 }
             } else if (entries1 instanceof PeerSequenceFilterEntries && entries2 instanceof PeerSequenceFilterEntries) {
                 PeerSequenceFilterEntries entries_1 = (PeerSequenceFilterEntries) entries1,
-                        entries_2 = (PeerSequenceFilterEntries) entries2;
+                        entries_2 =
+                                (PeerSequenceFilterEntries) entries2;
                 if (entries_1.getPeerSequenceEntry() == null && entries_2.getPeerSequenceEntry() == null)
                     return false;
                 if (entries_1.getPeerSequenceEntry() == null || entries_2.getPeerSequenceEntry() == null
@@ -276,7 +281,8 @@ public interface Listener<P extends DataObject, C extends DataObject> {
                     return true;
                 Ordering<PeerSequenceEntry> ordering = new Ordering<PeerSequenceEntry>() {
 
-                    @Override public int compare(@Nullable PeerSequenceEntry left, @Nullable PeerSequenceEntry right) {
+                    @Override
+                    public int compare(@Nullable PeerSequenceEntry left, @Nullable PeerSequenceEntry right) {
                         return Integer.compare(left == null ? 0 : left.getEntrySeq(),
                                 right == null ? 0 : right.getEntrySeq());
                     }
@@ -286,7 +292,8 @@ public interface Listener<P extends DataObject, C extends DataObject> {
                 Collections.sort(entries_2.getPeerSequenceEntry(), ordering);
                 for (int i = 0; i < entries_1.getPeerSequenceEntry().size(); i++) {
                     PeerSequenceEntry entry1 = entries_1.getPeerSequenceEntry().get(i),
-                            entry2 = entries_2.getPeerSequenceEntry().get(i);
+                            entry2 =
+                                    entries_2.getPeerSequenceEntry().get(i);
                     if (!Objects.equals(entry1.getEntrySeq(), entry2.getEntrySeq()))
                         return true;
                     if (!Objects.equals(entry1.getEntryType(), entry2.getEntryType()))

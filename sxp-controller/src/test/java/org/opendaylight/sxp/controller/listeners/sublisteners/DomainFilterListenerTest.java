@@ -8,6 +8,16 @@
 
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import org.junit.Before;
@@ -42,24 +52,16 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({Configuration.class, DatastoreAccess.class})
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({Configuration.class, DatastoreAccess.class})
 public class DomainFilterListenerTest {
 
     private DomainFilterListener identityListener;
     private DatastoreAccess datastoreAccess;
     private SxpNode sxpNode;
 
-    @Before public void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
         identityListener = new DomainFilterListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
@@ -111,42 +113,48 @@ public class DomainFilterListenerTest {
         return builder.build();
     }
 
-    @Test public void testHandleOperational_1() throws Exception {
+    @Test
+    public void testHandleOperational_1() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, getDomainFilter(5, 2)),
                 getIdentifier(), sxpNode);
         verify(sxpNode).addFilterToDomain(anyString(), any(DomainFilter.class));
     }
 
-    @Test public void testHandleOperational_2() throws Exception {
+    @Test
+    public void testHandleOperational_2() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getDomainFilter(5, 2), null),
                 getIdentifier(), sxpNode);
         verify(sxpNode).removeFilterFromDomain(anyString(), any(FilterSpecific.class), anyString());
     }
 
-    @Test public void testHandleOperational_3() throws Exception {
+    @Test
+    public void testHandleOperational_3() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED, getDomainFilter(5, 2),
                         getDomainFilter(8, 2)), getIdentifier(), sxpNode);
         verify(sxpNode).updateDomainFilter(anyString(), any(DomainFilter.class));
     }
 
-    @Test public void testHandleOperational_4() throws Exception {
+    @Test
+    public void testHandleOperational_4() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED, getDomainFilter(5, 2),
                         getDomainFilter(5, 8)), getIdentifier(), sxpNode);
         verify(sxpNode).updateDomainFilter(anyString(), any(DomainFilter.class));
     }
 
-    @Test public void testHandleOperational_5() throws Exception {
+    @Test
+    public void testHandleOperational_5() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.DELETE, getDomainFilter(5, 2), null),
                 getIdentifier(), sxpNode);
         verify(sxpNode).removeFilterFromDomain(anyString(), any(FilterSpecific.class), anyString());
     }
 
-    @Test public void testGetModifications() throws Exception {
+    @Test
+    public void testGetModifications() throws Exception {
         assertNotNull(identityListener.getIdentifier(new DomainFilterBuilder().setFilterName("basic")
                 .setFilterSpecific(FilterSpecific.AccessOrPrefixList)
                 .build(), getIdentifier()));
@@ -162,7 +170,8 @@ public class DomainFilterListenerTest {
         assertNotNull(identityListener.getModifications(dtm));
     }
 
-    @Test public void testHandleChange() throws Exception {
+    @Test
+    public void testHandleChange() throws Exception {
         identityListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getDomainFilter(5, 2),
                         getDomainFilter(5, 3)))), LogicalDatastoreType.OPERATIONAL, getIdentifier());

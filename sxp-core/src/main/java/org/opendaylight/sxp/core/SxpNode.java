@@ -869,8 +869,9 @@ public class SxpNode {
      */
     @Deprecated
     public SxpConnection getByPort(final int port) {
-        List<SxpConnection> sxpConnections = filterConnections(
-                connection -> port == connection.getDestination().getPort());
+        List<SxpConnection>
+                sxpConnections =
+                filterConnections(connection -> port == connection.getDestination().getPort());
         if (sxpConnections.isEmpty()) {
             return null;
         } else if (sxpConnections.size() == 1) {
@@ -1357,7 +1358,8 @@ public class SxpNode {
         return sslContextFactory;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "[" + (
                 nodeBuilder.getName() != null && !nodeBuilder.getName().isEmpty() ? nodeBuilder.getName() + ":" : "")
                 + NodeIdConv.toString(nodeId) + "]";

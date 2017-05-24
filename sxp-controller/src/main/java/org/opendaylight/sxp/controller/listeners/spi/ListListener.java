@@ -46,7 +46,8 @@ public abstract class ListListener<P extends DataObject, C extends ChildOf<? sup
         this.container = Preconditions.checkNotNull(container);
     }
 
-    @Override public Listener addSubListener(Listener listener) {
+    @Override
+    public Listener addSubListener(Listener listener) {
         subListeners.add(Preconditions.checkNotNull(listener));
         return this;
     }
@@ -149,7 +150,8 @@ public abstract class ListListener<P extends DataObject, C extends ChildOf<? sup
         }
     }
 
-    @Override public List<DataObjectModification<C>> getModifications(DataTreeModification<P> treeModification) {
+    @Override
+    public List<DataObjectModification<C>> getModifications(DataTreeModification<P> treeModification) {
         List<DataObjectModification<C>> modifications = new ArrayList<>();
         if (treeModification != null) {
             modifications.add(treeModification.getRootNode().getModifiedChildContainer(container));

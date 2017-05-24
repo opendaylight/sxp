@@ -8,6 +8,11 @@
 
 package org.opendaylight.sxp.util.filtering;
 
+import static org.opendaylight.sxp.util.ArraysUtil.getBitAddress;
+
+import java.util.BitSet;
+import java.util.Collections;
+import java.util.Comparator;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -18,18 +23,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.acl.en
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.acl.match.fields.Mask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.acl.filter.entries.AclEntry;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilter;
-
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.Comparator;
-
-import static org.opendaylight.sxp.util.ArraysUtil.getBitAddress;
 
 /**
  * AclFilter logic based on First Match that support SGT matching
  */
-public final class AclFilter<T extends FilterEntriesFields> extends SxpBindingFilter<AclFilterEntries,T> {
+public final class AclFilter<T extends FilterEntriesFields> extends SxpBindingFilter<AclFilterEntries, T> {
 
     /**
      * Creates AclFilter that filters Bindings according to specified ACL
@@ -50,21 +48,24 @@ public final class AclFilter<T extends FilterEntriesFields> extends SxpBindingFi
         if (entries.getAclEntry() != null && !entries.getAclEntry().isEmpty()) {
             Collections.sort(entries.getAclEntry(), new Comparator<AclEntry>() {
 
-                @Override public int compare(AclEntry t1, AclEntry t2) {
+                @Override
+                public int compare(AclEntry t1, AclEntry t2) {
                     return t1.getEntrySeq().compareTo(t2.getEntrySeq());
                 }
             });
         }
     }
 
-    @Override public boolean filter(AclFilterEntries aclFilterEntries, SxpBindingFields binding) {
+    @Override
+    public boolean filter(AclFilterEntries aclFilterEntries, SxpBindingFields binding) {
         if (aclFilterEntries.getAclEntry() == null || aclFilterEntries.getAclEntry().isEmpty()) {
             return true;
         }
         FilterEntryType entryType = FilterEntryType.Deny;
         for (AclEntry aclEntry : aclFilterEntries.getAclEntry()) {
             boolean sgtTest = filterSgtMatch(aclEntry.getSgtMatch(), binding.getSecurityGroupTag()),
-                    aclTest = filterAclMatch(aclEntry.getAclMatch(), binding.getIpPrefix());
+                    aclTest =
+                            filterAclMatch(aclEntry.getAclMatch(), binding.getIpPrefix());
             if (aclEntry.getSgtMatch() != null && aclEntry.getAclMatch() != null && sgtTest && aclTest) {
                 entryType = aclEntry.getEntryType();
                 break;

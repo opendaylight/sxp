@@ -8,12 +8,22 @@
 
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.google.common.util.concurrent.ListenableFuture;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.Callable;
-
-import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,18 +57,8 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({Configuration.class, DatastoreAccess.class})
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({Configuration.class, DatastoreAccess.class})
 public class MasterDatabaseListenerTest {
 
     private MasterDatabaseListener identityListener;
@@ -67,13 +67,15 @@ public class MasterDatabaseListenerTest {
     private ThreadsWorker threadsWorker;
     private SxpNode sxpNode;
 
-    @Before public void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
         identityListener = new MasterDatabaseListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
         threadsWorker = mock(ThreadsWorker.class);
         taskCaptor = ArgumentCaptor.forClass(Callable.class);
-        when(threadsWorker.executeTaskInSequence(taskCaptor.capture(), any(ThreadsWorker.WorkerType.class))).thenReturn(mock(ListenableFuture.class));
+        when(threadsWorker.executeTaskInSequence(taskCaptor.capture(), any(ThreadsWorker.WorkerType.class))).thenReturn(
+                mock(ListenableFuture.class));
         when(sxpNode.getWorker()).thenReturn(threadsWorker);
         when(sxpNode.getDomain(anyString())).thenReturn(mock(org.opendaylight.sxp.core.SxpDomain.class));
         when(datastoreAccess.readSynchronous(eq(SxpDatastoreNode.getIdentifier("0.0.0.0")
@@ -116,7 +118,8 @@ public class MasterDatabaseListenerTest {
                 .build();
     }
 
-    @Test public void testHandleConfig_1() throws Exception {
+    @Test
+    public void testHandleConfig_1() throws Exception {
         identityListener.handleConfig(getObjectModification(getMasterDatabase(null), getMasterDatabase(null)),
                 getIdentifier());
         taskCaptor.getValue().call();
@@ -124,7 +127,8 @@ public class MasterDatabaseListenerTest {
                 eq(LogicalDatastoreType.OPERATIONAL));
     }
 
-    @Test public void testHandleConfig_2() throws Exception {
+    @Test
+    public void testHandleConfig_2() throws Exception {
         identityListener.handleConfig(
                 getObjectModification(getMasterDatabase(null), getMasterDatabase(getBinding("1.1.1.1/32", 1))),
                 getIdentifier());
@@ -133,7 +137,8 @@ public class MasterDatabaseListenerTest {
                 eq(LogicalDatastoreType.OPERATIONAL));
     }
 
-    @Test public void testHandleOperational_1() throws Exception {
+    @Test
+    public void testHandleOperational_1() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(getMasterDatabase(null), getMasterDatabase(getBinding("1.1.1.1/32", 1))),
                 getIdentifier(), sxpNode);
@@ -143,7 +148,8 @@ public class MasterDatabaseListenerTest {
         verify(sxpNode, never()).removeLocalBindingsMasterDatabase(anyList(), anyString());
     }
 
-    @Test public void testHandleOperational_2() throws Exception {
+    @Test
+    public void testHandleOperational_2() throws Exception {
         identityListener.handleOperational(getObjectModification(getMasterDatabase(getBinding("1.1.1.1/32", 1)),
                 getMasterDatabase(getBinding("1.1.1.1/32", 1))), getIdentifier(), sxpNode);
 
@@ -152,7 +158,8 @@ public class MasterDatabaseListenerTest {
         verify(sxpNode, never()).removeLocalBindingsMasterDatabase(anyList(), anyString());
     }
 
-    @Test public void testHandleOperational_3() throws Exception {
+    @Test
+    public void testHandleOperational_3() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(getMasterDatabase(getBinding("1.1.1.1/32", 1)), getMasterDatabase(null)),
                 getIdentifier(), sxpNode);
@@ -162,7 +169,8 @@ public class MasterDatabaseListenerTest {
         verify(sxpNode).removeLocalBindingsMasterDatabase(anyList(), anyString());
     }
 
-    @Test public void testHandleOperational_4() throws Exception {
+    @Test
+    public void testHandleOperational_4() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(getMasterDatabase(getBinding("1.1.1.1/32", 1), getBinding("1.1.1.8/32", 10)),
                         getMasterDatabase(getBinding("1.1.1.1/32", 1), getBinding("1.1.10.1/32", 100))),
@@ -173,7 +181,8 @@ public class MasterDatabaseListenerTest {
         verify(sxpNode).removeLocalBindingsMasterDatabase(anyList(), anyString());
     }
 
-    @Test public void testGetModifications() throws Exception {
+    @Test
+    public void testGetModifications() throws Exception {
         assertNotNull(identityListener.getIdentifier(new MasterDatabaseBuilder().build(), getIdentifier()));
         assertTrue(identityListener.getIdentifier(new MasterDatabaseBuilder().build(), getIdentifier())
                 .getTargetType()

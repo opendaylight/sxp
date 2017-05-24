@@ -8,6 +8,17 @@
 
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,25 +51,16 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({Configuration.class, DatastoreAccess.class})
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({Configuration.class, DatastoreAccess.class})
 public class FilterListenerTest {
 
     private FilterListener identityListener;
     private DatastoreAccess datastoreAccess;
     private SxpNode sxpNode;
 
-    @Before public void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
         identityListener = new FilterListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
@@ -98,21 +100,24 @@ public class FilterListenerTest {
         return builder.build();
     }
 
-    @Test public void testHandleOperational_1() throws Exception {
+    @Test
+    public void testHandleOperational_1() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, getSxpFilter(5)),
                 getIdentifier(), sxpNode);
         verify(sxpNode).addFilterToPeerGroup(anyString(), any(SxpFilter.class));
     }
 
-    @Test public void testHandleOperational_2() throws Exception {
+    @Test
+    public void testHandleOperational_2() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getSxpFilter(5), null),
                 getIdentifier(), sxpNode);
         verify(sxpNode).removeFilterFromPeerGroup(anyString(), any(FilterType.class), any(FilterSpecific.class));
     }
 
-    @Test public void testHandleOperational_3() throws Exception {
+    @Test
+    public void testHandleOperational_3() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED, getSxpFilter(5),
                         getSxpFilter(8)), getIdentifier(), sxpNode);
@@ -120,14 +125,16 @@ public class FilterListenerTest {
         verify(sxpNode).addFilterToPeerGroup(anyString(), any(SxpFilter.class));
     }
 
-    @Test public void testHandleOperational_4() throws Exception {
+    @Test
+    public void testHandleOperational_4() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.DELETE, getSxpFilter(5), null),
                 getIdentifier(), sxpNode);
         verify(sxpNode).removeFilterFromPeerGroup(anyString(), any(FilterType.class), any(FilterSpecific.class));
     }
 
-    @Test public void testGetModifications() throws Exception {
+    @Test
+    public void testGetModifications() throws Exception {
         assertNotNull(identityListener.getIdentifier(new SxpFilterBuilder().setFilterType(FilterType.InboundDiscarding)
                 .setFilterSpecific(FilterSpecific.AccessOrPrefixList)
                 .build(), getIdentifier()));
@@ -143,7 +150,8 @@ public class FilterListenerTest {
         assertNotNull(identityListener.getModifications(dtm));
     }
 
-    @Test public void testHandleChange() throws Exception {
+    @Test
+    public void testHandleChange() throws Exception {
         identityListener.handleChange(Collections.singletonList(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getSxpFilter(5), getSxpFilter(4))),
                 LogicalDatastoreType.OPERATIONAL, getIdentifier());

@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.core.handler;
 
+import static org.opendaylight.sxp.core.SxpConnection.invertMode;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -44,12 +46,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.opendaylight.sxp.core.SxpConnection.invertMode;
-
 /**
  * Handles generation of new SxpConnections based on templates.
  */
-@Sharable public class ConnectionDecoder extends SimpleChannelInboundHandler<ByteBuf> {
+@Sharable
+public class ConnectionDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectionDecoder.class.getName());
     protected SxpNode owner;
@@ -93,7 +94,8 @@ import static org.opendaylight.sxp.core.SxpConnection.invertMode;
                 .remoteAddress() : null;
     }
 
-    @Override public void channelActive(ChannelHandlerContext ctx) throws SocketAddressNotRecognizedException {
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws SocketAddressNotRecognizedException {
         InetSocketAddress address = getAddress(ctx);
         final SxpConnection connection = owner.getConnection(address);
         final SxpDomain domain = getTemplateDomain(address);
@@ -102,7 +104,8 @@ import static org.opendaylight.sxp.core.SxpConnection.invertMode;
         }
     }
 
-    @Override public void channelRead0(ChannelHandlerContext ctx, ByteBuf message)
+    @Override
+    public void channelRead0(ChannelHandlerContext ctx, ByteBuf message)
             throws ErrorCodeDataLengthException, AttributeLengthException, TlvNotFoundException, AddressLengthException,
             UnknownNodeIdException, ErrorMessageException, UnknownSxpMessageTypeException, AttributeVariantException,
             UnknownHostException, UnknownPrefixException {

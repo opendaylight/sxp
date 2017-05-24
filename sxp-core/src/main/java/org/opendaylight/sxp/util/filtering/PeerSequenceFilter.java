@@ -42,9 +42,10 @@ public class PeerSequenceFilter<T extends FilterEntriesFields> extends SxpBindin
         }
     }
 
-    @Override protected boolean filter(PeerSequenceFilterEntries filterEntries, SxpBindingFields binding) {
-        if (filterEntries.getPeerSequenceEntry() == null || filterEntries.getPeerSequenceEntry().isEmpty() ||
-                binding.getPeerSequence() == null || binding.getPeerSequence().getPeer() == null) {
+    @Override
+    protected boolean filter(PeerSequenceFilterEntries filterEntries, SxpBindingFields binding) {
+        if (filterEntries.getPeerSequenceEntry() == null || filterEntries.getPeerSequenceEntry().isEmpty()
+                || binding.getPeerSequence() == null || binding.getPeerSequence().getPeer() == null) {
             return true;
         }
         //Using First Match Logic

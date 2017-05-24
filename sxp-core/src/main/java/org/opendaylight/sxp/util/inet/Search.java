@@ -114,9 +114,9 @@ public final class Search {
      */
     public static Stream<InetAddress> expandPrefix(final IpPrefix prefix, final long limit) {
         int prefixLength = IpPrefixConv.getPrefixLength(prefix),
-                addressFamily = prefix.getIpv4Prefix() != null ? 32 : 128;
-        byte[] address = InetAddresses.forString(IpPrefixConv.toString(prefix).split("/")[0]).getAddress(),
-                address_;
+                addressFamily =
+                        prefix.getIpv4Prefix() != null ? 32 : 128;
+        byte[] address = InetAddresses.forString(IpPrefixConv.toString(prefix).split("/")[0]).getAddress(), address_;
         BitSet bitSet = BitSet.valueOf(address);
         if (bitSet.length() >= prefixLength)
             bitSet.clear(prefixLength, bitSet.length());

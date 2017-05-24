@@ -8,14 +8,14 @@
 
 package org.opendaylight.sxp.core.handler;
 
-import io.netty.channel.ChannelInboundHandler;
-import io.netty.channel.ChannelOutboundHandler;
-import org.junit.Test;
-
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;
+
+import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.ChannelOutboundHandler;
+import org.junit.Test;
 
 public class HandlerFactoryTest {
 
@@ -27,7 +27,8 @@ public class HandlerFactoryTest {
         return mock(ChannelOutboundHandler.class);
     }
 
-    @Test public void testAddDecoder() throws Exception {
+    @Test
+    public void testAddDecoder() throws Exception {
         ChannelInboundHandler decoder = getDecoder();
         HandlerFactory handler = HandlerFactory.instanceAddDecoder(decoder, HandlerFactory.Position.End);
 
@@ -44,7 +45,8 @@ public class HandlerFactoryTest {
         assertNotEquals(decoder, handler.getDecoders()[2]);
     }
 
-    @Test public void testAddEncoder() throws Exception {
+    @Test
+    public void testAddEncoder() throws Exception {
         ChannelOutboundHandler encoder = getEncoder();
         HandlerFactory handler = HandlerFactory.instanceAddEncoder(encoder, HandlerFactory.Position.End);
 

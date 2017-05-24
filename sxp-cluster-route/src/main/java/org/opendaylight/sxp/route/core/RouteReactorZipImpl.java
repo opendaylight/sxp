@@ -40,8 +40,9 @@ public class RouteReactorZipImpl implements RouteReactor {
 
     private static final SxpClusterRoute WIPE_ROUTING_MARK = new SxpClusterRouteBuilder().build();
 
-    private final ListeningExecutorService servicePool = MoreExecutors.listeningDecorator(
-            ThreadsWorker.generateExecutor(1, "route-reactor"));
+    private final ListeningExecutorService
+            servicePool =
+            MoreExecutors.listeningDecorator(ThreadsWorker.generateExecutor(1, "route-reactor"));
 
     private final ArrayBlockingQueue<MutablePair<SxpClusterRoute, SxpClusterRoute>> compressionQueue;
     private final Semaphore queueGuard;
@@ -60,7 +61,8 @@ public class RouteReactorZipImpl implements RouteReactor {
     }
 
     @Override
-    public ListenableFuture<Void> updateRouting(@Nullable final SxpClusterRoute oldRoute, @Nullable final SxpClusterRoute newRoute) {
+    public ListenableFuture<Void> updateRouting(@Nullable final SxpClusterRoute oldRoute,
+            @Nullable final SxpClusterRoute newRoute) {
         // with state compression
         ListenableFuture<Void> futureResult;
         try {
@@ -98,8 +100,7 @@ public class RouteReactorZipImpl implements RouteReactor {
                 if (WIPE_ROUTING_MARK == latestPair.getRight()) {
                     futureResult = delegate.wipeRouting();
                 } else {
-                    futureResult = delegate.updateRouting(
-                            latestPair.getLeft(), latestPair.getRight());
+                    futureResult = delegate.updateRouting(latestPair.getLeft(), latestPair.getRight());
                 }
 
                 queueGuard.release();

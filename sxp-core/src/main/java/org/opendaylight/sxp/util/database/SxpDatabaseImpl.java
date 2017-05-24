@@ -8,16 +8,15 @@
 
 package org.opendaylight.sxp.util.database;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.BindingDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.BindingDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 
 /**
  * SxpDatabaseImpl class contains logic to operate with Database,
@@ -35,7 +34,8 @@ public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatab
         bindings.put(BindingDatabase.BindingType.ReconciledBindings, new HashMap<>());
     }
 
-    @Override protected boolean putBindings(NodeId nodeId, BindingDatabase.BindingType bindingType,
+    @Override
+    protected boolean putBindings(NodeId nodeId, BindingDatabase.BindingType bindingType,
             List<SxpDatabaseBinding> bindings) {
         if (this.bindings.get(bindingType).get(nodeId) == null) {
             return this.bindings.get(bindingType).put(nodeId, bindings) == null;
@@ -43,22 +43,26 @@ public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatab
         return this.bindings.get(bindingType).get(nodeId).addAll(bindings);
     }
 
-    @Override protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType) {
+    @Override
+    protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType) {
         List<SxpDatabaseBinding> bindings = new ArrayList<>();
         this.bindings.get(bindingType).values().stream().forEach(bindings::addAll);
         return bindings;
     }
 
-    @Override protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType, NodeId nodeId) {
+    @Override
+    protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType, NodeId nodeId) {
         return this.bindings.get(bindingType).get(nodeId) == null ? new ArrayList<>() : this.bindings.get(bindingType)
                 .get(nodeId);
     }
 
-    @Override protected boolean deleteBindings(NodeId nodeId, BindingDatabase.BindingType bindingType) {
+    @Override
+    protected boolean deleteBindings(NodeId nodeId, BindingDatabase.BindingType bindingType) {
         return this.bindings.get(bindingType).remove(nodeId) != null;
     }
 
-    @Override protected List<SxpDatabaseBinding> deleteBindings(NodeId nodeId, Set<IpPrefix> prefixes,
+    @Override
+    protected List<SxpDatabaseBinding> deleteBindings(NodeId nodeId, Set<IpPrefix> prefixes,
             BindingDatabase.BindingType bindingType) {
         List<SxpDatabaseBinding> removed = new ArrayList<>();
         if (this.bindings.get(bindingType).get(nodeId) != null) {

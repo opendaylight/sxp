@@ -8,11 +8,10 @@
 
 package org.opendaylight.sxp.util.database.spi;
 
+import java.util.List;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-
-import java.util.List;
 
 /**
  * SxpDatabaseInf interface representing supported operations on SxpDatabase

@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.util.filtering;
 
+import static org.opendaylight.sxp.util.ArraysUtil.getBitAddress;
+
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
@@ -19,8 +21,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.Filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.PrefixListFilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.prefix.list.filter.entries.PrefixListEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.entry.PrefixListMatch;
-
-import static org.opendaylight.sxp.util.ArraysUtil.getBitAddress;
 
 /**
  * PrefixList Filter logic based on Most specific Match that supports SGT matching
@@ -46,14 +46,16 @@ public class PrefixListFilter<T extends FilterEntriesFields> extends SxpBindingF
         if (entries.getPrefixListEntry() != null && !entries.getPrefixListEntry().isEmpty()) {
             Collections.sort(entries.getPrefixListEntry(), new Comparator<PrefixListEntry>() {
 
-                @Override public int compare(PrefixListEntry t1, PrefixListEntry t2) {
+                @Override
+                public int compare(PrefixListEntry t1, PrefixListEntry t2) {
                     return t1.getEntrySeq().compareTo(t2.getEntrySeq());
                 }
             });
         }
     }
 
-    @Override public boolean filter(PrefixListFilterEntries prefixListFilterEntries, SxpBindingFields binding) {
+    @Override
+    public boolean filter(PrefixListFilterEntries prefixListFilterEntries, SxpBindingFields binding) {
         if (prefixListFilterEntries.getPrefixListEntry() == null || prefixListFilterEntries.getPrefixListEntry()
                 .isEmpty()) {
             return false;
@@ -64,7 +66,8 @@ public class PrefixListFilter<T extends FilterEntriesFields> extends SxpBindingF
         for (PrefixListEntry prefixListEntry : prefixListFilterEntries.getPrefixListEntry()) {
             boolean sgtTest = filterSgtMatch(prefixListEntry.getSgtMatch(), binding.getSecurityGroupTag());
             int prefixTest = filterPrefixListMatch(prefixListEntry.getPrefixListMatch(), binding.getIpPrefix()),
-                    priority = prefixTest + (sgtTest ? sgtRank : 0);
+                    priority =
+                            prefixTest + (sgtTest ? sgtRank : 0);
 
             if (priority >= entryPriority && prefixListEntry.getPrefixListMatch() != null
                     && prefixListEntry.getSgtMatch() != null && sgtTest && prefixTest != 0) {

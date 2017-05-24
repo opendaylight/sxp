@@ -8,13 +8,23 @@
 
 package org.opendaylight.sxp.controller.core;
 
+import static junit.framework.TestCase.assertNotNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import io.netty.channel.Channel;
+import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -25,31 +35,15 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeI
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.util.Collections;
-
-import static junit.framework.TestCase.assertNotNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({DatastoreAccess.class, BindingDispatcher.class})
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({DatastoreAccess.class, BindingDispatcher.class})
 public class SxpDatastoreNodeTest {
 
     private static String ID = "127.0.0.1";
@@ -58,7 +52,8 @@ public class SxpDatastoreNodeTest {
     private DatastoreAccess datastoreAccess;
     private BindingDispatcher dispatcher;
 
-    @Before public void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         nodeIdentity = mock(SxpNodeIdentity.class);
         datastoreAccess = mock(DatastoreAccess.class);
         PowerMockito.mockStatic(DatastoreAccess.class);
@@ -81,17 +76,20 @@ public class SxpDatastoreNodeTest {
         PowerMockito.field(SxpNode.class, "svcBindingDispatcher").set(node, dispatcher);
     }
 
-    @Test public void testGetIdentifier() throws Exception {
+    @Test
+    public void testGetIdentifier() throws Exception {
         assertEquals(SxpNodeIdentity.class, SxpDatastoreNode.getIdentifier(ID).getTargetType());
     }
 
-    @Test public void testAddDomain() throws Exception {
+    @Test
+    public void testAddDomain() throws Exception {
         assertTrue(node.addDomain(new SxpDomainBuilder().setDomainName("private").build()));
         assertFalse(node.addDomain(new SxpDomainBuilder().setDomainName("private").build()));
         assertTrue(node.addDomain(new SxpDomainBuilder().setDomainName("test").build()));
     }
 
-    @Test public void testAddConnection() throws Exception {
+    @Test
+    public void testAddConnection() throws Exception {
         SxpConnection
                 sxpConnection =
                 node.addConnection(new ConnectionBuilder().setPeerAddress(new IpAddress("1.1.1.1".toCharArray()))
@@ -102,27 +100,32 @@ public class SxpDatastoreNodeTest {
         assertTrue(sxpConnection instanceof SxpDatastoreConnection);
     }
 
-    @Test public void testPutLocalBindingsMasterDatabase() throws Exception {
+    @Test
+    public void testPutLocalBindingsMasterDatabase() throws Exception {
         assertNotNull(node.putLocalBindingsMasterDatabase(Collections.emptyList(), SxpNode.DEFAULT_DOMAIN));
         verify(dispatcher).propagateUpdate(anyList(), anyList(), anyList());
     }
 
-    @Test public void testRemoveLocalBindingsMasterDatabase() throws Exception {
+    @Test
+    public void testRemoveLocalBindingsMasterDatabase() throws Exception {
         assertNotNull(node.removeLocalBindingsMasterDatabase(Collections.emptyList(), SxpNode.DEFAULT_DOMAIN));
         verify(dispatcher).propagateUpdate(anyList(), anyList(), anyList());
     }
 
-    @Test public void testGetDatastoreAccess() throws Exception {
+    @Test
+    public void testGetDatastoreAccess() throws Exception {
         assertNotNull(node.getDatastoreAccess());
         assertEquals(datastoreAccess, node.getDatastoreAccess());
     }
 
-    @Test public void testShutdown() throws Exception {
+    @Test
+    public void testShutdown() throws Exception {
         node.shutdown();
         verify(datastoreAccess, atLeastOnce()).close();
     }
 
-    @Test public void testClose() throws Exception {
+    @Test
+    public void testClose() throws Exception {
         SxpConnection
                 connection =
                 node.addConnection(new ConnectionBuilder().setPeerAddress(new IpAddress("1.1.1.1".toCharArray()))

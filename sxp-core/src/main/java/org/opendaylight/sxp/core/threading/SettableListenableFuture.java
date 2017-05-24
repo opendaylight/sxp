@@ -10,7 +10,6 @@ package org.opendaylight.sxp.core.threading;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -38,7 +37,8 @@ public final class SettableListenableFuture<T> implements ListenableFuture<T> {
         this.executor = Preconditions.checkNotNull(executor);
     }
 
-    @Override synchronized public void addListener(Runnable listener, Executor executor) {
+    @Override
+    synchronized public void addListener(Runnable listener, Executor executor) {
         if (future == null) {
             listeners.add(
                     new ListenerTuple(Preconditions.checkNotNull(listener), Preconditions.checkNotNull(executor)));
@@ -47,7 +47,8 @@ public final class SettableListenableFuture<T> implements ListenableFuture<T> {
         }
     }
 
-    @Override synchronized public boolean cancel(boolean b) {
+    @Override
+    synchronized public boolean cancel(boolean b) {
         boolean result = future == null ? (canceled = true) : future.cancel(b);
         if (future == null) {
             for (ListenerTuple listenerTuple : listeners) {
@@ -57,15 +58,18 @@ public final class SettableListenableFuture<T> implements ListenableFuture<T> {
         return result;
     }
 
-    @Override synchronized public boolean isCancelled() {
+    @Override
+    synchronized public boolean isCancelled() {
         return future == null ? canceled : future.isCancelled();
     }
 
-    @Override synchronized public boolean isDone() {
+    @Override
+    synchronized public boolean isDone() {
         return future == null ? done || isCancelled() : future.isDone();
     }
 
-    @Override synchronized public T get() throws InterruptedException, ExecutionException {
+    @Override
+    synchronized public T get() throws InterruptedException, ExecutionException {
         if (future == null) {
             if (isDone()) {
                 return result;
@@ -80,7 +84,8 @@ public final class SettableListenableFuture<T> implements ListenableFuture<T> {
         return future.get();
     }
 
-    @Override synchronized public T get(long l, TimeUnit timeUnit)
+    @Override
+    synchronized public T get(long l, TimeUnit timeUnit)
             throws InterruptedException, ExecutionException, TimeoutException {
         if (future == null) {
             if (isDone()) {

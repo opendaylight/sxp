@@ -9,6 +9,8 @@
 package org.opendaylight.sxp.core.messaging.legacy;
 
 import io.netty.buffer.ByteBuf;
+import java.net.UnknownHostException;
+import java.util.List;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.util.ArraysUtil;
@@ -30,13 +32,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageLegacyBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacyBuilder;
 
-import java.net.UnknownHostException;
-import java.util.List;
-
 /**
  * LegacyMessageFactory class contains logic for creating and parsing legacy messages
  */
 public class LegacyMessageFactory extends MessageFactory {
+
     private static final int MESSAGE_HEADER_LENGTH_LENGTH = Configuration.getConstants().getMessageHeaderLengthLength();
 
     private static final int MESSAGE_HEADER_TYPE_LENGTH = Configuration.getConstants().getMessageHeaderTypeLength();
@@ -67,7 +67,7 @@ public class LegacyMessageFactory extends MessageFactory {
             throw new ErrorCodeDataLengthException("Variable message length - 10 bytes.");
         }
         byte _errorCode = (byte) errorCode.getIntValue();
-        byte[] payload = ArraysUtil.combine(new byte[] { 0x00, 0x00, 0x00, _errorCode }, data);
+        byte[] payload = ArraysUtil.combine(new byte[] {0x00, 0x00, 0x00, _errorCode}, data);
         return getMessage(MessageType.Error, payload);
     }
 
@@ -79,10 +79,8 @@ public class LegacyMessageFactory extends MessageFactory {
      * @return ByteBuf representation of created OpenMessage
      */
     public static ByteBuf createOpen(Version version, ConnectionMode nodeMode) {
-        return getMessage(
-                MessageType.Open,
-                ArraysUtil.combine(ArraysUtil.int2bytes(version.getIntValue()),
-                        ArraysUtil.int2bytes(nodeMode.getIntValue())));
+        return getMessage(MessageType.Open, ArraysUtil.combine(ArraysUtil.int2bytes(version.getIntValue()),
+                ArraysUtil.int2bytes(nodeMode.getIntValue())));
     }
 
     /**
@@ -93,10 +91,8 @@ public class LegacyMessageFactory extends MessageFactory {
      * @return ByteBuf representation if created OpenRespMessage
      */
     public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode) {
-        return getMessage(
-                MessageType.OpenResp,
-                ArraysUtil.combine(ArraysUtil.int2bytes(version.getIntValue()),
-                        ArraysUtil.int2bytes(nodeMode.getIntValue())));
+        return getMessage(MessageType.OpenResp, ArraysUtil.combine(ArraysUtil.int2bytes(version.getIntValue()),
+                ArraysUtil.int2bytes(nodeMode.getIntValue())));
     }
 
     /**
@@ -220,8 +216,8 @@ public class LegacyMessageFactory extends MessageFactory {
 
         Version version = Version.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(payload, 0, 4)));
         if (!isLegacy(version)) {
-            throw new ErrorMessageException(ErrorCodeNonExtended.VersionMismatch, new IncompatiblePeerVersionException(
-                    true, version));
+            throw new ErrorMessageException(ErrorCodeNonExtended.VersionMismatch,
+                    new IncompatiblePeerVersionException(true, version));
         }
         ConnectionMode nodeMode = ConnectionMode.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(payload, 4, 4)));
 

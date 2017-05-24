@@ -8,7 +8,16 @@
 
 package org.opendaylight.sxp.controller.util.database;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+
 import com.google.common.util.concurrent.Futures;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,17 +42,8 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class, DatastoreAccess.class})
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({SxpNode.class, DatastoreAccess.class})
 public class MasterDatastoreImplTest {
 
     private static MasterDatastoreImpl database;
@@ -51,23 +51,26 @@ public class MasterDatastoreImplTest {
     private static DatastoreAccess access;
     private static Map<IpPrefix, MasterDatabaseBinding> databaseBindings_Op = new HashMap<>();
 
-    @BeforeClass public static void initClass() {
+    @BeforeClass
+    public static void initClass() {
         access = PowerMockito.mock(DatastoreAccess.class);
-        PowerMockito.when(access.merge(any(InstanceIdentifier.class), any(MasterDatabase.class),
-                any(LogicalDatastoreType.class))).then(invocation -> {
-            ((MasterDatabase) invocation.getArguments()[1]).getMasterDatabaseBinding().stream().forEach(b -> {
-                databaseBindings_Op .put(b.getIpPrefix(), b);
-            });
-            return Futures.immediateCheckedFuture(null);
-        });
-        PowerMockito.when(access.put(any(InstanceIdentifier.class), any(MasterDatabase.class),
-                any(LogicalDatastoreType.class))).then(invocation -> {
-            databaseBindings_Op.clear();
-            ((MasterDatabase) invocation.getArguments()[1]).getMasterDatabaseBinding().stream().forEach(b -> {
-                databaseBindings_Op.put(b.getIpPrefix(), b);
-            });
-            return Futures.immediateCheckedFuture(null);
-        });
+        PowerMockito.when(
+                access.merge(any(InstanceIdentifier.class), any(MasterDatabase.class), any(LogicalDatastoreType.class)))
+                .then(invocation -> {
+                    ((MasterDatabase) invocation.getArguments()[1]).getMasterDatabaseBinding().stream().forEach(b -> {
+                        databaseBindings_Op.put(b.getIpPrefix(), b);
+                    });
+                    return Futures.immediateCheckedFuture(null);
+                });
+        PowerMockito.when(
+                access.put(any(InstanceIdentifier.class), any(MasterDatabase.class), any(LogicalDatastoreType.class)))
+                .then(invocation -> {
+                    databaseBindings_Op.clear();
+                    ((MasterDatabase) invocation.getArguments()[1]).getMasterDatabaseBinding().stream().forEach(b -> {
+                        databaseBindings_Op.put(b.getIpPrefix(), b);
+                    });
+                    return Futures.immediateCheckedFuture(null);
+                });
         PowerMockito.when(access.readSynchronous(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
                 .then(invocation -> {
                     if (((InstanceIdentifier) invocation.getArguments()[0]).getTargetType() == MasterDatabase.class) {
@@ -83,7 +86,8 @@ public class MasterDatastoreImplTest {
                 });
     }
 
-    @Before public void init() {
+    @Before
+    public void init() {
         databaseBindings_Op.clear();
         database = new MasterDatastoreImpl(access, "0.0.0.0", "DOMAIN");
     }
@@ -115,7 +119,8 @@ public class MasterDatastoreImplTest {
                                 && Arrays.equals(r.getIpPrefix().getValue(), b.getIpPrefix().getValue()))));
     }
 
-    @Test public void testAddLocalBindings() throws Exception {
+    @Test
+    public void testAddLocalBindings() throws Exception {
         assertEquals(0, database.addLocalBindings(mergeBindings()).size());
         assertEquals(0, database.getBindings().size());
 
@@ -149,7 +154,8 @@ public class MasterDatastoreImplTest {
                 getBinding("2.2.2.2/32", 2000, "200.200.200.200")));
     }
 
-    @Test public void testDeleteBindingsLocal() throws Exception {
+    @Test
+    public void testDeleteBindingsLocal() throws Exception {
         database.addLocalBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
                 getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
                 getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
@@ -171,7 +177,8 @@ public class MasterDatastoreImplTest {
         assertEquals(0, database.getBindings().size());
     }
 
-    @Test public void testAddBindings() throws Exception {
+    @Test
+    public void testAddBindings() throws Exception {
         assertEquals(0, database.addBindings(mergeBindings()).size());
         assertEquals(0, database.getBindings().size());
 
@@ -205,7 +212,8 @@ public class MasterDatastoreImplTest {
                 getBinding("2.2.2.2/32", 2000, "200.200.200.200")));
     }
 
-    @Test public void testDeleteBindings() throws Exception {
+    @Test
+    public void testDeleteBindings() throws Exception {
         database.addBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
                 getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
                 getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
@@ -227,7 +235,8 @@ public class MasterDatastoreImplTest {
         assertEquals(0, database.getBindings().size());
     }
 
-    @Test public void testToString() throws Exception {
+    @Test
+    public void testToString() throws Exception {
         assertEquals("MasterDatastoreImpl\n", database.toString());
 
         database.addBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
@@ -235,10 +244,7 @@ public class MasterDatastoreImplTest {
                 getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
 
         StringBuilder value = new StringBuilder();
-        Arrays.asList(database.toString().split("\n"))
-                .stream()
-                .sorted()
-                .forEach(l -> value.append(l).append("\n"));
+        Arrays.asList(database.toString().split("\n")).stream().sorted().forEach(l -> value.append(l).append("\n"));
 
         assertEquals("\t100 1.1.1.1/32\n" + "\t15 0:0:0:0:0:0:0:A/32\n" + "\t2000 2.2.2.2/32\n" + "\t2000 2.2.2.20/32\n"
                 + "MasterDatastoreImpl\n", value.toString());

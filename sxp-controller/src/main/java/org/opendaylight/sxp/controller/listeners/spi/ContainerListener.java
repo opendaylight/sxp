@@ -44,7 +44,8 @@ public abstract class ContainerListener<P extends DataObject, C extends ChildOf<
         this.container = Preconditions.checkNotNull(container);
     }
 
-    @Override public Listener addSubListener(Listener listener) {
+    @Override
+    public Listener addSubListener(Listener listener) {
         subListeners.add(Preconditions.checkNotNull(listener));
         return this;
     }
@@ -129,20 +130,23 @@ public abstract class ContainerListener<P extends DataObject, C extends ChildOf<
                         break;
                 }
                 try {
-                    if (!DataObjectModification.ModificationType.DELETE.equals(modifiedChildContainer.getModificationType()))
+                    if (!DataObjectModification.ModificationType.DELETE.equals(
+                            modifiedChildContainer.getModificationType()))
                         subListeners.forEach(l -> {
                             l.handleChange(l.getObjectModifications(modifiedChildContainer), logicalDatastoreType,
-                                    getIdentifier(modifiedChildContainer.getDataBefore() != null ? modifiedChildContainer.getDataBefore() : modifiedChildContainer.getDataAfter(),
+                                    getIdentifier(modifiedChildContainer.getDataBefore()
+                                                    != null ? modifiedChildContainer.getDataBefore() : modifiedChildContainer.getDataAfter(),
                                             identifier));
                         });
-                } catch(IllegalStateException e){
+                } catch (IllegalStateException e) {
                     LOG.debug("{} {} modifications on child not found ", identifier, logicalDatastoreType, e);
                 }
             });
         }
     }
 
-    @Override public List<DataObjectModification<C>> getModifications(DataTreeModification<P> treeModification) {
+    @Override
+    public List<DataObjectModification<C>> getModifications(DataTreeModification<P> treeModification) {
         List<DataObjectModification<C>> modifications = new ArrayList<>();
         if (treeModification != null) {
             treeModification.getRootNode().getModifiedChildren().forEach(c -> {

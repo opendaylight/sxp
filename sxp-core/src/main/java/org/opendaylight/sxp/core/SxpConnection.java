@@ -702,6 +702,7 @@ public class SxpConnection {
         return connectionBuilder.getPassword() != null && !connectionBuilder.getPassword().isEmpty() ? connectionBuilder
                 .getPassword() : getOwner().getPassword();
     }
+
     /**
      * @return Gets password used by connection
      */
@@ -1361,7 +1362,8 @@ public class SxpConnection {
         setStateOff();
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         String localAddress = this.localAddress != null ? this.localAddress.toString() : "";
         if (localAddress.startsWith("/")) {
             localAddress = localAddress.substring(1);

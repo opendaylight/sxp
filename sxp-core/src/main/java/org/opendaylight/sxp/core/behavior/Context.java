@@ -11,6 +11,7 @@ package org.opendaylight.sxp.core.behavior;
 import com.google.common.base.Preconditions;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import java.util.List;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
@@ -30,8 +31,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageLegacyBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
  * Context class is used for handling different behaviour in versions
@@ -124,8 +123,7 @@ public final class Context {
                     return;
                 } else if (messageVersion.compareTo(version) < 0) {
                     // Update strategy according to version specified in Open from remote
-                    LOG.info("{} SXP version dropping version down from {} to {}", connection, version,
-                            messageVersion);
+                    LOG.info("{} SXP version dropping version down from {} to {}", connection, version, messageVersion);
                     connection.setBehaviorContexts(messageVersion);
                     // Delegate the processing of current message to new context
                     connection.getContext().executeInputMessageStrategy(ctx, connection, message);
@@ -143,7 +141,8 @@ public final class Context {
      * @return If isMismatch of Versions
      */
     private boolean isVersionMismatch(final Version remoteVersion) {
-        Preconditions.checkState(remoteVersion.compareTo(version) <= 0, "Remote peer sent higher version of SXP in open resp message");
+        Preconditions.checkState(remoteVersion.compareTo(version) <= 0,
+                "Remote peer sent higher version of SXP in open resp message");
         return remoteVersion != version;
     }
 
@@ -155,7 +154,7 @@ public final class Context {
      */
     private Version extractVersion(final Notification message) {
         Version remoteVersion;
-        if(message instanceof OpenMessage) {
+        if (message instanceof OpenMessage) {
             remoteVersion = ((OpenMessage) message).getVersion();
         } else if (message instanceof OpenMessageLegacy) {
             remoteVersion = ((OpenMessageLegacy) message).getVersion();
@@ -169,8 +168,11 @@ public final class Context {
      * Check if the message is OpenResp in any version
      */
     private boolean isOpenRespMessage(final Notification message) {
-        boolean isOpenResp = message instanceof OpenMessage && ((OpenMessage) message).getType() == MessageType.OpenResp;
-        isOpenResp |= message instanceof OpenMessageLegacy && ((OpenMessageLegacy) message).getType() == MessageType.OpenResp;
+        boolean
+                isOpenResp =
+                message instanceof OpenMessage && ((OpenMessage) message).getType() == MessageType.OpenResp;
+        isOpenResp |=
+                message instanceof OpenMessageLegacy && ((OpenMessageLegacy) message).getType() == MessageType.OpenResp;
         return isOpenResp;
     }
 

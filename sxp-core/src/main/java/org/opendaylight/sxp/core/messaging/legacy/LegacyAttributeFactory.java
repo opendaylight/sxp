@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.core.messaging.legacy;
 
+import java.net.UnknownHostException;
 import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.TlvNotFoundException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
@@ -26,8 +27,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.delete.ipv6.attribute.DeleteIpv6AttributesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlv.fields.tlv.optional.fields.SourceGroupTagTlvAttribute;
-
-import java.net.UnknownHostException;
 
 public class LegacyAttributeFactory {
 
@@ -88,11 +87,15 @@ public class LegacyAttributeFactory {
      * @throws UnknownPrefixException If Prefix in Array is incorrect
      * @throws TlvNotFoundException   If Tvl was not found in decoded attribute
      */
-    public static AttributeOptionalFields decodeAddIPv4(AttributeType operationCode, int length, byte[] value) throws UnknownHostException, AddressLengthException, UnknownPrefixException, TlvNotFoundException {
-        MappingRecord mappingRecord = org.opendaylight.sxp.core.messaging.legacy.MappingRecord.decodeAddress(
-                operationCode, length, value);
-        int sgt = ((SourceGroupTagTlvAttribute) org.opendaylight.sxp.core.messaging.legacy.MappingRecord.create(
-                mappingRecord.getTlv()).get(TlvType.Sgt)).getSourceGroupTagTlvAttributes().getSgt();
+    public static AttributeOptionalFields decodeAddIPv4(AttributeType operationCode, int length, byte[] value)
+            throws UnknownHostException, AddressLengthException, UnknownPrefixException, TlvNotFoundException {
+        MappingRecord
+                mappingRecord =
+                org.opendaylight.sxp.core.messaging.legacy.MappingRecord.decodeAddress(operationCode, length, value);
+        int
+                sgt =
+                ((SourceGroupTagTlvAttribute) org.opendaylight.sxp.core.messaging.legacy.MappingRecord.create(
+                        mappingRecord.getTlv()).get(TlvType.Sgt)).getSourceGroupTagTlvAttributes().getSgt();
 
         AddIpv4AttributeBuilder _attributeBuilder = new AddIpv4AttributeBuilder();
         AddIpv4AttributesBuilder _attributesBuilder = new AddIpv4AttributesBuilder();
@@ -113,11 +116,15 @@ public class LegacyAttributeFactory {
      * @throws UnknownPrefixException If Prefix in Array is incorrect
      * @throws TlvNotFoundException   If Tvl was not found in decoded attribute
      */
-    public static AttributeOptionalFields decodeAddIPv6(AttributeType operationCode, int length, byte[] value) throws UnknownHostException, AddressLengthException, UnknownPrefixException, TlvNotFoundException {
-        MappingRecord mappingRecord = org.opendaylight.sxp.core.messaging.legacy.MappingRecord.decodeAddress(
-                operationCode, length, value);
-        int sgt = ((SourceGroupTagTlvAttribute) org.opendaylight.sxp.core.messaging.legacy.MappingRecord.create(
-                mappingRecord.getTlv()).get(TlvType.Sgt)).getSourceGroupTagTlvAttributes().getSgt();
+    public static AttributeOptionalFields decodeAddIPv6(AttributeType operationCode, int length, byte[] value)
+            throws UnknownHostException, AddressLengthException, UnknownPrefixException, TlvNotFoundException {
+        MappingRecord
+                mappingRecord =
+                org.opendaylight.sxp.core.messaging.legacy.MappingRecord.decodeAddress(operationCode, length, value);
+        int
+                sgt =
+                ((SourceGroupTagTlvAttribute) org.opendaylight.sxp.core.messaging.legacy.MappingRecord.create(
+                        mappingRecord.getTlv()).get(TlvType.Sgt)).getSourceGroupTagTlvAttributes().getSgt();
 
         AddIpv6AttributeBuilder _attributeBuilder = new AddIpv6AttributeBuilder();
         AddIpv6AttributesBuilder _attributesBuilder = new AddIpv6AttributesBuilder();
@@ -137,9 +144,11 @@ public class LegacyAttributeFactory {
      * @throws AddressLengthException If address length is incorrect
      * @throws UnknownPrefixException If Prefix in Array is incorrect
      */
-    public static AttributeOptionalFields decodeDeleteIPv4(AttributeType operationCode, int length, byte[] value) throws UnknownHostException, AddressLengthException, UnknownPrefixException {
-        MappingRecord mappingRecord = org.opendaylight.sxp.core.messaging.legacy.MappingRecord.decodeAddress(
-                operationCode, length, value);
+    public static AttributeOptionalFields decodeDeleteIPv4(AttributeType operationCode, int length, byte[] value)
+            throws UnknownHostException, AddressLengthException, UnknownPrefixException {
+        MappingRecord
+                mappingRecord =
+                org.opendaylight.sxp.core.messaging.legacy.MappingRecord.decodeAddress(operationCode, length, value);
 
         DeleteIpv4AttributeBuilder _attributeBuilder = new DeleteIpv4AttributeBuilder();
         DeleteIpv4AttributesBuilder _attributesBuilder = new DeleteIpv4AttributesBuilder();
@@ -158,9 +167,11 @@ public class LegacyAttributeFactory {
      * @throws AddressLengthException If address length is incorrect
      * @throws UnknownPrefixException If Prefix in Array is incorrect
      */
-    public static AttributeOptionalFields decodeDeleteIPv6(AttributeType operationCode, int length, byte[] value) throws UnknownHostException, AddressLengthException, UnknownPrefixException {
-        MappingRecord mappingRecord = org.opendaylight.sxp.core.messaging.legacy.MappingRecord.decodeAddress(
-                operationCode, length, value);
+    public static AttributeOptionalFields decodeDeleteIPv6(AttributeType operationCode, int length, byte[] value)
+            throws UnknownHostException, AddressLengthException, UnknownPrefixException {
+        MappingRecord
+                mappingRecord =
+                org.opendaylight.sxp.core.messaging.legacy.MappingRecord.decodeAddress(operationCode, length, value);
 
         DeleteIpv6AttributeBuilder _attributeBuilder = new DeleteIpv6AttributeBuilder();
         DeleteIpv6AttributesBuilder _attributesBuilder = new DeleteIpv6AttributesBuilder();

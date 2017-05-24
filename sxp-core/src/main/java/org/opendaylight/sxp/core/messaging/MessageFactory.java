@@ -13,6 +13,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Nullable;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
 import org.opendaylight.sxp.util.ArraysUtil;
@@ -60,11 +64,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessageBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageBuilder;
 
-import javax.annotation.Nullable;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * MessageFactory class contains logic for creating and parsing messages
  */
@@ -95,8 +94,10 @@ public class MessageFactory {
 
         byte _errorCode = errorCode != null ? (byte) errorCode.getIntValue() : 0x00;
         byte _errorSubCode = errorSubCode != null ? (byte) errorSubCode.getIntValue() : 0x00;
-        byte[] payload = ArraysUtil.combine(new byte[] { ArraysUtil.setBit(_errorCode, 8, true), _errorSubCode, 0x00,
-                0x00 }, data);
+        byte[]
+                payload =
+                ArraysUtil.combine(new byte[] {ArraysUtil.setBit(_errorCode, 8, true), _errorSubCode, 0x00, 0x00},
+                        data);
         return getMessage(MessageType.Error, payload);
     }
 
@@ -291,11 +292,11 @@ public class MessageFactory {
      * @param addBindings    Bindings that will be added
      * @param nodeId         NodeId included in message
      * @return ByteBuf representation of UpdateMessage
-     * @throws SecurityGroupTagValueException      If some Sgt isn't in rage [2, 65519]
-     * @throws AttributeVariantException           If some attribute variant isn't supported
+     * @throws SecurityGroupTagValueException If some Sgt isn't in rage [2, 65519]
+     * @throws AttributeVariantException      If some attribute variant isn't supported
      */
-    public static <R extends SxpBindingFields,T extends SxpBindingFields> ByteBuf createUpdate(List<R> deleteBindings, List<T> addBindings,
-            NodeId nodeId, List<CapabilityType> capabilities, SxpBindingFilter bindingFilter)
+    public static <R extends SxpBindingFields, T extends SxpBindingFields> ByteBuf createUpdate(List<R> deleteBindings,
+            List<T> addBindings, NodeId nodeId, List<CapabilityType> capabilities, SxpBindingFilter bindingFilter)
             throws SecurityGroupTagValueException, AttributeVariantException {
         AttributeList attributes = new AttributeList();
         List<IpPrefix> ipv4Prefixes = new ArrayList<>();
@@ -398,40 +399,40 @@ public class MessageFactory {
         if (messageType == MessageType.OpenResp || messageType == MessageType.Open) {
             final Version remoteVersion = extractVersion(payload);
             // Override version setting for parsing
-            if(remoteVersion != version) {
+            if (remoteVersion != version) {
                 version = remoteVersion;
             }
         }
 
         if (isLegacy(version)) {
             switch (messageType) {
-            case Open:
-                return LegacyMessageFactory.decodeOpen(payload);
-            case OpenResp:
-                return LegacyMessageFactory.decodeOpenResp(payload);
-            case Update:
-                return LegacyMessageFactory.decodeUpdate(payload);
-            case Error:
-                return decodeErrorMessage(payload);
-            case PurgeAll:
-                return decodePurgeAll(payload);
-            default:
-                break;
+                case Open:
+                    return LegacyMessageFactory.decodeOpen(payload);
+                case OpenResp:
+                    return LegacyMessageFactory.decodeOpenResp(payload);
+                case Update:
+                    return LegacyMessageFactory.decodeUpdate(payload);
+                case Error:
+                    return decodeErrorMessage(payload);
+                case PurgeAll:
+                    return decodePurgeAll(payload);
+                default:
+                    break;
             }
         } else if (version.equals(Version.Version4)) {
             switch (messageType) {
-            case Open:
-                return decodeOpen(payload);
-            case OpenResp:
-                return decodeOpenResp(payload);
-            case Update:
-                return decodeUpdate(payload);
-            case Error:
-                return decodeErrorMessage(payload);
-            case PurgeAll:
-                return decodePurgeAll(payload);
-            case Keepalive:
-                return decodeKeepalive(payload);
+                case Open:
+                    return decodeOpen(payload);
+                case OpenResp:
+                    return decodeOpenResp(payload);
+                case Update:
+                    return decodeUpdate(payload);
+                case Error:
+                    return decodeErrorMessage(payload);
+                case PurgeAll:
+                    return decodePurgeAll(payload);
+                case Keepalive:
+                    return decodeKeepalive(payload);
             }
         }
         throw new UnknownSxpMessageTypeException();
@@ -454,14 +455,15 @@ public class MessageFactory {
             messageBuilder.setErrorCode(ErrorCode.forValue(payload[0] & 0x7F));
             messageBuilder.setErrorSubCode(ErrorSubCode.forValue(payload[1]));
             messageBuilder.setData(ArraysUtil.readBytes(payload, 2));
-            messageBuilder.setInformation(messageBuilder.getErrorCode() + " | " + messageBuilder.getErrorSubCode()
-                    + getInformation(messageBuilder.getData()));
+            messageBuilder.setInformation(
+                    messageBuilder.getErrorCode() + " | " + messageBuilder.getErrorSubCode() + getInformation(
+                            messageBuilder.getData()));
             return messageBuilder.build();
         }
 
         messageBuilder.setErrorType(ErrorType.Legacy);
-        messageBuilder.setErrorCodeNonExtended(ErrorCodeNonExtended.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(
-                payload, 2, 2))));
+        messageBuilder.setErrorCodeNonExtended(
+                ErrorCodeNonExtended.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(payload, 2, 2))));
         messageBuilder.setData(ArraysUtil.readBytes(payload, 4));
         messageBuilder.setInformation(
                 messageBuilder.getErrorCodeNonExtended() + getInformation(messageBuilder.getData()));
@@ -621,14 +623,14 @@ public class MessageFactory {
     /**
      * Generate message header using provided values
      *
-     * @param messageType Type of header
+     * @param messageType   Type of header
      * @param payloadLength Length of data
      * @return Byte array representing message header
      */
     private static byte[] getMessageHeader(MessageType messageType, int payloadLength) {
         return ArraysUtil.combine(
                 ArraysUtil.int2bytes(MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH + payloadLength),
-                new byte[] { 0x00, 0x00, 0x00, (byte) messageType.getIntValue() });
+                new byte[] {0x00, 0x00, 0x00, (byte) messageType.getIntValue()});
     }
 
     /**
@@ -670,8 +672,10 @@ public class MessageFactory {
             request = request.readBytes(headerType);
 
             messageLength = ArraysUtil.bytes2int(headerLength);
-            int payloadLength = messageLength
-                    - (MESSAGE_HEADER_LENGTH_LENGTH + Configuration.getConstants().getMessageHeaderTypeLength());
+            int
+                    payloadLength =
+                    messageLength - (MESSAGE_HEADER_LENGTH_LENGTH + Configuration.getConstants()
+                            .getMessageHeaderTypeLength());
 
             payload = new byte[payloadLength];
             request = request.readBytes(payload);
@@ -745,12 +749,12 @@ public class MessageFactory {
      */
     private static void validate(int headerLength, int payloadLength, int messageLength) throws ErrorMessageException {
         if (headerLength + payloadLength > MESSAGE_LENGTH_MAX) {
-            throw new ErrorMessageException(ErrorCode.MessageHeaderError, new Exception(
-                    "Message maximum length exceeded"));
+            throw new ErrorMessageException(ErrorCode.MessageHeaderError,
+                    new Exception("Message maximum length exceeded"));
 
         } else if (headerLength + payloadLength != messageLength) {
-            throw new ErrorMessageException(ErrorCode.MessageHeaderError, new Exception(
-                    "Message incorporated length is not consistent"));
+            throw new ErrorMessageException(ErrorCode.MessageHeaderError,
+                    new Exception("Message incorporated length is not consistent"));
         }
     }
 
@@ -770,7 +774,9 @@ public class MessageFactory {
                 Collections2.transform(capabilitiesAttribute.getCapabilitiesAttributes().getCapabilities(),
                         new Function<Capabilities, CapabilityType>() {
 
-                            @Nullable @Override public CapabilityType apply(Capabilities input) {
+                            @Nullable
+                            @Override
+                            public CapabilityType apply(Capabilities input) {
                                 return input.getCode();
                             }
                         }));
