@@ -72,7 +72,8 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
     protected abstract List<SxpDatabaseBinding> deleteBindings(NodeId nodeId, Set<IpPrefix> bindings,
             BindingDatabase.BindingType bindingType);
 
-    @Override public synchronized List<SxpDatabaseBinding> deleteBindings(NodeId nodeId) {
+    @Override
+    public synchronized List<SxpDatabaseBinding> deleteBindings(NodeId nodeId) {
         if (nodeId == null)
             return new ArrayList<>();
         List<SxpDatabaseBinding>
@@ -84,7 +85,8 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
         return bindings;
     }
 
-    @Override public synchronized <T extends SxpBindingFields> List<SxpDatabaseBinding> deleteBindings(NodeId nodeId,
+    @Override
+    public synchronized <T extends SxpBindingFields> List<SxpDatabaseBinding> deleteBindings(NodeId nodeId,
             List<T> bindings) {
         if (nodeId == null || bindings == null || bindings.isEmpty())
             return new ArrayList<>();
@@ -96,13 +98,15 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
         return databaseBindings;
     }
 
-    @Override public synchronized List<SxpDatabaseBinding> getBindings() {
+    @Override
+    public synchronized List<SxpDatabaseBinding> getBindings() {
         List<SxpDatabaseBinding> bindings = new ArrayList<>(getBindings(BindingDatabase.BindingType.ActiveBindings));
         bindings.addAll(getBindings(BindingDatabase.BindingType.ReconciledBindings));
         return bindings;
     }
 
-    @Override public synchronized List<SxpDatabaseBinding> getBindings(NodeId nodeId) {
+    @Override
+    public synchronized List<SxpDatabaseBinding> getBindings(NodeId nodeId) {
         List<SxpDatabaseBinding> bindings = new ArrayList<>();
         if (nodeId != null) {
             bindings.addAll(getBindings(BindingDatabase.BindingType.ReconciledBindings, nodeId));
@@ -111,7 +115,8 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
         return bindings;
     }
 
-    @Override public synchronized <T extends SxpBindingFields> List<SxpDatabaseBinding> addBinding(NodeId nodeId,
+    @Override
+    public synchronized <T extends SxpBindingFields> List<SxpDatabaseBinding> addBinding(NodeId nodeId,
             List<T> bindings) {
         List<SxpDatabaseBinding> databaseBindings = new ArrayList<>();
         if (nodeId == null || bindings == null || bindings.isEmpty()) {
@@ -126,7 +131,8 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
         return databaseBindings;
     }
 
-    @Override public synchronized void setReconciliation(NodeId nodeId) {
+    @Override
+    public synchronized void setReconciliation(NodeId nodeId) {
         if (nodeId != null) {
             putBindings(nodeId, BindingDatabase.BindingType.ReconciledBindings,
                     getBindings(BindingDatabase.BindingType.ActiveBindings, nodeId));
@@ -134,7 +140,8 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
         }
     }
 
-    @Override public synchronized List<SxpDatabaseBinding> reconcileBindings(NodeId nodeId) {
+    @Override
+    public synchronized List<SxpDatabaseBinding> reconcileBindings(NodeId nodeId) {
         if (nodeId != null) {
             List<SxpDatabaseBinding> bindings = getBindings(BindingDatabase.BindingType.ReconciledBindings, nodeId);
             deleteBindings(nodeId, BindingDatabase.BindingType.ReconciledBindings);
@@ -143,7 +150,8 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
         return new ArrayList<>();
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         StringBuilder builder = new StringBuilder(this.getClass().getSimpleName() + "\n");
         List<SxpDatabaseBinding> databaseBindings = getBindings();
         if (!databaseBindings.isEmpty()) {
@@ -198,7 +206,7 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
      * @return List of replacements
      */
     public static <T extends SxpBindingFields> List<SxpDatabaseBinding> getReplaceForBindings(List<T> bindings,
-            final SxpDatabaseInf database,final Map<NodeId, SxpBindingFilter> filters) {
+            final SxpDatabaseInf database, final Map<NodeId, SxpBindingFilter> filters) {
         if (bindings == null || database == null || bindings.isEmpty())
             return new ArrayList<>();
         Set<IpPrefix>
@@ -236,8 +244,7 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
         if (nodeId == null || filter == null) {
             return new ArrayList<>();
         }
-        List<SxpDatabaseBinding> active = database.getBindings(nodeId),
-                filtered = new ArrayList<>();
+        List<SxpDatabaseBinding> active = database.getBindings(nodeId), filtered = new ArrayList<>();
         if (!active.isEmpty()) {
             filtered.addAll(Collections2.filter(active, filter::apply));
         }

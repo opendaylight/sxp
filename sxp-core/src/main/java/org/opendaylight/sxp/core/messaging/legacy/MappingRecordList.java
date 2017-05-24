@@ -19,6 +19,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapp
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlvs.fields.Tlv;
 
 public class MappingRecordList extends ArrayList<MappingRecord> {
+
     private static final int INITIAL_CAPACITY = 5;
 
     /** */
@@ -58,13 +59,15 @@ public class MappingRecordList extends ArrayList<MappingRecord> {
         }
 
         byte[] bprefix = InetAddresses.forString(_prefix).getAddress();
-        byte[] _mappingRecord = ArraysUtil.combine(
-                ArraysUtil.int2bytes(mappingRecord.getOperationCode().getIntValue()),
-                ArraysUtil.int2bytes(mappingRecord.getLength()), bprefix);
+        byte[]
+                _mappingRecord =
+                ArraysUtil.combine(ArraysUtil.int2bytes(mappingRecord.getOperationCode().getIntValue()),
+                        ArraysUtil.int2bytes(mappingRecord.getLength()), bprefix);
 
         for (Tlv tlv : mappingRecord.getTlv()) {
-            _mappingRecord = ArraysUtil.combine(_mappingRecord, ArraysUtil.int2bytes(tlv.getType().getIntValue()),
-                    ArraysUtil.int2bytes(tlv.getLength()), tlv.getValue());
+            _mappingRecord =
+                    ArraysUtil.combine(_mappingRecord, ArraysUtil.int2bytes(tlv.getType().getIntValue()),
+                            ArraysUtil.int2bytes(tlv.getLength()), tlv.getValue());
         }
         return _mappingRecord;
     }

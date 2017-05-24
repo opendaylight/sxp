@@ -8,6 +8,16 @@
 
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collections;
@@ -41,17 +51,8 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({Configuration.class, DatastoreAccess.class})
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({Configuration.class, DatastoreAccess.class})
 public class ConnectionsListenerTest {
 
     private ConnectionsListener identityListener;
@@ -59,7 +60,8 @@ public class ConnectionsListenerTest {
     private SxpNode sxpNode;
     private SxpConnection connection;
 
-    @Before public void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
         identityListener = new ConnectionsListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
@@ -105,25 +107,29 @@ public class ConnectionsListenerTest {
         return builder.build();
     }
 
-    @Test public void testHandleOperational_1() throws Exception {
+    @Test
+    public void testHandleOperational_1() throws Exception {
         identityListener.handleOperational(getObjectModification(DataObjectModification.ModificationType.WRITE, null,
                 getConnection("1.1.1.1", ConnectionState.Off, 56)), getIdentifier(), sxpNode);
         verify(sxpNode).addConnection(any(Connection.class), anyString());
     }
 
-    @Test public void testHandleOperational_2() throws Exception {
+    @Test
+    public void testHandleOperational_2() throws Exception {
         identityListener.handleOperational(getObjectModification(DataObjectModification.ModificationType.WRITE,
                 getConnection("1.1.1.1", ConnectionState.Off, 56), null), getIdentifier(), sxpNode);
         verify(sxpNode).removeConnection(any(InetSocketAddress.class));
     }
 
-    @Test public void testHandleOperational_3() throws Exception {
+    @Test
+    public void testHandleOperational_3() throws Exception {
         identityListener.handleOperational(getObjectModification(DataObjectModification.ModificationType.DELETE,
                 getConnection("1.1.1.1", ConnectionState.Off, 56), null), getIdentifier(), sxpNode);
         verify(sxpNode).removeConnection(any(InetSocketAddress.class));
     }
 
-    @Test public void testHandleOperational_4() throws Exception {
+    @Test
+    public void testHandleOperational_4() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
                         getConnection("1.1.1.1", ConnectionState.On, 56),
@@ -131,7 +137,8 @@ public class ConnectionsListenerTest {
         verify(connection).shutdown();
     }
 
-    @Test public void testHandleOperational_5() throws Exception {
+    @Test
+    public void testHandleOperational_5() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
                         getConnection("1.1.1.1", ConnectionState.On, 56),
@@ -139,7 +146,8 @@ public class ConnectionsListenerTest {
         verify(connection).shutdown();
     }
 
-    @Test public void testGetIdentifier() throws Exception {
+    @Test
+    public void testGetIdentifier() throws Exception {
         assertNotNull(identityListener.getIdentifier(new ConnectionBuilder().setTcpPort(new PortNumber(64))
                 .setPeerAddress(new IpAddress("1.1.1.1".toCharArray()))
                 .build(), getIdentifier()));
@@ -149,7 +157,8 @@ public class ConnectionsListenerTest {
                 .build(), getIdentifier()).getTargetType().equals(Connection.class));
     }
 
-    @Test public void testHandleChange() throws Exception {
+    @Test
+    public void testHandleChange() throws Exception {
         identityListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE,
                         getConnection("1.1.1.2", ConnectionState.On, 57),
@@ -185,7 +194,8 @@ public class ConnectionsListenerTest {
         verify(datastoreAccess).checkAndDelete(any(InstanceIdentifier.class), eq(LogicalDatastoreType.OPERATIONAL));
     }
 
-    @Test public void testGetModifications() throws Exception {
+    @Test
+    public void testGetModifications() throws Exception {
         assertNotNull(identityListener.getObjectModifications(null));
         assertNotNull(identityListener.getObjectModifications(mock(DataObjectModification.class)));
         assertNotNull(identityListener.getModifications(null));

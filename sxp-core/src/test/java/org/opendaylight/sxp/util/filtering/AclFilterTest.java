@@ -8,6 +8,11 @@
 
 package org.opendaylight.sxp.util.filtering;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
@@ -32,18 +37,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.ma
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.sgt.match.SgtRangeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 public class AclFilterTest {
 
     private List<AclEntry> aclEntryList = new ArrayList<>();
     private AclFilter filter;
 
-    @Before public void init() {
+    @Before
+    public void init() {
         AclFilterEntriesBuilder builder = new AclFilterEntriesBuilder();
         builder.setAclEntry(aclEntryList);
         SxpFilterBuilder filterBuilder = new SxpFilterBuilder();
@@ -124,7 +124,8 @@ public class AclFilterTest {
         return filter.apply(bindingBuilder.build());
     }
 
-    @Test public void testFilterSgtOnly() throws Exception {
+    @Test
+    public void testFilterSgtOnly() throws Exception {
         aclEntryList.add(getAclEntry(FilterEntryType.Permit, getSgtMatches(1, 2, 10, 20, 100, 200)));
         aclEntryList.add(getAclEntry(FilterEntryType.Deny, getSgtRange(25, 50)));
         aclEntryList.add(getAclEntry(FilterEntryType.Permit, getSgtRange(5, 150)));
@@ -138,7 +139,8 @@ public class AclFilterTest {
         assertTrue(filterOutbound("127.0.0.1/24", 186));
     }
 
-    @Test public void testFilterAclOnly() throws Exception {
+    @Test
+    public void testFilterAclOnly() throws Exception {
         aclEntryList.add(getAclEntry(FilterEntryType.Permit, getAclMatch("52.12.0.5", "0.255.0.0")));
         aclEntryList.add(getAclEntry(FilterEntryType.Deny, getAclMatch("53.12.0.5", "0.254.0.0")));
         aclEntryList.add(getAclEntry(FilterEntryType.Permit, getAclMatch("53.1.0.5", "0.254.0.0")));
@@ -157,7 +159,8 @@ public class AclFilterTest {
         aclEntryList.add(
                 getAclEntry(FilterEntryType.Permit, getAclMatch("2001:0:8:0:6:205:0:1", "0:0:0:0:0:0:FFFF:0")));
         aclEntryList.add(getAclEntry(FilterEntryType.Deny, getAclMatch("2001:0:8:0:6:205:0:1", "0:FFFE:0:0:0:0:0:0")));
-        aclEntryList.add(getAclEntry(FilterEntryType.Permit, getAclMatch("2001:1:8:0:6:205:0:1", "0:FFFE:0:0:0:0:0:0")));
+        aclEntryList.add(
+                getAclEntry(FilterEntryType.Permit, getAclMatch("2001:1:8:0:6:205:0:1", "0:FFFE:0:0:0:0:0:0")));
         aclEntryList.add(getAclEntry(FilterEntryType.Permit, getAclMatch("56:0:B:0:0:0:0:1", "0:0:0:0:0:0:0:0")));
 
         assertTrue(filterOutbound("2001:0:8:0:6:25:0:1/128", 10));
@@ -168,7 +171,8 @@ public class AclFilterTest {
         assertTrue(filterOutbound("56:0:B:0:0:0:0:0/64", 10));
     }
 
-    @Test public void testFilterAclSgt() throws Exception {
+    @Test
+    public void testFilterAclSgt() throws Exception {
         aclEntryList.add(getAclEntry(FilterEntryType.Deny, getSgtMatches(20, 25, 30, 40),
                 getAclMatch("53.12.0.5", "255.254.0.0")));
         aclEntryList.add(getAclEntry(FilterEntryType.Permit, getSgtRange(5, 100)));
@@ -198,7 +202,8 @@ public class AclFilterTest {
         assertFalse(filterOutbound("3.1.0.5/24", 40));
     }
 
-    @Test public void testFilterExtendedAcl() throws Exception {
+    @Test
+    public void testFilterExtendedAcl() throws Exception {
         aclEntryList.add(
                 getAclEntry(FilterEntryType.Deny, getAclMatch("53.12.0.5", "0.254.0.0", "255.255.255.0", "0.0.0.243")));
         aclEntryList.add(getAclEntry(FilterEntryType.Permit,

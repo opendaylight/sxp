@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.util.time.connection;
 
+import java.util.concurrent.TimeUnit;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
@@ -16,8 +17,6 @@ import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorSubCode;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * HoldTimerTask is used by an SXP Listener for detect when a connection is no longer live.
@@ -39,19 +38,20 @@ public class HoldTimerTask extends SxpTimerTask<Void> {
         this.connection = connection;
     }
 
-    @Override public Void call() {
+    @Override
+    public Void call() {
         LOG.debug(connection + " {} [{}]", getClass().getSimpleName(), getPeriod());
 
         if (connection.isStateOn() && connection.isModeListener() && connection.isVersion4()) {
             try {
                 if (connection.getTimestampUpdateOrKeepAliveMessage()
                         < System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(getPeriod())) {
-                        MessageDecoder.sendErrorMessage(connection.getChannelHandlerContext(
-                                        SxpConnection.ChannelHandlerContextType.ListenerContext),
-                                new ErrorMessageException(null, ErrorSubCode.UnacceptableHoldTime, null), connection);
-                        connection.setDeleteHoldDownTimer();
-                        LOG.info("{} State to DeleteHoldDown", connection);
-                        return null;
+                    MessageDecoder.sendErrorMessage(connection.getChannelHandlerContext(
+                            SxpConnection.ChannelHandlerContextType.ListenerContext),
+                            new ErrorMessageException(null, ErrorSubCode.UnacceptableHoldTime, null), connection);
+                    connection.setDeleteHoldDownTimer();
+                    LOG.info("{} State to DeleteHoldDown", connection);
+                    return null;
                 }
             } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
                 LOG.warn(connection.getOwner() + " {} {} | {}", getClass().getSimpleName(),

@@ -8,7 +8,16 @@
 
 package org.opendaylight.sxp.controller.util.database;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+
 import com.google.common.util.concurrent.Futures;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,64 +46,59 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({DatastoreAccess.class}) public class SxpDatastoreImplTest {
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({DatastoreAccess.class})
+public class SxpDatastoreImplTest {
 
     private static SxpDatastoreImpl database;
     private static DatastoreAccess access;
     private static Map<NodeId, List<SxpDatabaseBinding>> databaseBindings_Active = new HashMap<>();
     private static Map<NodeId, List<SxpDatabaseBinding>> databaseBindings_Reconciled = new HashMap<>();
 
-    @BeforeClass public static void initClass() {
+    @BeforeClass
+    public static void initClass() {
         access = PowerMockito.mock(DatastoreAccess.class);
-        PowerMockito.when(access.merge(any(InstanceIdentifier.class), any(BindingSource.class),
-                any(LogicalDatastoreType.class))).then(invocation -> {
-            InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
-            if (identifier.getTargetType() == BindingSource.class) {
-                Map<NodeId, List<SxpDatabaseBinding>>
-                        map =
-                        ((BindingDatabaseKey) identifier.firstKeyOf(BindingDatabase.class)).getBindingType()
-                                == BindingDatabase.BindingType.ActiveBindings ? databaseBindings_Active : databaseBindings_Reconciled;
-                NodeId nodeId = ((BindingSourceKey) identifier.firstKeyOf(BindingSource.class)).getSourceId();
+        PowerMockito.when(
+                access.merge(any(InstanceIdentifier.class), any(BindingSource.class), any(LogicalDatastoreType.class)))
+                .then(invocation -> {
+                    InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
+                    if (identifier.getTargetType() == BindingSource.class) {
+                        Map<NodeId, List<SxpDatabaseBinding>>
+                                map =
+                                ((BindingDatabaseKey) identifier.firstKeyOf(BindingDatabase.class)).getBindingType()
+                                        == BindingDatabase.BindingType.ActiveBindings ? databaseBindings_Active : databaseBindings_Reconciled;
+                        NodeId nodeId = ((BindingSourceKey) identifier.firstKeyOf(BindingSource.class)).getSourceId();
 
-                if (!map.containsKey(nodeId)) {
-                    map.put(nodeId, new ArrayList<>());
-                }
-                map.get(nodeId)
-                        .addAll(((BindingSource) invocation.getArguments()[1]).getSxpDatabaseBindings()
-                                .getSxpDatabaseBinding());
-            }
-            return Futures.immediateCheckedFuture(null);
-        });
-        PowerMockito.when(access.put(any(InstanceIdentifier.class), any(MasterDatabase.class),
-                any(LogicalDatastoreType.class))).then(invocation -> {
-            InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
-            if (identifier.getTargetType() == BindingSource.class) {
-                Map<NodeId, List<SxpDatabaseBinding>>
-                        map =
-                        ((BindingDatabaseKey) identifier.firstKeyOf(BindingDatabase.class)).getBindingType()
-                                == BindingDatabase.BindingType.ActiveBindings ? databaseBindings_Active : databaseBindings_Reconciled;
-                NodeId nodeId = ((BindingSourceKey) identifier.firstKeyOf(BindingSource.class)).getSourceId();
+                        if (!map.containsKey(nodeId)) {
+                            map.put(nodeId, new ArrayList<>());
+                        }
+                        map.get(nodeId)
+                                .addAll(((BindingSource) invocation.getArguments()[1]).getSxpDatabaseBindings()
+                                        .getSxpDatabaseBinding());
+                    }
+                    return Futures.immediateCheckedFuture(null);
+                });
+        PowerMockito.when(
+                access.put(any(InstanceIdentifier.class), any(MasterDatabase.class), any(LogicalDatastoreType.class)))
+                .then(invocation -> {
+                    InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
+                    if (identifier.getTargetType() == BindingSource.class) {
+                        Map<NodeId, List<SxpDatabaseBinding>>
+                                map =
+                                ((BindingDatabaseKey) identifier.firstKeyOf(BindingDatabase.class)).getBindingType()
+                                        == BindingDatabase.BindingType.ActiveBindings ? databaseBindings_Active : databaseBindings_Reconciled;
+                        NodeId nodeId = ((BindingSourceKey) identifier.firstKeyOf(BindingSource.class)).getSourceId();
 
-                if (!map.containsKey(nodeId)) {
-                    map.put(nodeId, new ArrayList<>());
-                }
-                map.get(nodeId).clear();
-                map.get(nodeId)
-                        .addAll(((BindingSource) invocation.getArguments()[1]).getSxpDatabaseBindings()
-                                .getSxpDatabaseBinding());
-            }
-            return Futures.immediateCheckedFuture(null);
-        });
+                        if (!map.containsKey(nodeId)) {
+                            map.put(nodeId, new ArrayList<>());
+                        }
+                        map.get(nodeId).clear();
+                        map.get(nodeId)
+                                .addAll(((BindingSource) invocation.getArguments()[1]).getSxpDatabaseBindings()
+                                        .getSxpDatabaseBinding());
+                    }
+                    return Futures.immediateCheckedFuture(null);
+                });
         PowerMockito.when(access.checkAndDelete(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
                 .then(invocation -> {
                     InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
@@ -141,7 +145,8 @@ import static org.mockito.Matchers.any;
                 });
     }
 
-    @Before public void init() {
+    @Before
+    public void init() {
         databaseBindings_Reconciled.clear();
         databaseBindings_Active.clear();
         database = new SxpDatastoreImpl(access, "0.0.0.0", "DOMAIN");
@@ -173,7 +178,8 @@ import static org.mockito.Matchers.any;
                                 && Arrays.equals(r.getIpPrefix().getValue(), b.getIpPrefix().getValue()))));
     }
 
-    @Test public void testDeleteBindings() throws Exception {
+    @Test
+    public void testDeleteBindings() throws Exception {
         assertEquals(0, database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10")).size());
         assertEquals(0, database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), new ArrayList<>()).size());
 
@@ -203,7 +209,8 @@ import static org.mockito.Matchers.any;
                         getBinding("1.1.1.1/32", 10, "30.30.30.30")));
     }
 
-    @Test public void testAddBinding() throws Exception {
+    @Test
+    public void testAddBinding() throws Exception {
         assertEquals(0, database.addBinding(NodeId.getDefaultInstance("1.1.1.1"), mergeBindings()).size());
         assertEquals(0, database.getBindings().size());
 
@@ -228,7 +235,8 @@ import static org.mockito.Matchers.any;
                         getBinding("2.2.2.2/32", 200, "20.20.20.20")));
     }
 
-    @Test public void testReconcileBindings() throws Exception {
+    @Test
+    public void testReconcileBindings() throws Exception {
         database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),
                 mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("1.1.1.1/32", 10, "10.10.10.10"),
                         getBinding("1.1.1.1/32", 100, "10.10.10.10")));
@@ -265,7 +273,8 @@ import static org.mockito.Matchers.any;
                         getBinding("2.2.2.2/32", 200, "20.20.20.20")));
     }
 
-    @Test public void testToString() throws Exception {
+    @Test
+    public void testToString() throws Exception {
         assertEquals("SxpDatastoreImpl\n", database.toString());
 
         database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),

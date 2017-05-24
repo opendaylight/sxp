@@ -8,7 +8,7 @@
 
 package org.opendaylight.controller.config.yang.sxp.controller.conf;
 
-public class SxpControllerModuleFactory extends
-        org.opendaylight.controller.config.yang.sxp.controller.conf.AbstractSxpControllerModuleFactory {
+public class SxpControllerModuleFactory
+        extends org.opendaylight.controller.config.yang.sxp.controller.conf.AbstractSxpControllerModuleFactory {
 
 }

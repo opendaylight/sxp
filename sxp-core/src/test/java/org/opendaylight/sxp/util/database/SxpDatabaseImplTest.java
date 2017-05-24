@@ -8,6 +8,11 @@
 
 package org.opendaylight.sxp.util.database;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,18 +43,16 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class}) public class SxpDatabaseImplTest {
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({SxpNode.class})
+public class SxpDatabaseImplTest {
 
     private static SxpDatabaseImpl database;
     private static SxpNode node;
     private static List<SxpConnection> sxpConnections = new ArrayList<>();
 
-    @Before public void init() {
+    @Before
+    public void init() {
         database = new SxpDatabaseImpl();
         node = PowerMockito.mock(SxpNode.class);
         PowerMockito.when(node.getBindingSxpDatabase()).thenReturn(database);
@@ -106,7 +109,8 @@ import static org.mockito.Mockito.when;
         return builder.build();
     }
 
-    @Test public void testDeleteBindings() throws Exception {
+    @Test
+    public void testDeleteBindings() throws Exception {
         assertEquals(0, database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10")).size());
         assertEquals(0, database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), new ArrayList<>()).size());
 
@@ -136,7 +140,8 @@ import static org.mockito.Mockito.when;
                         getBinding("1.1.1.1/32", 10, "30.30.30.30")));
     }
 
-    @Test public void testFilterDatabase() throws Exception {
+    @Test
+    public void testFilterDatabase() throws Exception {
         List<PrefixListEntry> prefixListEntryList = new ArrayList<>();
         PrefixListFilterEntriesBuilder builder = new PrefixListFilterEntriesBuilder();
         builder.setPrefixListEntry(prefixListEntryList);
@@ -156,7 +161,8 @@ import static org.mockito.Mockito.when;
                 mergeBindings(getBinding("127.25.0.1/32", 10), getBinding("2001:0:0:0:0:0:0:1/128", 30)));
     }
 
-    @Test public void testGetReplaceForBindings() throws Exception {
+    @Test
+    public void testGetReplaceForBindings() throws Exception {
         database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),
                 mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("2.2.2.2/32", 200, "10.10.10.10"),
                         getBinding("1.1.1.1/32", 100, "10.10.10.10")));
@@ -169,13 +175,13 @@ import static org.mockito.Mockito.when;
                 mergeBindings(getBinding("25.2.2.6/32", 20, "30.30.30.30", "20.20.20.20", "10.10.10.10"),
                         getBinding("1.1.1.1/32", 10, "30.30.30.30")));
 
-
         sxpConnections.add(mockConnection("10.10.10.10"));
         sxpConnections.add(mockConnection("20.20.20.20"));
         sxpConnections.add(mockConnection("30.30.30.30"));
 
         database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), mergeBindings(getBinding("2.2.2.2/32", 200)));
-        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(), database, SxpDatabase.getInboundFilters(node, "global")), mergeBindings());
+        assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(), database,
+                SxpDatabase.getInboundFilters(node, "global")), mergeBindings());
 
         assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("2.2.2.2/32", 200)), database,
                 SxpDatabase.getInboundFilters(node, "global")), mergeBindings(getBinding("2.2.2.2/32", 20)));
@@ -190,7 +196,8 @@ import static org.mockito.Mockito.when;
                 SxpDatabase.getInboundFilters(node, "global")), mergeBindings());
     }
 
-    @Test public void testAddBinding() throws Exception {
+    @Test
+    public void testAddBinding() throws Exception {
         assertEquals(0, database.addBinding(NodeId.getDefaultInstance("1.1.1.1"), mergeBindings()).size());
         assertEquals(0, database.getBindings().size());
 
@@ -215,7 +222,8 @@ import static org.mockito.Mockito.when;
                         getBinding("2.2.2.2/32", 200, "20.20.20.20")));
     }
 
-    @Test public void testReconcileBindings() throws Exception {
+    @Test
+    public void testReconcileBindings() throws Exception {
         database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),
                 mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("1.1.1.1/32", 10, "10.10.10.10"),
                         getBinding("1.1.1.1/32", 100, "10.10.10.10")));
@@ -252,7 +260,8 @@ import static org.mockito.Mockito.when;
                         getBinding("2.2.2.2/32", 200, "20.20.20.20")));
     }
 
-    @Test public void testToString() throws Exception {
+    @Test
+    public void testToString() throws Exception {
         assertEquals("SxpDatabaseImpl\n", database.toString());
 
         database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),

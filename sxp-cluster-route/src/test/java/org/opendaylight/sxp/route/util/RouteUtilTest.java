@@ -41,14 +41,10 @@ public class RouteUtilTest {
 
     private static final String DUMMY_NETMASK_IPV4 = "255.254.253.252";
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-    @Mock
-    public ThreadsWorker threadsWorker;
-    @Mock
-    private MasterDatabaseInf masterDatabase;
-    @Mock
-    private SxpDatabaseInf sxpDatabase;
+    @Rule public ExpectedException thrown = ExpectedException.none();
+    @Mock public ThreadsWorker threadsWorker;
+    @Mock private MasterDatabaseInf masterDatabase;
+    @Mock private SxpDatabaseInf sxpDatabase;
     public static final String DUMMY_IFACE = "iface123";
 
     @Test
@@ -84,9 +80,9 @@ public class RouteUtilTest {
 
     @Test
     public void findSxpNodesOnVirtualIp() throws Exception {
-        final Collection<SxpNode> sxpNodes = Lists.newArrayList(
-                createSxpNode("5.6.7.8"),
-                createSxpNode(DUMMY_ADDRESS_IPV4));
+        final Collection<SxpNode>
+                sxpNodes =
+                Lists.newArrayList(createSxpNode("5.6.7.8"), createSxpNode(DUMMY_ADDRESS_IPV4));
         final IpAddress virtualIp = new IpAddress(DUMMY_ADDRESS_IPV4.toCharArray());
 
         final Collection<SxpNode> actual = RouteUtil.findSxpNodesOnVirtualIp(virtualIp, sxpNodes);
@@ -97,14 +93,16 @@ public class RouteUtilTest {
 
     @Test
     public void createOperationalRouteDefinition() throws Exception {
-        final RoutingDefinition routingDefinition = new RoutingDefinitionBuilder()
-                .setInterface(DUMMY_IFACE)
-                .setIpAddress(new IpAddress(DUMMY_ADDRESS_IPV4.toCharArray()))
-                .setNetmask(new IpAddress(DUMMY_NETMASK_IPV4.toCharArray()))
-                .build();
+        final RoutingDefinition
+                routingDefinition =
+                new RoutingDefinitionBuilder().setInterface(DUMMY_IFACE)
+                        .setIpAddress(new IpAddress(DUMMY_ADDRESS_IPV4.toCharArray()))
+                        .setNetmask(new IpAddress(DUMMY_NETMASK_IPV4.toCharArray()))
+                        .build();
         final long beforeCreated = (System.currentTimeMillis() / 1000) * 1000;
-        final RoutingDefinition actual = RouteUtil.createOperationalRouteDefinition(
-                routingDefinition, true, "dummy explanation");
+        final RoutingDefinition
+                actual =
+                RouteUtil.createOperationalRouteDefinition(routingDefinition, true, "dummy explanation");
 
         Assert.assertEquals(DUMMY_ADDRESS_IPV4, String.valueOf(actual.getIpAddress().getValue()));
         Assert.assertEquals(DUMMY_NETMASK_IPV4, String.valueOf(actual.getNetmask().getValue()));

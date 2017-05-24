@@ -27,7 +27,8 @@ public class MasterDatabaseImpl extends MasterDatabase {
     private final Map<IpPrefix, MasterDatabaseBinding> bindingMap = new HashMap<>();
     private final Map<IpPrefix, MasterDatabaseBinding> localBindingMap = new HashMap<>();
 
-    @Override synchronized public List<MasterDatabaseBinding> getBindings() {
+    @Override
+    synchronized public List<MasterDatabaseBinding> getBindings() {
         List<MasterDatabaseBinding> bindings = new ArrayList<>(bindingMap.values());
         Set<IpPrefix>
                 ipPrefixSet =
@@ -39,7 +40,8 @@ public class MasterDatabaseImpl extends MasterDatabase {
         return bindings;
     }
 
-    @Override synchronized public List<MasterDatabaseBinding> getLocalBindings() {
+    @Override
+    synchronized public List<MasterDatabaseBinding> getLocalBindings() {
         return new ArrayList<>(localBindingMap.values());
     }
 
@@ -69,7 +71,7 @@ public class MasterDatabaseImpl extends MasterDatabase {
         List<MasterDatabaseBinding> removed = new ArrayList<>();
         if (map == null || bindings == null || bindings.isEmpty())
             return removed;
-        bindings.stream().forEach(b -> {
+        bindings.forEach(b -> {
             if (map.containsKey(b.getIpPrefix()) && map.get(b.getIpPrefix())
                     .getSecurityGroupTag()
                     .getValue()

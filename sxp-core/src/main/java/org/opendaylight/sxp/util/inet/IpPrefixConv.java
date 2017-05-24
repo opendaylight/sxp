@@ -116,7 +116,8 @@ public final class IpPrefixConv {
      * @throws UnknownPrefixException If one of addresses isn't in IPv4
      * @throws UnknownHostException   If one of addresses has illegal format
      */
-    public static List<IpPrefix> decodeIpv4(byte[] array, boolean compact) throws UnknownHostException, UnknownPrefixException {
+    public static List<IpPrefix> decodeIpv4(byte[] array, boolean compact)
+            throws UnknownHostException, UnknownPrefixException {
         return decode(IpPrefixType.Ipv4Prefix, array, compact);
     }
 
@@ -129,7 +130,8 @@ public final class IpPrefixConv {
      * @throws UnknownPrefixException If one of addresses isn't in IPv6
      * @throws UnknownHostException   If one of addresses has illegal format
      */
-    public static List<IpPrefix> decodeIpv6(byte[] array, boolean compact) throws UnknownHostException, UnknownPrefixException {
+    public static List<IpPrefix> decodeIpv6(byte[] array, boolean compact)
+            throws UnknownHostException, UnknownPrefixException {
         return decode(IpPrefixType.Ipv6Prefix, array, compact);
     }
 
@@ -217,9 +219,9 @@ public final class IpPrefixConv {
         int length = getPrefixLength(prefix);
         byte[] bprefix = trimPrefix(InetAddresses.forString(_prefix).getAddress(), getBytesLength(length));
         if (Configuration.SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS) {
-            return ArraysUtil.combine(new byte[] { ArraysUtil.int2bytes(length)[3] }, bprefix);
+            return ArraysUtil.combine(new byte[] {ArraysUtil.int2bytes(length)[3]}, bprefix);
         }
-        return ArraysUtil.combine(new byte[] { ArraysUtil.int2bytes(length)[3], 0x00, 0x00, 0x00 }, bprefix);
+        return ArraysUtil.combine(new byte[] {ArraysUtil.int2bytes(length)[3], 0x00, 0x00, 0x00}, bprefix);
     }
 
     /**

@@ -48,22 +48,14 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 @RunWith(MockitoJUnitRunner.class)
 public class RouteReactorImplTest {
 
-    @Mock
-    private DataBroker dataBroker;
-    @Mock
-    private BindingTransactionChain txChain;
-    @Mock
-    private ReadWriteTransaction wTx;
-    @Mock
-    private ReadOnlyTransaction rTx;
-    @Mock
-    private RoutingServiceFactory routingServiceFactory;
-    @Mock
-    private Routing routingService;
-    @Captor
-    ArgumentCaptor<InstanceIdentifier<SxpClusterRoute>> pathCaptor;
-    @Captor
-    ArgumentCaptor<SxpClusterRoute> dataCaptor;
+    @Mock private DataBroker dataBroker;
+    @Mock private BindingTransactionChain txChain;
+    @Mock private ReadWriteTransaction wTx;
+    @Mock private ReadOnlyTransaction rTx;
+    @Mock private RoutingServiceFactory routingServiceFactory;
+    @Mock private Routing routingService;
+    @Captor ArgumentCaptor<InstanceIdentifier<SxpClusterRoute>> pathCaptor;
+    @Captor ArgumentCaptor<SxpClusterRoute> dataCaptor;
 
     private ArrayList<RoutingDefinition> leftSide;
     private ArrayList<RoutingDefinition> rightSide;
@@ -75,18 +67,19 @@ public class RouteReactorImplTest {
     public void setUp() throws Exception {
         Mockito.when(routingService.setInterface(Matchers.any())).thenReturn(routingService);
         Mockito.when(routingService.setNetmask(Matchers.any())).thenReturn(routingService);
-        Mockito.when(routingServiceFactory.instantiateRoutingService(Matchers.any()))
-                .thenReturn(routingService);
+        Mockito.when(routingServiceFactory.instantiateRoutingService(Matchers.any())).thenReturn(routingService);
         Mockito.when(dataBroker.createTransactionChain(Matchers.any())).thenReturn(txChain);
         Mockito.when(txChain.newWriteOnlyTransaction()).thenReturn(wTx);
         Mockito.when(txChain.newReadOnlyTransaction()).thenReturn(rTx);
 
         reactor = new RouteReactorImpl(dataBroker, routingServiceFactory);
-        leftSide = Lists.newArrayList(
-                RouteTestFactory.createDummyRoutingDef(1, 1), RouteTestFactory.createDummyRoutingDef(2, 2), RouteTestFactory.createDummyRoutingDef(3, 3));
+        leftSide =
+                Lists.newArrayList(RouteTestFactory.createDummyRoutingDef(1, 1),
+                        RouteTestFactory.createDummyRoutingDef(2, 2), RouteTestFactory.createDummyRoutingDef(3, 3));
 
-        rightSide = Lists.newArrayList(
-                RouteTestFactory.createDummyRoutingDef(2, 2), RouteTestFactory.createDummyRoutingDef(3, 1), RouteTestFactory.createDummyRoutingDef(4, 4));
+        rightSide =
+                Lists.newArrayList(RouteTestFactory.createDummyRoutingDef(2, 2),
+                        RouteTestFactory.createDummyRoutingDef(3, 1), RouteTestFactory.createDummyRoutingDef(4, 4));
 
         // 1 -> -  [remove]
         // 2 -> 2  [NOOP]
@@ -296,9 +289,7 @@ public class RouteReactorImplTest {
     @Test
     public void fillDefinitionsSafely() throws Exception {
         final Map<IpAddress, RoutingDefinition> targetMap = new HashMap<>();
-        final SxpClusterRoute sxpClusterRoute = new SxpClusterRouteBuilder()
-                .setRoutingDefinition(rightSide)
-                .build();
+        final SxpClusterRoute sxpClusterRoute = new SxpClusterRouteBuilder().setRoutingDefinition(rightSide).build();
         reactor.fillDefinitionsSafely(sxpClusterRoute, targetMap);
 
         Assert.assertEquals(rightSide.size(), targetMap.size());
@@ -307,8 +298,7 @@ public class RouteReactorImplTest {
     @Test
     public void fillDefinitionsSafely_null() throws Exception {
         final Map<IpAddress, RoutingDefinition> targetMap = new HashMap<>();
-        final SxpClusterRoute sxpClusterRoute = new SxpClusterRouteBuilder()
-                .build();
+        final SxpClusterRoute sxpClusterRoute = new SxpClusterRouteBuilder().build();
         reactor.fillDefinitionsSafely(sxpClusterRoute, targetMap);
 
         Assert.assertEquals(0, targetMap.size());
@@ -322,7 +312,8 @@ public class RouteReactorImplTest {
         Mockito.when(routingService.addRouteForCurrentService()).thenReturn(true);
         Mockito.when(routingService.removeRouteForCurrentService()).thenReturn(true);
 
-        Mockito.when(rTx.read(Matchers.any(), Matchers.any())).thenReturn(Futures.immediateCheckedFuture(Optional.of(oldRoute)));
+        Mockito.when(rTx.read(Matchers.any(), Matchers.any()))
+                .thenReturn(Futures.immediateCheckedFuture(Optional.of(oldRoute)));
         Mockito.when(wTx.submit()).thenReturn(Futures.immediateCheckedFuture(null));
 
         Iterables.concat(leftSide, rightSide).forEach(routeDef -> {
@@ -338,9 +329,8 @@ public class RouteReactorImplTest {
         final List<RoutingDefinition> actual = dataCaptor.getValue().getRoutingDefinition();
         Assert.assertEquals(3, actual.size());
 
-        Collections.sort(actual, (o1, o2) ->
-                RouteUtil.addressToString(o1.getIpAddress())
-                        .compareTo(RouteUtil.addressToString(o2.getIpAddress())));
+        Collections.sort(actual, (o1, o2) -> RouteUtil.addressToString(o1.getIpAddress())
+                .compareTo(RouteUtil.addressToString(o2.getIpAddress())));
 
         int idx = 0;
         Assert.assertEquals(null, actual.get(idx).getInfo());
@@ -358,8 +348,7 @@ public class RouteReactorImplTest {
     }
 
     private RoutingDefinition distillDefinition(final RoutingDefinition routingDefinition) {
-        return new RoutingDefinitionBuilder(routingDefinition)
-                .setInfo(null)
+        return new RoutingDefinitionBuilder(routingDefinition).setInfo(null)
                 .setTimestamp(null)
                 .setConsistent(null)
                 .build();

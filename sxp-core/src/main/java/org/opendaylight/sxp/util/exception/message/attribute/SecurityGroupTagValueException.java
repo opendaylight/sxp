@@ -11,7 +11,7 @@ package org.opendaylight.sxp.util.exception.message.attribute;
 public class SecurityGroupTagValueException extends Exception {
 
     /**
-     * 
+     *
      */
     private static final long serialVersionUID = 801190427695923174L;
 

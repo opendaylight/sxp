@@ -8,6 +8,9 @@
 
 package org.opendaylight.sxp.core.messaging;
 
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyAttributeFactory;
 import org.opendaylight.sxp.util.ArraysUtil;
@@ -55,16 +58,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.source.group.tag.attribute.SourceGroupTagAttributesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.sxp.node.id.attribute.SxpNodeIdAttributesBuilder;
 
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * AttributeFactory class contains logic for decoding and encoding Attributes
  */
 public final class AttributeFactory {
 
-    /** ONPCE000 (Optional-NonTransitive-Partial-Compact-ExtendedLength-0-0-0) */
+    /**
+     * ONPCE000 (Optional-NonTransitive-Partial-Compact-ExtendedLength-0-0-0)
+     */
     public static final byte _onpCe = 16;
     public static final byte _OnpCe = -112;
     public static final byte _oNpCe = 80;
@@ -147,7 +148,7 @@ public final class AttributeFactory {
         byte[] value = null;
         int holdTimeMax;
         if (holdTimeMin == 0) {
-            value = new byte[] { (byte) 0xFF, (byte) 0xFF };
+            value = new byte[] {(byte) 0xFF, (byte) 0xFF};
             holdTimeMax = 0;
         }
         // Unsigned integer <0,65535>. 0 or at least 3 seconds.
@@ -187,7 +188,7 @@ public final class AttributeFactory {
 
         byte[] value = null;
         if (holdTimeMin == 0 || holdTimeMax == 0) {
-            value = new byte[] { (byte) 0xFF, (byte) 0xFF, 0x00, 0x00 };
+            value = new byte[] {(byte) 0xFF, (byte) 0xFF, 0x00, 0x00};
             holdTimeMin = 0;
             holdTimeMax = 0;
         } else {
@@ -197,8 +198,9 @@ public final class AttributeFactory {
             } else if (holdTimeMin != 0 && holdTimeMax != 0 && holdTimeMax <= holdTimeMin) {
                 throw new HoldTimeMaxException(holdTimeMin, holdTimeMax);
             } else {
-                value = ArraysUtil.combine(ArraysUtil.int2bytesCropp(holdTimeMin, 2),
-                        ArraysUtil.int2bytesCropp(holdTimeMax, 2));
+                value =
+                        ArraysUtil.combine(ArraysUtil.int2bytesCropp(holdTimeMin, 2),
+                                ArraysUtil.int2bytesCropp(holdTimeMax, 2));
             }
         }
         attributeBuilder.setLength(value.length);
@@ -372,7 +374,7 @@ public final class AttributeFactory {
         }
         byte[] value = ArraysUtil.int2bytesCropp(sgt, 2);
         if (!Configuration.SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS) {
-            value = ArraysUtil.combine(value, new byte[] { 0x00, 0x00 });
+            value = ArraysUtil.combine(value, new byte[] {0x00, 0x00});
         }
         attributeBuilder.setLength(value.length);
         attributeBuilder.setValue(value);
@@ -428,40 +430,40 @@ public final class AttributeFactory {
         byte[] value = new byte[length];
 
         switch (variant) {
-        case Compact:
-            type = AttributeType.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 1, 1)));
-            length = ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 2, 1));
-            if (length < 0 || 255 < length) {
-                throw new AttributeLengthException();
-            }
-            if (Configuration.SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS) {
-                value = ArraysUtil.readBytes(array, 3, length);
-                length += 3;
+            case Compact:
+                type = AttributeType.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 1, 1)));
+                length = ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 2, 1));
+                if (length < 0 || 255 < length) {
+                    throw new AttributeLengthException();
+                }
+                if (Configuration.SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS) {
+                    value = ArraysUtil.readBytes(array, 3, length);
+                    length += 3;
+                    break;
+                }
+                value = ArraysUtil.readBytes(array, 4, length);
+                length += 4;
                 break;
-            }
-            value = ArraysUtil.readBytes(array, 4, length);
-            length += 4;
-            break;
-        case CompactExtendedLength:
-            type = AttributeType.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 1, 1)));
-            length = ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 2, 2));
-            if (length < 256 || 4084 < length) {
-                throw new AttributeLengthException();
-            }
-            value = ArraysUtil.readBytes(array, 4, length);
-            length += 4;
-            break;
-        case NonCompact:
-            type = AttributeType.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 1, 3)));
-            length = ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 4, 4));
-            if (length < 0 || 4080 < length) {
-                throw new AttributeLengthException();
-            }
-            value = ArraysUtil.readBytes(array, 8, length);
-            length += 8;
-            break;
-        default:
-            variant = AttributeVariant.None;
+            case CompactExtendedLength:
+                type = AttributeType.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 1, 1)));
+                length = ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 2, 2));
+                if (length < 256 || 4084 < length) {
+                    throw new AttributeLengthException();
+                }
+                value = ArraysUtil.readBytes(array, 4, length);
+                length += 4;
+                break;
+            case NonCompact:
+                type = AttributeType.forValue(ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 1, 3)));
+                length = ArraysUtil.bytes2int(ArraysUtil.readBytes(array, 4, 4));
+                if (length < 0 || 4080 < length) {
+                    throw new AttributeLengthException();
+                }
+                value = ArraysUtil.readBytes(array, 8, length);
+                length += 8;
+                break;
+            default:
+                variant = AttributeVariant.None;
         }
 
         return decode(flags, variant, type, length, value);
@@ -495,51 +497,51 @@ public final class AttributeFactory {
 
         AttributeOptionalFields attributeOptionalFields;
         switch (type) {
-        case AddIpv4:
-            attributeOptionalFields = LegacyAttributeFactory.decodeAddIPv4(type, 4, value);
-            break;
-        case AddIpv6:
-            attributeOptionalFields = LegacyAttributeFactory.decodeAddIPv6(type, 16, value);
-            break;
-        case Capabilities:
-            attributeOptionalFields = decodeCapabilities(value);
-            break;
-        case DelIpv4:
-            attributeOptionalFields = LegacyAttributeFactory.decodeDeleteIPv4(type, 4, value);
-            break;
-        case DelIpv6:
-            attributeOptionalFields = LegacyAttributeFactory.decodeDeleteIPv6(type, 16, value);
-            break;
-        case HoldTime:
-            if (!flags.isNonTransitive()) {
-                throw new AttributeVariantException();
-            }
-            attributeOptionalFields = decodeHoldTime(value);
-            break;
-        case Ipv4AddPrefix:
-            attributeOptionalFields = decodeIpv4AddPrefix(value, flags.isCompact());
-            break;
-        case Ipv4DeletePrefix:
-            attributeOptionalFields = decodeIpv4DeletePrefix(value, flags.isCompact());
-            break;
-        case Ipv6AddPrefix:
-            attributeOptionalFields = decodeIpv6AddPrefix(value, flags.isCompact());
-            break;
-        case Ipv6DeletePrefix:
-            attributeOptionalFields = decodeIpv6DeletePrefix(value, flags.isCompact());
-            break;
-        case PeerSequence:
-            attributeOptionalFields = decodePeerSequence(value);
-            break;
-        case SourceGroupTag:
-            attributeOptionalFields = decodeSourceGroupTag(value);
-            break;
-        case SxpNodeId:
-            attributeOptionalFields = decodeSxpNodeId(value);
-            break;
-        default:
-            attributeOptionalFields = null;
-            break;
+            case AddIpv4:
+                attributeOptionalFields = LegacyAttributeFactory.decodeAddIPv4(type, 4, value);
+                break;
+            case AddIpv6:
+                attributeOptionalFields = LegacyAttributeFactory.decodeAddIPv6(type, 16, value);
+                break;
+            case Capabilities:
+                attributeOptionalFields = decodeCapabilities(value);
+                break;
+            case DelIpv4:
+                attributeOptionalFields = LegacyAttributeFactory.decodeDeleteIPv4(type, 4, value);
+                break;
+            case DelIpv6:
+                attributeOptionalFields = LegacyAttributeFactory.decodeDeleteIPv6(type, 16, value);
+                break;
+            case HoldTime:
+                if (!flags.isNonTransitive()) {
+                    throw new AttributeVariantException();
+                }
+                attributeOptionalFields = decodeHoldTime(value);
+                break;
+            case Ipv4AddPrefix:
+                attributeOptionalFields = decodeIpv4AddPrefix(value, flags.isCompact());
+                break;
+            case Ipv4DeletePrefix:
+                attributeOptionalFields = decodeIpv4DeletePrefix(value, flags.isCompact());
+                break;
+            case Ipv6AddPrefix:
+                attributeOptionalFields = decodeIpv6AddPrefix(value, flags.isCompact());
+                break;
+            case Ipv6DeletePrefix:
+                attributeOptionalFields = decodeIpv6DeletePrefix(value, flags.isCompact());
+                break;
+            case PeerSequence:
+                attributeOptionalFields = decodePeerSequence(value);
+                break;
+            case SourceGroupTag:
+                attributeOptionalFields = decodeSourceGroupTag(value);
+                break;
+            case SxpNodeId:
+                attributeOptionalFields = decodeSxpNodeId(value);
+                break;
+            default:
+                attributeOptionalFields = null;
+                break;
         }
 
         attributeBuilder.setAttributeOptionalFields(attributeOptionalFields);
@@ -591,7 +593,8 @@ public final class AttributeFactory {
      * @throws UnknownHostException   If address in Attribute is incorrect
      * @throws UnknownPrefixException If Attribute has incorrect or none Prefix
      */
-    private static AttributeOptionalFields decodeIpv4AddPrefix(byte[] value, boolean compact) throws UnknownHostException, UnknownPrefixException {
+    private static AttributeOptionalFields decodeIpv4AddPrefix(byte[] value, boolean compact)
+            throws UnknownHostException, UnknownPrefixException {
         Ipv4AddPrefixAttributeBuilder attributeBuilder = new Ipv4AddPrefixAttributeBuilder();
         Ipv4AddPrefixAttributesBuilder attributesBuilder = new Ipv4AddPrefixAttributesBuilder();
         attributesBuilder.setIpPrefix(IpPrefixConv.decodeIpv4(value, compact));
@@ -608,7 +611,8 @@ public final class AttributeFactory {
      * @throws UnknownHostException   If address in Attribute is incorrect
      * @throws UnknownPrefixException If Attribute has incorrect or none Prefix
      */
-    private static AttributeOptionalFields decodeIpv4DeletePrefix(byte[] value, boolean compact) throws UnknownHostException, UnknownPrefixException {
+    private static AttributeOptionalFields decodeIpv4DeletePrefix(byte[] value, boolean compact)
+            throws UnknownHostException, UnknownPrefixException {
         Ipv4DeletePrefixAttributeBuilder attributeBuilder = new Ipv4DeletePrefixAttributeBuilder();
         Ipv4DeletePrefixAttributesBuilder attributesBuilder = new Ipv4DeletePrefixAttributesBuilder();
         attributesBuilder.setIpPrefix(IpPrefixConv.decodeIpv4(value, compact));
@@ -625,7 +629,8 @@ public final class AttributeFactory {
      * @throws UnknownHostException   If address in Attribute is incorrect
      * @throws UnknownPrefixException If Attribute has incorrect or none Prefix
      */
-    private static AttributeOptionalFields decodeIpv6AddPrefix(byte[] value, boolean compact) throws UnknownHostException, UnknownPrefixException {
+    private static AttributeOptionalFields decodeIpv6AddPrefix(byte[] value, boolean compact)
+            throws UnknownHostException, UnknownPrefixException {
         Ipv6AddPrefixAttributeBuilder attributeBuilder = new Ipv6AddPrefixAttributeBuilder();
         Ipv6AddPrefixAttributesBuilder attributesBuilder = new Ipv6AddPrefixAttributesBuilder();
         attributesBuilder.setIpPrefix(IpPrefixConv.decodeIpv6(value, compact));
@@ -642,7 +647,8 @@ public final class AttributeFactory {
      * @throws UnknownHostException   If address in Attribute is incorrect
      * @throws UnknownPrefixException If Attribute has incorrect or none Prefix
      */
-    private static AttributeOptionalFields decodeIpv6DeletePrefix(byte[] value, boolean compact) throws UnknownHostException, UnknownPrefixException {
+    private static AttributeOptionalFields decodeIpv6DeletePrefix(byte[] value, boolean compact)
+            throws UnknownHostException, UnknownPrefixException {
         Ipv6DeletePrefixAttributeBuilder attributeBuilder = new Ipv6DeletePrefixAttributeBuilder();
         Ipv6DeletePrefixAttributesBuilder attributesBuilder = new Ipv6DeletePrefixAttributesBuilder();
         attributesBuilder.setIpPrefix(IpPrefixConv.decodeIpv6(value, compact));
@@ -655,9 +661,10 @@ public final class AttributeFactory {
      *
      * @param value Byte Array containing PeerSequence attribute
      * @return Decoded PeerSequence attribute
-     * @throws UnknownHostException      If address in Attribute is incorrect
+     * @throws UnknownHostException If address in Attribute is incorrect
      */
-    private static AttributeOptionalFields decodePeerSequence(byte[] value) throws UnknownHostException, UnknownNodeIdException {
+    private static AttributeOptionalFields decodePeerSequence(byte[] value)
+            throws UnknownHostException, UnknownNodeIdException {
         PeerSequenceAttributeBuilder attributeBuilder = new PeerSequenceAttributeBuilder();
         PeerSequenceAttributesBuilder attributesBuilder = new PeerSequenceAttributesBuilder();
         attributesBuilder.setNodeId(NodeIdConv.decode(value));
@@ -687,7 +694,8 @@ public final class AttributeFactory {
      * @throws UnknownHostException   If address in Attribute is incorrect
      * @throws UnknownNodeIdException If address isn't in IPv4 format
      */
-    private static AttributeOptionalFields decodeSxpNodeId(byte[] value) throws UnknownHostException, UnknownNodeIdException {
+    private static AttributeOptionalFields decodeSxpNodeId(byte[] value)
+            throws UnknownHostException, UnknownNodeIdException {
         SxpNodeIdAttributeBuilder attributeBuilder = new SxpNodeIdAttributeBuilder();
         SxpNodeIdAttributesBuilder attributesBuilder = new SxpNodeIdAttributesBuilder();
         attributesBuilder.setNodeId(NodeIdConv._decode(value));
@@ -722,14 +730,14 @@ public final class AttributeFactory {
 
         byte[] value = capability.getValue();
         if (value == null || value.length == 0) {
-            return new byte[] { code, 0x00 };
+            return new byte[] {code, 0x00};
         } else if (value.length < 0 || 255 < value.length) {
             throw new CapabilityLengthException();
         }
 
         byte length = ArraysUtil.int2bytes(value.length)[0];
-        byte[] reserved = new byte[] { 0x00, 0x00 };
-        return ArraysUtil.combine(new byte[] { code, length }, reserved, value);
+        byte[] reserved = new byte[] {0x00, 0x00};
+        return ArraysUtil.combine(new byte[] {code, length}, reserved, value);
     }
 
     /**
@@ -742,22 +750,22 @@ public final class AttributeFactory {
     private static List<Capabilities> getCapabilities(Version version) throws UnknownVersionException {
         List<Capabilities> capabilities = new ArrayList<>();
         switch (version) {
-        case Version4:
-        case Version3:
-            CapabilitiesBuilder capability = new CapabilitiesBuilder();
-            capability.setCode(CapabilityType.SubnetBindings);
-            capabilities.add(capability.build());
-        case Version2:
-            capability = new CapabilitiesBuilder();
-            capability.setCode(CapabilityType.Ipv6Unicast);
-            capabilities.add(capability.build());
-        case Version1:
-            capability = new CapabilitiesBuilder();
-            capability.setCode(CapabilityType.Ipv4Unicast);
-            capabilities.add(capability.build());
-            break;
-        default:
-            throw new UnknownVersionException();
+            case Version4:
+            case Version3:
+                CapabilitiesBuilder capability = new CapabilitiesBuilder();
+                capability.setCode(CapabilityType.SubnetBindings);
+                capabilities.add(capability.build());
+            case Version2:
+                capability = new CapabilitiesBuilder();
+                capability.setCode(CapabilityType.Ipv6Unicast);
+                capabilities.add(capability.build());
+            case Version1:
+                capability = new CapabilitiesBuilder();
+                capability.setCode(CapabilityType.Ipv4Unicast);
+                capabilities.add(capability.build());
+                break;
+            default:
+                throw new UnknownVersionException();
         }
         return capabilities;
     }

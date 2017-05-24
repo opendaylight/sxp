@@ -8,6 +8,20 @@
 
 package org.opendaylight.sxp.controller.core;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -110,21 +124,8 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({MasterDatastoreImpl.class, DatastoreAccess.class, SxpNode.class})
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({MasterDatastoreImpl.class, DatastoreAccess.class, SxpNode.class})
 public class SxpRpcServiceImplTest {
 
     private static SxpNode node;
@@ -132,7 +133,8 @@ public class SxpRpcServiceImplTest {
     private static DatastoreAccess datastoreAccess;
     private MasterDatabaseInf masterDatabase;
 
-    @Before public void init() throws ExecutionException, InterruptedException {
+    @Before
+    public void init() throws ExecutionException, InterruptedException {
         node = PowerMockito.mock(SxpNode.class);
         datastoreAccess = mock(DatastoreAccess.class);
         when(datastoreAccess.checkAndDelete(any(InstanceIdentifier.class), any(LogicalDatastoreType.class))).thenReturn(
@@ -214,7 +216,8 @@ public class SxpRpcServiceImplTest {
         return connection.build();
     }
 
-    @Test public void testAddEntry() throws Exception {
+    @Test
+    public void testAddEntry() throws Exception {
         when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(
                 Collections.singletonList(mock(MasterDatabaseBinding.class)));
         AddEntryInputBuilder input = new AddEntryInputBuilder();
@@ -233,7 +236,8 @@ public class SxpRpcServiceImplTest {
         assertFalse(service.addEntry(input.build()).get().getResult().isResult());
     }
 
-    @Test public void testDeleteEntry() throws Exception {
+    @Test
+    public void testDeleteEntry() throws Exception {
         List<MasterDatabaseBinding> deletedBindings = new ArrayList<>();
         deletedBindings.add(getBinding("0.0.0.5/32", 20));
 
@@ -266,7 +270,8 @@ public class SxpRpcServiceImplTest {
         return builder.build();
     }
 
-    @Test public void testAddConnection() throws Exception {
+    @Test
+    public void testAddConnection() throws Exception {
         List<Connection> connections = new ArrayList<>();
         RpcResult<AddConnectionOutput>
                 result =
@@ -298,7 +303,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
     }
 
-    @Test public void testAddFilter() throws Exception {
+    @Test
+    public void testAddFilter() throws Exception {
         RpcResult<AddFilterOutput>
                 result =
                 service.addFilter(new AddFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
@@ -333,7 +339,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
     }
 
-    @Test public void testAddPeerGroup() throws Exception {
+    @Test
+    public void testAddPeerGroup() throws Exception {
         RpcResult<AddPeerGroupOutput>
                 result =
                 service.addPeerGroup(new AddPeerGroupInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build())
@@ -353,7 +360,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
     }
 
-    @Test public void testDeleteNode() throws Exception {
+    @Test
+    public void testDeleteNode() throws Exception {
         RpcResult<DeleteNodeOutput> result = service.deleteNode(new DeleteNodeInputBuilder().build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -368,7 +376,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
     }
 
-    @Test public void testDeleteConnection() throws Exception {
+    @Test
+    public void testDeleteConnection() throws Exception {
         RpcResult<DeleteConnectionOutput>
                 result =
                 service.deleteConnection(new DeleteConnectionInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
@@ -391,7 +400,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
     }
 
-    @Test public void testDeleteFilter() throws Exception {
+    @Test
+    public void testDeleteFilter() throws Exception {
         RpcResult<DeleteFilterOutput>
                 result =
                 service.deleteFilter(new DeleteFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build())
@@ -423,7 +433,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
     }
 
-    @Test public void testDeletePeerGroup() throws Exception {
+    @Test
+    public void testDeletePeerGroup() throws Exception {
         RpcResult<DeletePeerGroupOutput>
                 result =
                 service.deletePeerGroup(new DeletePeerGroupInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
@@ -444,7 +455,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
     }
 
-    @Test public void testGetConnections() throws Exception {
+    @Test
+    public void testGetConnections() throws Exception {
         RpcResult<GetConnectionsOutput> result = service.getConnections(new GetConnectionsInputBuilder().build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -460,7 +472,8 @@ public class SxpRpcServiceImplTest {
         assertNotNull(result.getResult().getConnections());
     }
 
-    @Test public void testGetNodeBindings() throws Exception {
+    @Test
+    public void testGetNodeBindings() throws Exception {
         RpcResult<GetNodeBindingsOutput>
                 result =
                 service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
@@ -499,7 +512,8 @@ public class SxpRpcServiceImplTest {
         assertNotNull(result.getResult().getBinding());
     }
 
-    @Test public void testGetPeerGroup() throws Exception {
+    @Test
+    public void testGetPeerGroup() throws Exception {
         RpcResult<GetPeerGroupOutput>
                 result =
                 service.getPeerGroup(new GetPeerGroupInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build())
@@ -519,7 +533,8 @@ public class SxpRpcServiceImplTest {
         assertNull(result.getResult().getSxpPeerGroup());
     }
 
-    @Test public void testGetPeerGroups() throws Exception {
+    @Test
+    public void testGetPeerGroups() throws Exception {
         RpcResult<GetPeerGroupsOutput>
                 result =
                 service.getPeerGroups(new GetPeerGroupsInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build())
@@ -538,7 +553,8 @@ public class SxpRpcServiceImplTest {
         assertNotNull(result.getResult().getSxpPeerGroup());
     }
 
-    @Test public void testAddNode() throws Exception {
+    @Test
+    public void testAddNode() throws Exception {
         RpcResult<AddNodeOutput> result = service.addNode(new AddNodeInputBuilder().build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -552,7 +568,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
     }
 
-    @Test public void testUpdateEntry() throws Exception {
+    @Test
+    public void testUpdateEntry() throws Exception {
         List<MasterDatabaseBinding> bindings = new ArrayList<>();
         bindings.add(getBinding("0.0.0.5/32", 20));
 
@@ -586,7 +603,8 @@ public class SxpRpcServiceImplTest {
         assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
     }
 
-    @Test public void testUpdateFilter() throws Exception {
+    @Test
+    public void testUpdateFilter() throws Exception {
         RpcResult<UpdateFilterOutput>
                 result =
                 service.updateFilter(new UpdateFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build())
@@ -618,7 +636,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
     }
 
-    @Test public void testDeleteBindings() throws Exception {
+    @Test
+    public void testDeleteBindings() throws Exception {
         when(node.removeLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(
                 Collections.singletonList(mock(MasterDatabaseBinding.class)));
         RpcResult<DeleteBindingsOutput>
@@ -665,7 +684,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(aBoolean);
     }
 
-    @Test public void testDeleteDomain() throws Exception {
+    @Test
+    public void testDeleteDomain() throws Exception {
         RpcResult<DeleteDomainOutput>
                 result =
                 service.deleteDomain(new DeleteDomainInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
@@ -693,7 +713,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
     }
 
-    @Test public void testAddDomain() throws Exception {
+    @Test
+    public void testAddDomain() throws Exception {
         RpcResult<AddDomainOutput>
                 result =
                 service.addDomain(new AddDomainInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
@@ -720,7 +741,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
     }
 
-    @Test public void testAddBindings() throws Exception {
+    @Test
+    public void testAddBindings() throws Exception {
         when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(
                 Collections.singletonList(mock(MasterDatabaseBinding.class)));
         RpcResult<AddBindingsOutput>
@@ -767,7 +789,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(aBoolean);
     }
 
-    @Test public void testDeleteDomainFilter() throws Exception {
+    @Test
+    public void testDeleteDomainFilter() throws Exception {
         RpcResult<DeleteDomainFilterOutput>
                 result =
                 service.deleteDomainFilter(
@@ -822,7 +845,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
     }
 
-    @Test public void testAddDomainFilter() throws Exception {
+    @Test
+    public void testAddDomainFilter() throws Exception {
         RpcResult<AddDomainFilterOutput>
                 result =
                 service.addDomainFilter(
@@ -876,12 +900,14 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
     }
 
-    @Test public void testClose() throws Exception {
+    @Test
+    public void testClose() throws Exception {
         service.close();
         verify(datastoreAccess).close();
     }
 
-    @Test public void testDeleteConnectionTemplate() throws Exception {
+    @Test
+    public void testDeleteConnectionTemplate() throws Exception {
         RpcResult<DeleteConnectionTemplateOutput>
                 result =
                 service.deleteConnectionTemplate(
@@ -931,7 +957,8 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
     }
 
-    @Test public void testAddConnectionTemplate() throws Exception {
+    @Test
+    public void testAddConnectionTemplate() throws Exception {
         RpcResult<AddConnectionTemplateOutput>
                 result =
                 service.addConnectionTemplate(

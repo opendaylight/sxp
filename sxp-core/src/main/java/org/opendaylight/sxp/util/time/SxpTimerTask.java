@@ -8,10 +8,9 @@
 
 package org.opendaylight.sxp.util.time;
 
+import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.Callable;
 
 /**
  * SxpTimerTask representing Abstract parent for all timers used in SXP

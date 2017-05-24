@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.core.behavior;
 
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,21 +22,23 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.junit.Assert.assertTrue;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class}) public class StrategyFactoryTest {
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({SxpNode.class})
+public class StrategyFactoryTest {
 
     @Rule public ExpectedException exception = ExpectedException.none();
 
     private static Context context;
     private static SxpNode sxpNode;
 
-    @Before public void init() {
+    @Before
+    public void init() {
         sxpNode = PowerMockito.mock(SxpNode.class);
         context = new Context(sxpNode, Version.Version4);
     }
 
-    @Test public void testGetStrategy() throws Exception {
+    @Test
+    public void testGetStrategy() throws Exception {
         assertTrue(StrategyFactory.getStrategy(context, Version.Version4) instanceof Sxpv4);
         assertTrue(StrategyFactory.getStrategy(context, Version.Version3) instanceof SxpLegacy);
         assertTrue(StrategyFactory.getStrategy(context, Version.Version2) instanceof SxpLegacy);

@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConnectFacade {
 
-    private static EventLoopGroup eventLoopGroup = new EpollEventLoopGroup();
+    private static final EventLoopGroup eventLoopGroup = new EpollEventLoopGroup();
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectFacade.class.getName());
 
     private static final Predicate<SxpConnection>

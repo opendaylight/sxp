@@ -14,7 +14,6 @@ import static org.junit.Assert.assertNotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -47,301 +46,304 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 
 public class AttributeFactoryTest {
 
-        @Rule public ExpectedException exception = ExpectedException.none();
+    @Rule public ExpectedException exception = ExpectedException.none();
 
-        @Test public void testCreateCapabilities() throws Exception {
-                CapabilitiesAttributeBuilder _attributeBuilder = new CapabilitiesAttributeBuilder();
-                CapabilitiesAttributesBuilder _attributesBuilder = new CapabilitiesAttributesBuilder();
+    @Test
+    public void testCreateCapabilities() throws Exception {
+        CapabilitiesAttributeBuilder _attributeBuilder = new CapabilitiesAttributeBuilder();
+        CapabilitiesAttributesBuilder _attributesBuilder = new CapabilitiesAttributesBuilder();
 
-                ArrayList<Capabilities> capabilities = new ArrayList<>();
-                CapabilitiesBuilder capability = new CapabilitiesBuilder();
-                capability.setCode(CapabilityType.Ipv4Unicast);
-                capabilities.add(capability.build());
+        ArrayList<Capabilities> capabilities = new ArrayList<>();
+        CapabilitiesBuilder capability = new CapabilitiesBuilder();
+        capability.setCode(CapabilityType.Ipv4Unicast);
+        capabilities.add(capability.build());
 
-                _attributesBuilder.setCapabilities(capabilities);
-                _attributeBuilder.setCapabilitiesAttributes(_attributesBuilder.build());
+        _attributesBuilder.setCapabilities(capabilities);
+        _attributeBuilder.setCapabilitiesAttributes(_attributesBuilder.build());
 
-                AttributeOptionalFields fields = _attributeBuilder.build();
-                assertEquals(fields,
-                        AttributeFactory.createCapabilities(Version.Version1).getAttributeOptionalFields());
+        AttributeOptionalFields fields = _attributeBuilder.build();
+        assertEquals(fields, AttributeFactory.createCapabilities(Version.Version1).getAttributeOptionalFields());
 
-                capability = new CapabilitiesBuilder();
-                capability.setCode(CapabilityType.Ipv6Unicast);
-                capabilities.add(0, capability.build());
-                _attributesBuilder.setCapabilities(capabilities);
-                _attributeBuilder.setCapabilitiesAttributes(_attributesBuilder.build());
-                fields = _attributeBuilder.build();
-                assertEquals(fields,
-                        AttributeFactory.createCapabilities(Version.Version2).getAttributeOptionalFields());
+        capability = new CapabilitiesBuilder();
+        capability.setCode(CapabilityType.Ipv6Unicast);
+        capabilities.add(0, capability.build());
+        _attributesBuilder.setCapabilities(capabilities);
+        _attributeBuilder.setCapabilitiesAttributes(_attributesBuilder.build());
+        fields = _attributeBuilder.build();
+        assertEquals(fields, AttributeFactory.createCapabilities(Version.Version2).getAttributeOptionalFields());
 
-                capability = new CapabilitiesBuilder();
-                capability.setCode(CapabilityType.SubnetBindings);
-                capabilities.add(0, capability.build());
-                _attributesBuilder.setCapabilities(capabilities);
-                _attributeBuilder.setCapabilitiesAttributes(_attributesBuilder.build());
-                fields = _attributeBuilder.build();
-                assertEquals(fields,
-                        AttributeFactory.createCapabilities(Version.Version3).getAttributeOptionalFields());
+        capability = new CapabilitiesBuilder();
+        capability.setCode(CapabilityType.SubnetBindings);
+        capabilities.add(0, capability.build());
+        _attributesBuilder.setCapabilities(capabilities);
+        _attributeBuilder.setCapabilitiesAttributes(_attributesBuilder.build());
+        fields = _attributeBuilder.build();
+        assertEquals(fields, AttributeFactory.createCapabilities(Version.Version3).getAttributeOptionalFields());
 
-                fields = _attributeBuilder.build();
-                assertEquals(fields,
-                        AttributeFactory.createCapabilities(Version.Version4).getAttributeOptionalFields());
+        fields = _attributeBuilder.build();
+        assertEquals(fields, AttributeFactory.createCapabilities(Version.Version4).getAttributeOptionalFields());
+    }
+
+    @Test
+    public void testCreateHoldTime() throws Exception {
+        Attribute attribute = AttributeFactory.createHoldTime(50);
+        assertEquals(AttributeType.HoldTime, attribute.getType());
+        assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+        HoldTimeAttribute holdTimeAttribute = (HoldTimeAttribute) attribute.getAttributeOptionalFields();
+        assertNotNull(holdTimeAttribute);
+        assertEquals(50l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMinValue());
+
+        attribute = AttributeFactory.createHoldTime(0);
+        assertEquals(AttributeType.HoldTime, attribute.getType());
+        assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+        holdTimeAttribute = (HoldTimeAttribute) attribute.getAttributeOptionalFields();
+        assertNotNull(holdTimeAttribute);
+        assertEquals(0l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMinValue());
+
+        attribute = AttributeFactory.createHoldTime(0, 150);
+        assertEquals(AttributeType.HoldTime, attribute.getType());
+        assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+
+        holdTimeAttribute = (HoldTimeAttribute) attribute.getAttributeOptionalFields();
+        assertEquals(0l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMinValue());
+        assertEquals(0l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMaxValue());
+
+        attribute = AttributeFactory.createHoldTime(50, 150);
+        assertEquals(AttributeType.HoldTime, attribute.getType());
+        assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+
+        holdTimeAttribute = (HoldTimeAttribute) attribute.getAttributeOptionalFields();
+        assertEquals(50l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMinValue());
+        assertEquals(150l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMaxValue());
+    }
+
+    @Test
+    public void testCreateHoldTimeException0() throws Exception {
+        exception.expect(HoldTimeMinException.class);
+        AttributeFactory.createHoldTime(2);
+    }
+
+    @Test
+    public void testCreateHoldTimeException1() throws Exception {
+        exception.expect(HoldTimeMinException.class);
+        AttributeFactory.createHoldTime(2, 50);
+    }
+
+    @Test
+    public void testCreateHoldTimeException2() throws Exception {
+        exception.expect(HoldTimeMaxException.class);
+        AttributeFactory.createHoldTime(25, 5);
+    }
+
+    @Test
+    public void testCreateIpv4AddPrefix() throws Exception {
+        List<IpPrefix> ipPrefixes = new ArrayList<>();
+        ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
+        Attribute attribute = AttributeFactory.createIpv4AddPrefix(ipPrefixes, AttributeFactory._onpCe);
+        assertEquals(AttributeType.Ipv4AddPrefix, attribute.getType());
+        assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+
+        Ipv4AddPrefixAttribute ipv4AddPrefixAttribute = (Ipv4AddPrefixAttribute) attribute.getAttributeOptionalFields();
+        assertNotNull(ipv4AddPrefixAttribute);
+        assertEquals(ipPrefixes, ipv4AddPrefixAttribute.getIpv4AddPrefixAttributes().getIpPrefix());
+
+        for (int i = 1; i <= 256; i++) {
+            String ip = "127.0." + ((i > 254) ? i - 254 : 0) + "." + i % 255 + "/32";
+            ipPrefixes.add(new IpPrefix(ip.toCharArray()));
         }
 
-        @Test public void testCreateHoldTime() throws Exception {
-                Attribute attribute = AttributeFactory.createHoldTime(50);
-                assertEquals(AttributeType.HoldTime, attribute.getType());
-                assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
-                HoldTimeAttribute holdTimeAttribute = (HoldTimeAttribute) attribute.getAttributeOptionalFields();
-                assertNotNull(holdTimeAttribute);
-                assertEquals(50l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMinValue());
+        attribute = AttributeFactory.createIpv4AddPrefix(ipPrefixes, AttributeFactory._onpCe);
+        assertEquals(AttributeType.Ipv4AddPrefix, attribute.getType());
+        assertEquals(AttributeVariant.CompactExtendedLength, attribute.getAttributeVariant());
 
-                attribute = AttributeFactory.createHoldTime(0);
-                assertEquals(AttributeType.HoldTime, attribute.getType());
-                assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
-                holdTimeAttribute = (HoldTimeAttribute) attribute.getAttributeOptionalFields();
-                assertNotNull(holdTimeAttribute);
-                assertEquals(0l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMinValue());
+        ipv4AddPrefixAttribute = (Ipv4AddPrefixAttribute) attribute.getAttributeOptionalFields();
+        assertNotNull(ipv4AddPrefixAttribute);
+        assertEquals(ipPrefixes, ipv4AddPrefixAttribute.getIpv4AddPrefixAttributes().getIpPrefix());
+    }
 
-                attribute = AttributeFactory.createHoldTime(0, 150);
-                assertEquals(AttributeType.HoldTime, attribute.getType());
-                assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+    @Test
+    public void testCreateIpv4DeletePrefix() throws Exception {
+        List<IpPrefix> ipPrefixes = new ArrayList<>();
+        ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
+        Attribute attribute = AttributeFactory.createIpv4DeletePrefix(ipPrefixes, AttributeFactory._onpCe);
+        assertEquals(AttributeType.Ipv4DeletePrefix, attribute.getType());
+        assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
 
-                holdTimeAttribute = (HoldTimeAttribute) attribute.getAttributeOptionalFields();
-                assertEquals(0l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMinValue());
-                assertEquals(0l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMaxValue());
+        Ipv4DeletePrefixAttribute
+                ipv4DeletePrefixAttribute =
+                (Ipv4DeletePrefixAttribute) attribute.getAttributeOptionalFields();
+        assertNotNull(ipv4DeletePrefixAttribute);
+        assertEquals(ipPrefixes, ipv4DeletePrefixAttribute.getIpv4DeletePrefixAttributes().getIpPrefix());
 
-                attribute = AttributeFactory.createHoldTime(50, 150);
-                assertEquals(AttributeType.HoldTime, attribute.getType());
-                assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
-
-                holdTimeAttribute = (HoldTimeAttribute) attribute.getAttributeOptionalFields();
-                assertEquals(50l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMinValue());
-                assertEquals(150l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMaxValue());
+        for (int i = 1; i <= 256; i++) {
+            String ip = "127.0." + ((i > 254) ? i - 254 : 0) + "." + i % 255 + "/32";
+            ipPrefixes.add(new IpPrefix(ip.toCharArray()));
         }
 
-        @Test public void testCreateHoldTimeException0() throws Exception {
-                exception.expect(HoldTimeMinException.class);
-                AttributeFactory.createHoldTime(2);
+        attribute = AttributeFactory.createIpv4DeletePrefix(ipPrefixes, AttributeFactory._onpCe);
+        assertEquals(AttributeType.Ipv4DeletePrefix, attribute.getType());
+        assertEquals(AttributeVariant.CompactExtendedLength, attribute.getAttributeVariant());
+
+        ipv4DeletePrefixAttribute = (Ipv4DeletePrefixAttribute) attribute.getAttributeOptionalFields();
+        assertNotNull(ipv4DeletePrefixAttribute);
+        assertEquals(ipPrefixes, ipv4DeletePrefixAttribute.getIpv4DeletePrefixAttributes().getIpPrefix());
+    }
+
+    @Test
+    public void testCreateIpv6AddPrefix() throws Exception {
+        List<IpPrefix> ipPrefixes = new ArrayList<>();
+        ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
+        Attribute attribute = AttributeFactory.createIpv6AddPrefix(ipPrefixes, AttributeFactory._onpCe);
+        assertEquals(AttributeType.Ipv6AddPrefix, attribute.getType());
+        assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+
+        Ipv6AddPrefixAttribute ipv6AddPrefixAttribute = (Ipv6AddPrefixAttribute) attribute.getAttributeOptionalFields();
+        assertNotNull(ipv6AddPrefixAttribute);
+        assertEquals(ipPrefixes, ipv6AddPrefixAttribute.getIpv6AddPrefixAttributes().getIpPrefix());
+
+        for (int i = 1; i <= 256; i++) {
+            String ip = "127.0." + ((i > 254) ? i - 254 : 0) + "." + i % 255 + "/32";
+            ipPrefixes.add(new IpPrefix(ip.toCharArray()));
         }
 
-        @Test public void testCreateHoldTimeException1() throws Exception {
-                exception.expect(HoldTimeMinException.class);
-                AttributeFactory.createHoldTime(2, 50);
+        attribute = AttributeFactory.createIpv6AddPrefix(ipPrefixes, AttributeFactory._onpCe);
+        assertEquals(AttributeType.Ipv6AddPrefix, attribute.getType());
+        assertEquals(AttributeVariant.CompactExtendedLength, attribute.getAttributeVariant());
+
+        ipv6AddPrefixAttribute = (Ipv6AddPrefixAttribute) attribute.getAttributeOptionalFields();
+        assertNotNull(ipv6AddPrefixAttribute);
+        assertEquals(ipPrefixes, ipv6AddPrefixAttribute.getIpv6AddPrefixAttributes().getIpPrefix());
+    }
+
+    @Test
+    public void testCreateIpv6DeletePrefix() throws Exception {
+        List<IpPrefix> ipPrefixes = new ArrayList<>();
+        ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
+        Attribute attribute = AttributeFactory.createIpv6DeletePrefix(ipPrefixes, AttributeFactory._onpCe);
+        assertEquals(AttributeType.Ipv6DeletePrefix, attribute.getType());
+        assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+
+        Ipv6DeletePrefixAttribute
+                ipv6DeletePrefixAttribute =
+                (Ipv6DeletePrefixAttribute) attribute.getAttributeOptionalFields();
+        assertNotNull(ipv6DeletePrefixAttribute);
+        assertEquals(ipPrefixes, ipv6DeletePrefixAttribute.getIpv6DeletePrefixAttributes().getIpPrefix());
+
+        for (int i = 1; i <= 256; i++) {
+            String ip = "127.0." + ((i > 254) ? i - 254 : 0) + "." + i % 255 + "/32";
+            ipPrefixes.add(new IpPrefix(ip.toCharArray()));
         }
 
-        @Test public void testCreateHoldTimeException2() throws Exception {
-                exception.expect(HoldTimeMaxException.class);
-                AttributeFactory.createHoldTime(25, 5);
-        }
+        attribute = AttributeFactory.createIpv6DeletePrefix(ipPrefixes, AttributeFactory._onpCe);
+        assertEquals(AttributeType.Ipv6DeletePrefix, attribute.getType());
+        assertEquals(AttributeVariant.CompactExtendedLength, attribute.getAttributeVariant());
 
-        @Test public void testCreateIpv4AddPrefix() throws Exception {
-                List<IpPrefix> ipPrefixes = new ArrayList<>();
-                ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
-                Attribute attribute = AttributeFactory.createIpv4AddPrefix(ipPrefixes, AttributeFactory._onpCe);
-                assertEquals(AttributeType.Ipv4AddPrefix, attribute.getType());
-                assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+        ipv6DeletePrefixAttribute = (Ipv6DeletePrefixAttribute) attribute.getAttributeOptionalFields();
+        assertNotNull(ipv6DeletePrefixAttribute);
+        assertEquals(ipPrefixes, ipv6DeletePrefixAttribute.getIpv6DeletePrefixAttributes().getIpPrefix());
+    }
 
-                Ipv4AddPrefixAttribute
-                        ipv4AddPrefixAttribute =
-                        (Ipv4AddPrefixAttribute) attribute.getAttributeOptionalFields();
-                assertNotNull(ipv4AddPrefixAttribute);
-                assertEquals(ipPrefixes, ipv4AddPrefixAttribute.getIpv4AddPrefixAttributes().getIpPrefix());
+    @Test
+    public void testCreatePeerSequence() throws Exception {
+        List<NodeId> nodeIdList = new ArrayList<>();
+        nodeIdList.add(NodeIdConv.createNodeId("192.168.0.1"));
+        nodeIdList.add(NodeIdConv.createNodeId("192.168.5.1"));
 
-                for (int i = 1; i <= 256; i++) {
-                        String ip = "127.0." + ((i > 254) ? i - 254 : 0) + "." + i % 255 + "/32";
-                        ipPrefixes.add(new IpPrefix(ip.toCharArray()));
-                }
+        Attribute attribute = AttributeFactory.createPeerSequence(nodeIdList);
+        assertEquals(AttributeType.PeerSequence, attribute.getType());
+        assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+        PeerSequenceAttribute peerSequenceAttribute = (PeerSequenceAttribute) attribute.getAttributeOptionalFields();
+        assertNotNull(peerSequenceAttribute);
+        assertEquals(nodeIdList, peerSequenceAttribute.getPeerSequenceAttributes().getNodeId());
+    }
 
-                attribute = AttributeFactory.createIpv4AddPrefix(ipPrefixes, AttributeFactory._onpCe);
-                assertEquals(AttributeType.Ipv4AddPrefix, attribute.getType());
-                assertEquals(AttributeVariant.CompactExtendedLength, attribute.getAttributeVariant());
+    @Test
+    public void testCreateSourceGroupTag() throws Exception {
+        Attribute attribute = AttributeFactory.createSourceGroupTag(5000);
+        assertEquals(AttributeType.SourceGroupTag, attribute.getType());
+        assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+        SourceGroupTagAttribute sxpNodeIdAttribute = (SourceGroupTagAttribute) attribute.getAttributeOptionalFields();
+        assertNotNull(sxpNodeIdAttribute);
+        assertEquals(5000l, (long) sxpNodeIdAttribute.getSourceGroupTagAttributes().getSgt());
+    }
 
-                ipv4AddPrefixAttribute = (Ipv4AddPrefixAttribute) attribute.getAttributeOptionalFields();
-                assertNotNull(ipv4AddPrefixAttribute);
-                assertEquals(ipPrefixes, ipv4AddPrefixAttribute.getIpv4AddPrefixAttributes().getIpPrefix());
-        }
+    @Test
+    public void testCreateSourceGroupTagException0() throws Exception {
+        exception.expect(SecurityGroupTagValueException.class);
+        AttributeFactory.createSourceGroupTag(0);
+    }
 
-        @Test public void testCreateIpv4DeletePrefix() throws Exception {
-                List<IpPrefix> ipPrefixes = new ArrayList<>();
-                ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
-                Attribute attribute = AttributeFactory.createIpv4DeletePrefix(ipPrefixes, AttributeFactory._onpCe);
-                assertEquals(AttributeType.Ipv4DeletePrefix, attribute.getType());
-                assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+    @Test
+    public void testCreateSourceGroupTagException1() throws Exception {
+        exception.expect(SecurityGroupTagValueException.class);
+        AttributeFactory.createSourceGroupTag(65520);
+    }
 
-                Ipv4DeletePrefixAttribute
-                        ipv4DeletePrefixAttribute =
-                        (Ipv4DeletePrefixAttribute) attribute.getAttributeOptionalFields();
-                assertNotNull(ipv4DeletePrefixAttribute);
-                assertEquals(ipPrefixes, ipv4DeletePrefixAttribute.getIpv4DeletePrefixAttributes().getIpPrefix());
+    @Test
+    public void testCreateSxpNodeId() throws Exception {
+        NodeId nodeId = NodeIdConv.createNodeId("192.168.0.1");
+        Attribute attribute = AttributeFactory.createSxpNodeId(nodeId);
+        assertEquals(AttributeType.SxpNodeId, attribute.getType());
+        assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+        SxpNodeIdAttribute sxpNodeIdAttribute = (SxpNodeIdAttribute) attribute.getAttributeOptionalFields();
+        assertNotNull(sxpNodeIdAttribute);
+        assertEquals(nodeId, sxpNodeIdAttribute.getSxpNodeIdAttributes().getNodeId());
+    }
 
-                for (int i = 1; i <= 256; i++) {
-                        String ip = "127.0." + ((i > 254) ? i - 254 : 0) + "." + i % 255 + "/32";
-                        ipPrefixes.add(new IpPrefix(ip.toCharArray()));
-                }
+    @Test
+    public void testEncodeCapability() throws Exception {
+        //Version4,Version3:
+        CapabilitiesBuilder capability = new CapabilitiesBuilder();
+        capability.setCode(CapabilityType.SubnetBindings);
+        capability.setValue(new byte[2]);
+        byte[] message = AttributeFactory.encodeCapability(capability.build());
+        assertArrayEquals(new byte[] {3, 0, 0, 0, 0, 0}, message);
+        //Version2:
+        capability.setCode(CapabilityType.Ipv6Unicast);
+        message = AttributeFactory.encodeCapability(capability.build());
+        assertArrayEquals(new byte[] {2, 0, 0, 0, 0, 0}, message);
+        //Version1:
+        capability.setCode(CapabilityType.Ipv4Unicast);
+        message = AttributeFactory.encodeCapability(capability.build());
+        assertArrayEquals(new byte[] {1, 0, 0, 0, 0, 0}, message);
 
-                attribute = AttributeFactory.createIpv4DeletePrefix(ipPrefixes, AttributeFactory._onpCe);
-                assertEquals(AttributeType.Ipv4DeletePrefix, attribute.getType());
-                assertEquals(AttributeVariant.CompactExtendedLength, attribute.getAttributeVariant());
+        capability.setValue(new byte[300]);
+        exception.expect(CapabilityLengthException.class);
+        AttributeFactory.encodeCapability(capability.build());
 
-                ipv4DeletePrefixAttribute = (Ipv4DeletePrefixAttribute) attribute.getAttributeOptionalFields();
-                assertNotNull(ipv4DeletePrefixAttribute);
-                assertEquals(ipPrefixes, ipv4DeletePrefixAttribute.getIpv4DeletePrefixAttributes().getIpPrefix());
-        }
+    }
 
-        @Test public void testCreateIpv6AddPrefix() throws Exception {
-                List<IpPrefix> ipPrefixes = new ArrayList<>();
-                ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
-                Attribute attribute = AttributeFactory.createIpv6AddPrefix(ipPrefixes, AttributeFactory._onpCe);
-                assertEquals(AttributeType.Ipv6AddPrefix, attribute.getType());
-                assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+    @Test
+    public void testDecode() throws Exception {
+        assertEquals(AttributeType.Capabilities,
+                AttributeFactory.decode(new byte[] {80, 6, 6, 3, 0, 2, 0, 1, 0}).getType());
 
-                Ipv6AddPrefixAttribute
-                        ipv6AddPrefixAttribute =
-                        (Ipv6AddPrefixAttribute) attribute.getAttributeOptionalFields();
-                assertNotNull(ipv6AddPrefixAttribute);
-                assertEquals(ipPrefixes, ipv6AddPrefixAttribute.getIpv6AddPrefixAttributes().getIpPrefix());
+        assertEquals(AttributeType.SourceGroupTag, AttributeFactory.decode(new byte[] {16, 17, 2, 0, 20}).getType());
 
-                for (int i = 1; i <= 256; i++) {
-                        String ip = "127.0." + ((i > 254) ? i - 254 : 0) + "." + i % 255 + "/32";
-                        ipPrefixes.add(new IpPrefix(ip.toCharArray()));
-                }
+        assertEquals(AttributeType.HoldTime, AttributeFactory.decode(new byte[] {80, 7, 2, 0, 10}).getType());
 
-                attribute = AttributeFactory.createIpv6AddPrefix(ipPrefixes, AttributeFactory._onpCe);
-                assertEquals(AttributeType.Ipv6AddPrefix, attribute.getType());
-                assertEquals(AttributeVariant.CompactExtendedLength, attribute.getAttributeVariant());
+        assertEquals(AttributeType.SxpNodeId, AttributeFactory.decode(new byte[] {80, 5, 4, 0, 0, 0, 0}).getType());
 
-                ipv6AddPrefixAttribute = (Ipv6AddPrefixAttribute) attribute.getAttributeOptionalFields();
-                assertNotNull(ipv6AddPrefixAttribute);
-                assertEquals(ipPrefixes, ipv6AddPrefixAttribute.getIpv6AddPrefixAttributes().getIpPrefix());
-        }
+        assertEquals(AttributeType.PeerSequence, AttributeFactory.decode(new byte[] {16, 16, 4, 0, 0, 0, 0}).getType());
 
-        @Test public void testCreateIpv6DeletePrefix() throws Exception {
-                List<IpPrefix> ipPrefixes = new ArrayList<>();
-                ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
-                Attribute attribute = AttributeFactory.createIpv6DeletePrefix(ipPrefixes, AttributeFactory._onpCe);
-                assertEquals(AttributeType.Ipv6DeletePrefix, attribute.getType());
-                assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+        assertEquals(AttributeType.Ipv4AddPrefix, AttributeFactory.decode(new byte[] {16, 11, 0}).getType());
 
-                Ipv6DeletePrefixAttribute
-                        ipv6DeletePrefixAttribute =
-                        (Ipv6DeletePrefixAttribute) attribute.getAttributeOptionalFields();
-                assertNotNull(ipv6DeletePrefixAttribute);
-                assertEquals(ipPrefixes, ipv6DeletePrefixAttribute.getIpv6DeletePrefixAttributes().getIpPrefix());
+        assertEquals(AttributeType.Ipv6AddPrefix, AttributeFactory.decode(new byte[] {16, 12, 0}).getType());
 
-                for (int i = 1; i <= 256; i++) {
-                        String ip = "127.0." + ((i > 254) ? i - 254 : 0) + "." + i % 255 + "/32";
-                        ipPrefixes.add(new IpPrefix(ip.toCharArray()));
-                }
+        assertEquals(AttributeType.Ipv4DeletePrefix, AttributeFactory.decode(new byte[] {16, 13, 0}).getType());
 
-                attribute = AttributeFactory.createIpv6DeletePrefix(ipPrefixes, AttributeFactory._onpCe);
-                assertEquals(AttributeType.Ipv6DeletePrefix, attribute.getType());
-                assertEquals(AttributeVariant.CompactExtendedLength, attribute.getAttributeVariant());
+        assertEquals(AttributeType.Ipv6DeletePrefix, AttributeFactory.decode(new byte[] {16, 14, 0}).getType());
+    }
 
-                ipv6DeletePrefixAttribute = (Ipv6DeletePrefixAttribute) attribute.getAttributeOptionalFields();
-                assertNotNull(ipv6DeletePrefixAttribute);
-                assertEquals(ipPrefixes, ipv6DeletePrefixAttribute.getIpv6DeletePrefixAttributes().getIpPrefix());
-        }
+    @Test
+    public void testDecodeException0() throws Exception {
+        exception.expect(AttributeLengthException.class);
+        AttributeFactory.decode(new byte[] {24, 6, 0, 0});
+    }
 
-        @Test public void testCreatePeerSequence() throws Exception {
-                List<NodeId> nodeIdList = new ArrayList<>();
-                nodeIdList.add(NodeIdConv.createNodeId("192.168.0.1"));
-                nodeIdList.add(NodeIdConv.createNodeId("192.168.5.1"));
-
-                Attribute attribute = AttributeFactory.createPeerSequence(nodeIdList);
-                assertEquals(AttributeType.PeerSequence, attribute.getType());
-                assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
-                PeerSequenceAttribute
-                        peerSequenceAttribute =
-                        (PeerSequenceAttribute) attribute.getAttributeOptionalFields();
-                assertNotNull(peerSequenceAttribute);
-                assertEquals(nodeIdList, peerSequenceAttribute.getPeerSequenceAttributes().getNodeId());
-        }
-
-        @Test public void testCreateSourceGroupTag() throws Exception {
-                Attribute attribute = AttributeFactory.createSourceGroupTag(5000);
-                assertEquals(AttributeType.SourceGroupTag, attribute.getType());
-                assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
-                SourceGroupTagAttribute
-                        sxpNodeIdAttribute =
-                        (SourceGroupTagAttribute) attribute.getAttributeOptionalFields();
-                assertNotNull(sxpNodeIdAttribute);
-                assertEquals(5000l, (long) sxpNodeIdAttribute.getSourceGroupTagAttributes().getSgt());
-        }
-
-        @Test public void testCreateSourceGroupTagException0() throws Exception {
-                exception.expect(SecurityGroupTagValueException.class);
-                AttributeFactory.createSourceGroupTag(0);
-        }
-
-        @Test public void testCreateSourceGroupTagException1() throws Exception {
-                exception.expect(SecurityGroupTagValueException.class);
-                AttributeFactory.createSourceGroupTag(65520);
-        }
-
-        @Test public void testCreateSxpNodeId() throws Exception {
-                NodeId nodeId = NodeIdConv.createNodeId("192.168.0.1");
-                Attribute attribute = AttributeFactory.createSxpNodeId(nodeId);
-                assertEquals(AttributeType.SxpNodeId, attribute.getType());
-                assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
-                SxpNodeIdAttribute sxpNodeIdAttribute = (SxpNodeIdAttribute) attribute.getAttributeOptionalFields();
-                assertNotNull(sxpNodeIdAttribute);
-                assertEquals(nodeId, sxpNodeIdAttribute.getSxpNodeIdAttributes().getNodeId());
-        }
-
-        @Test public void testEncodeCapability() throws Exception {
-                //Version4,Version3:
-                CapabilitiesBuilder capability = new CapabilitiesBuilder();
-                capability.setCode(CapabilityType.SubnetBindings);
-                capability.setValue(new byte[2]);
-                byte[] message = AttributeFactory.encodeCapability(capability.build());
-                assertArrayEquals(new byte[] {3, 0, 0, 0, 0, 0}, message);
-                //Version2:
-                capability.setCode(CapabilityType.Ipv6Unicast);
-                message = AttributeFactory.encodeCapability(capability.build());
-                assertArrayEquals(new byte[] {2, 0, 0, 0, 0, 0}, message);
-                //Version1:
-                capability.setCode(CapabilityType.Ipv4Unicast);
-                message = AttributeFactory.encodeCapability(capability.build());
-                assertArrayEquals(new byte[] {1, 0, 0, 0, 0, 0}, message);
-
-                capability.setValue(new byte[300]);
-                exception.expect(CapabilityLengthException.class);
-                AttributeFactory.encodeCapability(capability.build());
-
-        }
-
-        @Test public void testDecode() throws Exception {
-                assertEquals(AttributeType.Capabilities,
-                        AttributeFactory.decode(new byte[] {80, 6, 6, 3, 0, 2, 0, 1, 0}).getType());
-
-                assertEquals(AttributeType.SourceGroupTag,
-                        AttributeFactory.decode(new byte[] {16, 17, 2, 0, 20}).getType());
-
-                assertEquals(AttributeType.HoldTime, AttributeFactory.decode(new byte[] {80, 7, 2, 0, 10}).getType());
-
-                assertEquals(AttributeType.SxpNodeId,
-                        AttributeFactory.decode(new byte[] {80, 5, 4, 0, 0, 0, 0}).getType());
-
-                assertEquals(AttributeType.PeerSequence,
-                        AttributeFactory.decode(new byte[] {16, 16, 4, 0, 0, 0, 0}).getType());
-
-                assertEquals(AttributeType.Ipv4AddPrefix, AttributeFactory.decode(new byte[] {16, 11, 0}).getType());
-
-                assertEquals(AttributeType.Ipv6AddPrefix, AttributeFactory.decode(new byte[] {16, 12, 0}).getType());
-
-                assertEquals(AttributeType.Ipv4DeletePrefix, AttributeFactory.decode(new byte[] {16, 13, 0}).getType());
-
-                assertEquals(AttributeType.Ipv6DeletePrefix, AttributeFactory.decode(new byte[] {16, 14, 0}).getType());
-        }
-
-        @Test public void testDecodeException0() throws Exception {
-                exception.expect(AttributeLengthException.class);
-                AttributeFactory.decode(new byte[] {24, 6, 0, 0});
-        }
-
-        @Test public void testDecodeException1() throws Exception {
-                exception.expect(AttributeLengthException.class);
-                AttributeFactory.decode(new byte[] {0, 0, 0, 0, 0, 1, 0, 0});
-        }
+    @Test
+    public void testDecodeException1() throws Exception {
+        exception.expect(AttributeLengthException.class);
+        AttributeFactory.decode(new byte[] {0, 0, 0, 0, 0, 1, 0, 0});
+    }
 }

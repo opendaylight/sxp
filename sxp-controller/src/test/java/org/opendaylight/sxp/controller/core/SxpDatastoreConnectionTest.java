@@ -8,6 +8,17 @@
 
 package org.opendaylight.sxp.controller.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import java.util.concurrent.Callable;
@@ -38,18 +49,8 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class, DatastoreAccess.class})
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({SxpNode.class, DatastoreAccess.class})
 public class SxpDatastoreConnectionTest {
 
     private DatastoreAccess datastoreAccess;
@@ -57,7 +58,8 @@ public class SxpDatastoreConnectionTest {
     private static SxpNode sxpNode;
     private static ThreadsWorker worker;
 
-    @Before public void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         worker = mock(ThreadsWorker.class);
         when(worker.scheduleTask(any(Callable.class), anyInt(), any(TimeUnit.class))).thenReturn(
                 mock(ListenableScheduledFuture.class));
@@ -78,7 +80,8 @@ public class SxpDatastoreConnectionTest {
                                 .build(), "test");
     }
 
-    @Test public void testSetTimers() throws Exception {
+    @Test
+    public void testSetTimers() throws Exception {
         ConnectionTimers
                 timers =
                 new ConnectionTimersBuilder().setHoldTime(60).setHoldTimeMax(180).setHoldTimeMinAcceptable(90).build();
@@ -90,7 +93,8 @@ public class SxpDatastoreConnectionTest {
                 any(LogicalDatastoreType.class), anyBoolean());
     }
 
-    @Test public void testSetCapabilities() throws Exception {
+    @Test
+    public void testSetCapabilities() throws Exception {
         Capabilities capabilities = Configuration.getCapabilities(Version.Version4);
         connection.setCapabilities(capabilities);
         assertFalse(connection.getCapabilitiesRemote().contains(CapabilityType.Ipv4Unicast));
@@ -102,7 +106,8 @@ public class SxpDatastoreConnectionTest {
                 any(LogicalDatastoreType.class), anyBoolean());
     }
 
-    @Test public void testSetVersion() throws Exception {
+    @Test
+    public void testSetVersion() throws Exception {
         ArgumentCaptor<Connection> captor = ArgumentCaptor.forClass(Connection.class);
 
         connection.setVersion(Version.Version1);
@@ -112,7 +117,8 @@ public class SxpDatastoreConnectionTest {
         assertEquals(Version.Version1, captor.getValue().getVersion());
     }
 
-    @Test public void testSetState() throws Exception {
+    @Test
+    public void testSetState() throws Exception {
         ArgumentCaptor<Connection> captor = ArgumentCaptor.forClass(Connection.class);
 
         connection.setState(ConnectionState.DeleteHoldDown);
@@ -122,7 +128,8 @@ public class SxpDatastoreConnectionTest {
         assertEquals(ConnectionState.DeleteHoldDown, captor.getValue().getState());
     }
 
-    @Test public void testSetNodeIdRemote() throws Exception {
+    @Test
+    public void testSetNodeIdRemote() throws Exception {
         NodeId nodeId = new NodeId("1.1.1.1");
         ArgumentCaptor<Connection> captor = ArgumentCaptor.forClass(Connection.class);
 
@@ -133,7 +140,8 @@ public class SxpDatastoreConnectionTest {
         assertEquals(nodeId, captor.getValue().getNodeId());
     }
 
-    @Test public void testSetUpdateOrKeepaliveMessageTimestamp() throws Exception {
+    @Test
+    public void testSetUpdateOrKeepaliveMessageTimestamp() throws Exception {
         ArgumentCaptor<Connection> captor = ArgumentCaptor.forClass(Connection.class);
 
         connection.setUpdateOrKeepaliveMessageTimestamp();
@@ -143,7 +151,8 @@ public class SxpDatastoreConnectionTest {
                 TimeConv.toLong(captor.getValue().getTimestampUpdateOrKeepAliveMessage()));
     }
 
-    @Test public void testShutdown() throws Exception {
+    @Test
+    public void testShutdown() throws Exception {
         connection.shutdown();
         verify(datastoreAccess, atLeastOnce()).readSynchronous(any(InstanceIdentifier.class),
                 any(LogicalDatastoreType.class));

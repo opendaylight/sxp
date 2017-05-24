@@ -176,12 +176,10 @@ public abstract class AbstractLibrary extends AbstractClassLibrary implements Au
 
     /**
      * Clean Library resources
-     *
-     * @throws Exception If error occurs
      */
     @RobotKeyword("Clean Library")
     @ArgumentNames({})
-    public synchronized void cleanLibrary() throws Exception {
+    public synchronized void cleanLibrary() {
         LibraryServer.getNodes().forEach(SxpNode::shutdown);
         LibraryServer.clearNodes();
         close();

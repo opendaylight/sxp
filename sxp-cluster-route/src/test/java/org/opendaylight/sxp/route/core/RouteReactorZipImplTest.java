@@ -35,8 +35,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212
 public class RouteReactorZipImplTest {
 
     private static final ListenableFuture<Void> SUCCESS = Futures.immediateFuture(null);
-    @Mock
-    private RouteReactor delegate;
+    @Mock private RouteReactor delegate;
 
     private SxpClusterRoute route1;
     private SxpClusterRoute route2;
@@ -47,27 +46,19 @@ public class RouteReactorZipImplTest {
 
     @Before
     public void setUp() throws Exception {
-        route1 = new SxpClusterRouteBuilder()
-                .setRoutingDefinition(Collections.singletonList(
-                        RouteTestFactory.createDummyRoutingDef(1, 1)
-                ))
-                .build();
-        route2 = new SxpClusterRouteBuilder()
-                .setRoutingDefinition(Collections.singletonList(
-                        RouteTestFactory.createDummyRoutingDef(2, 2)
-                ))
-                .build();
+        route1 =
+                new SxpClusterRouteBuilder().setRoutingDefinition(
+                        Collections.singletonList(RouteTestFactory.createDummyRoutingDef(1, 1))).build();
+        route2 =
+                new SxpClusterRouteBuilder().setRoutingDefinition(
+                        Collections.singletonList(RouteTestFactory.createDummyRoutingDef(2, 2))).build();
 
-        route3 = new SxpClusterRouteBuilder()
-                .setRoutingDefinition(Collections.singletonList(
-                        RouteTestFactory.createDummyRoutingDef(3, 3)
-                ))
-                .build();
-        route4 = new SxpClusterRouteBuilder()
-                .setRoutingDefinition(Collections.singletonList(
-                        RouteTestFactory.createDummyRoutingDef(4, 4)
-                ))
-                .build();
+        route3 =
+                new SxpClusterRouteBuilder().setRoutingDefinition(
+                        Collections.singletonList(RouteTestFactory.createDummyRoutingDef(3, 3))).build();
+        route4 =
+                new SxpClusterRouteBuilder().setRoutingDefinition(
+                        Collections.singletonList(RouteTestFactory.createDummyRoutingDef(4, 4))).build();
 
         reactor = new RouteReactorZipImpl(delegate);
     }
@@ -86,15 +77,14 @@ public class RouteReactorZipImplTest {
         final SettableFuture<Void> updateTask1Outcome = SettableFuture.create();
         final CountDownLatch firstUpdateLatch = new CountDownLatch(1);
 
-        Mockito.when(delegate.updateRouting(Matchers.any(), Matchers.any()))
-                .then(new Answer<ListenableFuture<Void>>() {
-                    @Override
-                    public ListenableFuture<Void> answer(final InvocationOnMock invocationOnMock) throws Throwable {
-                        firstUpdateLatch.countDown();
-                        return updateTask1Outcome;
-                    }
-                })
-                .thenReturn(SUCCESS);
+        Mockito.when(delegate.updateRouting(Matchers.any(), Matchers.any())).then(new Answer<ListenableFuture<Void>>() {
+
+            @Override
+            public ListenableFuture<Void> answer(final InvocationOnMock invocationOnMock) throws Throwable {
+                firstUpdateLatch.countDown();
+                return updateTask1Outcome;
+            }
+        }).thenReturn(SUCCESS);
 
         // fire first change and block later tasks by unfinished outcome + countdown the latch
         final ListenableFuture<Void> outcome1 = reactor.updateRouting(route1, route2);
@@ -132,14 +122,14 @@ public class RouteReactorZipImplTest {
         final SettableFuture<Void> updateTask1Outcome = SettableFuture.create();
         final CountDownLatch firstUpdateLatch = new CountDownLatch(1);
 
-        Mockito.when(delegate.updateRouting(Matchers.any(), Matchers.any()))
-                .then(new Answer<ListenableFuture<Void>>() {
-                    @Override
-                    public ListenableFuture<Void> answer(final InvocationOnMock invocationOnMock) throws Throwable {
-                        firstUpdateLatch.countDown();
-                        return updateTask1Outcome;
-                    }
-                });
+        Mockito.when(delegate.updateRouting(Matchers.any(), Matchers.any())).then(new Answer<ListenableFuture<Void>>() {
+
+            @Override
+            public ListenableFuture<Void> answer(final InvocationOnMock invocationOnMock) throws Throwable {
+                firstUpdateLatch.countDown();
+                return updateTask1Outcome;
+            }
+        });
         Mockito.when(delegate.wipeRouting()).thenReturn(SUCCESS);
 
         // fire first change and block later tasks by unfinished outcome + countdown the latch
