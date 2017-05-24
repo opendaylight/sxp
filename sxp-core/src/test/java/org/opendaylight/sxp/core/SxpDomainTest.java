@@ -227,7 +227,6 @@ import static org.mockito.Mockito.when;
     @Test public void testAddFilter() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         domain.putConnection(getSxpConnection("127.0.0.1"));
-        assertFalse(domain.addFilter(null));
         assertTrue(domain.addFilter(getFilter(FilterSpecific.AccessOrPrefixList, "domain8")));
         verify(dispatcher, never()).propagateUpdate(anyList(), anyList(), anyList());
         assertTrue(domain.addFilter(getFilter(FilterSpecific.AccessOrPrefixList, "domain1")));
