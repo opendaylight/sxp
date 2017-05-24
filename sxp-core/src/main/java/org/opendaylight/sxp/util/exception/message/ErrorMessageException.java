@@ -17,7 +17,7 @@ public class ErrorMessageException extends Exception {
     /** */
     private static final long serialVersionUID = 801190427695923174L;
 
-    private Exception carriedException;
+    private final Exception carriedException;
 
     private byte[] data;
 
@@ -29,7 +29,8 @@ public class ErrorMessageException extends Exception {
 
     private boolean legacy = true;
 
-    public ErrorMessageException(ErrorCode errorCode, ErrorSubCode errorSubCode, byte[] data, Exception carriedException) {
+    public ErrorMessageException(ErrorCode errorCode, ErrorSubCode errorSubCode, byte[] data,
+            Exception carriedException) {
         this.errorCode = errorCode;
         this.errorSubCode = errorSubCode;
         this.data = data == null ? null : data.clone();

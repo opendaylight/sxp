@@ -8,6 +8,13 @@
 
 package org.opendaylight.sxp.controller.listeners.spi;
 
+import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkFilterEntries;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,13 +58,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 
-import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
-import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkFilterEntries;
-
 public class DifferencesTest {
 
     private <T extends DataObject> DataTreeModification<T> getModification(T before, T after) {
@@ -81,7 +81,8 @@ public class DifferencesTest {
         return Arrays.asList(connection);
     }
 
-    @Test public void testCheckDifference() throws Exception {
+    @Test
+    public void testCheckDifference() throws Exception {
         assertTrue(checkDifference(
                 getModification(getChange("127.0.0.1", 64999, Version.Version4, ConnectionMode.Speaker),
                         getChange("127.0.0.2", 64999, Version.Version4, ConnectionMode.Speaker)),
@@ -103,8 +104,10 @@ public class DifferencesTest {
                 SxpConnectionFields::getPeerAddress));
 
         Connection change1 = getChange("127.0.0.1", 64999, Version.Version2, ConnectionMode.Speaker),
-                change2 = getChange("127.0.0.2", 64999, Version.Version2, ConnectionMode.Speaker),
-                change3 = getChange("127.0.0.1", 64998, Version.Version2, ConnectionMode.Speaker);
+                change2 =
+                        getChange("127.0.0.2", 64999, Version.Version2, ConnectionMode.Speaker),
+                change3 =
+                        getChange("127.0.0.1", 64998, Version.Version2, ConnectionMode.Speaker);
 
         assertFalse(checkDifference(new ArrayList<>(), new ArrayList<>()));
         assertFalse(checkDifference(getChanges(change1, change2), getChanges(change1, change2)));
@@ -119,7 +122,8 @@ public class DifferencesTest {
         assertTrue(checkDifference(getChanges(change3, change2), getChanges(change1, change3)));
     }
 
-    @Test public void testCheckFilterEntry() throws Exception {
+    @Test
+    public void testCheckFilterEntry() throws Exception {
         FilterEntries entries1, entries2;
 
         entries1 = getPeerSequenceEntries(getPeerSequenceEntry(1, FilterEntryType.Permit, 10, MaskRangeOperator.Eq));

@@ -62,7 +62,7 @@ public class RouteReactorImpl implements RouteReactor {
 
     @Override
     public ListenableFuture<Void> updateRouting(@Nullable final SxpClusterRoute oldRoute,
-                                                @Nullable final SxpClusterRoute newRoute) {
+            @Nullable final SxpClusterRoute newRoute) {
         final Map<IpAddress, RoutingDefinition> oldDefinitions = new HashMap<>();
         final Map<IpAddress, RoutingDefinition> newDefinitions = new HashMap<>();
         final List<RoutingDefinition> outcomingRouteDefinitions = new ArrayList<>();
@@ -70,7 +70,8 @@ public class RouteReactorImpl implements RouteReactor {
         fillDefinitionsSafely(oldRoute, oldDefinitions);
         fillDefinitionsSafely(newRoute, newDefinitions);
 
-        final MapDifference<IpAddress, RoutingDefinition> routingDifference =
+        final MapDifference<IpAddress, RoutingDefinition>
+                routingDifference =
                 Maps.difference(oldDefinitions, newDefinitions);
 
         // ----------------------------
@@ -91,13 +92,11 @@ public class RouteReactorImpl implements RouteReactor {
         collectUnchanged(routingDifference, outcomingRouteDefinitions);
 
         // update DS/operational
-        final SxpClusterRoute sxpClusterRoute = new SxpClusterRouteBuilder()
-                .setRoutingDefinition(outcomingRouteDefinitions)
-                .build();
+        final SxpClusterRoute
+                sxpClusterRoute =
+                new SxpClusterRouteBuilder().setRoutingDefinition(outcomingRouteDefinitions).build();
 
-        return datastoreAccess.put(
-                SxpClusterRouteManager.SXP_CLUSTER_ROUTE_CONFIG_PATH,
-                sxpClusterRoute,
+        return datastoreAccess.put(SxpClusterRouteManager.SXP_CLUSTER_ROUTE_CONFIG_PATH, sxpClusterRoute,
                 LogicalDatastoreType.OPERATIONAL);
     }
 
@@ -108,17 +107,19 @@ public class RouteReactorImpl implements RouteReactor {
      * @param outcomingRouteDefinitions where result will be stored
      */
     private void collectUnchanged(final MapDifference<IpAddress, RoutingDefinition> routingDifference,
-                                  final List<RoutingDefinition> outcomingRouteDefinitions) {
-        final SxpClusterRoute sxpClusterRouteOper = datastoreAccess.readSynchronous(
-                SxpClusterRouteManager.SXP_CLUSTER_ROUTE_CONFIG_PATH,
-                LogicalDatastoreType.OPERATIONAL);
+            final List<RoutingDefinition> outcomingRouteDefinitions) {
+        final SxpClusterRoute
+                sxpClusterRouteOper =
+                datastoreAccess.readSynchronous(SxpClusterRouteManager.SXP_CLUSTER_ROUTE_CONFIG_PATH,
+                        LogicalDatastoreType.OPERATIONAL);
 
-        final ImmutableMap<IpAddress, RoutingDefinition> routingDefinitionMap =
+        final ImmutableMap<IpAddress, RoutingDefinition>
+                routingDefinitionMap =
                 Optional.ofNullable(sxpClusterRouteOper)
                         .map(SxpClusterRoute::getRoutingDefinition)
-                        .map((routingDefinitions ->
-                                Maps.uniqueIndex(routingDefinitions, RoutingDefinition::getIpAddress)
-                        )).orElse(ImmutableMap.of());
+                        .map((routingDefinitions -> Maps.uniqueIndex(routingDefinitions,
+                                RoutingDefinition::getIpAddress)))
+                        .orElse(ImmutableMap.of());
 
         routingDifference.entriesInCommon().forEach((virtualIface, routingDefinition) -> {
             final RoutingDefinition routingDef = routingDefinitionMap.get(virtualIface);
@@ -138,7 +139,8 @@ public class RouteReactorImpl implements RouteReactor {
      * @param outcomingRouteDefinitions where result will be stored
      */
     @VisibleForTesting
-    void processAdded(final MapDifference<IpAddress, RoutingDefinition> routingDifference, final List<RoutingDefinition> outcomingRouteDefinitions) {
+    void processAdded(final MapDifference<IpAddress, RoutingDefinition> routingDifference,
+            final List<RoutingDefinition> outcomingRouteDefinitions) {
         routingDifference.entriesOnlyOnRight().forEach((vIface, routingDef) -> {
             final boolean readyToAdd;
             // clean old unexpected state if any
@@ -147,11 +149,11 @@ public class RouteReactorImpl implements RouteReactor {
                 LOG.info("Found unexpected route -> closing it: {}", existingRouting);
                 findSxpNodesOnVirtualIp(vIface).forEach(SxpNode::shutdown);
                 final boolean removalSucceded = existingRouting.removeRouteForCurrentService();
-                if (! removalSucceded) {
+                if (!removalSucceded) {
                     LOG.warn("Route cannot be closed (cleaning before A): {}", existingRouting);
                     RoutingDefinition oldDefinition = RouteUtil.extractRoutingDefinition(existingRouting);
-                    outcomingRouteDefinitions.add(RouteUtil.createOperationalRouteDefinition(
-                            oldDefinition, false, "route can not be closed (by cleaning before add)"));
+                    outcomingRouteDefinitions.add(RouteUtil.createOperationalRouteDefinition(oldDefinition, false,
+                            "route can not be closed (by cleaning before add)"));
                     findSxpNodesOnVirtualIp(vIface).forEach(SxpNode::start);
                     readyToAdd = false;
                 } else {
@@ -168,12 +170,12 @@ public class RouteReactorImpl implements RouteReactor {
                 if (succeeded) {
                     routeService.updateArpTableForCurrentService();
                     findSxpNodesOnVirtualIp(vIface).forEach(SxpNode::start);
-                    outcomingRouteDefinitions.add(RouteUtil.createOperationalRouteDefinition(
-                            routingDef, true, "added"));
+                    outcomingRouteDefinitions.add(
+                            RouteUtil.createOperationalRouteDefinition(routingDef, true, "added"));
                 } else {
                     LOG.warn("Route can not be created (by add): {}", routeService);
-                    outcomingRouteDefinitions.add(RouteUtil.createOperationalRouteDefinition(
-                            routingDef, false, "route can not be created (by add)"));
+                    outcomingRouteDefinitions.add(RouteUtil.createOperationalRouteDefinition(routingDef, false,
+                            "route can not be created (by add)"));
                 }
             }
         });
@@ -187,7 +189,8 @@ public class RouteReactorImpl implements RouteReactor {
      * @param outcomingRouteDefinitions where result will be stored
      */
     @VisibleForTesting
-    void processUpdated(final MapDifference<IpAddress, RoutingDefinition> routingDifference, final List<RoutingDefinition> outcomingRouteDefinitions) {
+    void processUpdated(final MapDifference<IpAddress, RoutingDefinition> routingDifference,
+            final List<RoutingDefinition> outcomingRouteDefinitions) {
         routingDifference.entriesDiffering().forEach((vIface, routingDiff) -> {
             final Routing routing = routingServiceMap.get(vIface);
             if (routing != null) {
@@ -201,22 +204,25 @@ public class RouteReactorImpl implements RouteReactor {
                     final boolean succeededAddition = routing.addRouteForCurrentService();
                     if (succeededAddition) {
                         routing.updateArpTableForCurrentService();
-                        outcomingRouteDef = RouteUtil.createOperationalRouteDefinition(
-                                routingDiff.rightValue(), true, "updated");
+                        outcomingRouteDef =
+                                RouteUtil.createOperationalRouteDefinition(routingDiff.rightValue(), true, "updated");
                     } else {
-                        outcomingRouteDef = RouteUtil.createOperationalRouteDefinition(
-                                routingDiff.rightValue(), false, "route can not be created (by update)");
+                        outcomingRouteDef =
+                                RouteUtil.createOperationalRouteDefinition(routingDiff.rightValue(), false,
+                                        "route can not be created (by update)");
                     }
                 } else {
                     LOG.warn("Route cannot be closed (U): {}", routing);
-                    outcomingRouteDef = RouteUtil.createOperationalRouteDefinition(
-                            routingDiff.leftValue(), false, "route can not be closed (by update)");
+                    outcomingRouteDef =
+                            RouteUtil.createOperationalRouteDefinition(routingDiff.leftValue(), false,
+                                    "route can not be closed (by update)");
                 }
                 findSxpNodesOnVirtualIp(vIface).forEach(SxpNode::start);
                 outcomingRouteDefinitions.add(outcomingRouteDef);
             } else {
-                outcomingRouteDefinitions.add(RouteUtil.createOperationalRouteDefinition(
-                        routingDiff.rightValue(), false, "route can not be updated - missing routingService"));
+                outcomingRouteDefinitions.add(
+                        RouteUtil.createOperationalRouteDefinition(routingDiff.rightValue(), false,
+                                "route can not be updated - missing routingService"));
             }
         });
     }
@@ -230,16 +236,16 @@ public class RouteReactorImpl implements RouteReactor {
      */
     @VisibleForTesting
     void processDeleted(final MapDifference<IpAddress, RoutingDefinition> routingDifference,
-                        final List<RoutingDefinition> outcomingRouteDefinitions) {
+            final List<RoutingDefinition> outcomingRouteDefinitions) {
         routingDifference.entriesOnlyOnLeft().forEach((vIpAddress, routingDef) -> {
             final Routing routingService = routingServiceMap.remove(vIpAddress);
             if (routingService != null) {
                 findSxpNodesOnVirtualIp(vIpAddress).forEach(SxpNode::shutdown);
                 final boolean succeeded = routingService.removeRouteForCurrentService();
-                if (! succeeded) {
+                if (!succeeded) {
                     LOG.warn("Route cannot be closed (D): {}", routingService);
-                    outcomingRouteDefinitions.add(RouteUtil.createOperationalRouteDefinition(
-                            routingDef, false, "route can not be closed (by remove)"));
+                    outcomingRouteDefinitions.add(RouteUtil.createOperationalRouteDefinition(routingDef, false,
+                            "route can not be closed (by remove)"));
                 }
             }
         });
@@ -264,8 +270,7 @@ public class RouteReactorImpl implements RouteReactor {
                 .map(SxpClusterRoute::getRoutingDefinition)
                 .map((routingDefs) -> routingDefs.stream()
                         .map((routingDef) -> definitions.put(routingDef.getIpAddress(), routingDef))
-                        .count()
-                );
+                        .count());
     }
 
     @Override

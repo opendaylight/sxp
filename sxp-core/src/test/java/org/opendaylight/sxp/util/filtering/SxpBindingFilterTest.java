@@ -8,11 +8,15 @@
 
 package org.opendaylight.sxp.util.filtering;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
-import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
@@ -36,16 +40,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilterBuilder;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 public class SxpBindingFilterTest {
 
-    @Test public void testGenerateFilter() throws Exception {
+    @Test
+    public void testGenerateFilter() throws Exception {
         SxpBindingFilter bindingFilter = SxpBindingFilter.generateFilter(getAclFilter(FilterType.Inbound), "TEST");
         assertEquals("TEST", bindingFilter.getIdentifier());
         assertEquals(new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder(
@@ -88,7 +86,8 @@ public class SxpBindingFilterTest {
         }
     }
 
-    @Test public void testGenerateDomainFilter() throws Exception {
+    @Test
+    public void testGenerateDomainFilter() throws Exception {
         SxpBindingFilter bindingFilter = SxpBindingFilter.generateFilter(getAclFilter("basic-domain"), "TEST");
         assertEquals("TEST", bindingFilter.getIdentifier());
         assertEquals(new SxpDomainFilterBuilder(getAclFilter("basic-domain")).build(), bindingFilter.getSxpFilter());
@@ -244,7 +243,8 @@ public class SxpBindingFilterTest {
         return builder.build();
     }
 
-    @Test public void testMergeFilters() throws Exception {
+    @Test
+    public void testMergeFilters() throws Exception {
         List<SxpBindingFilter<?, ? extends SxpFilterFields>> filterList = new ArrayList<>();
         filterList.add(SxpBindingFilter.generateFilter(getPrefixListFilter(FilterType.Outbound), "GROUP"));
         assertEquals("GROUP", SxpBindingFilter.mergeFilters(filterList).getIdentifier());
@@ -258,7 +258,8 @@ public class SxpBindingFilterTest {
         assertEquals("MultiGroup[ GROUP Peers ]", SxpBindingFilter.mergeFilters(filterList).getIdentifier());
     }
 
-    @Test public void testMergeDomainFilters() throws Exception {
+    @Test
+    public void testMergeDomainFilters() throws Exception {
         List<SxpBindingFilter<?, ? extends SxpDomainFilterFields>> filterList = new ArrayList<>();
         filterList.add(SxpBindingFilter.generateFilter(getPrefixListFilter("basic-domain"), "GROUP"));
         assertEquals("GROUP", SxpBindingFilter.mergeFilters(filterList).getIdentifier());
@@ -272,7 +273,8 @@ public class SxpBindingFilterTest {
         assertEquals("MultiGroup[ GROUP Peers ]", SxpBindingFilter.mergeFilters(filterList).getIdentifier());
     }
 
-    @Test public void testCheckInCompatibility() throws Exception {
+    @Test
+    public void testCheckInCompatibility() throws Exception {
         assertTrue(SxpBindingFilter.checkInCompatibility(getAclFilter(FilterType.Inbound),
                 getAclFilter(FilterType.Inbound)));
         assertFalse(SxpBindingFilter.checkInCompatibility(getAclFilter(FilterType.Inbound),
@@ -298,7 +300,8 @@ public class SxpBindingFilterTest {
                 getPrefixListFilter(FilterType.Inbound)));
     }
 
-    @Test public void testEquals() throws Exception {
+    @Test
+    public void testEquals() throws Exception {
         assertNotEquals(SxpBindingFilter.generateFilter(getAclFilter("basic-domain"), "TEST"),
                 SxpBindingFilter.generateFilter(getAclFilter(FilterType.Inbound), "TEST"));
 

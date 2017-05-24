@@ -132,7 +132,7 @@ public final class BindingHandler {
      *
      * @param message      UpdateMessageLegacy containing data to be proceed
      * @param filter       SxpBinding filter that will be applied to bindings
-     * @param nodeIdRemote
+     * @param nodeIdRemote Id of remote node
      * @return List of new Bindings
      * @throws TlvNotFoundException If Tlv isn't present in message
      */
@@ -209,7 +209,7 @@ public final class BindingHandler {
                                     .getSgt()));
                     break;
             }
-            prefixes.stream().forEach(p -> {
+            prefixes.forEach(p -> {
                 SxpDatabaseBinding binding = bindingBuilder.setIpPrefix(p).build();
                 if (filter == null || !filter.apply(binding)) {
                     bindings.add(binding);

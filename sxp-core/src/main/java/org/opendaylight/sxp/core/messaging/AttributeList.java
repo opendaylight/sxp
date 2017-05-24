@@ -11,7 +11,6 @@ package org.opendaylight.sxp.core.messaging;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
@@ -91,23 +90,25 @@ public class AttributeList extends ArrayList<Attribute> {
      * @throws AttributeVariantException If attribute variant isn't supported
      */
     private static byte[] toBytes(Attribute attribute) throws AttributeVariantException {
-        byte flags = ArraysUtil.convertBits(attribute.getFlags().isOptional(), attribute.getFlags().isNonTransitive(),
-                attribute.getFlags().isPartial(), attribute.getFlags().isCompact(), attribute.getFlags()
-                        .isExtendedLength(), false, false, false);
+        byte
+                flags =
+                ArraysUtil.convertBits(attribute.getFlags().isOptional(), attribute.getFlags().isNonTransitive(),
+                        attribute.getFlags().isPartial(), attribute.getFlags().isCompact(),
+                        attribute.getFlags().isExtendedLength(), false, false, false);
         byte[] value = attribute.getValue();
 
         if (attribute.getAttributeVariant().equals(AttributeVariant.Compact)) {
             byte type = ArraysUtil.int2bytes(attribute.getType().getIntValue())[3];
             byte length = ArraysUtil.int2bytes(attribute.getLength())[3];
             if (Configuration.SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS) {
-                return ArraysUtil.combine(new byte[] { flags, type, length }, value);
+                return ArraysUtil.combine(new byte[] {flags, type, length}, value);
             }
-            return ArraysUtil.combine(new byte[] { flags, type, length, 0x00 }, value);
+            return ArraysUtil.combine(new byte[] {flags, type, length, 0x00}, value);
 
         } else if (attribute.getAttributeVariant().equals(AttributeVariant.CompactExtendedLength)) {
             byte type = ArraysUtil.int2bytes(attribute.getType().getIntValue())[3];
             byte[] length = ArraysUtil.int2bytesCropp(attribute.getLength(), 2);
-            return ArraysUtil.combine(new byte[] { flags, type }, length, value);
+            return ArraysUtil.combine(new byte[] {flags, type}, length, value);
 
         } else if (attribute.getAttributeVariant().equals(AttributeVariant.NonCompact)) {
             byte[] type = ArraysUtil.int2bytesCropp(attribute.getType().getIntValue(), 1);

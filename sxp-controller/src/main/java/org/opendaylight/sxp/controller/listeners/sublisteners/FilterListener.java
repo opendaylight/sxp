@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkFilterEntries;
+
 import com.google.common.base.Preconditions;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -19,8 +21,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilterKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
-import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkFilterEntries;
 
 public class FilterListener extends ContainerListener<SxpPeerGroup, SxpFilter> {
 
@@ -60,7 +60,8 @@ public class FilterListener extends ContainerListener<SxpPeerGroup, SxpFilter> {
         }
     }
 
-    @Override protected InstanceIdentifier<SxpFilter> getIdentifier(SxpFilter d,
+    @Override
+    protected InstanceIdentifier<SxpFilter> getIdentifier(SxpFilter d,
             InstanceIdentifier<SxpPeerGroup> parentIdentifier) {
         return parentIdentifier.child(SxpFilter.class, new SxpFilterKey(d.getFilterSpecific(), d.getFilterType()));
     }

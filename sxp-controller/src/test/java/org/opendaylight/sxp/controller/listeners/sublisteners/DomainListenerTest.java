@@ -8,6 +8,16 @@
 
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import org.junit.Before;
@@ -36,24 +46,16 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({Configuration.class, DatastoreAccess.class})
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({Configuration.class, DatastoreAccess.class})
 public class DomainListenerTest {
 
     private DomainListener identityListener;
     private DatastoreAccess datastoreAccess;
     private SxpNode sxpNode;
 
-    @Before public void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
         identityListener = new DomainListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
@@ -97,7 +99,8 @@ public class DomainListenerTest {
         return builder.build();
     }
 
-    @Test public void testHandleOperational_1() throws Exception {
+    @Test
+    public void testHandleOperational_1() throws Exception {
         SxpDomain domain = getDomain("global");
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, domain), getIdentifier(),
@@ -111,7 +114,8 @@ public class DomainListenerTest {
         verify(sxpNode).addDomain(domain);
     }
 
-    @Test public void testHandleOperational_2() throws Exception {
+    @Test
+    public void testHandleOperational_2() throws Exception {
         SxpDomain domain = getDomain("global");
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, domain, null), getIdentifier(),
@@ -125,7 +129,8 @@ public class DomainListenerTest {
         verify(sxpNode).removeDomain("secure");
     }
 
-    @Test public void testGetModifications() throws Exception {
+    @Test
+    public void testGetModifications() throws Exception {
         assertNotNull(identityListener.getIdentifier(new SxpDomainBuilder().setDomainName("global").build(),
                 getIdentifier()));
         assertTrue(
@@ -141,7 +146,8 @@ public class DomainListenerTest {
         assertNotNull(identityListener.getModifications(dtm));
     }
 
-    @Test public void testHandleChange() throws Exception {
+    @Test
+    public void testHandleChange() throws Exception {
         identityListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getDomain("global"),
                         getDomain("global-two")))), LogicalDatastoreType.OPERATIONAL, getIdentifier());

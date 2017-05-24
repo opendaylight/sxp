@@ -63,7 +63,7 @@ public class RoutingServiceFactoryTest {
         osNameField.setAccessible(true);
         Field modifiers = osNameField.getClass().getDeclaredField("modifiers");
         modifiers.setAccessible(true);
-        modifiers.setInt(osNameField, osNameField.getModifiers() & ~ Modifier.FINAL);
+        modifiers.setInt(osNameField, osNameField.getModifiers() & ~Modifier.FINAL);
         osNameField.set(null, mockedOsName);
     }
 

@@ -77,7 +77,8 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
                 && "0.0.0.0/0".equals(binding.getIpPrefix().getIpv4Prefix().getValue()));
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         StringBuilder builder = new StringBuilder(this.getClass().getSimpleName() + "\n");
         List<MasterDatabaseBinding> databaseBindings = getBindings();
         if (!databaseBindings.isEmpty()) {

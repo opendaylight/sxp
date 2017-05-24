@@ -8,6 +8,20 @@
 
 package org.opendaylight.sxp.core;
 
+import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,21 +66,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Node
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class, BindingDispatcher.class}) public class SxpDomainTest {
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({SxpNode.class, BindingDispatcher.class})
+public class SxpDomainTest {
 
     private static int PORT = 64999;
     @Rule public ExpectedException exception = ExpectedException.none();
@@ -79,7 +81,8 @@ import static org.mockito.Mockito.when;
     private BindingDispatcher dispatcher;
     private List<SxpDomain> domains = new ArrayList<>();
 
-    @Before public void setUp() {
+    @Before
+    public void setUp() {
         sxpNode = mock(SxpNode.class);
         dispatcher = mock(BindingDispatcher.class);
         when(sxpNode.getSvcBindingDispatcher()).thenReturn(dispatcher);
@@ -109,24 +112,28 @@ import static org.mockito.Mockito.when;
         return connection;
     }
 
-    @Test public void testGetMasterDatabase() throws Exception {
+    @Test
+    public void testGetMasterDatabase() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         assertNotNull(domain.getMasterDatabase());
         assertEquals(masterDatabase, domain.getMasterDatabase());
     }
 
-    @Test public void testGetSxpDatabase() throws Exception {
+    @Test
+    public void testGetSxpDatabase() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         assertNotNull(domain.getSxpDatabase());
         assertEquals(sxpDatabase, domain.getSxpDatabase());
     }
 
-    @Test public void testGetName() throws Exception {
+    @Test
+    public void testGetName() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         assertEquals("domain", domain.getName());
     }
 
-    @Test public void testGetConnections() throws Exception {
+    @Test
+    public void testGetConnections() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         domain.putConnection(getSxpConnection("127.0.0.1"));
         domain.putConnection(getSxpConnection("127.0.0.2"));
@@ -139,14 +146,16 @@ import static org.mockito.Mockito.when;
         assertEquals(4, domain.getConnections().size());
     }
 
-    @Test public void testGetConnection() throws Exception {
+    @Test
+    public void testGetConnection() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         domain.putConnection(getSxpConnection("127.0.0.1"));
         assertNull(domain.getConnection(new InetSocketAddress("127.0.0.2", PORT)));
         assertNotNull(domain.getConnection(new InetSocketAddress("127.0.0.1", PORT)));
     }
 
-    @Test public void testHasConnection() throws Exception {
+    @Test
+    public void testHasConnection() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         domain.putConnection(getSxpConnection("127.0.0.1"));
         domain.putConnection(getSxpConnection("127.0.0.3"));
@@ -159,7 +168,8 @@ import static org.mockito.Mockito.when;
         assertTrue(domain.hasConnection(new InetSocketAddress("127.0.0.3", PORT)));
     }
 
-    @Test public void testPutConnection() throws Exception {
+    @Test
+    public void testPutConnection() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         domain.putConnection(getSxpConnection("127.0.0.1"));
         domain.putConnection(getSxpConnection("127.0.0.2"));
@@ -170,7 +180,8 @@ import static org.mockito.Mockito.when;
         domain.putConnection(getSxpConnection("127.0.0.1"));
     }
 
-    @Test public void testRemoveConnection() throws Exception {
+    @Test
+    public void testRemoveConnection() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         domain.putConnection(getSxpConnection("127.0.0.1"));
         domain.putConnection(getSxpConnection("127.0.0.2"));
@@ -185,7 +196,8 @@ import static org.mockito.Mockito.when;
         assertNull(domain.removeConnection(new InetSocketAddress("127.0.0.3", PORT)));
     }
 
-    @Test public void testClose() throws Exception {
+    @Test
+    public void testClose() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         domain.putConnection(getSxpConnection("127.0.0.1"));
         domain.putConnection(getSxpConnection("127.0.0.2"));
@@ -213,7 +225,8 @@ import static org.mockito.Mockito.when;
         return filter;
     }
 
-    @Test public void testGetFilters() throws Exception {
+    @Test
+    public void testGetFilters() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         assertNotNull(domain.getFilters());
         assertTrue(domain.getConnections().isEmpty());
@@ -224,7 +237,8 @@ import static org.mockito.Mockito.when;
         assertEquals(3, domain.getFilters().size());
     }
 
-    @Test public void testAddFilter() throws Exception {
+    @Test
+    public void testAddFilter() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         domain.putConnection(getSxpConnection("127.0.0.1"));
         assertTrue(domain.addFilter(getFilter(FilterSpecific.AccessOrPrefixList, "domain8")));
@@ -236,7 +250,8 @@ import static org.mockito.Mockito.when;
         verify(dispatcher, atLeast(1)).propagateUpdate(anyList(), anyList(), anyList());
     }
 
-    @Test public void testRemoveFilter() throws Exception {
+    @Test
+    public void testRemoveFilter() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         domain.putConnection(getSxpConnection("127.0.0.1"));
         assertTrue(domain.addFilter(getFilter(FilterSpecific.AccessOrPrefixList, "domain8")));
@@ -249,7 +264,8 @@ import static org.mockito.Mockito.when;
         assertNotNull(domain.removeFilter(FilterSpecific.PeerSequence, "domain1"));
     }
 
-    @Test public void testPropagateToSharedMasterDomains() throws Exception {
+    @Test
+    public void testPropagateToSharedMasterDomains() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         assertTrue(domain.addFilter(getFilter(FilterSpecific.AccessOrPrefixList, "domain8")));
         assertTrue(domain.addFilter(getFilter(FilterSpecific.AccessOrPrefixList, "domain1")));
@@ -272,7 +288,8 @@ import static org.mockito.Mockito.when;
         verify(dispatcher).propagateUpdate(anyList(), anyList(), anyList());
     }
 
-    @Test public void testPropagateToSharedSxpDomains() throws Exception {
+    @Test
+    public void testPropagateToSharedSxpDomains() throws Exception {
         when(sxpNode.getDomains()).thenReturn(domains);
         assertTrue(domain.addFilter(getFilter(FilterSpecific.AccessOrPrefixList, "domain8")));
         assertTrue(domain.addFilter(getFilter(FilterSpecific.AccessOrPrefixList, "domain1")));
@@ -323,7 +340,8 @@ import static org.mockito.Mockito.when;
                 .build();
     }
 
-    @Test public void testUpdateFilter() throws Exception {
+    @Test
+    public void testUpdateFilter() throws Exception {
         List<MasterDatabaseBinding> masterDatabaseBindings = new ArrayList<>();
         masterDatabaseBindings.add(getMasterDatabaseBinding("1.1.1.1/32", 1));
         masterDatabaseBindings.add(getMasterDatabaseBinding("2.2.2.2/32", 2));
@@ -336,7 +354,8 @@ import static org.mockito.Mockito.when;
         SxpDatabaseInf sxpDatabase = mock(SxpDatabaseImpl.class);
         MasterDatabaseInf masterDatabase = mock(MasterDatabaseImpl.class);
         ArgumentCaptor<List<MasterDatabaseBinding>> captorAdd = ArgumentCaptor.forClass((Class) List.class),
-                captorDell = ArgumentCaptor.forClass((Class) List.class);
+                captorDell =
+                        ArgumentCaptor.forClass((Class) List.class);
         when(masterDatabase.addBindings(captorAdd.capture())).thenReturn(new ArrayList<>());
         when(masterDatabase.deleteBindings(captorDell.capture())).thenReturn(new ArrayList<>());
         domains.add(SxpDomain.createInstance(sxpNode, "testDomain", sxpDatabase, masterDatabase));
@@ -374,7 +393,8 @@ import static org.mockito.Mockito.when;
         return builder.build();
     }
 
-    @Test public void testAddConnectionTemplate() throws Exception {
+    @Test
+    public void testAddConnectionTemplate() throws Exception {
         assertEquals(0, domain.getConnectionTemplates().size());
 
         assertTrue(domain.addConnectionTemplate(getTemplate("1.1.1.1/32", null)));
@@ -394,7 +414,8 @@ import static org.mockito.Mockito.when;
         verify(sxpNode).updateMD5keys();
     }
 
-    @Test public void testRemoveConnectionTemplate() throws Exception {
+    @Test
+    public void testRemoveConnectionTemplate() throws Exception {
         assertEquals(0, domain.getConnectionTemplates().size());
 
         assertTrue(domain.addConnectionTemplate(getTemplate("1.1.1.1/32", null)));
@@ -418,7 +439,8 @@ import static org.mockito.Mockito.when;
         verify(sxpNode, times(2)).updateMD5keys();
     }
 
-    @Test public void testGetConnectionTemplates() throws Exception {
+    @Test
+    public void testGetConnectionTemplates() throws Exception {
         assertTrue(domain.addConnectionTemplate(getTemplate("1.1.1.0/24", null)));
 
         assertNotNull(domain.getTemplate(new InetSocketAddress("1.1.1.0", 64999)));

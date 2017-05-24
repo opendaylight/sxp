@@ -8,14 +8,13 @@
 
 package org.opendaylight.sxp.controller.listeners;
 
+import java.util.Objects;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionChain;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionChainListener;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Objects;
 
 /**
  * TransactionChanListener class provides loggings of transaction events and chain restoration upon failures
@@ -32,7 +31,8 @@ public class TransactionChainListenerImpl implements TransactionChainListener {
         this.datastoreAccess = Objects.requireNonNull(datastoreAccess);
     }
 
-    @Override public void onTransactionChainFailed(TransactionChain<?, ?> transactionChain,
+    @Override
+    public void onTransactionChainFailed(TransactionChain<?, ?> transactionChain,
             AsyncTransaction<?, ?> asyncTransaction, Throwable throwable) {
         datastoreAccess.reinitializeChain();
         LOG.warn("{} Transaction chain failed creating new one.", datastoreAccess);
@@ -40,7 +40,8 @@ public class TransactionChainListenerImpl implements TransactionChainListener {
             LOG.debug("Transaction chain failed ", throwable);
     }
 
-    @Override public void onTransactionChainSuccessful(TransactionChain<?, ?> transactionChain) {
+    @Override
+    public void onTransactionChainSuccessful(TransactionChain<?, ?> transactionChain) {
         if (LOG.isTraceEnabled())
             LOG.trace("Transaction chain Success");
     }

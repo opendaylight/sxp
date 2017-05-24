@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
+
 import com.google.common.base.Preconditions;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -22,15 +24,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeI
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpPeerGroups;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
-
 public class PeerGroupListener extends ListListener<SxpNodeIdentity, SxpPeerGroups, SxpPeerGroup> {
 
     public PeerGroupListener(DatastoreAccess datastoreAccess) {
         super(datastoreAccess, SxpPeerGroups.class);
     }
 
-    @Override protected void handleOperational(DataObjectModification<SxpPeerGroup> c,
+    @Override
+    protected void handleOperational(DataObjectModification<SxpPeerGroup> c,
             InstanceIdentifier<SxpNodeIdentity> identifier, SxpNode sxpNode) {
         LOG.trace("Operational Modification {} {}", getClass(), c.getModificationType());
         switch (c.getModificationType()) {
@@ -60,7 +61,8 @@ public class PeerGroupListener extends ListListener<SxpNodeIdentity, SxpPeerGrou
         }
     }
 
-    @Override protected InstanceIdentifier<SxpPeerGroup> getIdentifier(SxpPeerGroup d,
+    @Override
+    protected InstanceIdentifier<SxpPeerGroup> getIdentifier(SxpPeerGroup d,
             InstanceIdentifier<SxpNodeIdentity> parentIdentifier) {
         Preconditions.checkNotNull(d);
         Preconditions.checkNotNull(parentIdentifier);

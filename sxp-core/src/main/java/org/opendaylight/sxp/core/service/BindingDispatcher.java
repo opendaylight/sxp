@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.core.service;
 
+import static org.opendaylight.sxp.util.inet.Search.expandBindings;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -33,8 +35,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpB
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.opendaylight.sxp.util.inet.Search.expandBindings;
 
 /**
  * SXP Speaker represents the server/provider side of the distributed

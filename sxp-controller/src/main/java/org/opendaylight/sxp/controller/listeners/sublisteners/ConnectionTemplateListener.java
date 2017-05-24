@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
+
 import com.google.common.base.Preconditions;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
@@ -21,18 +23,18 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
-
 public class ConnectionTemplateListener extends ListListener<SxpDomain, ConnectionTemplates, ConnectionTemplate> {
 
     public ConnectionTemplateListener(DatastoreAccess datastoreAccess) {
         super(datastoreAccess, ConnectionTemplates.class);
     }
 
-    @Override protected void handleOperational(DataObjectModification<ConnectionTemplate> c,
+    @Override
+    protected void handleOperational(DataObjectModification<ConnectionTemplate> c,
             InstanceIdentifier<SxpDomain> identifier, SxpNode sxpNode) {
         final String nodeId = identifier.firstKeyOf(Node.class).getNodeId().getValue(),
-                domainName = identifier.firstKeyOf(SxpDomain.class).getDomainName();
+                domainName =
+                        identifier.firstKeyOf(SxpDomain.class).getDomainName();
         org.opendaylight.sxp.core.SxpDomain domain = sxpNode.getDomain(domainName);
         if (domain == null) {
             LOG.error("Operational Modification {} {} could not get SXPDomain {}", getClass(), c.getModificationType(),
@@ -50,11 +52,11 @@ public class ConnectionTemplateListener extends ListListener<SxpDomain, Connecti
                     break;
                 }
             case SUBTREE_MODIFIED:
-                if (checkDifference(c, SxpConnectionTemplateFields::getTemplatePrefix) ||
-                        checkDifference(c, SxpConnectionTemplateFields::getTemplatePassword) ||
-                        checkDifference(c, SxpConnectionTemplateFields::getTemplateMode) ||
-                        checkDifference(c, SxpConnectionTemplateFields::getTemplateTcpPort) ||
-                        checkDifference(c, SxpConnectionTemplateFields::getTemplateVersion)) {
+                if (checkDifference(c, SxpConnectionTemplateFields::getTemplatePrefix) || checkDifference(c,
+                        SxpConnectionTemplateFields::getTemplatePassword) || checkDifference(c,
+                        SxpConnectionTemplateFields::getTemplateMode) || checkDifference(c,
+                        SxpConnectionTemplateFields::getTemplateTcpPort) || checkDifference(c,
+                        SxpConnectionTemplateFields::getTemplateVersion)) {
                     domain.removeConnectionTemplate(c.getDataBefore().getTemplatePrefix());
                     domain.addConnectionTemplate(c.getDataAfter());
                 }
@@ -66,7 +68,8 @@ public class ConnectionTemplateListener extends ListListener<SxpDomain, Connecti
         }
     }
 
-    @Override protected InstanceIdentifier<ConnectionTemplate> getIdentifier(ConnectionTemplate d,
+    @Override
+    protected InstanceIdentifier<ConnectionTemplate> getIdentifier(ConnectionTemplate d,
             InstanceIdentifier<SxpDomain> parentIdentifier) {
         Preconditions.checkNotNull(d);
         Preconditions.checkNotNull(parentIdentifier);

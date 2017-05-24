@@ -9,7 +9,6 @@
 package org.opendaylight.sxp.core.handler;
 
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-
 import org.opendaylight.sxp.core.Configuration;
 
 /**
@@ -17,11 +16,11 @@ import org.opendaylight.sxp.core.Configuration;
  */
 public final class LengthFieldBasedFrameDecoderImpl extends LengthFieldBasedFrameDecoder {
 
-    private static int lengthAdjustment = -Configuration.getConstants().getMessageHeaderLengthLength();
+    private static final int lengthAdjustment = -Configuration.getConstants().getMessageHeaderLengthLength();
 
-    private static int lengthFieldLength = Configuration.getConstants().getMessageHeaderLengthLength();
+    private static final int lengthFieldLength = Configuration.getConstants().getMessageHeaderLengthLength();
 
-    private static int maxFrameLength = Configuration.getConstants().getMessageLengthMax();
+    private static final int maxFrameLength = Configuration.getConstants().getMessageLengthMax();
 
     /**
      * Constructor that sets LengthFieldBasedFrameDecoder

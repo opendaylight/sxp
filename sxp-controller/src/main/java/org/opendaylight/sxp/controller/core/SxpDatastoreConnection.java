@@ -90,7 +90,8 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
                 .child(Connection.class, new ConnectionKey(address, port));
     }
 
-    @Override protected void setTimers(ConnectionTimers timers) {
+    @Override
+    protected void setTimers(ConnectionTimers timers) {
         super.setTimers(timers);
         if (datastoreAccess != null) {
             datastoreAccess.checkAndPut(getIdentifier().child(ConnectionTimers.class),
@@ -98,7 +99,8 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
         }
     }
 
-    @Override protected void setCapabilities(Capabilities capabilities) {
+    @Override
+    protected void setCapabilities(Capabilities capabilities) {
         super.setCapabilities(capabilities);
         if (datastoreAccess != null) {
             datastoreAccess.checkAndPut(getIdentifier().child(Capabilities.class),
@@ -106,7 +108,8 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
         }
     }
 
-    @Override protected void setVersion(Version version) {
+    @Override
+    protected void setVersion(Version version) {
         super.setVersion(version);
         if (datastoreAccess != null) {
             datastoreAccess.checkAndMerge(getIdentifier(),
@@ -115,7 +118,8 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
         }
     }
 
-    @Override protected void setState(ConnectionState state) {
+    @Override
+    protected void setState(ConnectionState state) {
         super.setState(state);
         if (datastoreAccess != null) {
             datastoreAccess.checkAndMerge(getIdentifier(),
@@ -124,7 +128,8 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
         }
     }
 
-    @Override public void setNodeIdRemote(NodeId remoteNodeId) {
+    @Override
+    public void setNodeIdRemote(NodeId remoteNodeId) {
         super.setNodeIdRemote(remoteNodeId);
         if (datastoreAccess != null) {
             datastoreAccess.checkAndMerge(getIdentifier(),
@@ -133,7 +138,8 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
         }
     }
 
-    @Override public void setUpdateOrKeepaliveMessageTimestamp() {
+    @Override
+    public void setUpdateOrKeepaliveMessageTimestamp() {
         super.setUpdateOrKeepaliveMessageTimestamp();
         if (datastoreAccess != null) {
             datastoreAccess.checkAndMerge(getIdentifier(), new ConnectionBuilder().setPeerAddress(address)
@@ -143,7 +149,8 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
         }
     }
 
-    @Override public void shutdown() {
+    @Override
+    public void shutdown() {
         super.shutdown();
         Connection
                 connection =

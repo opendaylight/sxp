@@ -39,26 +39,20 @@ import org.opendaylight.yangtools.concepts.ListenerRegistration;
 @RunWith(MockitoJUnitRunner.class)
 public class SxpClusterRouteManagerTest {
 
-    @Mock
-    private DataBroker dataBroker;
-    @Mock
-    private ListenerRegistration<SxpClusterRouteManager> listenerRegistration;
-    @Mock
-    private ClusterSingletonServiceProvider cssProvider;
-    @Mock
-    private ClusterSingletonServiceRegistration cssRegistration;
-    @Mock
-    private RouteReactor routeReactor;
-    @Mock
-    private DataTreeModification<SxpClusterRoute> modification;
-    @Mock
-    private DataObjectModification<SxpClusterRoute> dataObjectModification;
+    @Mock private DataBroker dataBroker;
+    @Mock private ListenerRegistration<SxpClusterRouteManager> listenerRegistration;
+    @Mock private ClusterSingletonServiceProvider cssProvider;
+    @Mock private ClusterSingletonServiceRegistration cssRegistration;
+    @Mock private RouteReactor routeReactor;
+    @Mock private DataTreeModification<SxpClusterRoute> modification;
+    @Mock private DataObjectModification<SxpClusterRoute> dataObjectModification;
 
     private SxpClusterRouteManager manager;
 
     @Before
     public void setUp() throws Exception {
-        Mockito.when(routeReactor.updateRouting(Matchers.any(), Matchers.any())).thenReturn(Futures.immediateFuture(null));
+        Mockito.when(routeReactor.updateRouting(Matchers.any(), Matchers.any()))
+                .thenReturn(Futures.immediateFuture(null));
         Mockito.when(routeReactor.wipeRouting()).thenReturn(Futures.immediateFuture(null));
         manager = new SxpClusterRouteManager(dataBroker, cssProvider, routeReactor);
         Assert.assertEquals(RouteListenerState.STOPPED, manager.getState());
@@ -79,16 +73,13 @@ public class SxpClusterRouteManagerTest {
 
     @Test
     public void onDataTreeChanged() throws Exception {
-        final List<RoutingDefinition> oldDefs = Lists.newArrayList(
-                RouteTestFactory.createDummyRoutingDef(1, 1));
-        final SxpClusterRoute oldRouting = new SxpClusterRouteBuilder()
-                .setRoutingDefinition(oldDefs)
-                .build();
-        final List<RoutingDefinition> newDefs = Lists.newArrayList(
-                RouteTestFactory.createDummyRoutingDef(1, 2), RouteTestFactory.createDummyRoutingDef(3, 3));
-        final SxpClusterRoute newRouting = new SxpClusterRouteBuilder()
-                .setRoutingDefinition(newDefs)
-                .build();
+        final List<RoutingDefinition> oldDefs = Lists.newArrayList(RouteTestFactory.createDummyRoutingDef(1, 1));
+        final SxpClusterRoute oldRouting = new SxpClusterRouteBuilder().setRoutingDefinition(oldDefs).build();
+        final List<RoutingDefinition>
+                newDefs =
+                Lists.newArrayList(RouteTestFactory.createDummyRoutingDef(1, 2),
+                        RouteTestFactory.createDummyRoutingDef(3, 3));
+        final SxpClusterRoute newRouting = new SxpClusterRouteBuilder().setRoutingDefinition(newDefs).build();
 
         Mockito.when(dataObjectModification.getDataBefore()).thenReturn(oldRouting);
         Mockito.when(dataObjectModification.getDataAfter()).thenReturn(newRouting);
@@ -102,8 +93,8 @@ public class SxpClusterRouteManagerTest {
 
         manager.onDataTreeChanged(Collections.singletonList(modification));
 
-        Mockito.verify(dataBroker).registerDataTreeChangeListener(
-                SxpClusterRouteManager.ROUTING_DEFINITION_DT_IDENTIFIER, manager);
+        Mockito.verify(dataBroker)
+                .registerDataTreeChangeListener(SxpClusterRouteManager.ROUTING_DEFINITION_DT_IDENTIFIER, manager);
         Mockito.verify(cssProvider).registerClusterSingletonService(manager);
         Mockito.verify(routeReactor).updateRouting(oldRouting, newRouting);
         Assert.assertEquals(RouteListenerState.WORKING, manager.getState());
@@ -116,25 +107,23 @@ public class SxpClusterRouteManagerTest {
 
     @Test
     public void instantiateServiceInstance() throws Exception {
-        Mockito.when(dataBroker.registerDataTreeChangeListener(
-                SxpClusterRouteManager.ROUTING_DEFINITION_DT_IDENTIFIER, manager))
-                .thenReturn(listenerRegistration);
+        Mockito.when(dataBroker.registerDataTreeChangeListener(SxpClusterRouteManager.ROUTING_DEFINITION_DT_IDENTIFIER,
+                manager)).thenReturn(listenerRegistration);
 
         manager.init();
         Assert.assertEquals(RouteListenerState.STOPPED, manager.getState());
         manager.instantiateServiceInstance();
 
-        Mockito.verify(dataBroker).registerDataTreeChangeListener(
-                SxpClusterRouteManager.ROUTING_DEFINITION_DT_IDENTIFIER, manager);
+        Mockito.verify(dataBroker)
+                .registerDataTreeChangeListener(SxpClusterRouteManager.ROUTING_DEFINITION_DT_IDENTIFIER, manager);
         Mockito.verify(cssProvider).registerClusterSingletonService(manager);
         Assert.assertEquals(RouteListenerState.BEFORE_FIRST, manager.getState());
     }
 
     @Test
     public void closeServiceInstance() throws Exception {
-        Mockito.when(dataBroker.registerDataTreeChangeListener(
-                SxpClusterRouteManager.ROUTING_DEFINITION_DT_IDENTIFIER, manager))
-                .thenReturn(listenerRegistration);
+        Mockito.when(dataBroker.registerDataTreeChangeListener(SxpClusterRouteManager.ROUTING_DEFINITION_DT_IDENTIFIER,
+                manager)).thenReturn(listenerRegistration);
 
         manager.init();
         Assert.assertEquals(RouteListenerState.STOPPED, manager.getState());
@@ -143,8 +132,8 @@ public class SxpClusterRouteManagerTest {
         manager.closeServiceInstance();
 
         Mockito.verify(cssProvider).registerClusterSingletonService(manager);
-        Mockito.verify(dataBroker).registerDataTreeChangeListener(
-                SxpClusterRouteManager.ROUTING_DEFINITION_DT_IDENTIFIER, manager);
+        Mockito.verify(dataBroker)
+                .registerDataTreeChangeListener(SxpClusterRouteManager.ROUTING_DEFINITION_DT_IDENTIFIER, manager);
         Mockito.verify(listenerRegistration).close();
         Mockito.verify(routeReactor).wipeRouting();
         Assert.assertEquals(RouteListenerState.STOPPED, manager.getState());
@@ -152,9 +141,8 @@ public class SxpClusterRouteManagerTest {
 
     @Test
     public void close() throws Exception {
-        Mockito.when(dataBroker.registerDataTreeChangeListener(
-                SxpClusterRouteManager.ROUTING_DEFINITION_DT_IDENTIFIER, manager))
-                .thenReturn(listenerRegistration);
+        Mockito.when(dataBroker.registerDataTreeChangeListener(SxpClusterRouteManager.ROUTING_DEFINITION_DT_IDENTIFIER,
+                manager)).thenReturn(listenerRegistration);
 
         manager.init();
         manager.instantiateServiceInstance();
@@ -163,8 +151,8 @@ public class SxpClusterRouteManagerTest {
 
         Mockito.verify(cssProvider).registerClusterSingletonService(manager);
         Mockito.verify(cssRegistration).close();
-        Mockito.verify(dataBroker).registerDataTreeChangeListener(
-                SxpClusterRouteManager.ROUTING_DEFINITION_DT_IDENTIFIER, manager);
+        Mockito.verify(dataBroker)
+                .registerDataTreeChangeListener(SxpClusterRouteManager.ROUTING_DEFINITION_DT_IDENTIFIER, manager);
         Mockito.verify(listenerRegistration).close();
         Mockito.verify(routeReactor).wipeRouting();
         Assert.assertEquals(RouteListenerState.STOPPED, manager.getState());

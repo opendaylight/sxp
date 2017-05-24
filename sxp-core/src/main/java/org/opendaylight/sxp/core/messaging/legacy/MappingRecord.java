@@ -9,6 +9,12 @@
 package org.opendaylight.sxp.core.messaging.legacy;
 
 import com.google.common.net.InetAddresses;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collection;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.message.attribute.AddressLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
@@ -28,13 +34,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlv.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlv.fields.tlv.optional.fields.source.group.tag.tlv.attribute.SourceGroupTagTlvAttributesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlvs.fields.Tlv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlvs.fields.TlvBuilder;
-
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collection;
 
 /**
  * MappingRecord class represent entity that contains Tlv,
@@ -62,12 +61,12 @@ public class MappingRecord extends ArrayList<Tlv> {
         }
         TlvOptionalFields tlvOptionalFields = null;
         switch (tlvBuilder.getType()) {
-        case PrefixLength:
-            tlvOptionalFields = decodeTlvPrefixLength(tlvBuilder.getValue());
-            break;
-        case Sgt:
-            tlvOptionalFields = decodeTlvSourceGroupTag(tlvBuilder.getValue());
-            break;
+            case PrefixLength:
+                tlvOptionalFields = decodeTlvPrefixLength(tlvBuilder.getValue());
+                break;
+            case Sgt:
+                tlvOptionalFields = decodeTlvSourceGroupTag(tlvBuilder.getValue());
+                break;
         }
         tlvBuilder.setLength(8 + length);
         tlvBuilder.setTlvOptionalFields(tlvOptionalFields);
@@ -172,7 +171,8 @@ public class MappingRecord extends ArrayList<Tlv> {
      * @throws UnknownHostException   If attribute have incorrect or none address
      */
     public static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord decodeAddress(
-            AttributeType operationCode, int length, byte[] array) throws AddressLengthException, UnknownPrefixException, UnknownHostException {
+            AttributeType operationCode, int length, byte[] array)
+            throws AddressLengthException, UnknownPrefixException, UnknownHostException {
         int addressLength;
         switch (operationCode) {
             case AddIpv4:
@@ -205,8 +205,9 @@ public class MappingRecord extends ArrayList<Tlv> {
         InetAddress inetAddress = InetAddress.getByAddress(address);
         int prefixLength;
         try {
-            prefixLength = ((PrefixLengthTlvAttribute) mappingRecord.get(TlvType.PrefixLength))
-                    .getPrefixLengthTlvAttributes().getPrefixLength();
+            prefixLength =
+                    ((PrefixLengthTlvAttribute) mappingRecord.get(TlvType.PrefixLength)).getPrefixLengthTlvAttributes()
+                            .getPrefixLength();
         } catch (TlvNotFoundException e) {
             if (inetAddress instanceof Inet4Address) {
                 prefixLength = 32;

@@ -14,13 +14,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
@@ -172,7 +172,7 @@ import org.slf4j.LoggerFactory;
 public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
     private final DatastoreAccess datastoreAccess;
-    private ExecutorService executor = ThreadsWorker.generateExecutor(1, "SXP-RPC");
+    private final ExecutorService executor = ThreadsWorker.generateExecutor(1, "SXP-RPC");
     private static final Logger LOG = LoggerFactory.getLogger(SxpRpcServiceImpl.class.getName());
 
     /**
@@ -509,7 +509,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                                 .filter(b -> b != null && b.getSgt() != null && b.getIpPrefix() != null
                                         && !b.getIpPrefix().isEmpty())
                                 .collect(Collectors.toMap(Binding::getSgt,
-                                        binding -> binding.getIpPrefix().stream().collect(Collectors.toSet())));
+                                        binding -> new HashSet<>(binding.getIpPrefix())));
                 if (database.getMasterDatabaseBinding()
                         .removeIf(b -> bindings.containsKey(b.getSecurityGroupTag()) && bindings.get(
                                 b.getSecurityGroupTag()).contains(b.getIpPrefix()))) {
@@ -573,7 +573,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                             .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
                             .child(MasterDatabase.class), LogicalDatastoreType.CONFIGURATION);
             if (input.getIpPrefix() != null && database != null && database.getMasterDatabaseBinding() != null) {
-                final Set<IpPrefix> prefixes = input.getIpPrefix().stream().collect(Collectors.toSet());
+                final Set<IpPrefix> prefixes = new HashSet<>(input.getIpPrefix());
                 output.setResult(database.getMasterDatabaseBinding()
                         .removeIf(b -> input.getSgt().equals(b.getSecurityGroupTag()) && prefixes.contains(
                                 b.getIpPrefix())) && datastoreAccess.checkAndPut(

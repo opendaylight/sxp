@@ -8,6 +8,15 @@
 
 package org.opendaylight.sxp.core.service;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.google.common.util.concurrent.ListenableFuture;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -75,385 +84,374 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class, BindingDispatcher.class})
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({SxpNode.class, BindingDispatcher.class})
 public class BindingHandlerTest {
 
-        @Rule public ExpectedException exception = ExpectedException.none();
-        private static SxpNode sxpNode;
-        private static SxpConnection connection;
-        private static ThreadsWorker worker;
-        private ArgumentCaptor<Callable> taskCaptor;
-        private static SxpDatabaseInf sxpDatabaseInf;
-        private static MasterDatabaseInf masterDatabaseInf;
-        private static BindingHandler handler;
+    @Rule public ExpectedException exception = ExpectedException.none();
+    private static SxpNode sxpNode;
+    private static SxpConnection connection;
+    private static ThreadsWorker worker;
+    private ArgumentCaptor<Callable> taskCaptor;
+    private static SxpDatabaseInf sxpDatabaseInf;
+    private static MasterDatabaseInf masterDatabaseInf;
+    private static BindingHandler handler;
 
-        @Before public void init() throws Exception {
-                sxpNode = PowerMockito.mock(SxpNode.class);
-                PowerMockito.when(sxpNode.isEnabled()).thenReturn(true);
-                connection = mock(SxpConnection.class);
+    @Before
+    public void init() throws Exception {
+        sxpNode = PowerMockito.mock(SxpNode.class);
+        PowerMockito.when(sxpNode.isEnabled()).thenReturn(true);
+        connection = mock(SxpConnection.class);
 
-                worker = mock(ThreadsWorker.class);
-                taskCaptor = ArgumentCaptor.forClass(Callable.class);
-                when(worker.executeTaskInSequence(taskCaptor.capture(), any(ThreadsWorker.WorkerType.class),
-                        any(SxpConnection.class))).thenReturn(mock(ListenableFuture.class));
-                when(connection.getOwner()).thenReturn(sxpNode);
-                when(connection.getDomainName()).thenReturn("default");
-                when(connection.getId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
-                when(connection.getOwnerId()).thenReturn(NodeId.getDefaultInstance("1.1.1.1"));
-                PowerMockito.when(sxpNode.getWorker()).thenReturn(worker);
-                List<CapabilityType> capabilities = new ArrayList<>();
-                capabilities.add(CapabilityType.LoopDetection);
-                when(connection.getCapabilities()).thenReturn(capabilities);
-                when(connection.getDestination()).thenReturn(
-                        new InetSocketAddress(InetAddress.getByName("1.1.1.1"), 5));
-                sxpDatabaseInf = new SxpDatabaseImpl();
-                masterDatabaseInf = new MasterDatabaseImpl();
-                PowerMockito.when(sxpNode.getBindingSxpDatabase(anyString())).thenReturn(sxpDatabaseInf);
-                PowerMockito.when(sxpNode.getBindingMasterDatabase(anyString())).thenReturn(masterDatabaseInf);
-                PowerMockito.when(sxpNode.getDomain(anyString()))
-                        .thenReturn(SxpDomain.createInstance(sxpNode, "default", sxpDatabaseInf, masterDatabaseInf));
-                handler = new BindingHandler(sxpNode, PowerMockito.mock(BindingDispatcher.class));
+        worker = mock(ThreadsWorker.class);
+        taskCaptor = ArgumentCaptor.forClass(Callable.class);
+        when(worker.executeTaskInSequence(taskCaptor.capture(), any(ThreadsWorker.WorkerType.class),
+                any(SxpConnection.class))).thenReturn(mock(ListenableFuture.class));
+        when(connection.getOwner()).thenReturn(sxpNode);
+        when(connection.getDomainName()).thenReturn("default");
+        when(connection.getId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
+        when(connection.getOwnerId()).thenReturn(NodeId.getDefaultInstance("1.1.1.1"));
+        PowerMockito.when(sxpNode.getWorker()).thenReturn(worker);
+        List<CapabilityType> capabilities = new ArrayList<>();
+        capabilities.add(CapabilityType.LoopDetection);
+        when(connection.getCapabilities()).thenReturn(capabilities);
+        when(connection.getDestination()).thenReturn(new InetSocketAddress(InetAddress.getByName("1.1.1.1"), 5));
+        sxpDatabaseInf = new SxpDatabaseImpl();
+        masterDatabaseInf = new MasterDatabaseImpl();
+        PowerMockito.when(sxpNode.getBindingSxpDatabase(anyString())).thenReturn(sxpDatabaseInf);
+        PowerMockito.when(sxpNode.getBindingMasterDatabase(anyString())).thenReturn(masterDatabaseInf);
+        PowerMockito.when(sxpNode.getDomain(anyString()))
+                .thenReturn(SxpDomain.createInstance(sxpNode, "default", sxpDatabaseInf, masterDatabaseInf));
+        handler = new BindingHandler(sxpNode, PowerMockito.mock(BindingDispatcher.class));
+    }
+
+    private Peer getPeer(String id, int key) {
+        PeerBuilder peerBuilder = new PeerBuilder();
+        peerBuilder.setNodeId(new NodeId(id));
+        peerBuilder.setKey(new PeerKey(key));
+        return peerBuilder.build();
+    }
+
+    private SxpDatabaseBinding getBinding(String prefix, int sgt, PeerSequence peerSequence)
+            throws UnknownPrefixException {
+        SxpDatabaseBindingBuilder bindingBuilder = new SxpDatabaseBindingBuilder();
+        bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
+        bindingBuilder.setPeerSequence(peerSequence);
+        bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
+        bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        return bindingBuilder.build();
+    }
+
+    @Test
+    public void testLoopDetection() throws Exception {
+        List<SxpBindingFields> bindings = new ArrayList<>();
+
+        List<Peer> peerList = new ArrayList<>();
+        List<Peer> peerList_ = new ArrayList<>();
+
+        peerList.add(getPeer("127.0.0.0", 0));
+        peerList.add(getPeer("127.0.0.1", 1));
+        peerList.add(getPeer("127.0.0.2", 2));
+        peerList_.addAll(peerList);
+        bindings.add(getBinding("5.5.5.5/32", 20, new PeerSequenceBuilder().setPeer(peerList).build()));
+
+        peerList = new ArrayList<>();
+        peerList.add(getPeer("127.0.1.0", 0));
+        peerList.add(getPeer("127.0.2.1", 1));
+        peerList.add(getPeer("127.0.3.2", 2));
+        bindings.add(getBinding("15.15.15.15/32", 10, new PeerSequenceBuilder().setPeer(peerList).build()));
+
+        List<SxpBindingFields>
+                bindings_ =
+                BindingHandler.loopDetection(new NodeId("127.0.2.1"), bindings.stream()).collect(Collectors.toList());
+        assertNotNull(bindings);
+        assertEquals(1, bindings_.size());
+        assertEquals("5.5.5.5/32", IpPrefixConv.toString(bindings_.get(0).getIpPrefix()));
+    }
+
+    private List<IpPrefix> getIpPrefixes(String... strings) {
+        List<IpPrefix> ipPrefixes = new ArrayList<>();
+        for (String s : strings) {
+            ipPrefixes.add(new IpPrefix(s.toCharArray()));
         }
+        return ipPrefixes;
+    }
 
-        private Peer getPeer(String id, int key) {
-                PeerBuilder peerBuilder = new PeerBuilder();
-                peerBuilder.setNodeId(new NodeId(id));
-                peerBuilder.setKey(new PeerKey(key));
-                return peerBuilder.build();
+    private Attribute getDeleteIpv4(String prefix) {
+        DeleteIpv4AttributeBuilder deleteIpv4AttributeBuilder = new DeleteIpv4AttributeBuilder();
+        DeleteIpv4AttributesBuilder deleteIpv4AttributesBuilder = new DeleteIpv4AttributesBuilder();
+        deleteIpv4AttributesBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        deleteIpv4AttributeBuilder.setDeleteIpv4Attributes(deleteIpv4AttributesBuilder.build());
+        AttributeBuilder builder = new AttributeBuilder();
+        builder.setAttributeOptionalFields(deleteIpv4AttributeBuilder.build());
+        builder.setType(AttributeType.DelIpv4);
+        builder.setFlags(new FlagsFields.Flags(true, false, true, false, false));
+        return builder.build();
+    }
+
+    private Attribute getDeleteIpv6(String prefix) {
+        DeleteIpv6AttributeBuilder deleteIpv6AttributeBuilder = new DeleteIpv6AttributeBuilder();
+        DeleteIpv6AttributesBuilder deleteIpv6AttributesBuilder = new DeleteIpv6AttributesBuilder();
+        deleteIpv6AttributesBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        deleteIpv6AttributeBuilder.setDeleteIpv6Attributes(deleteIpv6AttributesBuilder.build());
+        AttributeBuilder builder = new AttributeBuilder();
+        builder.setAttributeOptionalFields(deleteIpv6AttributeBuilder.build());
+        builder.setType(AttributeType.DelIpv6);
+        builder.setFlags(new FlagsFields.Flags(true, false, true, false, false));
+        return builder.build();
+    }
+
+    private Attribute getAddIpv4(String prefix) {
+        AddIpv4AttributeBuilder addIpv4AttributeBuilder = new AddIpv4AttributeBuilder();
+        AddIpv4AttributesBuilder addIpv4AttributesBuilder = new AddIpv4AttributesBuilder();
+        addIpv4AttributesBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        addIpv4AttributeBuilder.setAddIpv4Attributes(addIpv4AttributesBuilder.build());
+        AttributeBuilder builder = new AttributeBuilder();
+        builder.setAttributeOptionalFields(addIpv4AttributeBuilder.build());
+        builder.setType(AttributeType.AddIpv4);
+        builder.setFlags(new FlagsFields.Flags(true, false, true, false, false));
+        return builder.build();
+    }
+
+    private MappingRecord getAddIp(int sgt, String prefix, AttributeType attributeType) {
+        MappingRecordBuilder mappingRecordBuilder = new MappingRecordBuilder();
+        mappingRecordBuilder.setAddress(new IpPrefix(prefix.toCharArray()));
+        mappingRecordBuilder.setOperationCode(attributeType);
+        List<Tlv> tlvs = new ArrayList<>();
+        mappingRecordBuilder.setTlv(tlvs);
+        TlvBuilder tlvBuilder = new TlvBuilder();
+        tlvBuilder.setType(TlvType.Sgt);
+        SourceGroupTagTlvAttributeBuilder sourceGroupTagTlvAttributeBuilder = new SourceGroupTagTlvAttributeBuilder();
+        SourceGroupTagTlvAttributesBuilder
+                sourceGroupTagTlvAttributesBuilder =
+                new SourceGroupTagTlvAttributesBuilder();
+        sourceGroupTagTlvAttributesBuilder.setSgt(sgt);
+        sourceGroupTagTlvAttributeBuilder.setSourceGroupTagTlvAttributes(sourceGroupTagTlvAttributesBuilder.build());
+        tlvBuilder.setTlvOptionalFields(sourceGroupTagTlvAttributeBuilder.build());
+        tlvs.add(tlvBuilder.build());
+        return mappingRecordBuilder.build();
+    }
+
+    private Attribute getAddIpv6(String prefix) {
+        AddIpv6AttributeBuilder addIpv6AttributeBuilder = new AddIpv6AttributeBuilder();
+        AddIpv6AttributesBuilder addIpv6AttributesBuilder = new AddIpv6AttributesBuilder();
+        addIpv6AttributesBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        addIpv6AttributeBuilder.setAddIpv6Attributes(addIpv6AttributesBuilder.build());
+        AttributeBuilder builder = new AttributeBuilder();
+        builder.setAttributeOptionalFields(addIpv6AttributeBuilder.build());
+        builder.setType(AttributeType.AddIpv6);
+        builder.setFlags(new FlagsFields.Flags(true, false, true, false, false));
+        return builder.build();
+    }
+
+    private Attribute getPeerSequence(String... strings) {
+        List<NodeId> nodeIds = new ArrayList<>();
+        for (String s : strings) {
+            nodeIds.add(new NodeId(s));
         }
+        return AttributeFactory.createPeerSequence(nodeIds);
+    }
 
-        private SxpDatabaseBinding getBinding(String prefix , int sgt , PeerSequence peerSequence)
-                throws UnknownPrefixException {
-                SxpDatabaseBindingBuilder bindingBuilder = new SxpDatabaseBindingBuilder();
-                bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
-                bindingBuilder.setPeerSequence(peerSequence);
-                bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
-                bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
-                return bindingBuilder.build();
-        }
+    private <T extends SxpBindingFields> void assertDatabase(List<T> database, List<IpPrefix> ipPrefixes) {
+        assertEquals(database.stream().map(b -> b.getIpPrefix()).collect(Collectors.toSet()),
+                ipPrefixes.stream().collect(Collectors.toSet()));
+    }
 
-        @Test public void testLoopDetection() throws Exception {
-                List<SxpBindingFields> bindings = new ArrayList<>();
+    private UpdateMessage getMessage(List<Attribute> attributes) {
+        UpdateMessageBuilder updateMessageBuilder = new UpdateMessageBuilder();
+        updateMessageBuilder.setType(MessageType.Update);
+        updateMessageBuilder.setLength(0);
+        updateMessageBuilder.setPayload(new byte[] {});
+        updateMessageBuilder.setAttribute(attributes);
+        return updateMessageBuilder.build();
+    }
 
-                List<Peer> peerList = new ArrayList<>();
-                List<Peer> peerList_ = new ArrayList<>();
+    private UpdateMessageLegacy getMessageLegacy(List<MappingRecord> mappingRecords) {
+        UpdateMessageLegacyBuilder updateMessageBuilder = new UpdateMessageLegacyBuilder();
+        updateMessageBuilder.setType(MessageType.Update);
+        updateMessageBuilder.setLength(0);
+        updateMessageBuilder.setPayload(new byte[] {});
+        updateMessageBuilder.setMappingRecord(mappingRecords);
+        return updateMessageBuilder.build();
+    }
 
-                peerList.add(getPeer("127.0.0.0", 0));
-                peerList.add(getPeer("127.0.0.1", 1));
-                peerList.add(getPeer("127.0.0.2", 2));
-                peerList_.addAll(peerList);
-                bindings.add(getBinding("5.5.5.5/32", 20, new PeerSequenceBuilder().setPeer(peerList).build()));
+    private List<Attribute> getAddition() throws SecurityGroupTagValueException {
+        List<Attribute> attributes = new ArrayList<>();
+        attributes.add(getPeerSequence("1.1.1.1"));
+        attributes.add(AttributeFactory.createSourceGroupTag(25));
 
-                peerList = new ArrayList<>();
-                peerList.add(getPeer("127.0.1.0", 0));
-                peerList.add(getPeer("127.0.2.1", 1));
-                peerList.add(getPeer("127.0.3.2", 2));
-                bindings.add(getBinding("15.15.15.15/32", 10, new PeerSequenceBuilder().setPeer(peerList).build()));
-
-                List<SxpBindingFields>
-                        bindings_ =
-                        BindingHandler.loopDetection(new NodeId("127.0.2.1"), bindings.stream())
-                                .collect(Collectors.toList());
-                assertNotNull(bindings);
-                assertEquals(1, bindings_.size());
-                assertEquals("5.5.5.5/32", IpPrefixConv.toString(bindings_.get(0).getIpPrefix()));
-        }
-
-        private List<IpPrefix> getIpPrefixes(String... strings) {
-                List<IpPrefix> ipPrefixes = new ArrayList<>();
-                for (String s : strings) {
-                        ipPrefixes.add(new IpPrefix(s.toCharArray()));
-                }
-                return ipPrefixes;
-        }
-
-        private Attribute getDeleteIpv4(String prefix) {
-                DeleteIpv4AttributeBuilder deleteIpv4AttributeBuilder = new DeleteIpv4AttributeBuilder();
-                DeleteIpv4AttributesBuilder deleteIpv4AttributesBuilder = new DeleteIpv4AttributesBuilder();
-                deleteIpv4AttributesBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
-                deleteIpv4AttributeBuilder.setDeleteIpv4Attributes(deleteIpv4AttributesBuilder.build());
-                AttributeBuilder builder = new AttributeBuilder();
-                builder.setAttributeOptionalFields(deleteIpv4AttributeBuilder.build());
-                builder.setType(AttributeType.DelIpv4);
-                builder.setFlags(new FlagsFields.Flags(true, false, true, false, false));
-                return builder.build();
-        }
-
-        private Attribute getDeleteIpv6(String prefix) {
-                DeleteIpv6AttributeBuilder deleteIpv6AttributeBuilder = new DeleteIpv6AttributeBuilder();
-                DeleteIpv6AttributesBuilder deleteIpv6AttributesBuilder = new DeleteIpv6AttributesBuilder();
-                deleteIpv6AttributesBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
-                deleteIpv6AttributeBuilder.setDeleteIpv6Attributes(deleteIpv6AttributesBuilder.build());
-                AttributeBuilder builder = new AttributeBuilder();
-                builder.setAttributeOptionalFields(deleteIpv6AttributeBuilder.build());
-                builder.setType(AttributeType.DelIpv6);
-                builder.setFlags(new FlagsFields.Flags(true, false, true, false, false));
-                return builder.build();
-        }
-
-        private Attribute getAddIpv4(String prefix) {
-                AddIpv4AttributeBuilder addIpv4AttributeBuilder = new AddIpv4AttributeBuilder();
-                AddIpv4AttributesBuilder addIpv4AttributesBuilder = new AddIpv4AttributesBuilder();
-                addIpv4AttributesBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
-                addIpv4AttributeBuilder.setAddIpv4Attributes(addIpv4AttributesBuilder.build());
-                AttributeBuilder builder = new AttributeBuilder();
-                builder.setAttributeOptionalFields(addIpv4AttributeBuilder.build());
-                builder.setType(AttributeType.AddIpv4);
-                builder.setFlags(new FlagsFields.Flags(true, false, true, false, false));
-                return builder.build();
-        }
-
-        private MappingRecord getAddIp(int sgt, String prefix, AttributeType attributeType) {
-                MappingRecordBuilder mappingRecordBuilder = new MappingRecordBuilder();
-                mappingRecordBuilder.setAddress(new IpPrefix(prefix.toCharArray()));
-                mappingRecordBuilder.setOperationCode(attributeType);
-                List<Tlv> tlvs = new ArrayList<>();
-                mappingRecordBuilder.setTlv(tlvs);
-                TlvBuilder tlvBuilder = new TlvBuilder();
-                tlvBuilder.setType(TlvType.Sgt);
-                SourceGroupTagTlvAttributeBuilder
-                        sourceGroupTagTlvAttributeBuilder =
-                        new SourceGroupTagTlvAttributeBuilder();
-                SourceGroupTagTlvAttributesBuilder
-                        sourceGroupTagTlvAttributesBuilder =
-                        new SourceGroupTagTlvAttributesBuilder();
-                sourceGroupTagTlvAttributesBuilder.setSgt(sgt);
-                sourceGroupTagTlvAttributeBuilder.setSourceGroupTagTlvAttributes(
-                        sourceGroupTagTlvAttributesBuilder.build());
-                tlvBuilder.setTlvOptionalFields(sourceGroupTagTlvAttributeBuilder.build());
-                tlvs.add(tlvBuilder.build());
-                return mappingRecordBuilder.build();
-        }
-
-        private Attribute getAddIpv6(String prefix) {
-                AddIpv6AttributeBuilder addIpv6AttributeBuilder = new AddIpv6AttributeBuilder();
-                AddIpv6AttributesBuilder addIpv6AttributesBuilder = new AddIpv6AttributesBuilder();
-                addIpv6AttributesBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
-                addIpv6AttributeBuilder.setAddIpv6Attributes(addIpv6AttributesBuilder.build());
-                AttributeBuilder builder = new AttributeBuilder();
-                builder.setAttributeOptionalFields(addIpv6AttributeBuilder.build());
-                builder.setType(AttributeType.AddIpv6);
-                builder.setFlags(new FlagsFields.Flags(true, false, true, false, false));
-                return builder.build();
-        }
-
-        private Attribute getPeerSequence(String... strings) {
-                List<NodeId> nodeIds = new ArrayList<>();
-                for (String s : strings) {
-                        nodeIds.add(new NodeId(s));
-                }
-                return AttributeFactory.createPeerSequence(nodeIds);
-        }
-
-        private <T extends SxpBindingFields> void assertDatabase(List<T> database, List<IpPrefix> ipPrefixes) {
-                assertEquals(database.stream().map(b -> b.getIpPrefix()).collect(Collectors.toSet()),
-                        ipPrefixes.stream().collect(Collectors.toSet()));
-        }
-
-        private UpdateMessage getMessage(List<Attribute> attributes) {
-                UpdateMessageBuilder updateMessageBuilder = new UpdateMessageBuilder();
-                updateMessageBuilder.setType(MessageType.Update);
-                updateMessageBuilder.setLength(0);
-                updateMessageBuilder.setPayload(new byte[] {});
-                updateMessageBuilder.setAttribute(attributes);
-                return updateMessageBuilder.build();
-        }
-
-        private UpdateMessageLegacy getMessageLegacy(List<MappingRecord> mappingRecords) {
-                UpdateMessageLegacyBuilder updateMessageBuilder = new UpdateMessageLegacyBuilder();
-                updateMessageBuilder.setType(MessageType.Update);
-                updateMessageBuilder.setLength(0);
-                updateMessageBuilder.setPayload(new byte[] {});
-                updateMessageBuilder.setMappingRecord(mappingRecords);
-                return updateMessageBuilder.build();
-        }
-
-        private List<Attribute> getAddition() throws SecurityGroupTagValueException {
-                List<Attribute> attributes = new ArrayList<>();
-                attributes.add(getPeerSequence("1.1.1.1"));
-                attributes.add(AttributeFactory.createSourceGroupTag(25));
-
-                List<IpPrefix> ipPrefixes = getIpPrefixes("127.0.0.0/32", "127.0.10.2/32");
-                attributes.add(AttributeFactory.createIpv4AddPrefix(getIpPrefixes("127.0.0.0/32", "127.0.10.2/32"),
+        List<IpPrefix> ipPrefixes = getIpPrefixes("127.0.0.0/32", "127.0.10.2/32");
+        attributes.add(AttributeFactory.createIpv4AddPrefix(getIpPrefixes("127.0.0.0/32", "127.0.10.2/32"),
+                AttributeFactory._onpCe));
+        attributes.add(getPeerSequence("2.2.2.2"));
+        attributes.add(AttributeFactory.createSourceGroupTag(45));
+        ipPrefixes.addAll(getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"));
+        attributes.add(
+                AttributeFactory.createIpv6AddPrefix(getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"),
                         AttributeFactory._onpCe));
-                attributes.add(getPeerSequence("2.2.2.2"));
-                attributes.add(AttributeFactory.createSourceGroupTag(45));
-                ipPrefixes.addAll(getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"));
-                attributes.add(AttributeFactory.createIpv6AddPrefix(
-                        getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"), AttributeFactory._onpCe));
 
-                //Legacy
-                ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
-                attributes.add(getAddIpv4("128.0.0.0/32"));
-                ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
-                attributes.add(getAddIpv4("128.50.0.0/24"));
+        //Legacy
+        ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
+        attributes.add(getAddIpv4("128.0.0.0/32"));
+        ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
+        attributes.add(getAddIpv4("128.50.0.0/24"));
 
-                ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
-                attributes.add(getAddIpv6("2001:0:0:0:0:0:0:8/32"));
-                ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
-                attributes.add(getAddIpv6("2001:0:0:0:0:C:0:8/128"));
-                return attributes;
-        }
+        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
+        attributes.add(getAddIpv6("2001:0:0:0:0:0:0:8/32"));
+        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
+        attributes.add(getAddIpv6("2001:0:0:0:0:C:0:8/128"));
+        return attributes;
+    }
 
-        private List<MappingRecord> getLegacyAddition() {
-                List<MappingRecord> mappingRecords = new ArrayList<>();
+    private List<MappingRecord> getLegacyAddition() {
+        List<MappingRecord> mappingRecords = new ArrayList<>();
 
-                mappingRecords.add(getAddIp(10, "128.0.0.0/32", AttributeType.AddIpv4));
-                mappingRecords.add(getAddIp(10, "128.50.0.0/24", AttributeType.AddIpv4));
-                mappingRecords.add(getAddIp(10, "2001:0:0:0:0:0:0:8/32", AttributeType.AddIpv6));
-                mappingRecords.add(getAddIp(10, "2001:0:0:0:0:C:0:8/128", AttributeType.AddIpv6));
-                return mappingRecords;
-        }
+        mappingRecords.add(getAddIp(10, "128.0.0.0/32", AttributeType.AddIpv4));
+        mappingRecords.add(getAddIp(10, "128.50.0.0/24", AttributeType.AddIpv4));
+        mappingRecords.add(getAddIp(10, "2001:0:0:0:0:0:0:8/32", AttributeType.AddIpv6));
+        mappingRecords.add(getAddIp(10, "2001:0:0:0:0:C:0:8/128", AttributeType.AddIpv6));
+        return mappingRecords;
+    }
 
-        private List<Attribute> getDeletion() {
-                List<Attribute> attributes = new ArrayList<>();
-                attributes.add(AttributeFactory.createIpv4DeletePrefix(getIpPrefixes("127.0.0.0/32", "127.0.10.2/32"),
-                        AttributeFactory._onpCe));
-                attributes.add(AttributeFactory.createIpv6DeletePrefix(
-                        getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"), AttributeFactory._onpCe));
-                //Legacy
-                attributes.add(getDeleteIpv4("128.0.0.0/32"));
-                attributes.add(getDeleteIpv4("128.50.0.0/24"));
-                attributes.add(getDeleteIpv6("2001:0:0:0:0:0:0:8/32"));
-                attributes.add(getDeleteIpv6("2001:0:0:0:0:C:0:8/128"));
-                return attributes;
-        }
+    private List<Attribute> getDeletion() {
+        List<Attribute> attributes = new ArrayList<>();
+        attributes.add(AttributeFactory.createIpv4DeletePrefix(getIpPrefixes("127.0.0.0/32", "127.0.10.2/32"),
+                AttributeFactory._onpCe));
+        attributes.add(AttributeFactory.createIpv6DeletePrefix(
+                getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"), AttributeFactory._onpCe));
+        //Legacy
+        attributes.add(getDeleteIpv4("128.0.0.0/32"));
+        attributes.add(getDeleteIpv4("128.50.0.0/24"));
+        attributes.add(getDeleteIpv6("2001:0:0:0:0:0:0:8/32"));
+        attributes.add(getDeleteIpv6("2001:0:0:0:0:C:0:8/128"));
+        return attributes;
+    }
 
-        private List<MappingRecord> getLegacyDeletion() {
-                List<MappingRecord> attributes = new ArrayList<>();
-                attributes.add(LegacyAttributeFactory.createDeleteIpv4(new IpPrefix("128.0.0.0/32".toCharArray())));
-                attributes.add(LegacyAttributeFactory.createDeleteIpv4(new IpPrefix("128.50.0.0/24".toCharArray())));
+    private List<MappingRecord> getLegacyDeletion() {
+        List<MappingRecord> attributes = new ArrayList<>();
+        attributes.add(LegacyAttributeFactory.createDeleteIpv4(new IpPrefix("128.0.0.0/32".toCharArray())));
+        attributes.add(LegacyAttributeFactory.createDeleteIpv4(new IpPrefix("128.50.0.0/24".toCharArray())));
 
-                attributes.add(
-                        LegacyAttributeFactory.createDeleteIpv4(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray())));
-                attributes.add(
-                        LegacyAttributeFactory.createDeleteIpv4(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray())));
-                return attributes;
-        }
+        attributes.add(LegacyAttributeFactory.createDeleteIpv4(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray())));
+        attributes.add(LegacyAttributeFactory.createDeleteIpv4(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray())));
+        return attributes;
+    }
 
-        @Test public void testProcessMessageAddition() throws Exception {
-                List<IpPrefix> ipPrefixes = getIpPrefixes("127.0.0.0/32", "127.0.10.2/32");
-                ipPrefixes.addAll(getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"));
-                //Legacy
-                ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
-                ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
-                ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
-                ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
+    @Test
+    public void testProcessMessageAddition() throws Exception {
+        List<IpPrefix> ipPrefixes = getIpPrefixes("127.0.0.0/32", "127.0.10.2/32");
+        ipPrefixes.addAll(getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"));
+        //Legacy
+        ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
+        ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
+        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
+        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
 
-                List<SxpDatabaseBinding>
-                        bindings =
-                        BindingHandler.processMessageAddition(getMessage(getAddition()), null);
-                assertDatabase(bindings,ipPrefixes);
-        }
+        List<SxpDatabaseBinding> bindings = BindingHandler.processMessageAddition(getMessage(getAddition()), null);
+        assertDatabase(bindings, ipPrefixes);
+    }
 
-        @Test public void testProcessMessageAdditionLegacy() throws Exception {
-                List<IpPrefix> ipPrefixes = new ArrayList<>();
-                ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
-                ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
-                ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
-                ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
+    @Test
+    public void testProcessMessageAdditionLegacy() throws Exception {
+        List<IpPrefix> ipPrefixes = new ArrayList<>();
+        ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
+        ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
+        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
+        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
 
-                List<SxpDatabaseBinding>
-                        bindings =
-                        BindingHandler.processMessageAddition(getMessageLegacy(getLegacyAddition()), null,
-                                new NodeId("0.0.0.0"));
-                assertDatabase(bindings,ipPrefixes);
-        }
+        List<SxpDatabaseBinding>
+                bindings =
+                BindingHandler.processMessageAddition(getMessageLegacy(getLegacyAddition()), null,
+                        new NodeId("0.0.0.0"));
+        assertDatabase(bindings, ipPrefixes);
+    }
 
-        @Test public void testProcessMessageDeletion() throws Exception {
-                List<IpPrefix> ipPrefixes = getIpPrefixes("127.0.0.0/32", "127.0.10.2/32");
-                ipPrefixes.addAll(getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"));
-                //Legacy
-                ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
-                ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
+    @Test
+    public void testProcessMessageDeletion() throws Exception {
+        List<IpPrefix> ipPrefixes = getIpPrefixes("127.0.0.0/32", "127.0.10.2/32");
+        ipPrefixes.addAll(getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"));
+        //Legacy
+        ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
+        ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
 
-                ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
-                ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
+        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
+        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
 
-                List<SxpDatabaseBinding>
-                        bindings =
-                        BindingHandler.processMessageDeletion(getMessage(getDeletion()));
-                assertDatabase(bindings,ipPrefixes);
-        }
+        List<SxpDatabaseBinding> bindings = BindingHandler.processMessageDeletion(getMessage(getDeletion()));
+        assertDatabase(bindings, ipPrefixes);
+    }
 
-        @Test public void testProcessMessageDeletionLegacy() throws Exception {
-                List<IpPrefix> ipPrefixes = new ArrayList<>();
+    @Test
+    public void testProcessMessageDeletionLegacy() throws Exception {
+        List<IpPrefix> ipPrefixes = new ArrayList<>();
 
-                ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
-                ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
-                ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
-                ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
+        ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
+        ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
+        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
+        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
 
-                List<SxpDatabaseBinding>
-                        bindings =
-                        BindingHandler.processMessageDeletion(getMessageLegacy(getLegacyDeletion()));
-                assertDatabase(bindings,ipPrefixes);
-        }
+        List<SxpDatabaseBinding>
+                bindings =
+                BindingHandler.processMessageDeletion(getMessageLegacy(getLegacyDeletion()));
+        assertDatabase(bindings, ipPrefixes);
+    }
 
-        @Test public void testProcessPurgeAllMessage() throws Exception {
-                handler.processPurgeAllMessage(connection).get();
-                verify(worker).executeTaskInSequence(any(Callable.class), eq(ThreadsWorker.WorkerType.INBOUND),
-                        eq(connection));
-        }
+    @Test
+    public void testProcessPurgeAllMessage() throws Exception {
+        handler.processPurgeAllMessage(connection).get();
+        verify(worker).executeTaskInSequence(any(Callable.class), eq(ThreadsWorker.WorkerType.INBOUND), eq(connection));
+    }
 
-        @Test public void testProcessUpdate() throws Exception {
-                List<SxpBindingFields> add = new ArrayList<>(), dell = new ArrayList<>();
-                List<Peer> peerList = new ArrayList<>();
+    @Test
+    public void testProcessUpdate() throws Exception {
+        List<SxpBindingFields> add = new ArrayList<>(), dell = new ArrayList<>();
+        List<Peer> peerList = new ArrayList<>();
 
-                peerList.add(getPeer("127.0.0.0", 0));
-                peerList.add(getPeer("1.1.1.1", 1));
-                peerList.add(getPeer("127.0.0.2", 2));
-                add.add(getBinding("5.5.5.5/32", 20, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
-                add.add(getBinding("5.5.5.5/32", 25, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
-                add.add(getBinding("15.5.15.0/24", 40, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
-                add.add(getBinding("5.0.5.50/32", 120, new PeerSequenceBuilder().setPeer(peerList).build()));
+        peerList.add(getPeer("127.0.0.0", 0));
+        peerList.add(getPeer("1.1.1.1", 1));
+        peerList.add(getPeer("127.0.0.2", 2));
+        add.add(getBinding("5.5.5.5/32", 20, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
+        add.add(getBinding("5.5.5.5/32", 25, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
+        add.add(getBinding("15.5.15.0/24", 40, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
+        add.add(getBinding("5.0.5.50/32", 120, new PeerSequenceBuilder().setPeer(peerList).build()));
 
-                for (int i = 0; i < 5; i++)
-                        handler.processUpdate(dell, add, connection);
-                taskCaptor.getValue().call();
-                assertDatabase(sxpDatabaseInf.getBindings(), getIpPrefixes("5.5.5.5/32", "15.5.15.0/24"));
-                assertDatabase(masterDatabaseInf.getBindings(), getIpPrefixes("5.5.5.5/32", "15.5.15.0/24"));
+        for (int i = 0; i < 5; i++)
+            handler.processUpdate(dell, add, connection);
+        taskCaptor.getValue().call();
+        assertDatabase(sxpDatabaseInf.getBindings(), getIpPrefixes("5.5.5.5/32", "15.5.15.0/24"));
+        assertDatabase(masterDatabaseInf.getBindings(), getIpPrefixes("5.5.5.5/32", "15.5.15.0/24"));
 
-                add.clear();
-                dell.clear();
-                when(connection.getId()).thenReturn(NodeId.getDefaultInstance("0.0.0.1"));
+        add.clear();
+        dell.clear();
+        when(connection.getId()).thenReturn(NodeId.getDefaultInstance("0.0.0.1"));
 
-                dell.add(getBinding("5.5.5.5/32", 20, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
-                dell.add(getBinding("15.5.15.0/24", 30, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
-                add.add(getBinding("55.2.0.0/16", 10, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
-                add.add(getBinding("5.5.0.0/32", 80, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
-                for (int i = 0; i < 5; i++)
-                        handler.processUpdate(dell, add, connection);
-                taskCaptor.getValue().call();
+        dell.add(getBinding("5.5.5.5/32", 20, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
+        dell.add(getBinding("15.5.15.0/24", 30, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
+        add.add(getBinding("55.2.0.0/16", 10, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
+        add.add(getBinding("5.5.0.0/32", 80, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
+        for (int i = 0; i < 5; i++)
+            handler.processUpdate(dell, add, connection);
+        taskCaptor.getValue().call();
 
-                assertDatabase(masterDatabaseInf.getBindings(),
-                        getIpPrefixes("5.5.5.5/32", "55.2.0.0/16", "5.5.0.0/32", "15.5.15.0/24"));
+        assertDatabase(masterDatabaseInf.getBindings(),
+                getIpPrefixes("5.5.5.5/32", "55.2.0.0/16", "5.5.0.0/32", "15.5.15.0/24"));
 
-                add.clear();
-                dell.clear();
+        add.clear();
+        dell.clear();
 
-                dell.add(getBinding("55.2.0.0/16", 10, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
-                dell.add(getBinding("5.5.0.0/32", 80, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
-                for (int i = 0; i < 5; i++)
-                        handler.processUpdate(dell, add, connection);
-                taskCaptor.getValue().call();
+        dell.add(getBinding("55.2.0.0/16", 10, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
+        dell.add(getBinding("5.5.0.0/32", 80, new PeerSequenceBuilder().setPeer(new ArrayList<>()).build()));
+        for (int i = 0; i < 5; i++)
+            handler.processUpdate(dell, add, connection);
+        taskCaptor.getValue().call();
 
-                assertDatabase(masterDatabaseInf.getBindings(), getIpPrefixes("5.5.5.5/32", "15.5.15.0/24"));
-        }
+        assertDatabase(masterDatabaseInf.getBindings(), getIpPrefixes("5.5.5.5/32", "15.5.15.0/24"));
+    }
 
-
-        @Test public void testSetBufferLimit() throws Exception {
-                handler.setBufferLimit(25);
-                exception.expect(IllegalArgumentException.class);
-                handler.setBufferLimit(-10);
-        }
+    @Test
+    public void testSetBufferLimit() throws Exception {
+        handler.setBufferLimit(25);
+        exception.expect(IllegalArgumentException.class);
+        handler.setBufferLimit(-10);
+    }
 }

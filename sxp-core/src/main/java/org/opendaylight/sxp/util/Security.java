@@ -9,7 +9,6 @@
 package org.opendaylight.sxp.util;
 
 import com.google.common.hash.Hashing;
-
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 

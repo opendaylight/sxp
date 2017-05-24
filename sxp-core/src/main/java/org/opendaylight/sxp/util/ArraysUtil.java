@@ -37,16 +37,16 @@ public final class ArraysUtil {
             return 0;
         }
         switch (bytes.length) {
-        case 1:
-            return bytes[0] & 0xFF;
-        case 2:
-            return (bytes[0] & 0xFF) << 8 | bytes[1] & 0xFF;
-        case 3:
-            return (bytes[0] & 0xFF) << 16 | (bytes[1] & 0xFF) << 8 | bytes[2] & 0xFF;
-        case 4:
-            return (bytes[0] & 0xFF) << 24 | (bytes[1] & 0xFF) << 16 | (bytes[2] & 0xFF) << 8 | bytes[3] & 0xFF;
-        default:
-            return 0;
+            case 1:
+                return bytes[0] & 0xFF;
+            case 2:
+                return (bytes[0] & 0xFF) << 8 | bytes[1] & 0xFF;
+            case 3:
+                return (bytes[0] & 0xFF) << 16 | (bytes[1] & 0xFF) << 8 | bytes[2] & 0xFF;
+            case 4:
+                return (bytes[0] & 0xFF) << 24 | (bytes[1] & 0xFF) << 16 | (bytes[2] & 0xFF) << 8 | bytes[3] & 0xFF;
+            default:
+                return 0;
         }
     }
 
@@ -135,7 +135,7 @@ public final class ArraysUtil {
      * @return Array of bytes representing Integer value
      */
     public static byte[] int2bytes(int value) {
-        return new byte[] { (byte) (value >>> 24), (byte) (value >>> 16), (byte) (value >>> 8), (byte) value };
+        return new byte[] {(byte) (value >>> 24), (byte) (value >>> 16), (byte) (value >>> 8), (byte) value};
     }
 
     /**

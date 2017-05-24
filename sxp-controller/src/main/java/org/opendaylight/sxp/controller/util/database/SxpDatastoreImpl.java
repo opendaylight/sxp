@@ -9,11 +9,9 @@
 package org.opendaylight.sxp.controller.util.database;
 
 import com.google.common.base.Preconditions;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
@@ -107,7 +105,8 @@ public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.S
         return datastoreAccess;
     }
 
-    @Override protected boolean putBindings(NodeId nodeId, BindingDatabase.BindingType bindingType,
+    @Override
+    protected boolean putBindings(NodeId nodeId, BindingDatabase.BindingType bindingType,
             List<SxpDatabaseBinding> bindings) {
         return !datastoreAccess.merge(getIdentifierBuilder(bindingType, nodeId).build(),
                 new BindingSourceBuilder().setSourceId(nodeId)
@@ -116,7 +115,8 @@ public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.S
                         .build(), LogicalDatastoreType.OPERATIONAL).isCancelled();
     }
 
-    @Override protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType) {
+    @Override
+    protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType) {
         BindingDatabase
                 result =
                 datastoreAccess.readSynchronous(getIdentifierBuilder(bindingType).build(),
@@ -134,7 +134,8 @@ public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.S
         return bindings;
     }
 
-    @Override protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType, NodeId nodeId) {
+    @Override
+    protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType, NodeId nodeId) {
         BindingSource
                 result =
                 datastoreAccess.readSynchronous(getIdentifierBuilder(bindingType, nodeId).build(),
@@ -145,12 +146,14 @@ public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.S
         return new ArrayList<>();
     }
 
-    @Override protected boolean deleteBindings(NodeId nodeId, BindingDatabase.BindingType bindingType) {
+    @Override
+    protected boolean deleteBindings(NodeId nodeId, BindingDatabase.BindingType bindingType) {
         return datastoreAccess.checkAndDelete(getIdentifierBuilder(bindingType, nodeId).build(),
                 LogicalDatastoreType.OPERATIONAL);
     }
 
-    @Override protected List<SxpDatabaseBinding> deleteBindings(NodeId nodeId, Set<IpPrefix> ipPrefixes,
+    @Override
+    protected List<SxpDatabaseBinding> deleteBindings(NodeId nodeId, Set<IpPrefix> ipPrefixes,
             BindingDatabase.BindingType bindingType) {
         List<SxpDatabaseBinding> bindingList = getBindings(bindingType, nodeId), removed = new ArrayList<>();
         if (!bindingList.isEmpty() && bindingList.removeIf(b -> {

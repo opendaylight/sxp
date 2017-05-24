@@ -8,6 +8,10 @@
 
 package org.opendaylight.sxp.controller.listeners;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,30 +22,29 @@ import org.opendaylight.sxp.core.Configuration;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({Configuration.class, DatastoreAccess.class})
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({Configuration.class, DatastoreAccess.class})
 public class TransactionChainListenerImplTest {
 
     private DatastoreAccess datastoreAccess;
     private TransactionChainListenerImpl chainListener;
 
-    @Before public void init() {
+    @Before
+    public void init() {
         datastoreAccess = mock(DatastoreAccess.class);
         chainListener = new TransactionChainListenerImpl(datastoreAccess);
     }
 
-    @Test public void onTransactionChainFailed() throws Exception {
+    @Test
+    public void onTransactionChainFailed() throws Exception {
         verify(datastoreAccess, never()).reinitializeChain();
         chainListener.onTransactionChainFailed(mock(TransactionChain.class), mock(AsyncTransaction.class),
                 mock(Exception.class));
         verify(datastoreAccess).reinitializeChain();
     }
 
-    @Test public void onTransactionChainSuccessful() throws Exception {
+    @Test
+    public void onTransactionChainSuccessful() throws Exception {
         verify(datastoreAccess, never()).reinitializeChain();
         chainListener.onTransactionChainSuccessful(mock(TransactionChain.class));
         verify(datastoreAccess, never()).reinitializeChain();

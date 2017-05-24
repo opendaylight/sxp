@@ -8,6 +8,12 @@
 
 package org.opendaylight.sxp.util.database;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,19 +29,15 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Node
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({SxpNode.class}) public class MasterDatabaseImplTest {
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({SxpNode.class})
+public class MasterDatabaseImplTest {
 
     private static MasterDatabaseImpl database;
-    private static long time =System.currentTimeMillis();
+    private static long time = System.currentTimeMillis();
 
-    @Before public void init() {
+    @Before
+    public void init() {
         database = new MasterDatabaseImpl();
     }
 
@@ -66,14 +68,14 @@ import static org.junit.Assert.assertTrue;
                                 && Arrays.equals(r.getIpPrefix().getValue(), b.getIpPrefix().getValue()))));
     }
 
-    @Test public void testAddLocalBindings() throws Exception {
+    @Test
+    public void testAddLocalBindings() throws Exception {
         assertEquals(0, database.addLocalBindings(mergeBindings()).size());
         assertEquals(0, database.getBindings().size());
 
         List<SxpBindingFields>
                 toAdd =
-                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"),
-                        getBinding("1.1.1.1/32", 10, "10.10.10.10"),
+                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("1.1.1.1/32", 10, "10.10.10.10"),
                         getBinding("1.1.1.1/32", 100, "10.10.10.10"),
                         getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
                         getBinding("2.2.2.2/32", 200, "20.20.20.20"));
@@ -97,15 +99,14 @@ import static org.junit.Assert.assertTrue;
         assertEquals(2, database.addLocalBindings(toAdd).size());
         assertEquals(3, database.getBindings().size());
         assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"),
-                getBinding("15.15.15.15/24", 15, "0.10.10.10"),
+                getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
                 getBinding("2.2.2.2/32", 2000, "200.200.200.200")));
     }
 
-    @Test public void testDeleteBindingsLocal() throws Exception {
+    @Test
+    public void testDeleteBindingsLocal() throws Exception {
         database.addLocalBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"),
-                getBinding("15.15.15.15/24", 15, "0.10.10.10"),
+                getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
                 getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
 
         assertEquals(0, database.deleteBindingsLocal(mergeBindings()).size());
@@ -125,14 +126,14 @@ import static org.junit.Assert.assertTrue;
         assertEquals(0, database.getBindings().size());
     }
 
-    @Test public void testAddBindings() throws Exception {
+    @Test
+    public void testAddBindings() throws Exception {
         assertEquals(0, database.addBindings(mergeBindings()).size());
         assertEquals(0, database.getBindings().size());
 
         List<SxpBindingFields>
                 toAdd =
-                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"),
-                        getBinding("1.1.1.1/32", 10, "10.10.10.10"),
+                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("1.1.1.1/32", 10, "10.10.10.10"),
                         getBinding("1.1.1.1/32", 100, "10.10.10.10"),
                         getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
                         getBinding("2.2.2.2/32", 200, "20.20.20.20"));
@@ -156,15 +157,14 @@ import static org.junit.Assert.assertTrue;
         assertEquals(2, database.addBindings(toAdd).size());
         assertEquals(3, database.getBindings().size());
         assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"),
-                getBinding("15.15.15.15/24", 15, "0.10.10.10"),
+                getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
                 getBinding("2.2.2.2/32", 2000, "200.200.200.200")));
     }
 
-    @Test public void testDeleteBindings() throws Exception {
+    @Test
+    public void testDeleteBindings() throws Exception {
         database.addBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"),
-                getBinding("15.15.15.15/24", 15, "0.10.10.10"),
+                getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
                 getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
 
         assertEquals(0, database.deleteBindings(mergeBindings()).size());
@@ -184,7 +184,8 @@ import static org.junit.Assert.assertTrue;
         assertEquals(0, database.getBindings().size());
     }
 
-    @Test public void testToString() throws Exception {
+    @Test
+    public void testToString() throws Exception {
         assertEquals("MasterDatabaseImpl\n", database.toString());
 
         database.addBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
@@ -192,10 +193,7 @@ import static org.junit.Assert.assertTrue;
                 getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
 
         StringBuilder value = new StringBuilder();
-        Arrays.asList(database.toString().split("\n"))
-                .stream()
-                .sorted()
-                .forEach(l -> value.append(l).append("\n"));
+        Arrays.asList(database.toString().split("\n")).stream().sorted().forEach(l -> value.append(l).append("\n"));
 
         assertEquals("\t100 1.1.1.1/32\n" + "\t15 0:0:0:0:0:0:0:A/32\n" + "\t2000 2.2.2.2/32\n" + "\t2000 2.2.2.20/32\n"
                 + "MasterDatabaseImpl\n", value.toString());
