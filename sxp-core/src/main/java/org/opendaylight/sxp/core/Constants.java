@@ -10,6 +10,7 @@ package org.opendaylight.sxp.core;
 
 // FIXME remove getters and make constants public
 public final class Constants {
+
     private static final int MESSAGE_HEADER_LENGTH_LENGTH = 4;
     private static final int MESSAGE_HEADER_TYPE_LENGTH = 4;
     private static final int MESSAGE_LENGTH_MAX = 4096;

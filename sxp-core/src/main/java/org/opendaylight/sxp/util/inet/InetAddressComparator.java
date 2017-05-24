@@ -11,7 +11,6 @@ package org.opendaylight.sxp.util.inet;
 import java.net.InetAddress;
 import java.util.Comparator;
 
-
 /**
  * InetAddressComparator class used for comparing InetAddresses
  */

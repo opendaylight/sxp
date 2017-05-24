@@ -8,6 +8,11 @@
 
 package org.opendaylight.sxp.util.filtering;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -30,18 +35,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.ma
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sgt.match.fields.sgt.match.SgtRangeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 public class PrefixListFilterTest {
 
     private List<PrefixListEntry> prefixListEntryList = new ArrayList<>();
     private PrefixListFilter filter;
 
-    @Before public void init() {
+    @Before
+    public void init() {
         PrefixListFilterEntriesBuilder builder = new PrefixListFilterEntriesBuilder();
         builder.setPrefixListEntry(prefixListEntryList);
         SxpFilterBuilder filterBuilder = new SxpFilterBuilder();
@@ -116,7 +116,8 @@ public class PrefixListFilterTest {
         return filter.apply(bindingBuilder.build());
     }
 
-    @Test public void testFilterSgtOnly() throws Exception {
+    @Test
+    public void testFilterSgtOnly() throws Exception {
         assertFalse(filterOutbound("0.0.0.0/32", 50));
         prefixListEntryList.add(getPrefixListEntry(FilterEntryType.Permit, getSgtMatches(1, 2, 10, 20, 100, 200)));
         prefixListEntryList.add(getPrefixListEntry(FilterEntryType.Deny, getSgtRange(25, 50)));
@@ -131,7 +132,8 @@ public class PrefixListFilterTest {
         assertTrue(filterOutbound("127.0.0.1/24", 186));
     }
 
-    @Test public void testFilterPrefixListOnly() throws Exception {
+    @Test
+    public void testFilterPrefixListOnly() throws Exception {
         assertFalse(filterOutbound("0.0.0.0/32", 50));
         prefixListEntryList.add(getPrefixListEntry(FilterEntryType.Permit, getPrefixListMatch("52.12.0.5/16")));
         prefixListEntryList.add(getPrefixListEntry(FilterEntryType.Permit, getPrefixListMatch("53.128.0.5/9")));
@@ -166,7 +168,8 @@ public class PrefixListFilterTest {
         assertTrue(filterOutbound("56:0:B:0:0:0:0:0/128", 10));
     }
 
-    @Test public void testFilterPrefixListSgt() throws Exception {
+    @Test
+    public void testFilterPrefixListSgt() throws Exception {
         assertFalse(filterOutbound("0.0.0.0/32", 50));
         prefixListEntryList.add(getPrefixListEntry(FilterEntryType.Permit, getPrefixListMatch("16.24.0.36/24")));
         prefixListEntryList.add(getPrefixListEntry(FilterEntryType.Permit, getSgtMatches(20, 25, 30, 40, 150, 175),
@@ -192,7 +195,8 @@ public class PrefixListFilterTest {
         assertTrue(filterOutbound("52.12.1.5/24", 200));
     }
 
-    @Test public void testFilterExtendedPrefixList() throws Exception {
+    @Test
+    public void testFilterExtendedPrefixList() throws Exception {
         assertFalse(filterOutbound("0.0.0.0/32", 50));
         prefixListEntryList.add(getPrefixListEntry(FilterEntryType.Permit,
                 getPrefixListMatch("52.1.0.5/24", MaskRangeOperator.Eq, 31)));

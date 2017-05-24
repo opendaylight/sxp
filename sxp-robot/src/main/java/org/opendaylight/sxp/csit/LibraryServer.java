@@ -29,8 +29,8 @@ import org.robotframework.remoteserver.RemoteServerImpl;
  */
 public class LibraryServer extends RemoteServerImpl implements RemoteServer {
 
-    private static Map<String, SxpNode> nodes = new ConcurrentHashMap<>();
-    private static List<AbstractLibrary> libraryList = new ArrayList<>();
+    private static final Map<String, SxpNode> nodes = new ConcurrentHashMap<>();
+    private static final List<AbstractLibrary> libraryList = new ArrayList<>();
 
     /**
      * Standalone version used for remote testing purposes

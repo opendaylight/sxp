@@ -52,7 +52,9 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
     private final DataBroker dataBroker;
     private DatastoreAccess datastoreAccess;
     private ClusterSingletonServiceRegistration clusterServiceRegistration;
-    private List<ListenerRegistration<DataTreeChangeListener>> dataChangeListenerRegistrations = new ArrayList<>();
+    private final List<ListenerRegistration<DataTreeChangeListener>>
+            dataChangeListenerRegistrations =
+            new ArrayList<>();
 
     public SxpControllerInstance(final DataBroker broker,
             final ClusterSingletonServiceProvider clusteringServiceProvider) {

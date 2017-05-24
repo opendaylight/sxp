@@ -52,7 +52,8 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class) @PrepareForTest({Configuration.class, DatastoreAccess.class})
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({Configuration.class, DatastoreAccess.class})
 public class ConnectionTemplateListenerTest {
 
     private ConnectionTemplateListener identityListener;
@@ -61,7 +62,8 @@ public class ConnectionTemplateListenerTest {
     private org.opendaylight.sxp.core.SxpDomain domain;
     private SxpConnection connection;
 
-    @Before public void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
         domain = mock(org.opendaylight.sxp.core.SxpDomain.class);
         identityListener = new ConnectionTemplateListener(datastoreAccess);
@@ -114,28 +116,32 @@ public class ConnectionTemplateListenerTest {
         return builder.build();
     }
 
-    @Test public void testHandleOperational_1() throws Exception {
+    @Test
+    public void testHandleOperational_1() throws Exception {
         identityListener.handleOperational(getObjectModification(DataObjectModification.ModificationType.WRITE, null,
                 getConnectionTemplate("1.1.1.1/32", 56, "pass", ConnectionMode.Listener, Version.Version4)),
                 getIdentifier(), sxpNode);
         verify(domain).addConnectionTemplate(any(ConnectionTemplate.class));
     }
 
-    @Test public void testHandleOperational_2() throws Exception {
+    @Test
+    public void testHandleOperational_2() throws Exception {
         identityListener.handleOperational(getObjectModification(DataObjectModification.ModificationType.WRITE,
                 getConnectionTemplate("1.1.1.1/32", 56, "pass", ConnectionMode.Listener, Version.Version4), null),
                 getIdentifier(), sxpNode);
         verify(domain).removeConnectionTemplate(any(IpPrefix.class));
     }
 
-    @Test public void testHandleOperational_3() throws Exception {
+    @Test
+    public void testHandleOperational_3() throws Exception {
         identityListener.handleOperational(getObjectModification(DataObjectModification.ModificationType.DELETE,
                 getConnectionTemplate("1.1.1.1/32", 56, "pass", ConnectionMode.Listener, Version.Version4), null),
                 getIdentifier(), sxpNode);
         verify(domain).removeConnectionTemplate(any(IpPrefix.class));
     }
 
-    @Test public void testHandleOperational_4() throws Exception {
+    @Test
+    public void testHandleOperational_4() throws Exception {
         identityListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.SUBTREE_MODIFIED,
                         getConnectionTemplate("1.1.1.1/32", 56, "pass", ConnectionMode.Listener, Version.Version4),
@@ -169,7 +175,8 @@ public class ConnectionTemplateListenerTest {
         verify(domain, times(4)).removeConnectionTemplate(any(IpPrefix.class));
     }
 
-    @Test public void testGetIdentifier() throws Exception {
+    @Test
+    public void testGetIdentifier() throws Exception {
         assertNotNull(identityListener.getIdentifier(
                 new ConnectionTemplateBuilder().setTemplateTcpPort(new PortNumber(64))
                         .setTemplatePrefix(new IpPrefix("1.1.1.1/32".toCharArray()))
@@ -180,7 +187,8 @@ public class ConnectionTemplateListenerTest {
                 .build(), getIdentifier()).getTargetType().equals(ConnectionTemplate.class));
     }
 
-    @Test public void testHandleChange() throws Exception {
+    @Test
+    public void testHandleChange() throws Exception {
         identityListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE,
                         getConnectionTemplate("1.1.1.1/32", 55, "pass", ConnectionMode.Listener, Version.Version4),
@@ -216,7 +224,8 @@ public class ConnectionTemplateListenerTest {
         verify(datastoreAccess).checkAndDelete(any(InstanceIdentifier.class), eq(LogicalDatastoreType.OPERATIONAL));
     }
 
-    @Test public void testGetModifications() throws Exception {
+    @Test
+    public void testGetModifications() throws Exception {
         assertNotNull(identityListener.getObjectModifications(null));
         assertNotNull(identityListener.getObjectModifications(mock(DataObjectModification.class)));
         assertNotNull(identityListener.getModifications(null));

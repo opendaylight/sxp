@@ -9,7 +9,6 @@
 package org.opendaylight.sxp.controller.util.database;
 
 import com.google.common.base.Preconditions;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,7 +16,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
@@ -86,7 +84,8 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         return datastoreAccess;
     }
 
-    @Override synchronized public List<MasterDatabaseBinding> getBindings() {
+    @Override
+    synchronized public List<MasterDatabaseBinding> getBindings() {
         List<MasterDatabaseBinding> bindings = new ArrayList<>();
         org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase
                 database =
@@ -109,7 +108,8 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         return bindings;
     }
 
-    @Override synchronized public List<MasterDatabaseBinding> getLocalBindings() {
+    @Override
+    synchronized public List<MasterDatabaseBinding> getLocalBindings() {
         return getBindings().stream()
                 .filter(b -> b.getPeerSequence() == null || b.getPeerSequence().getPeer() == null || b.getPeerSequence()
                         .getPeer()

@@ -91,7 +91,7 @@ import org.slf4j.LoggerFactory;
 public class SxpNode {
 
     protected static final Logger LOG = LoggerFactory.getLogger(SxpNode.class.getName());
-    public static String DEFAULT_DOMAIN = "global";
+    public static final String DEFAULT_DOMAIN = "global";
 
     /**
      * Create new instance of SxpNode with empty databases
@@ -172,10 +172,10 @@ public class SxpNode {
     private final ThreadsWorker worker;
     protected InetAddress sourceIp;
     private SslContextFactory sslContextFactory;
-    private SxpNodeIdentityBuilder nodeBuilder;
-    private NodeId nodeId;
+    private final SxpNodeIdentityBuilder nodeBuilder;
+    private final NodeId nodeId;
     private Channel serverChannel;
-    private HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(6);
+    private final HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(6);
 
     /**
      * Default constructor that creates and start SxpNode using provided values
@@ -869,8 +869,9 @@ public class SxpNode {
      */
     @Deprecated
     public SxpConnection getByPort(final int port) {
-        List<SxpConnection> sxpConnections = filterConnections(
-                connection -> port == connection.getDestination().getPort());
+        List<SxpConnection>
+                sxpConnections =
+                filterConnections(connection -> port == connection.getDestination().getPort());
         if (sxpConnections.isEmpty()) {
             return null;
         } else if (sxpConnections.size() == 1) {
@@ -1357,7 +1358,8 @@ public class SxpNode {
         return sslContextFactory;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "[" + (
                 nodeBuilder.getName() != null && !nodeBuilder.getName().isEmpty() ? nodeBuilder.getName() + ":" : "")
                 + NodeIdConv.toString(nodeId) + "]";

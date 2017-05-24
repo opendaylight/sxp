@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
+
 import com.google.common.base.Preconditions;
 import java.net.InetSocketAddress;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
@@ -24,8 +26,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
-import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
 
 public class ConnectionsListener extends ListListener<SxpDomain, Connections, Connection> {
 
@@ -68,7 +68,8 @@ public class ConnectionsListener extends ListListener<SxpDomain, Connections, Co
         }
     }
 
-    @Override protected InstanceIdentifier<Connection> getIdentifier(Connection d,
+    @Override
+    protected InstanceIdentifier<Connection> getIdentifier(Connection d,
             InstanceIdentifier<SxpDomain> parentIdentifier) {
         Preconditions.checkNotNull(d);
         Preconditions.checkNotNull(parentIdentifier);

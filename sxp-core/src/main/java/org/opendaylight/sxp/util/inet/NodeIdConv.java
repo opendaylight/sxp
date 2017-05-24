@@ -9,6 +9,13 @@
 package org.opendaylight.sxp.util.inet;
 
 import com.google.common.net.InetAddresses;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IetfInetUtil;
@@ -17,13 +24,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.Peer;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public final class NodeIdConv {
 
@@ -143,7 +143,7 @@ public final class NodeIdConv {
         }
         return peerSequence.getPeer()
                 .stream()
-                .sorted((p1, p2) -> Integer.compare(p1.getSeq(), p2.getSeq()))
+                .sorted(Comparator.comparingInt(Peer::getSeq))
                 .map(Peer::getNodeId)
                 .collect(Collectors.toList());
     }

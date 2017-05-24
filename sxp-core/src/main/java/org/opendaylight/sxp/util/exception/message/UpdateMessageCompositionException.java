@@ -16,7 +16,7 @@ public class UpdateMessageCompositionException extends Exception {
     private static final long serialVersionUID = 801190427695923174L;
 
     public UpdateMessageCompositionException(Version version, boolean updateExported, Exception e) {
-        super("UPDATEv" + version.getIntValue() + "(" + (updateExported ? "C" : "A")
-                + ") message composition failed | " + e.getClass().getSimpleName() + " | " + e.getMessage());
+        super("UPDATEv" + version.getIntValue() + "(" + (updateExported ? "C" : "A") + ") message composition failed | "
+                + e.getClass().getSimpleName() + " | " + e.getMessage());
     }
 }

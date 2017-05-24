@@ -43,6 +43,7 @@ public class SxpClusterRouteManager
 
     private static final Logger LOG = LoggerFactory.getLogger(SxpClusterRouteManager.class);
     private static final FutureCallback<Void> LOGGING_CALLBACK = new FutureCallback<Void>() {
+
         @Override
         public void onSuccess(final Void result) {
             LOG.debug("Finished sxp-cluster-routing update task");
@@ -54,6 +55,7 @@ public class SxpClusterRouteManager
         }
     };
     private static final FutureCallback<Void> LOGGING_CALLBACK_CLOSE = new FutureCallback<Void>() {
+
         @Override
         public void onSuccess(final Void result) {
             LOG.debug("IN_CLOSE: Finished sxp-cluster-routing update task");
@@ -72,8 +74,7 @@ public class SxpClusterRouteManager
             ROUTING_DEFINITION_DT_IDENTIFIER =
             new DataTreeIdentifier<>(LogicalDatastoreType.CONFIGURATION, SXP_CLUSTER_ROUTE_CONFIG_PATH);
 
-    @GuardedBy("stateLock")
-    private RouteListenerState state;
+    @GuardedBy("stateLock") private RouteListenerState state;
     private final Object stateLock = new Object();
 
     private final DataBroker dataBroker;
@@ -88,7 +89,7 @@ public class SxpClusterRouteManager
      * @param routeReactor service providing routing logic
      */
     public SxpClusterRouteManager(final DataBroker dataBroker, final ClusterSingletonServiceProvider cssProvider,
-                                  final RouteReactor routeReactor) {
+            final RouteReactor routeReactor) {
         this.dataBroker = Objects.requireNonNull(dataBroker);
         this.cssProvider = Objects.requireNonNull(cssProvider);
         this.routeReactor = Objects.requireNonNull(routeReactor);
@@ -105,12 +106,12 @@ public class SxpClusterRouteManager
 
     @Override
     public void onDataTreeChanged(@Nonnull Collection<DataTreeModification<SxpClusterRoute>> changes) {
-        if (! state.isProcessing()) {
+        if (!state.isProcessing()) {
             return;
         }
 
         synchronized (stateLock) {
-            if (! state.isProcessing()) {
+            if (!state.isProcessing()) {
                 LOG.info("Surprise: data changed notification obtained outside listening time frame");
                 return;
             }
@@ -124,8 +125,7 @@ public class SxpClusterRouteManager
                 final SxpClusterRoute dataBefore = rootNode.getDataBefore();
                 final SxpClusterRoute dataAfter = rootNode.getDataAfter();
 
-                final ListenableFuture<Void> routingOutcome = routeReactor.updateRouting(
-                        dataBefore, dataAfter);
+                final ListenableFuture<Void> routingOutcome = routeReactor.updateRouting(dataBefore, dataAfter);
 
                 Futures.addCallback(routingOutcome, LOGGING_CALLBACK);
             });
@@ -145,7 +145,8 @@ public class SxpClusterRouteManager
 
         synchronized (stateLock) {
             state = RouteListenerState.BEFORE_FIRST;
-            routingDefinitionListenerRegistration = dataBroker.registerDataTreeChangeListener(ROUTING_DEFINITION_DT_IDENTIFIER, this);
+            routingDefinitionListenerRegistration =
+                    dataBroker.registerDataTreeChangeListener(ROUTING_DEFINITION_DT_IDENTIFIER, this);
         }
     }
 

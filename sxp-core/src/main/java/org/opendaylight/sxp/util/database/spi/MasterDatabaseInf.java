@@ -8,10 +8,9 @@
 
 package org.opendaylight.sxp.util.database.spi;
 
+import java.util.List;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
-
-import java.util.List;
 
 /**
  * MasterDatabaseInf interface representing supported operation on MasterDatabase

@@ -25,10 +25,7 @@ public class RetryOpenTimerTask extends SxpTimerTask<Void> {
         if (!sxpConnection.isModeBoth() && ConnectionState.On.equals(sxpConnection.getState())) {
             return false;
         }
-        if (sxpConnection.isModeBoth() && sxpConnection.isBidirectionalBoth()) {
-            return false;
-        }
-        return true;
+        return !(sxpConnection.isModeBoth() && sxpConnection.isBidirectionalBoth());
     };
 
     private final SxpNode owner;

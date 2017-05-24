@@ -120,7 +120,7 @@ public class SxpConnection {
     protected final String domain;
     private final NodeId connectionId;
 
-    protected HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(5);
+    protected final HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(5);
     private final Map<FilterType, Map<FilterSpecific, SxpBindingFilter<?, ? extends SxpFilterFields>>>
             bindingFilterMap =
             new HashMap<>(FilterType.values().length);
@@ -558,10 +558,7 @@ public class SxpConnection {
     public boolean hasChannelHandlerContext(ChannelHandlerContextType channelHandlerContextType) {
         synchronized (ctxs) {
             ChannelHandlerContext ctx = ctxs.get(channelHandlerContextType);
-            if (ctx == null || ctx.isRemoved()) {
-                return false;
-            }
-            return true;
+            return !(ctx == null || ctx.isRemoved());
         }
     }
 
@@ -702,6 +699,7 @@ public class SxpConnection {
         return connectionBuilder.getPassword() != null && !connectionBuilder.getPassword().isEmpty() ? connectionBuilder
                 .getPassword() : getOwner().getPassword();
     }
+
     /**
      * @return Gets password used by connection
      */
@@ -1361,7 +1359,8 @@ public class SxpConnection {
         setStateOff();
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         String localAddress = this.localAddress != null ? this.localAddress.toString() : "";
         if (localAddress.startsWith("/")) {
             localAddress = localAddress.substring(1);

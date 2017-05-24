@@ -18,7 +18,7 @@ public class DatabaseAccessException extends Exception {
     }
 
     public DatabaseAccessException(String ownerName, String message, Exception e) {
-        super("[" + ownerName + "] " + message + " | " + e.getClass().getSimpleName()
-                + (e.getMessage() != null && !e.getMessage().isEmpty() ? " | " + e.getMessage() : ""));
+        super("[" + ownerName + "] " + message + " | " + e.getClass().getSimpleName() + (
+                e.getMessage() != null && !e.getMessage().isEmpty() ? " | " + e.getMessage() : ""));
     }
 }

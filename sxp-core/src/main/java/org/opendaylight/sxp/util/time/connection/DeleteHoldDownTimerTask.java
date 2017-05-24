@@ -31,7 +31,8 @@ public class DeleteHoldDownTimerTask extends SxpTimerTask<Void> {
         this.connection = connection;
     }
 
-    @Override public Void call() {
+    @Override
+    public Void call() {
         LOG.info(connection.getOwner() + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
         if (connection.isStateDeleteHoldDown() || connection.isStatePendingOn()) {
             connection.purgeBindings();

@@ -26,8 +26,7 @@ public class RouteTestFactory {
         final IpAddress virtualIp = new IpAddress(("1.2.3." + idSeed).toCharArray());
         final IpAddress netmask = new IpAddress(("255.255.255." + valueSeed).toCharArray());
 
-        return new RoutingDefinitionBuilder()
-                .setInterface("eth" + valueSeed)
+        return new RoutingDefinitionBuilder().setInterface("eth" + valueSeed)
                 .setIpAddress(virtualIp)
                 .setNetmask(netmask)
                 .build();

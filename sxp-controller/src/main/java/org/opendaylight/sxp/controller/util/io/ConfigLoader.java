@@ -207,9 +207,9 @@ public final class ConfigLoader implements AutoCloseable {
         bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
         bindingBuilder.setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
         if (database != null && database.getBinding() != null) {
-            database.getBinding().stream().forEach(b -> {
+            database.getBinding().forEach(b -> {
                 bindingBuilder.setSecurityGroupTag(b.getSgt());
-                b.getIpPrefix().stream().forEach(p -> bindings.add(bindingBuilder.setIpPrefix(p).build()));
+                b.getIpPrefix().forEach(p -> bindings.add(bindingBuilder.setIpPrefix(p).build()));
             });
         }
         return databaseBuilder.build();
@@ -228,9 +228,9 @@ public final class ConfigLoader implements AutoCloseable {
         bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
         bindingBuilder.setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
         if (database != null && database.getBinding() != null) {
-            database.getBinding().stream().forEach(b -> {
+            database.getBinding().forEach(b -> {
                 bindingBuilder.setSecurityGroupTag(b.getSgt());
-                b.getIpPrefix().stream().forEach(p -> bindings.add(bindingBuilder.setIpPrefix(p).build()));
+                b.getIpPrefix().forEach(p -> bindings.add(bindingBuilder.setIpPrefix(p).build()));
             });
         }
         return databaseBuilder.build();

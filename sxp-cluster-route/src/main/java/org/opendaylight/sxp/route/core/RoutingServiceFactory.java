@@ -18,7 +18,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212
  */
 public class RoutingServiceFactory {
 
-    private SystemCall processFunction = s -> Runtime.getRuntime().exec(s);
+    private final SystemCall processFunction = s -> Runtime.getRuntime().exec(s);
 
     /**
      * @param initializer configured {@link RoutingDefinition}

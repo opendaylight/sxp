@@ -8,6 +8,9 @@
 
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
+import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkFilterEntries;
+
 import com.google.common.base.Preconditions;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -19,9 +22,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.doma
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilterKey;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
-import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
-import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkFilterEntries;
 
 public class DomainFilterListener extends ListListener<SxpDomain, DomainFilters, DomainFilter> {
 
@@ -67,7 +67,8 @@ public class DomainFilterListener extends ListListener<SxpDomain, DomainFilters,
         }
     }
 
-    @Override protected InstanceIdentifier<DomainFilter> getIdentifier(DomainFilter d,
+    @Override
+    protected InstanceIdentifier<DomainFilter> getIdentifier(DomainFilter d,
             InstanceIdentifier<SxpDomain> parentIdentifier) {
         return parentIdentifier.child(DomainFilters.class)
                 .child(DomainFilter.class, new DomainFilterKey(d.getFilterName(), d.getFilterSpecific()));

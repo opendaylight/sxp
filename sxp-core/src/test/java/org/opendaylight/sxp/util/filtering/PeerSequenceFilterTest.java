@@ -8,6 +8,11 @@
 
 package org.opendaylight.sxp.util.filtering;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
@@ -23,18 +28,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.peer.sequence.filter.entries.PeerSequenceEntryBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 public class PeerSequenceFilterTest {
 
     private List<PeerSequenceEntry> sequenceEntries = new ArrayList<>();
     private PeerSequenceFilter filter;
 
-    @Before public void init() {
+    @Before
+    public void init() {
         PeerSequenceFilterEntriesBuilder builder = new PeerSequenceFilterEntriesBuilder();
         builder.setPeerSequenceEntry(sequenceEntries);
         SxpFilterBuilder filterBuilder = new SxpFilterBuilder();
@@ -61,7 +61,8 @@ public class PeerSequenceFilterTest {
         return bindingBuilder.build();
     }
 
-    @Test public void testFilter() throws Exception {
+    @Test
+    public void testFilter() throws Exception {
         sequenceEntries.add(getPeerEntry(FilterEntryType.Deny, MaskRangeOperator.Ge, 150));
         sequenceEntries.add(getPeerEntry(FilterEntryType.Deny, MaskRangeOperator.Eq, 15));
         sequenceEntries.add(getPeerEntry(FilterEntryType.Permit, MaskRangeOperator.Eq, 5));

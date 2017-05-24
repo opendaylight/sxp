@@ -43,7 +43,7 @@ public class RouteUtil {
      * @return sxp nodes which use given virtualIp iface
      */
     public static Collection<SxpNode> findSxpNodesOnVirtualIp(final IpAddress virtualIp,
-                                                              final Collection<SxpNode> sxpNodes) {
+            final Collection<SxpNode> sxpNodes) {
         final Collection<SxpNode> affectedNodes;
         if (Objects.isNull(virtualIp)) {
             affectedNodes = Collections.emptyList();
@@ -67,8 +67,7 @@ public class RouteUtil {
      */
     public static RoutingDefinition createOperationalRouteDefinition(
             @Nonnull final RoutingDefinition originalDefinition, final boolean consistent, final String info) {
-        return new RoutingDefinitionBuilder(originalDefinition)
-                .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
+        return new RoutingDefinitionBuilder(originalDefinition).setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
                 .setConsistent(consistent)
                 .setInfo(info)
                 .build();
@@ -81,8 +80,7 @@ public class RouteUtil {
      * @return extracted definition
      */
     public static RoutingDefinition extractRoutingDefinition(final Routing existingRouting) {
-        return new RoutingDefinitionBuilder()
-                .setIpAddress(existingRouting.getVirtualIp())
+        return new RoutingDefinitionBuilder().setIpAddress(existingRouting.getVirtualIp())
                 .setNetmask(existingRouting.getNetmask())
                 .setInterface(existingRouting.getInterface())
                 .build();

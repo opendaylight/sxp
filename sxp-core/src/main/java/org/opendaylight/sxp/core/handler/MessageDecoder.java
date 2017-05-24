@@ -34,13 +34,16 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Handles server and client sides of a channel. */
+/**
+ * Handles server and client sides of a channel.
+ */
 @Sharable
 public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 
     private enum Profile {
         Client, Server
     }
+
 
     private static final Logger LOG = LoggerFactory.getLogger(MessageDecoder.class.getName());
 
@@ -141,14 +144,15 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
      * @param connection                 SxpConnection associated with peer
      */
     public static void sendErrorMessage(ChannelHandlerContext ctx, ErrorMessageException messageValidationException,
-                                        SxpConnection connection) {
+            SxpConnection connection) {
         ByteBuf message = null;
         try {
             if (messageValidationException.isLegacy()) {
                 message = LegacyMessageFactory.createError(messageValidationException.getErrorCodeNonExtended(), null);
             } else {
-                message = MessageFactory.createError(messageValidationException.getErrorCode(),
-                        messageValidationException.getErrorSubCode(), messageValidationException.getData());
+                message =
+                        MessageFactory.createError(messageValidationException.getErrorCode(),
+                                messageValidationException.getErrorSubCode(), messageValidationException.getData());
             }
             if (ctx == null) {
                 ctx = connection.getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
@@ -166,14 +170,14 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
         ctx.close();
     }
 
-    private SxpNode owner;
+    private final SxpNode owner;
 
-    private Profile profile;
+    private final Profile profile;
 
     /**
      * Constructor that sets predefined values
      *
-     * @param owner SxpNode associated with decoder
+     * @param owner   SxpNode associated with decoder
      * @param profile Profile that defines Server or Client
      */
     private MessageDecoder(SxpNode owner, Profile profile) {
@@ -213,7 +217,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, ByteBuf message) {
-       // LOG.debug(getLogMessage(owner, ctx, "Input received", null) + ": {}", MessageFactory.toString(message));
+        // LOG.debug(getLogMessage(owner, ctx, "Input received", null) + ": {}", MessageFactory.toString(message));
         final SxpConnection connection = owner.getConnection(ctx.channel().remoteAddress());
         if (connection == null) {
             LOG.warn(getLogMessage(owner, ctx, "Channel read0"));

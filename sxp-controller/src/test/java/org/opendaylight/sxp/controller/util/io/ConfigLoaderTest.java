@@ -8,6 +8,18 @@
 
 package org.opendaylight.sxp.controller.util.io;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import com.google.common.util.concurrent.AbstractCheckedFuture;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,27 +61,18 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
-@RunWith(PowerMockRunner.class) @PrepareForTest({DatastoreAccess.class, org.opendaylight.sxp.core.SxpNode.class,
-        org.opendaylight.sxp.util.inet.Search.class, Configuration.class}) public class ConfigLoaderTest {
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({DatastoreAccess.class, org.opendaylight.sxp.core.SxpNode.class,
+        org.opendaylight.sxp.util.inet.Search.class, Configuration.class})
+public class ConfigLoaderTest {
 
     @Rule public ExpectedException exception = ExpectedException.none();
 
     private static DatastoreAccess access;
     private ConfigLoader configLoader;
 
-    @Before public void init() throws Exception {
+    @Before
+    public void init() throws Exception {
         access = PowerMockito.mock(DatastoreAccess.class);
         PowerMockito.when(
                 access.put(any(InstanceIdentifier.class), any(SxpNodeIdentity.class), any(LogicalDatastoreType.class)))
@@ -81,7 +84,8 @@ import static org.mockito.Mockito.verify;
         configLoader = new ConfigLoader(access);
     }
 
-    @Test public void testInitTopologyNode() throws Exception {
+    @Test
+    public void testInitTopologyNode() throws Exception {
         assertTrue(ConfigLoader.initTopologyNode("0.0.0.0", LogicalDatastoreType.OPERATIONAL, access));
         assertTrue(ConfigLoader.initTopologyNode("0.0.0.0", LogicalDatastoreType.CONFIGURATION, access));
     }
@@ -142,7 +146,8 @@ import static org.mockito.Mockito.verify;
         return node;
     }
 
-    @Test public void testLoad() throws Exception {
+    @Test
+    public void testLoad() throws Exception {
         configLoader.load(null);
         verify(access, never()).checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.CONFIGURATION), anyBoolean());
@@ -165,7 +170,8 @@ import static org.mockito.Mockito.verify;
                 eq(LogicalDatastoreType.CONFIGURATION), anyBoolean());
     }
 
-    @Test public void testParseMasterDatabase() throws Exception {
+    @Test
+    public void testParseMasterDatabase() throws Exception {
         MasterDatabase masterDatabase = ConfigLoader.parseMasterDatabase(null);
         assertNotNull(masterDatabase);
         assertNotNull(masterDatabase.getMasterDatabaseBinding());
@@ -188,7 +194,8 @@ import static org.mockito.Mockito.verify;
         assertEquals(2, masterDatabase.getMasterDatabaseBinding().size());
     }
 
-    @Test public void testParseConnections() throws Exception {
+    @Test
+    public void testParseConnections() throws Exception {
         Connections connections = ConfigLoader.parseConnections(null);
         assertNotNull(connections);
         assertNotNull(connections.getConnection());

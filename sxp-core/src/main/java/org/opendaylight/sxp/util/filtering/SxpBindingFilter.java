@@ -10,14 +10,11 @@ package org.opendaylight.sxp.util.filtering;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.common.net.InetAddresses;
-import java.util.BitSet;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntriesFields;
@@ -79,12 +76,14 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
         return identifier;
     }
 
-    @Override public Boolean apply(SxpBindingFields binding) {
+    @Override
+    public Boolean apply(SxpBindingFields binding) {
         //noinspection unchecked
         return filter(sxpFilter != null ? (T) sxpFilter.getFilterEntries() : null, Preconditions.checkNotNull(binding));
     }
 
-    @Override public boolean test(SxpBindingFields binding) {
+    @Override
+    public boolean test(SxpBindingFields binding) {
         return !apply(binding);
     }
 
@@ -179,7 +178,8 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
         throw new IllegalArgumentException("Undefined filter type " + filter);
     }
 
-    @Override public boolean equals(Object o) {
+    @Override
+    public boolean equals(Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
@@ -200,7 +200,8 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
         return false;
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return Objects.hash(sxpFilter.getFilterEntries());
     }
 
@@ -251,13 +252,13 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
             return false;
         return Preconditions.checkNotNull(filter1.getFilterEntries())
                 .getClass()
-                .equals(Preconditions.checkNotNull(filter2.getFilterEntries()).getClass()) ||
-                filter1.getFilterEntries() instanceof AclFilterEntries
-                        && filter2.getFilterEntries() instanceof PrefixListFilterEntries ||
-                filter1.getFilterEntries() instanceof PrefixListFilterEntries
-                        && filter2.getFilterEntries() instanceof AclFilterEntries ||
-                filter1.getFilterEntries() instanceof PeerSequenceFilterEntries
-                        && filter2.getFilterEntries() instanceof PeerSequenceFilterEntries;
+                .equals(Preconditions.checkNotNull(filter2.getFilterEntries()).getClass())
+                || filter1.getFilterEntries() instanceof AclFilterEntries
+                && filter2.getFilterEntries() instanceof PrefixListFilterEntries
+                || filter1.getFilterEntries() instanceof PrefixListFilterEntries
+                && filter2.getFilterEntries() instanceof AclFilterEntries
+                || filter1.getFilterEntries() instanceof PeerSequenceFilterEntries
+                && filter2.getFilterEntries() instanceof PeerSequenceFilterEntries;
     }
 
     /**

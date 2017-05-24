@@ -19,16 +19,14 @@ enum RouteListenerState {
      * <li>next state: any</li>
      * </ul>
      */
-    BEFORE_FIRST(true),
-    /**
+    BEFORE_FIRST(true), /**
      * Active and already processed at least one DS event
      * <ul>
      * <li>processing DS events: YES</li>
      * <li>next state: STOPPED</li>
      * </ul>
      */
-    WORKING(true),
-    /**
+    WORKING(true), /**
      * Not active
      * <ul>
      * <li>processing DS events: NO</li>

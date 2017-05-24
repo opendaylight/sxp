@@ -8,6 +8,14 @@
 
 package org.opendaylight.sxp.core.handler;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -31,20 +39,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 public class ConnectionDecoderTest {
 
     private SxpNode sxpNode;
     private ConnectionDecoder decoder;
 
-    @Before public void setUp() {
+    @Before
+    public void setUp() {
         sxpNode = mock(SxpNode.class);
         decoder = new ConnectionDecoder(sxpNode);
     }
@@ -72,12 +73,14 @@ public class ConnectionDecoderTest {
         return builder.build();
     }
 
-    @Test public void testAddConnection() throws Exception {
+    @Test
+    public void testAddConnection() throws Exception {
         decoder.addConnection("domain", mock(Connection.class));
         verify(sxpNode).addConnection(any(Connection.class), anyString());
     }
 
-    @Test public void testChannelActive() throws Exception {
+    @Test
+    public void testChannelActive() throws Exception {
         ChannelHandlerContext ctx = getContext();
         List<SxpDomain> domains = new ArrayList<>();
         when(sxpNode.getDomains()).thenReturn(domains);
@@ -104,7 +107,8 @@ public class ConnectionDecoderTest {
                 0, 0, (byte) mode.getIntValue(), 80, 5, 4, 127, 0, 0, 1, 80, 7, 2, 0, 120});
     }
 
-    @Test public void testChannelRead0() throws Exception {
+    @Test
+    public void testChannelRead0() throws Exception {
         ChannelHandlerContext ctx = getContext();
         List<SxpDomain> domains = new ArrayList<>();
         when(sxpNode.getDomains()).thenReturn(domains);
@@ -118,7 +122,8 @@ public class ConnectionDecoderTest {
         verify(ctx, times(2)).fireChannelRead(any(ByteBuf.class));
     }
 
-    @Test public void testChannelRead1() throws Exception {
+    @Test
+    public void testChannelRead1() throws Exception {
         ChannelHandlerContext ctx = getContext();
         List<SxpDomain> domains = new ArrayList<>();
         when(sxpNode.getDomains()).thenReturn(domains);
@@ -129,7 +134,8 @@ public class ConnectionDecoderTest {
         verify(ctx).close();
     }
 
-    @Test public void testChannelRead2() throws Exception {
+    @Test
+    public void testChannelRead2() throws Exception {
         ChannelHandlerContext ctx = getContext();
         List<SxpDomain> domains = new ArrayList<>();
         when(sxpNode.getDomains()).thenReturn(domains);
@@ -140,7 +146,8 @@ public class ConnectionDecoderTest {
         verify(ctx).close();
     }
 
-    @Test public void testChannelRead3() throws Exception {
+    @Test
+    public void testChannelRead3() throws Exception {
         ChannelHandlerContext ctx = getContext();
         List<SxpDomain> domains = new ArrayList<>();
         when(sxpNode.getDomains()).thenReturn(domains);
@@ -151,7 +158,8 @@ public class ConnectionDecoderTest {
         verify(ctx).close();
     }
 
-    @Test public void testChannelRead4() throws Exception {
+    @Test
+    public void testChannelRead4() throws Exception {
         ChannelHandlerContext ctx = getContext();
         List<SxpDomain> domains = new ArrayList<>();
         when(sxpNode.getDomains()).thenReturn(domains);
@@ -162,7 +170,8 @@ public class ConnectionDecoderTest {
         verify(ctx).close();
     }
 
-    @Test public void testChannelRead5() throws Exception {
+    @Test
+    public void testChannelRead5() throws Exception {
         ChannelHandlerContext ctx = getContext();
         List<SxpDomain> domains = new ArrayList<>();
         when(sxpNode.getDomains()).thenReturn(domains);
@@ -173,7 +182,8 @@ public class ConnectionDecoderTest {
         verify(ctx).close();
     }
 
-    @Test public void testChannelRead6() throws Exception {
+    @Test
+    public void testChannelRead6() throws Exception {
         ChannelHandlerContext ctx = getContext();
         List<SxpDomain> domains = new ArrayList<>();
         when(sxpNode.getDomains()).thenReturn(domains);

@@ -9,6 +9,7 @@
 package org.opendaylight.sxp.controller.util.exception;
 
 public class ConfigurationException extends Exception {
+
     /** */
     private static final long serialVersionUID = 8558785112480244468L;
 

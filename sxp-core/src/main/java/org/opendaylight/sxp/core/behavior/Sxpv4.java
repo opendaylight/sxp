@@ -108,12 +108,12 @@ public final class Sxpv4 extends SxpLegacy {
             }
             // Timers setup: 0 to disable specific timer usability.
             switch (openMessageType) {
-            case Open:
-                return MessageFactory.createOpen(connection.getVersion(), connectionMode, connection.getOwnerId(),
-                        holdTimeMin, holdTimeMax);
-            case OperResp:
-                return MessageFactory.createOpenResp(connection.getVersion(), connectionMode, connection.getOwnerId(),
-                        holdTimeMin, holdTimeMax);
+                case Open:
+                    return MessageFactory.createOpen(connection.getVersion(), connectionMode, connection.getOwnerId(),
+                            holdTimeMin, holdTimeMax);
+                case OperResp:
+                    return MessageFactory.createOpenResp(connection.getVersion(), connectionMode,
+                            connection.getOwnerId(), holdTimeMin, holdTimeMax);
             }
 
         } else if (connectionMode.equals(ConnectionMode.Speaker)) {
@@ -134,12 +134,12 @@ public final class Sxpv4 extends SxpLegacy {
 
             // Timers setup: 0 to disable specific timer usability.
             switch (openMessageType) {
-            case Open:
-                return MessageFactory.createOpen(connection.getVersion(), connectionMode, connection.getOwnerId(),
-                        holdTimeMinAcc);
-            case OperResp:
-                return MessageFactory.createOpenResp(connection.getVersion(), connectionMode, connection.getOwnerId(),
-                        holdTimeMinAcc);
+                case Open:
+                    return MessageFactory.createOpen(connection.getVersion(), connectionMode, connection.getOwnerId(),
+                            holdTimeMinAcc);
+                case OperResp:
+                    return MessageFactory.createOpenResp(connection.getVersion(), connectionMode,
+                            connection.getOwnerId(), holdTimeMinAcc);
             }
         }
         throw new UnknownConnectionModeException();
@@ -160,8 +160,8 @@ public final class Sxpv4 extends SxpLegacy {
      */
     private ByteBuf composeOpenRespHoldTimeMessage(SxpConnection connection, OpenMessage message,
             ConnectionMode connectionMode)
-            throws CapabilityLengthException, UnknownVersionException, AttributeVariantException,
-            HoldTimeMaxException, HoldTimeMinException {
+            throws CapabilityLengthException, UnknownVersionException, AttributeVariantException, HoldTimeMaxException,
+            HoldTimeMinException {
         // If valid HoldTimeAttribute is received, HoldTimeAttribute must be
         // included.
         HoldTimeAttribute attHoldTime;
@@ -204,7 +204,7 @@ public final class Sxpv4 extends SxpLegacy {
         }
         LOG.info("{} Sent OPEN {}", connection, MessageFactory.toString(message));
         ctx.writeAndFlush(message);
-        if(connection.isStateDeleteHoldDown()) {
+        if (connection.isStateDeleteHoldDown()) {
             connection.setReconciliationTimer();
         }
         if (!connection.isStateOn()) {
@@ -228,7 +228,9 @@ public final class Sxpv4 extends SxpLegacy {
                             connection.setConnectionSpeakerPart(_message);
                             try {
                                 connection.setCapabilitiesRemote(MessageFactory.decodeCapabilities(_message));
-                                ByteBuf response = composeOpenRespHoldTimeMessage(connection, _message, ConnectionMode.Speaker);
+                                ByteBuf
+                                        response =
+                                        composeOpenRespHoldTimeMessage(connection, _message, ConnectionMode.Speaker);
                                 LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
                                 ctx.writeAndFlush(response);
                             } catch (AttributeNotFoundException e) {

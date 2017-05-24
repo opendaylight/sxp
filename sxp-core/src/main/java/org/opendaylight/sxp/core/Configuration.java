@@ -32,7 +32,7 @@ public final class Configuration {
 
     public static final boolean NETTY_LOGGER_HANDLER = false;
 
-    private static Map<String, SxpNode> nodes = new HashMap<>();
+    private static final Map<String, SxpNode> nodes = new HashMap<>();
 
     public static final boolean SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS = true;
 

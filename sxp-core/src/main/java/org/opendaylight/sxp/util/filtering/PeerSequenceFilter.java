@@ -8,7 +8,7 @@
 
 package org.opendaylight.sxp.util.filtering;
 
-import java.util.Collections;
+import java.util.Comparator;
 import org.opendaylight.sxp.util.database.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntriesFields;
@@ -38,13 +38,16 @@ public class PeerSequenceFilter<T extends FilterEntriesFields> extends SxpBindin
         }
         PeerSequenceFilterEntries entries = ((PeerSequenceFilterEntries) filter.getFilterEntries());
         if (entries.getPeerSequenceEntry() != null && !entries.getPeerSequenceEntry().isEmpty()) {
-            Collections.sort(entries.getPeerSequenceEntry(), (t1, t2) -> t1.getEntrySeq().compareTo(t2.getEntrySeq()));
+            entries.getPeerSequenceEntry()
+                    .sort(Comparator.comparing(
+                            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.PeerSequenceEntry::getEntrySeq));
         }
     }
 
-    @Override protected boolean filter(PeerSequenceFilterEntries filterEntries, SxpBindingFields binding) {
-        if (filterEntries.getPeerSequenceEntry() == null || filterEntries.getPeerSequenceEntry().isEmpty() ||
-                binding.getPeerSequence() == null || binding.getPeerSequence().getPeer() == null) {
+    @Override
+    protected boolean filter(PeerSequenceFilterEntries filterEntries, SxpBindingFields binding) {
+        if (filterEntries.getPeerSequenceEntry() == null || filterEntries.getPeerSequenceEntry().isEmpty()
+                || binding.getPeerSequence() == null || binding.getPeerSequence().getPeer() == null) {
             return true;
         }
         //Using First Match Logic

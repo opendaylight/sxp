@@ -299,7 +299,8 @@ public final class DatastoreAccess implements AutoCloseable {
         }
     }
 
-    @Override public synchronized void close() {
+    @Override
+    public synchronized void close() {
         if (!closed) {
             closed = true;
             bindingTransactionChain.close();
