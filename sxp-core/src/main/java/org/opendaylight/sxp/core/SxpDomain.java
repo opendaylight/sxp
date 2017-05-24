@@ -8,17 +8,20 @@
 
 package org.opendaylight.sxp.core;
 
+import static org.opendaylight.sxp.util.ArraysUtil.getBitAddress;
+
 import com.google.common.base.Preconditions;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
 import org.opendaylight.sxp.util.database.SxpDatabase;
@@ -41,8 +44,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.doma
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.opendaylight.sxp.util.ArraysUtil.getBitAddress;
 
 /**
  * SxpDomain class represent layer that isolate Connections
@@ -124,21 +125,36 @@ public class SxpDomain implements AutoCloseable {
      * @return Filters contained in current domains
      */
     public Map<String, SxpBindingFilter<?, ? extends SxpDomainFilterFields>> getFilters() {
-        Map<String, List<SxpBindingFilter<?, ? extends SxpDomainFilterFields>>> filterMap = new HashMap<>();
+        Map<String, SxpBindingFilter<?, ? extends SxpDomainFilterFields>> filterMap = new HashMap<>();
         synchronized (filters) {
-            filters.values()
-                    .forEach(m -> m.values().forEach(f -> f.getSxpFilter().getDomains().getDomain().forEach(d -> {
-                        if (!filterMap.containsKey(d.getName())) {
-                            filterMap.put(d.getName(), new ArrayList<>());
+            for (Map<String, SxpBindingFilter<?, ? extends SxpDomainFilterFields>> m : filters.values()) {
+                m.values().forEach(filter -> {
+                    filter.getSxpFilter().getDomains().getDomain().forEach(d -> {
+                        if (Objects.nonNull(filterMap.putIfAbsent(d.getName(), filter))) {
+                            // Merge on filter can be executed MAX 2 times per filter type
+                            filterMap.put(d.getName(),
+                                    SxpBindingFilter.mergeFilters(Arrays.asList(filter, filterMap.get(d.getName()))));
                         }
-                        filterMap.get(d.getName()).add(f);
-                    })));
+                    });
+                });
+            }
         }
-        return Collections.unmodifiableMap(filterMap.entrySet()
-                .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey,
-                        (Function<Map.Entry<String, List<SxpBindingFilter<?, ? extends SxpDomainFilterFields>>>, SxpBindingFilter<?, ? extends SxpDomainFilterFields>>) stringListEntry -> SxpBindingFilter
-                                .mergeFilters(stringListEntry.getValue()))));
+        return Collections.unmodifiableMap(filterMap);
+    }
+
+    /**
+     * Checks if filter fields are correctly set
+     *
+     * @param filter Filter that will be checked
+     */
+    private void checkFilter(SxpBindingFilter<?, ? extends SxpDomainFilterFields> filter) {
+        Objects.requireNonNull(filter);
+        Objects.requireNonNull(filter.getSxpFilter());
+        Objects.requireNonNull(filter.getSxpFilter().getFilterEntries());
+        Objects.requireNonNull(filter.getSxpFilter().getDomains());
+        Objects.requireNonNull(filter.getSxpFilter().getDomains().getDomain());
+        Objects.requireNonNull(filter.getSxpFilter().getFilterName());
+        Objects.requireNonNull(filter.getSxpFilter().getFilterSpecific());
     }
 
     /**
@@ -148,43 +164,41 @@ public class SxpDomain implements AutoCloseable {
      * @return If Filter was added
      */
     public boolean addFilter(SxpBindingFilter<?, ? extends SxpDomainFilterFields> filter) {
+        checkFilter(filter);
+        if (filter.getSxpFilter().getDomains().getDomain().isEmpty() || filter.getSxpFilter()
+                .getDomains()
+                .getDomain()
+                .stream()
+                .anyMatch(d -> d.getName().equals(getName())) || checkDomainOverlap(
+                filter.getSxpFilter().getFilterSpecific(), filter.getSxpFilter().getDomains())) {
+            return false;
+        }
         synchronized (filters) {
-            if (filter == null || filters.get(filter.getSxpFilter().getFilterSpecific())
-                    .containsKey(filter.getSxpFilter().getFilterName()) || filter.getSxpFilter() == null
-                    || filter.getSxpFilter().getDomains() == null
-                    || filter.getSxpFilter().getDomains().getDomain() == null || filter.getSxpFilter()
-                    .getDomains()
-                    .getDomain()
-                    .isEmpty() || filter.getSxpFilter()
+            if (filters.get(filter.getSxpFilter().getFilterSpecific())
+                    .containsKey(filter.getSxpFilter().getFilterName())) {
+                return false;
+            }
+            filters.get(filter.getSxpFilter().getFilterSpecific()).put(filter.getSxpFilter().getFilterName(), filter);
+        }
+        for (SxpDomain domain : node.getDomains()) {
+            if (!domain.getName().equals(getName()) && filter.getSxpFilter()
                     .getDomains()
                     .getDomain()
                     .stream()
-                    .anyMatch(d -> d.getName().equals(getName())) || filter.getSxpFilter().getFilterEntries() == null
-                    || checkDomainOverlap(filter.getSxpFilter().getFilterSpecific(),
-                    filter.getSxpFilter().getDomains()))
-                return false;
-            filters.get(filter.getSxpFilter().getFilterSpecific()).put(filter.getSxpFilter().getFilterName(), filter);
-        }
-        node.getDomains()
-                .stream()
-                .filter(d -> !d.getName().equals(getName()) && filter.getSxpFilter()
-                        .getDomains()
-                        .getDomain()
-                        .stream()
-                        .anyMatch(filter_d -> filter_d.getName().equals(d.getName())))
-                .forEach(domain -> {
-                    propagateToSharedMasterDatabases(Collections.emptyList(),
-                            getMasterDatabase().getLocalBindings().stream().filter(filter).collect(Collectors.toList()),
-                            domain);
-                    getConnections().stream().filter(SxpConnection::isModeListener).forEach(c -> {
-                        propagateToSharedSxpDatabases(Collections.emptyList(),
-                                getSxpDatabase().getBindings(c.getId())
-                                        .stream()
-                                        .filter(filter)
-                                        .collect(Collectors.toList()), domain, c.getId(),
-                                c.getFilter(FilterType.Inbound));
-                    });
+                    .anyMatch(f -> f.getName().equals(domain.getName()))) {
+                // push changes to MDb
+                propagateToSharedMasterDatabases(Collections.emptyList(),
+                        getMasterDatabase().getLocalBindings().stream().filter(filter).collect(Collectors.toList()),
+                        domain);
+                // push changes to SXPDb
+                getConnections().stream().filter(SxpConnection::isModeListener).forEach(c -> {
+                    propagateToSharedSxpDatabases(Collections.emptyList(), getSxpDatabase().getBindings(c.getId())
+                            .stream()
+                            .filter(filter)
+                            .collect(Collectors.toList()), domain, c.getId(), c.getFilter(FilterType.Inbound));
                 });
+            }
+        }
         return true;
     }
 
@@ -220,27 +234,28 @@ public class SxpDomain implements AutoCloseable {
         synchronized (filters) {
             bindingFilter = filters.get(Preconditions.checkNotNull(specific)).remove(Preconditions.checkNotNull(name));
         }
-        if (bindingFilter != null) {
-            node.getDomains()
-                    .stream()
-                    .filter(d -> !d.getName().equals(getName()) && bindingFilter.getSxpFilter()
-                            .getDomains()
-                            .getDomain()
+        if (Objects.nonNull(bindingFilter)) {
+            for (SxpDomain domain : node.getDomains()) {
+                if (!domain.getName().equals(getName()) && bindingFilter.getSxpFilter()
+                        .getDomains()
+                        .getDomain()
+                        .stream()
+                        .anyMatch(f -> f.getName().equals(domain.getName()))) {
+                    // push changes to MDb
+                    propagateToSharedMasterDatabases(getMasterDatabase().getLocalBindings()
                             .stream()
-                            .anyMatch(filter_d -> filter_d.getName().equals(d.getName())))
-                    .forEach(domain -> {
-                        propagateToSharedMasterDatabases(getMasterDatabase().getLocalBindings()
-                                .stream()
-                                .filter(bindingFilter)
-                                .collect(Collectors.toList()), Collections.emptyList(), domain);
-                        getConnections().stream().filter(SxpConnection::isModeListener).forEach(c -> {
-                            propagateToSharedSxpDatabases(getSxpDatabase().getBindings(c.getId())
-                                            .stream()
-                                            .filter(bindingFilter)
-                                            .collect(Collectors.toList()), Collections.emptyList(), domain, c.getId(),
-                                    c.getFilter(FilterType.Inbound));
-                        });
+                            .filter(bindingFilter)
+                            .collect(Collectors.toList()), Collections.emptyList(), domain);
+                    // push changes to SXPDb
+                    getConnections().stream().filter(SxpConnection::isModeListener).forEach(c -> {
+                        propagateToSharedSxpDatabases(getSxpDatabase().getBindings(c.getId())
+                                        .stream()
+                                        .filter(bindingFilter)
+                                        .collect(Collectors.toList()), Collections.emptyList(), domain, c.getId(),
+                                c.getFilter(FilterType.Inbound));
                     });
+                }
+            }
         }
         return bindingFilter;
     }
@@ -252,34 +267,42 @@ public class SxpDomain implements AutoCloseable {
      * @return If filter update was successful
      */
     public boolean updateFilter(SxpBindingFilter<?, ? extends SxpDomainFilterFields> newFilter) {
+        checkFilter(newFilter);
         SxpBindingFilter<?, ? extends SxpDomainFilterFields> oldFilter;
         synchronized (filters) {
             oldFilter =
                     filters.get(newFilter.getSxpFilter().getFilterSpecific())
-                            .put(newFilter.getSxpFilter().getFilterName(), newFilter);
+                            .get(newFilter.getSxpFilter().getFilterName());
+            if (Objects.nonNull(oldFilter)) {
+                filters.get(newFilter.getSxpFilter().getFilterSpecific())
+                        .put(newFilter.getSxpFilter().getFilterName(), newFilter);
+            }
         }
-        if (oldFilter == null)
-            return false;
-        List<SxpDomain>
+        if (Objects.isNull(oldFilter)) {
+            return addFilter(newFilter);
+        }
+        final List<SxpDomain>
                 domains =
                 node.getDomains().stream().filter(d -> !d.getName().equals(getName())).collect(Collectors.toList());
-        //Domains only in old filter
+        // Propagating changes from domains based on scope of affected binding by current filter
+        // domains only in old filter
         domains.stream()
                 .filter(d -> oldFilter.getSxpFilter()
                         .getDomains()
                         .getDomain()
                         .stream()
-                        .anyMatch(filter_d -> filter_d.getName().equals(d.getName())) && !newFilter.getSxpFilter()
+                        .anyMatch(filter_d -> filter_d.getName().equals(d.getName())) && newFilter.getSxpFilter()
                         .getDomains()
                         .getDomain()
                         .stream()
-                        .anyMatch(filter_d -> filter_d.getName().equals(d.getName())))
+                        .noneMatch(filter_d -> filter_d.getName().equals(d.getName())))
                 .forEach(domain -> {
                     propagateToSharedMasterDatabases(getMasterDatabase().getLocalBindings()
                             .stream()
                             .filter(oldFilter)
                             .collect(Collectors.toList()), Collections.emptyList(), domain);
                     getConnections().stream().filter(SxpConnection::isModeListener).forEach(c -> {
+                        // push changes to SXPDb
                         propagateToSharedSxpDatabases(getSxpDatabase().getBindings(c.getId())
                                         .stream()
                                         .filter(oldFilter)
@@ -287,7 +310,7 @@ public class SxpDomain implements AutoCloseable {
                                 c.getFilter(FilterType.Inbound));
                     });
                 });
-        //domains in both old and new filter
+        // domains in both old and new filter
         domains.stream()
                 .filter(d -> oldFilter.getSxpFilter()
                         .getDomains()
@@ -299,6 +322,7 @@ public class SxpDomain implements AutoCloseable {
                         .stream()
                         .anyMatch(filter_d -> filter_d.getName().equals(d.getName())))
                 .forEach(domain -> {
+                    // push changes to SXPDb
                     propagateToSharedMasterDatabases(getMasterDatabase().getLocalBindings()
                             .stream()
                             .filter(b -> oldFilter.test(b) && !newFilter.test(b))
@@ -307,33 +331,35 @@ public class SxpDomain implements AutoCloseable {
                             .filter(b -> !oldFilter.test(b) && newFilter.test(b))
                             .collect(Collectors.toList()), domain);
                     getConnections().stream().filter(SxpConnection::isModeListener).forEach(c -> {
+                        // push changes to SXPDb
                         propagateToSharedSxpDatabases(getSxpDatabase().getBindings(c.getId())
-                                        .stream()
-                                        .filter(b -> oldFilter.test(b) && !newFilter.test(b))
-                                        .collect(Collectors.toList()), getSxpDatabase().getBindings(c.getId())
-                                        .stream()
-                                        .filter(b -> !oldFilter.test(b) && newFilter.test(b))
-                                        .collect(Collectors.toList()), domain, c.getId(),
-                                c.getFilter(FilterType.Inbound));
+                                .stream()
+                                .filter(b -> oldFilter.test(b) && !newFilter.test(b))
+                                .collect(Collectors.toList()), getSxpDatabase().getBindings(c.getId())
+                                .stream()
+                                .filter(b -> !oldFilter.test(b) && newFilter.test(b))
+                                .collect(Collectors.toList()), domain, c.getId(), c.getFilter(FilterType.Inbound));
                     });
                 });
-        //domains only in new filter
+        // domains only in new filter
         domains.stream()
-                .filter(d -> !oldFilter.getSxpFilter()
+                .filter(d -> oldFilter.getSxpFilter()
                         .getDomains()
                         .getDomain()
                         .stream()
-                        .anyMatch(filter_d -> filter_d.getName().equals(d.getName())) && newFilter.getSxpFilter()
+                        .noneMatch(filter_d -> filter_d.getName().equals(d.getName())) && newFilter.getSxpFilter()
                         .getDomains()
                         .getDomain()
                         .stream()
                         .anyMatch(filter_d -> filter_d.getName().equals(d.getName())))
                 .forEach(domain -> {
+                    // push changes to MDb
                     propagateToSharedMasterDatabases(getMasterDatabase().getLocalBindings()
                             .stream()
                             .filter(oldFilter)
                             .collect(Collectors.toList()), Collections.emptyList(), domain);
                     getConnections().stream().filter(SxpConnection::isModeListener).forEach(c -> {
+                        // push changes to SXPDb
                         propagateToSharedSxpDatabases(getSxpDatabase().getBindings(c.getId())
                                         .stream()
                                         .filter(oldFilter)
@@ -353,8 +379,9 @@ public class SxpDomain implements AutoCloseable {
      */
     private <T extends SxpBindingFields> void propagateToSharedMasterDatabases(final List<T> remove, final List<T> add,
             final SxpDomain domain) {
-        if (domain == null || this.name.equals(domain.getName()) || (remove.isEmpty() && add.isEmpty()))
+        if (Objects.isNull(domain) || this.name.equals(domain.getName()) || (remove.isEmpty() && add.isEmpty())) {
             return;
+        }
         List<SxpBindingFields> added = new ArrayList<>(), deleted = new ArrayList<>(), replace = new ArrayList<>(add);
         Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(node, domain.getName());
         synchronized (domain) {
@@ -365,12 +392,13 @@ public class SxpDomain implements AutoCloseable {
                 replace.addAll(domain.getMasterDatabase().getLocalBindings());
             }
             added.addAll(domain.getMasterDatabase().addBindings(replace));
-            if (!added.isEmpty() || !deleted.isEmpty())
+            if (!added.isEmpty() || !deleted.isEmpty()) {
                 node.getSvcBindingDispatcher()
                         .propagateUpdate(deleted, added, domain.getConnections()
                                 .stream()
                                 .filter(c -> c.isModeSpeaker() && c.isStateOn())
                                 .collect(Collectors.toList()));
+            }
         }
     }
 
@@ -384,16 +412,22 @@ public class SxpDomain implements AutoCloseable {
      */
     private <T extends SxpBindingFields> void propagateToSharedSxpDatabases(List<T> remove, List<T> add,
             SxpDomain domain, NodeId nodeIdRemote, SxpBindingFilter<?, ? extends SxpFilterFields> filter) {
-        if (nodeIdRemote == null || domain == null || this.name.equals(domain.getName()) || (remove.isEmpty()
-                && add.isEmpty()))
+        if (Objects.isNull(nodeIdRemote) || Objects.isNull(domain) || this.name.equals(domain.getName()) || (
+                remove.isEmpty() && add.isEmpty())) {
             return;
+        }
         synchronized (domain) {
-            List<SxpDatabaseBinding> deleted = domain.getSxpDatabase().deleteBindings(nodeIdRemote, remove),
-                    added = domain.getSxpDatabase().addBinding(nodeIdRemote, add);
-            if (!added.isEmpty() || !deleted.isEmpty())
-                propagateToSharedMasterDatabases(
-                        filter == null ? deleted : deleted.stream().filter(filter).collect(Collectors.toList()),
-                        filter == null ? added : added.stream().filter(filter).collect(Collectors.toList()), domain);
+            final List<SxpDatabaseBinding> deleted = domain.getSxpDatabase().deleteBindings(nodeIdRemote, remove),
+                    added =
+                            domain.getSxpDatabase().addBinding(nodeIdRemote, add);
+            if (!added.isEmpty() || !deleted.isEmpty()) {
+                if (Objects.isNull(filter)) {
+                    propagateToSharedMasterDatabases(deleted, added, domain);
+                } else {
+                    propagateToSharedMasterDatabases(deleted.stream().filter(filter).collect(Collectors.toList()),
+                            added.stream().filter(filter).collect(Collectors.toList()), domain);
+                }
+            }
         }
     }
 
@@ -406,22 +440,24 @@ public class SxpDomain implements AutoCloseable {
      * @param <T>     Unified type for Bindings
      */
     public <T extends SxpBindingFields> void pushToSharedMasterDatabases(final List<T> removed, final List<T> added) {
-        if (removed == null || added == null || (added.isEmpty() && removed.isEmpty()))
+        if (Objects.isNull(removed) || Objects.isNull(added) || (added.isEmpty() && removed.isEmpty())) {
             return;
-        Map<String, SxpDomain>
-                sxpDomains =
-                node.getDomains()
-                        .stream()
-                        .filter(d -> !d.getName().equals(getName()))
-                        .collect(Collectors.toMap(SxpDomain::getName, Function.identity()));
-        if (sxpDomains.isEmpty())
-            return;
-        for (Map.Entry<String, SxpBindingFilter<?, ? extends SxpDomainFilterFields>> filter : getFilters().entrySet()) {
-            if (sxpDomains.containsKey(filter.getKey()))
-                propagateToSharedMasterDatabases(
-                        removed.stream().filter(filter.getValue()).collect(Collectors.toList()),
-                        added.stream().filter(filter.getValue()).collect(Collectors.toList()),
-                        sxpDomains.get(filter.getKey()));
+        }
+        final Map<String, SxpDomain> sxpDomains = new HashMap<>();
+        for (SxpDomain d : node.getDomains()) {
+            if (!getName().equals(d.getName())) {
+                sxpDomains.put(d.getName(), d);
+            }
+        }
+        if (!sxpDomains.isEmpty()) {
+            final Map<String, SxpBindingFilter<?, ? extends SxpDomainFilterFields>> filters = getFilters();
+            for (Map.Entry<String, SxpBindingFilter<?, ? extends SxpDomainFilterFields>> filter : filters.entrySet()) {
+                if (sxpDomains.containsKey(filter.getKey()))
+                    propagateToSharedMasterDatabases(
+                            removed.stream().filter(filter.getValue()).collect(Collectors.toList()),
+                            added.stream().filter(filter.getValue()).collect(Collectors.toList()),
+                            sxpDomains.get(filter.getKey()));
+            }
         }
     }
 
@@ -433,21 +469,26 @@ public class SxpDomain implements AutoCloseable {
      */
     public void pushToSharedSxpDatabases(NodeId nodeIdRemote, SxpBindingFilter<?, ? extends SxpFilterFields> sxpFilter,
             List<SxpDatabaseBinding> removed, List<SxpDatabaseBinding> added) {
-        if (nodeIdRemote == null || removed == null || added == null || (added.isEmpty() && removed.isEmpty()))
+        if (Objects.isNull(nodeIdRemote) || Objects.isNull(removed) || Objects.isNull(added) || (added.isEmpty()
+                && removed.isEmpty())) {
             return;
-        Map<String, SxpDomain>
-                sxpDomains =
-                node.getDomains()
-                        .stream()
-                        .filter(d -> !d.getName().equals(getName()))
-                        .collect(Collectors.toMap(SxpDomain::getName, Function.identity()));
-        if (sxpDomains.isEmpty())
-            return;
-        for (Map.Entry<String, SxpBindingFilter<?, ? extends SxpDomainFilterFields>> filter : getFilters().entrySet()) {
-            if (sxpDomains.containsKey(filter.getKey()))
-                propagateToSharedSxpDatabases(removed.stream().filter(filter.getValue()).collect(Collectors.toList()),
-                        added.stream().filter(filter.getValue()).collect(Collectors.toList()),
-                        sxpDomains.get(filter.getKey()), nodeIdRemote, sxpFilter);
+        }
+        final Map<String, SxpDomain> sxpDomains = new HashMap<>();
+        for (SxpDomain d : node.getDomains()) {
+            if (!getName().equals(d.getName())) {
+                sxpDomains.put(d.getName(), d);
+            }
+        }
+        if (!sxpDomains.isEmpty()) {
+            final Map<String, SxpBindingFilter<?, ? extends SxpDomainFilterFields>> filters = getFilters();
+            for (Map.Entry<String, SxpBindingFilter<?, ? extends SxpDomainFilterFields>> filter : filters.entrySet()) {
+                if (sxpDomains.containsKey(filter.getKey())) {
+                    propagateToSharedSxpDatabases(
+                            removed.stream().filter(filter.getValue()).collect(Collectors.toList()),
+                            added.stream().filter(filter.getValue()).collect(Collectors.toList()),
+                            sxpDomains.get(filter.getKey()), nodeIdRemote, sxpFilter);
+                }
+            }
         }
     }
 
@@ -598,7 +639,8 @@ public class SxpDomain implements AutoCloseable {
         }
     }
 
-    @Override public void close() {
+    @Override
+    public void close() {
         getConnections().forEach(SxpConnection::shutdown);
     }
 }
