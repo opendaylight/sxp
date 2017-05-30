@@ -33,7 +33,8 @@ import org.robotframework.remoteserver.RemoteServer;
 /**
  * Robot library used for connectivity measuring
  */
-@RobotKeywords public class ConnectionTestLibrary extends AbstractLibrary {
+@RobotKeywords
+public class ConnectionTestLibrary extends AbstractLibrary {
 
     private final AtomicLong connectedPeers = new AtomicLong(0), connectingTimeEnd = new AtomicLong(0);
     private final List<SxpConnection> peers = Collections.synchronizedList(new ArrayList<>());
@@ -50,7 +51,9 @@ import org.robotframework.remoteserver.RemoteServer;
     /**
      * @return Sum of Sxp peers that are currently with state On
      */
-    @RobotKeyword("Get Connected Peers") @ArgumentNames({}) public synchronized long getConnectedPeers() {
+    @RobotKeyword("Get Connected Peers")
+    @ArgumentNames({})
+    public synchronized long getConnectedPeers() {
         connectedPeers.set(peers.parallelStream().map(c -> c.isStateOn() ? 1 : 0).reduce(0, Integer::sum));
         if (connectedPeers.get() >= totalPeers) {
             connectingTimeEnd.set(System.currentTimeMillis());
@@ -61,7 +64,9 @@ import org.robotframework.remoteserver.RemoteServer;
     /**
      * @return Time elapsed to connect all peers or 0 if some peers are still in progress of connecting
      */
-    @RobotKeyword("Get Connect Time") @ArgumentNames({}) public synchronized double getConnectTime() {
+    @RobotKeyword("Get Connect Time")
+    @ArgumentNames({})
+    public synchronized double getConnectTime() {
         long time = connectingTimeEnd.get();
         return time == 0 ? 0 : (time - connectingTimeBegin) / 1000f;
     }
@@ -69,15 +74,18 @@ import org.robotframework.remoteserver.RemoteServer;
     /**
      * @param peersCount Starts SxpNodes and sets expected Peers count
      */
-    @RobotKeyword("Initiate Connecting") @ArgumentNames({"peers_count"}) public synchronized void initiateConnecting(
-            String peersCount) {
+    @RobotKeyword("Initiate Connecting")
+    @ArgumentNames({"peers_count"})
+    public synchronized void initiateConnecting(String peersCount) {
         close();
         totalPeers = Integer.parseInt(peersCount);
         connectingTimeBegin = System.currentTimeMillis();
         LibraryServer.getNodes().forEach(SxpNode::start);
     }
 
-    @RobotKeyword("Add Node") @ArgumentNames({"node_id", "version", "port", "password"}) @Override
+    @RobotKeyword("Add Node")
+    @ArgumentNames({"node_id", "version", "port", "password"})
+    @Override
     public synchronized void addNode(String nodeId, String version, String port, String password) {
         LibraryServer.putNode(new SxpNode(new NodeId(nodeId),
                 new SxpNodeIdentityBuilder().setSourceIp(new IpAddress(nodeId.toCharArray()))
@@ -90,7 +98,8 @@ import org.robotframework.remoteserver.RemoteServer;
                         .setTimers(new TimersBuilder().setRetryOpenTime(5).build())
                         .build(), worker) {
 
-            @Override protected SxpConnection addConnection(SxpConnection connection) {
+            @Override
+            protected SxpConnection addConnection(SxpConnection connection) {
                 peers.add(connection);
                 return super.addConnection(connection);
             }
@@ -98,7 +107,8 @@ import org.robotframework.remoteserver.RemoteServer;
         LibraryServer.getNode(nodeId).addDomain(new SxpDomainBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN).build());
     }
 
-    @Override public synchronized void close() {
+    @Override
+    public synchronized void close() {
         totalPeers = 0;
         connectedPeers.set(0);
         connectingTimeBegin = 0;

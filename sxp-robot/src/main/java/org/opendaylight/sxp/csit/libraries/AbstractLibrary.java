@@ -33,7 +33,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Abstract Robot library containing common support for libraries
  */
-@RobotKeywords public abstract class AbstractLibrary extends AbstractClassLibrary implements AutoCloseable {
+@RobotKeywords
+public abstract class AbstractLibrary extends AbstractClassLibrary implements AutoCloseable {
 
     public final static String SOURCE = "source";
     protected static final Logger LOG = LoggerFactory.getLogger(AbstractLibrary.class.getName());
@@ -101,7 +102,7 @@ import org.slf4j.LoggerFactory;
      * @param password Password for TCP-MD5
      * @return SxpNode where connection was added
      */
-    public SxpNode addConnection(SxpNode node, Version version, ConnectionMode mode, String ip, String port,
+    public SxpNode addConnectionToNode(SxpNode node, Version version, ConnectionMode mode, String ip, String port,
             String password) {
         Preconditions.checkNotNull(node)
                 .addConnection(new ConnectionBuilder().setVersion(version)
@@ -118,7 +119,8 @@ import org.slf4j.LoggerFactory;
     /**
      * @return Url on witch Library is placed
      */
-    @Override public String getURI() {
+    @Override
+    public String getURI() {
         return getClass().getSimpleName();
     }
 
@@ -130,7 +132,8 @@ import org.slf4j.LoggerFactory;
      * @param port     Port of SxpNode
      * @param password Password used by TCP-MD5
      */
-    @RobotKeyword("Add Node") @ArgumentNames({"node_id", "version", "port", "password"})
+    @RobotKeyword("Add Node")
+    @ArgumentNames({"node_id", "version", "port", "password"})
     public synchronized void addNode(String nodeId, String version, String port, String password) {
         LibraryServer.putNode(SxpNode.createInstance(new NodeId(nodeId),
                 new SxpNodeIdentityBuilder().setSourceIp(new IpAddress(nodeId.toCharArray()))
@@ -148,7 +151,9 @@ import org.slf4j.LoggerFactory;
     /**
      * Starts every node.
      */
-    @RobotKeyword("Start Nodes") @ArgumentNames({}) public synchronized void startNodes() {
+    @RobotKeyword("Start Nodes")
+    @ArgumentNames({})
+    public synchronized void startNodes() {
         LibraryServer.getNodes().forEach(SxpNode::start);
     }
 
@@ -162,10 +167,11 @@ import org.slf4j.LoggerFactory;
      * @param password Password for TCP-MD5
      * @param nodeId   SxpNode id where connection will be added
      */
-    @RobotKeyword("Add Connection") @ArgumentNames({"version", "mode", "ip", "port", "password", "node_id"})
+    @RobotKeyword("Add Connection")
+    @ArgumentNames({"version", "mode", "ip", "port", "password", "node_id"})
     public synchronized void addConnection(String version, String mode, String ip, String port, String password,
             String nodeId) {
-        addConnection(LibraryServer.getNode(nodeId), getVersion(version), getMode(mode), ip, port, password);
+        addConnectionToNode(LibraryServer.getNode(nodeId), getVersion(version), getMode(mode), ip, port, password);
     }
 
     /**
@@ -173,7 +179,9 @@ import org.slf4j.LoggerFactory;
      *
      * @throws Exception If error occurs
      */
-    @RobotKeyword("Clean Library") @ArgumentNames({}) public synchronized void cleanLibrary() throws Exception {
+    @RobotKeyword("Clean Library")
+    @ArgumentNames({})
+    public synchronized void cleanLibrary() throws Exception {
         LibraryServer.getNodes().forEach(SxpNode::shutdown);
         LibraryServer.clearNodes();
         close();
