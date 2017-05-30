@@ -11,6 +11,7 @@ package org.opendaylight.sxp.controller.listeners.spi;
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -87,8 +88,8 @@ public abstract class ListListener<P extends DataObject, C extends ChildOf<? sup
         switch (c.getModificationType()) {
             case WRITE:
                 if (c.getDataBefore() == null)
-                    datastoreAccess.put(getIdentifier(c.getDataAfter(), identifier), c.getDataAfter(),
-                            LogicalDatastoreType.OPERATIONAL);
+                    datastoreAccess.checkAndPut(getIdentifier(c.getDataAfter(), identifier), c.getDataAfter(),
+                            LogicalDatastoreType.OPERATIONAL, false);
                 else
                     datastoreAccess.merge(getIdentifier(c.getDataAfter(), identifier), c.getDataAfter(),
                             LogicalDatastoreType.OPERATIONAL);
@@ -113,10 +114,10 @@ public abstract class ListListener<P extends DataObject, C extends ChildOf<? sup
     public void handleChange(List<DataObjectModification<C>> modifiedChilds, LogicalDatastoreType logicalDatastoreType,
             InstanceIdentifier<P> identifier) {
         if (modifiedChilds != null && !modifiedChilds.isEmpty()) {
-            modifiedChilds.stream().filter(c -> c != null).forEach(modifiedChildContainer -> {
+            modifiedChilds.stream().filter(Objects::nonNull).forEach(modifiedChildContainer -> {
                 final String nodeId = identifier.firstKeyOf(Node.class).getNodeId().getValue();
                 SxpNode sxpNode = Configuration.getRegisteredNode(nodeId);
-                modifiedChildContainer.getModifiedChildren().stream().filter(m -> m != null).forEach(m -> {
+                modifiedChildContainer.getModifiedChildren().stream().filter(Objects::nonNull).forEach(m -> {
                     //noinspection unchecked
                     DataObjectModification<O> c = (DataObjectModification<O>) m;
                     switch (logicalDatastoreType) {
@@ -141,7 +142,7 @@ public abstract class ListListener<P extends DataObject, C extends ChildOf<? sup
                                                 identifier));
                             });
                     } catch (IllegalStateException e) {
-                        LOG.warn("{} {} modifications on child not found ", identifier, logicalDatastoreType, e);
+                        LOG.debug("{} {} modifications on child not found ", identifier, logicalDatastoreType, e);
                     }
                 });
             });
