@@ -1,0 +1,8 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+1: Martin Mihálek <aenniw@gmail.com>
+Code-Review+2: Abdelilah Essiari <aessiari@cisco.com>
+Submitted-by: Martin Mihálek <aenniw@gmail.com>
+Submitted-at: Tue, 30 May 2017 06:18:30 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/56507
+Project: sxp
+Branch: refs/heads/stable/carbon
