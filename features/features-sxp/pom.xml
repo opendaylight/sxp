@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.opendaylight.odlparent</groupId>
         <artifactId>features-parent</artifactId>
-        <version>1.8.0-Carbon</version>
+        <version>1.9.0</version>
         <relativePath/>
     </parent>
     <groupId>org.opendaylight.sxp</groupId>
@@ -18,7 +18,7 @@
     <properties>
         <configfilebase>22-sxp-controller-one-node.xml</configfilebase>
         <features.file>features.xml</features.file>
-        <karaf.empty.version>1.8.0-Carbon</karaf.empty.version>
+        <karaf.empty.version>1.9.0</karaf.empty.version>
         <mdsal.version>1.6.0-SNAPSHOT</mdsal.version>
         <mdsal.model.version>0.11.0-SNAPSHOT</mdsal.model.version>
         <restconf.version>1.6.0-SNAPSHOT</restconf.version>
@@ -45,7 +45,7 @@
             <dependency>
                 <groupId>org.opendaylight.odlparent</groupId>
                 <artifactId>odlparent-artifacts</artifactId>
-                <version>1.8.0-Carbon</version>
+                <version>1.9.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -128,7 +128,7 @@
         <dependency>
             <groupId>org.opendaylight.odlparent</groupId>
             <artifactId>features-test</artifactId>
-            <version>1.8.0-Carbon</version>
+            <version>1.9.0</version>
             <scope>test</scope>
         </dependency>
         <!-- dependency for opendaylight-karaf-empty for use by testing -->
