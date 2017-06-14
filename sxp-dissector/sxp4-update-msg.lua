@@ -17,8 +17,9 @@ function process_update_attribute_value(attr_value_raw, attr_type_value, tree)
     if attr_type_value == 0x0b or attr_type_value == 0x0d then -- (add | delete) IPv4 prefix
         local mask = attr_value_raw(0, 1)
         tree:add(mask, "IPv4 mask : " .. mask:uint())
-        local ip_address = attr_value_raw(1, 4)
-        tree:add(mask, "IPv4 address : " .. tostring(ip_address:ipv4()))
+        local ip_address_raw = attr_value_raw(1)
+        local ip_address_sane = sanitize_ip_address_buffer(ip_address_raw, 4)
+        tree:add(ip_address_raw, "IPv4 address : " .. tostring(ip_address_sane:ipv4()))
     elseif attr_type_value == 0x01 or attr_type_value == 0x02 then -- (add | delete) IPv4
         local ip_address = attr_value_raw(0, 4)
         process_tlv(attr_value_raw, tree, 4)
@@ -27,7 +28,7 @@ function process_update_attribute_value(attr_value_raw, attr_type_value, tree)
         local mask = attr_value_raw(0, 1)
         tree:add(mask, "IPv6 mask : " .. mask:uint())
         local ip_address = attr_value_raw(1, 16)
-        tree:add(mask, "IPv6 address : " .. tostring(ip_address:ipv6()))
+        tree:add(ip_address, "IPv6 address : " .. tostring(ip_address:ipv6()))
     elseif attr_type_value == 0x03 or attr_type_value == 0x04 then -- (add | delete) IPv6
         local ip_address = attr_value_raw(0, 16)
         process_tlv(attr_value_raw, tree, 16)
@@ -73,4 +74,15 @@ function process_tlv(data, tree, address_offset)
     if implicit_tlv_prefix_length then -- prefix length
         tree:add("IPv" .. (address_offset == 4 and "4" or "6") .. " mask : " .. (address_offset == 4 and "32" or "128"))
     end
+end
+
+
+function sanitize_ip_address_buffer(ip_address_raw, expected_size)
+    local ip_address_sane = ip_address_raw
+    local ip_address_bytes = ip_address_sane:bytes()
+    if ip_address_bytes:len() < expected_size then
+        ip_address_bytes:set_size(expected_size)
+        ip_address_sane = ByteArray.tvb(ip_address_bytes, "ip-address-sane-tmp")()
+    end
+    return ip_address_sane
 end
