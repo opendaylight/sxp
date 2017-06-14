@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1af78d9a_6c4ae584",
+        "filename": "sxp-dissector/sxp4-dissector.lua",
+        "patchSetId": 1
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 3920
+      },
+      "writtenOn": "2017-06-14T14:09:59Z",
+      "side": 1,
+      "message": "PURGE_ALL msg doesn\u0027t have any payload, so it could be replaced  with NOOP as in KEEP_ALIVE",
+      "range": {
+        "startLine": 38,
+        "startChar": 12,
+        "endLine": 38,
+        "endChar": 66
+      },
+      "revId": "588ed46e628b8092cb502435e50e5d673698550e",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
