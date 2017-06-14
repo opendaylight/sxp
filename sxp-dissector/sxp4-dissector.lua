@@ -20,27 +20,28 @@ function sxp4_proto.dissector(buffer, pinfo, tree)
     subtree:add(msg_type, "type: " .. SXP_MSG_TYPE[msg_type_value] .. " [" .. msg_type_value .. "]")
 
     local payloadBuffer = buffer(8, msg_length_value - SXP_HEADER_LENGTH)
-    subtree = subtree:add(payloadBuffer, "payload: ")
+    if payloadBuffer:len() > 0 then
+        subtree = subtree:add(payloadBuffer, "payload: ")
 
-    -- message body processing ----
-    if msg_type_value == 1 or msg_type_value == 2 then
-        -- OPEN / OPEN_RESP
-        handle_open_msg(payloadBuffer, subtree)
-    elseif msg_type_value == 3 then
-        -- UPDATE
-        handle_update_msg(payloadBuffer, subtree)
-    elseif msg_type_value == 4 then
-        -- ERROR
-        handle_error_msg(payloadBuffer, subtree)
-    elseif msg_type_value == 5 then
-        -- PURGE_ALL
-        subtree = subtree:add(payloadBuffer, "TBD: PURGE_ALL")
-    elseif msg_type_value == 6 then
-        -- KEEP_ALIVE
-        subtree = subtree:add(payloadBuffer, "TBD: KEEP_ALIVE")
+        -- message body processing ----
+        if msg_type_value == 1 or msg_type_value == 2 then
+            -- OPEN / OPEN_RESP
+            handle_open_msg(payloadBuffer, subtree)
+        elseif msg_type_value == 3 then
+            -- UPDATE
+            handle_update_msg(payloadBuffer, subtree)
+        elseif msg_type_value == 4 then
+            -- ERROR
+            handle_error_msg(payloadBuffer, subtree)
+        elseif msg_type_value == 5 then
+            -- PURGE_ALL
+            subtree = subtree:add(payloadBuffer, "TBD: PURGE_ALL")
+        elseif msg_type_value == 6 then
+            -- KEEP_ALIVE : NOOP
+        end
+
     end
-
-    pinfo.cols["info"] = "SXP4:" .. msg_type_value .. " -- " .. tostring(pinfo.cols["info"])
+    pinfo.cols["info"] = "SXP4:" .. SXP_MSG_TYPE[msg_type_value] .. " -- " .. tostring(pinfo.cols["info"])
 
     return msg_length
 end
