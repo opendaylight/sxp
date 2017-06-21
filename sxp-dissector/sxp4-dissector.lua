@@ -7,6 +7,8 @@ require "sxp4-open-msg"
 require "sxp4-update-msg"
 require "sxp4-error-msg"
 
+sxp4_proto.fields.typeFld = ProtoField.uint32("sxp4.type", "header.type [4B]")
+
 -- create a function to dissect it
 function sxp4_proto.dissector(buffer, pinfo, tree)
     pinfo.cols.protocol = "SXP"
@@ -17,7 +19,8 @@ function sxp4_proto.dissector(buffer, pinfo, tree)
 
     local msg_type = buffer(4, 4)
     local msg_type_value = msg_type:uint()
-    subtree:add(msg_type, "type: " .. SXP_MSG_TYPE[msg_type_value] .. " [" .. msg_type_value .. "]")
+    subtree:add(sxp4_proto.fields.typeFld, msg_type)
+        :append_text("type: " .. SXP_MSG_TYPE[msg_type_value] .. " [" .. msg_type_value .. "]")
 
     local payloadBuffer = buffer(8, msg_length_value - SXP_HEADER_LENGTH)
     if payloadBuffer:len() > 0 then
