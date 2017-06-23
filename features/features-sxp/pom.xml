@@ -1,148 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.opendaylight.odlparent</groupId>
-        <artifactId>features-parent</artifactId>
-        <version>1.9.0</version>
+        <artifactId>feature-repo-parent</artifactId>
+        <version>2.0.0</version>
         <relativePath/>
     </parent>
-    <groupId>org.opendaylight.sxp</groupId>
-    <artifactId>features</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
     <!-- <name> formatting is used by autorelease to parse and notify projects on
          build failure. Please do not modify this unless you have a good reason. -->
     <name>ODL :: sxp :: ${project.artifactId}</name>
-    <packaging>jar</packaging>
-    <properties>
-        <configfilebase>22-sxp-controller-one-node.xml</configfilebase>
-        <features.file>features.xml</features.file>
-        <karaf.empty.version>1.9.0</karaf.empty.version>
-        <mdsal.version>1.6.0-SNAPSHOT</mdsal.version>
-        <mdsal.model.version>0.11.0-SNAPSHOT</mdsal.model.version>
-        <restconf.version>1.6.0-SNAPSHOT</restconf.version>
-        <yangtools.version>1.2.0-SNAPSHOT</yangtools.version>
-        <jrobot.version>3.4.1</jrobot.version>
-    </properties>
+    <packaging>feature</packaging>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.opendaylight.controller</groupId>
-                <artifactId>mdsal-artifacts</artifactId>
-                <version>${mdsal.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.opendaylight.yangtools</groupId>
-                <artifactId>yangtools-artifacts</artifactId>
-                <version>${yangtools.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.opendaylight.odlparent</groupId>
-                <artifactId>odlparent-artifacts</artifactId>
-                <version>1.9.0</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+    <groupId>org.opendaylight.sxp</groupId>
+    <artifactId>features-sxp</artifactId>
+    <version>1.5.0-SNAPSHOT</version>
+
     <dependencies>
         <dependency>
-            <groupId>org.opendaylight.mdsal.model</groupId>
-            <artifactId>features-mdsal-model</artifactId>
-            <version>${mdsal.model.version}</version>
-            <classifier>features</classifier>
-            <type>xml</type>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.opendaylight.controller</groupId>
-            <artifactId>features-mdsal</artifactId>
-            <classifier>features</classifier>
-            <type>xml</type>
-        </dependency>
-        <dependency>
-            <groupId>org.opendaylight.yangtools</groupId>
-            <artifactId>features-yangtools</artifactId>
-            <classifier>features</classifier>
-            <type>xml</type>
-        </dependency>
-        <dependency>
-            <groupId>org.opendaylight.netconf</groupId>
-            <artifactId>features-restconf</artifactId>
-            <version>${restconf.version}</version>
-            <classifier>features</classifier>
-            <type>xml</type>
-        </dependency>
-        <dependency>
-            <groupId>org.opendaylight.odlparent</groupId>
-            <artifactId>features-odlparent</artifactId>
-            <classifier>features</classifier>
-            <type>xml</type>
-        </dependency>
-        <dependency>
-            <groupId>com.github.aenniw</groupId>
-            <artifactId>jrobot-features</artifactId>
-            <version>${jrobot.version}</version>
-            <classifier>features</classifier>
-            <type>xml</type>
-        </dependency>
-        <dependency>
-            <groupId>org.opendaylight.sxp</groupId>
-            <artifactId>sxp-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.opendaylight.sxp</groupId>
-            <artifactId>sxp-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.opendaylight.sxp</groupId>
-            <artifactId>sxp-controller</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.opendaylight.sxp</groupId>
-            <artifactId>sxp-robot</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.opendaylight.sxp</groupId>
-            <artifactId>sxp-cluster-route</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.opendaylight.sxp</groupId>
-            <artifactId>sxp-config</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>odl-sxp-api</artifactId>
             <version>${project.version}</version>
             <type>xml</type>
-            <classifier>${configfilebase}</classifier>
+            <classifier>features</classifier>
         </dependency>
-        <!-- test to validate features.xml -->
         <dependency>
-            <groupId>org.opendaylight.odlparent</groupId>
-            <artifactId>features-test</artifactId>
-            <version>1.9.0</version>
-            <scope>test</scope>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>odl-sxp-core</artifactId>
+            <version>${project.version}</version>
+            <type>xml</type>
+            <classifier>features</classifier>
         </dependency>
-        <!-- dependency for opendaylight-karaf-empty for use by testing -->
         <dependency>
-            <groupId>org.opendaylight.odlparent</groupId>
-            <artifactId>opendaylight-karaf-empty</artifactId>
-            <version>${karaf.empty.version}</version>
-            <type>zip</type>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>odl-sxp-controller</artifactId>
+            <version>${project.version}</version>
+            <type>xml</type>
+            <classifier>features</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>odl-sxp-robot</artifactId>
+            <version>${project.version}</version>
+            <type>xml</type>
+            <classifier>features</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>odl-sxp-routing</artifactId>
+            <version>${project.version}</version>
+            <type>xml</type>
+            <classifier>features</classifier>
         </dependency>
     </dependencies>
-    <scm>
-        <connection>scm:git:ssh://git.opendaylight.org:29418/sxp.git</connection>
-        <developerConnection>scm:git:ssh://git.opendaylight.org:29418/sxp.git</developerConnection>
-        <tag>HEAD</tag>
-        <url>https://git.opendaylight.org/gerrit/gitweb?p=sxp.git;a=summary</url>
-    </scm>
 </project>
