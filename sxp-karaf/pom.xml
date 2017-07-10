@@ -32,7 +32,7 @@
         </dependency>
         <dependency>
             <groupId>org.opendaylight.sxp</groupId>
-            <artifactId>features4-sxp</artifactId>
+            <artifactId>features-sxp</artifactId>
             <version>${project.version}</version>
             <classifier>features</classifier>
             <type>xml</type>
