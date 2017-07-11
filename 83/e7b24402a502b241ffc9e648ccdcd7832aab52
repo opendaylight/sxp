@@ -1,0 +1,8 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+1: Daniel Farrell <dfarrell@redhat.com>
+Code-Review+2: Martin Mihálek <aenniw@gmail.com>
+Submitted-by: Martin Mihálek <aenniw@gmail.com>
+Submitted-at: Tue, 11 Jul 2017 13:44:41 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/60172
+Project: sxp
+Branch: refs/heads/master
