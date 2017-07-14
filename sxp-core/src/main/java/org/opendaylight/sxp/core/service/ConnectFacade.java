@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConnectFacade {
 
+    private static final EventLoopGroup bossGroup = new EpollEventLoopGroup(1);
     private static final EventLoopGroup eventLoopGroup = new EpollEventLoopGroup();
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectFacade.class.getName());
 
@@ -139,7 +140,8 @@ public class ConnectFacade {
         keyMapping.remove(node.getSourceIp());
         bootstrap.channel(EpollServerSocketChannel.class);
         bootstrap.option(EpollChannelOption.TCP_MD5SIG, keyMapping);
-        bootstrap.group(eventLoopGroup);
+        bootstrap.option(ChannelOption.SO_REUSEADDR, true);
+        bootstrap.group(bossGroup, eventLoopGroup);
         if (Configuration.NETTY_LOGGER_HANDLER) {
             bootstrap.handler(new LoggingHandler(LogLevel.INFO));
         }
