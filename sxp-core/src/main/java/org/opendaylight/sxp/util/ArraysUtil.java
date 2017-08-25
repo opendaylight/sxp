@@ -14,6 +14,9 @@ import java.util.BitSet;
 
 public final class ArraysUtil {
 
+    private ArraysUtil() {
+    }
+
     /**
      * @param ip String representation of ip address
      * @return BitSet representing ip address
@@ -57,7 +60,6 @@ public final class ArraysUtil {
      * @return Merged Arrays
      */
     public static byte[] combine(byte[]... bytes) {
-
         if (bytes == null) {
             return null;
         } else if (bytes.length == 1) {
@@ -89,16 +91,16 @@ public final class ArraysUtil {
      * @return Byte created with specified bit values
      */
     public static byte convertBits(Boolean... bits) {
-        String number = "";
+        StringBuilder number = new StringBuilder();
         int i = 0;
         for (boolean bit : bits) {
-            number += bit ? "1" : "0";
+            number.append(bit ? "1" : "0");
             if (i == 7) {
                 break;
             }
             i++;
         }
-        return (byte) Integer.parseInt(number, 2);
+        return (byte) Integer.parseInt(number.toString(), 2);
     }
 
     /**

@@ -21,8 +21,8 @@ import java.util.Deque;
  */
 public final class HandlerFactory {
 
-    protected final Deque<ChannelInboundHandler> decoders = new ArrayDeque<>();
-    protected final Deque<ChannelOutboundHandler> encoders = new ArrayDeque<>();
+    private final Deque<ChannelInboundHandler> decoders = new ArrayDeque<>();
+    private final Deque<ChannelOutboundHandler> encoders = new ArrayDeque<>();
 
     public static HandlerFactory instanceAddDecoder(ChannelInboundHandler decoder, Position pos) {
         return new HandlerFactory().addDecoder(decoder, pos);

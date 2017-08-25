@@ -45,7 +45,7 @@ public class ThreadsWorker implements AutoCloseable {
     }
 
 
-    private final class QueueKey {
+    private static final class QueueKey {
 
         private final WorkerType workerType;
         private final SxpConnection connection;
@@ -62,10 +62,12 @@ public class ThreadsWorker implements AutoCloseable {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
+            if (this == o) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
             QueueKey queueKey = (QueueKey) o;
             return workerType == queueKey.workerType && Objects.equals(connection, queueKey.connection);
         }

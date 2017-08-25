@@ -53,7 +53,7 @@ public class MappingRecordList extends ArrayList<MappingRecord> {
         if (_prefix.startsWith("/")) {
             _prefix = _prefix.substring(1);
         }
-        int i = _prefix.lastIndexOf("/");
+        int i = _prefix.lastIndexOf('/');
         if (i != -1) {
             _prefix = _prefix.substring(0, i);
         }

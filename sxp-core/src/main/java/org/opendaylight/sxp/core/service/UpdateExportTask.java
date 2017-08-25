@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class UpdateExportTask implements Callable<Void> {
 
-    protected static final Logger LOG = LoggerFactory.getLogger(UpdateExportTask.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(UpdateExportTask.class);
 
     private final SxpConnection connection;
     private final ByteBuf[] generatedMessages;

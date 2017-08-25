@@ -23,11 +23,14 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 
 public final class IpPrefixConv {
 
+    private IpPrefixConv() {
+    }
+
     /**
      * Enum used to represent IPv4 and IPv6 type
      */
     private enum IpPrefixType {
-        Ipv4Prefix, Ipv6Prefix
+        IPV4_PREFIX, IPV6_PREFIX
     }
 
     /**
@@ -47,16 +50,16 @@ public final class IpPrefixConv {
 
         byte[] prefix = ArraysUtil.copy(bprefix);
         // Add complement bytes.
-        if (ipPrefixType.equals(IpPrefixType.Ipv4Prefix) && bprefix.length < 4) {
+        if (ipPrefixType.equals(IpPrefixType.IPV4_PREFIX) && bprefix.length < 4) {
             prefix = ArraysUtil.combine(prefix, new byte[4 - prefix.length]);
-        } else if (ipPrefixType.equals(IpPrefixType.Ipv6Prefix) && bprefix.length < 16) {
+        } else if (ipPrefixType.equals(IpPrefixType.IPV6_PREFIX) && bprefix.length < 16) {
             prefix = ArraysUtil.combine(prefix, new byte[16 - prefix.length]);
         }
 
         InetAddress inetAddress = InetAddress.getByAddress(prefix);
-        if (ipPrefixType.equals(IpPrefixType.Ipv4Prefix) && !(inetAddress instanceof Inet4Address)) {
+        if (ipPrefixType.equals(IpPrefixType.IPV4_PREFIX) && !(inetAddress instanceof Inet4Address)) {
             throw new UnknownPrefixException("Not IPv4 format [\"" + inetAddress + "\"]");
-        } else if (ipPrefixType.equals(IpPrefixType.Ipv6Prefix) && !(inetAddress instanceof Inet6Address)) {
+        } else if (ipPrefixType.equals(IpPrefixType.IPV6_PREFIX) && !(inetAddress instanceof Inet6Address)) {
             throw new UnknownPrefixException("Not IPv6 format [\"" + inetAddress + "\"]");
         }
         String _prefix = inetAddress.toString();
@@ -118,7 +121,7 @@ public final class IpPrefixConv {
      */
     public static List<IpPrefix> decodeIpv4(byte[] array, boolean compact)
             throws UnknownHostException, UnknownPrefixException {
-        return decode(IpPrefixType.Ipv4Prefix, array, compact);
+        return decode(IpPrefixType.IPV4_PREFIX, array, compact);
     }
 
     /**
@@ -132,7 +135,7 @@ public final class IpPrefixConv {
      */
     public static List<IpPrefix> decodeIpv6(byte[] array, boolean compact)
             throws UnknownHostException, UnknownPrefixException {
-        return decode(IpPrefixType.Ipv6Prefix, array, compact);
+        return decode(IpPrefixType.IPV6_PREFIX, array, compact);
     }
 
     /**
@@ -164,7 +167,7 @@ public final class IpPrefixConv {
      */
     public static int getPrefixLength(IpPrefix ipPrefix) {
         String _ipPrefix = new String(ipPrefix.getValue());
-        int i = _ipPrefix.lastIndexOf("/");
+        int i = _ipPrefix.lastIndexOf('/');
         if (i == -1) {
             return i;
         }
@@ -184,7 +187,7 @@ public final class IpPrefixConv {
         InetAddress inetAddress;
         short prefix;
 
-        int i = ipPrefix.indexOf("/");
+        int i = ipPrefix.indexOf('/');
         if (i != -1) {
             inetAddress = InetAddresses.forString(ipPrefix.substring(0, i));
             prefix = Short.valueOf(ipPrefix.substring(i + 1));
@@ -212,7 +215,7 @@ public final class IpPrefixConv {
         if (_prefix.startsWith("/")) {
             _prefix = _prefix.substring(1);
         }
-        int i = _prefix.lastIndexOf("/");
+        int i = _prefix.lastIndexOf('/');
         if (i != -1) {
             _prefix = _prefix.substring(0, i);
         }
@@ -262,14 +265,13 @@ public final class IpPrefixConv {
      * @return String representation of specified IpPrefixes
      */
     public static String toString(List<IpPrefix> prefixes) {
-        String result = "";
+        StringBuilder result = new StringBuilder();
         if (prefixes != null) {
             for (IpPrefix prefix : prefixes) {
-                result += toString(prefix) + " ";
+                result.append(toString(prefix)).append(" ");
             }
         }
-        result = result.trim();
-        return result.replaceAll(" ", ",");
+        return result.toString().trim().replaceAll(" ", ",");
     }
 
     /**

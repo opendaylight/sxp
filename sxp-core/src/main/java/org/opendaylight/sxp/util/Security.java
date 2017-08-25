@@ -14,6 +14,9 @@ import java.nio.charset.StandardCharsets;
 
 public final class Security {
 
+    private Security() {
+    }
+
     /**
      * Encrypt String value by MD5 message-digest algorithm
      *

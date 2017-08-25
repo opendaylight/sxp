@@ -16,7 +16,7 @@ import java.util.Comparator;
  */
 public class InetAddressComparator implements Comparator<InetAddress> {
 
-    private static final InetAddressComparator inetAddressComparator = new InetAddressComparator();
+    private static final InetAddressComparator INET_ADDRESS_COMPARATOR = new InetAddressComparator();
 
     /**
      * Check if InetAddress is greater than other one
@@ -26,7 +26,7 @@ public class InetAddressComparator implements Comparator<InetAddress> {
      * @return If first address is greater than second
      */
     public static boolean greaterThan(InetAddress address1, InetAddress address2) {
-        return inetAddressComparator.compare(address1, address2) == 1;
+        return INET_ADDRESS_COMPARATOR.compare(address1, address2) == 1;
     }
 
     @Override

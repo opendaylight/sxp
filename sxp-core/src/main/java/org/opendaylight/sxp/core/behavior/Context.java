@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class Context {
 
-    protected static final Logger LOG = LoggerFactory.getLogger(Context.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(Context.class);
 
     private final SxpNode owner;
 

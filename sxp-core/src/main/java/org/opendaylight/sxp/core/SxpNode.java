@@ -8,7 +8,6 @@
 
 package org.opendaylight.sxp.core;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
@@ -35,7 +34,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.Nullable;
 import org.opendaylight.sxp.core.handler.ConnectionDecoder;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
@@ -90,7 +88,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SxpNode {
 
-    protected static final Logger LOG = LoggerFactory.getLogger(SxpNode.class.getName());
+    protected static final Logger LOG = LoggerFactory.getLogger(SxpNode.class);
     public static final String DEFAULT_DOMAIN = "global";
 
     /**
@@ -388,14 +386,8 @@ public class SxpNode {
      */
     public Collection<SxpPeerGroup> getPeerGroups() {
         synchronized (peerGroupMap) {
-            return Collections2.transform(peerGroupMap.values(), new Function<SxpPeerGroupBuilder, SxpPeerGroup>() {
-
-                @Nullable
-                @Override
-                public SxpPeerGroup apply(SxpPeerGroupBuilder input) {
-                    return input != null ? input.build() : null;
-                }
-            });
+            return Collections2.transform(peerGroupMap.values(), (SxpPeerGroupBuilder input) ->
+                    input != null ? input.build() : null);
         }
     }
 

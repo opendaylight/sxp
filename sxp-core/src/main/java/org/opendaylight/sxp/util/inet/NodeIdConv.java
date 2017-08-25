@@ -27,6 +27,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Node
 
 public final class NodeIdConv {
 
+    private NodeIdConv() {
+    }
+    
     /**
      * Decode Node specific identification from byte array
      *
@@ -173,7 +176,7 @@ public final class NodeIdConv {
         if (_prefix.startsWith("/")) {
             _prefix = _prefix.substring(1);
         }
-        int i = _prefix.lastIndexOf("/");
+        int i = _prefix.lastIndexOf('/');
         if (i != -1) {
             _prefix = _prefix.substring(0, i);
         }
@@ -187,14 +190,13 @@ public final class NodeIdConv {
      * @return String representation of specified NodeIds
      */
     private static String toString(List<NodeId> nodeIds) {
-        String result = "";
+        StringBuilder result = new StringBuilder();
         if (nodeIds != null) {
             for (NodeId nodeId : nodeIds) {
-                result += toString(nodeId) + " ";
+                result.append(toString(nodeId)).append(" ");
             }
         }
-        result = result.trim();
-        return result.replaceAll(" ", ",");
+        return result.toString().trim().replaceAll(" ", ",");
     }
 
     /**
@@ -211,7 +213,7 @@ public final class NodeIdConv {
         if (result.startsWith("/")) {
             result = result.substring(1);
         }
-        int i = result.lastIndexOf("/");
+        int i = result.lastIndexOf('/');
         if (i != -1) {
             return result.substring(0, i);
         }

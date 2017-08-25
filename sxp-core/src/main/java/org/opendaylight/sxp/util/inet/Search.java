@@ -32,6 +32,9 @@ public final class Search {
     private static final Logger LOG = LoggerFactory.getLogger(Search.class.getName());
     private static int bestAddresPointer = 1;
 
+    private Search() {
+    }
+
     /**
      * Gets Local address selected by heuristic
      *

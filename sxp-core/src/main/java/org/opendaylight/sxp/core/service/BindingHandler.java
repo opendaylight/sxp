@@ -71,7 +71,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class BindingHandler {
 
-    protected static final Logger LOG = LoggerFactory.getLogger(BindingHandler.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(BindingHandler.class);
     private final AtomicInteger bufferLimit = new AtomicInteger(1);
     private final SxpNode sxpNode;
     private final BindingDispatcher dispatcher;
@@ -423,10 +423,11 @@ public final class BindingHandler {
     /**
      * UpdateMessage wrapper
      */
-    private class DecodedMessage {
+    private static class DecodedMessage {
 
         private boolean useNewBuffer;
-        private Stream<SxpBindingFields> addBindings, delBindings;
+        private final Stream<SxpBindingFields> delBindings;
+        private Stream<SxpBindingFields> addBindings;
 
         /**
          * @param deleted Bindings to delete

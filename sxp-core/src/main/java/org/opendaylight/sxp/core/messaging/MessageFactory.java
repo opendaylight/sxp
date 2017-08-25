@@ -8,7 +8,6 @@
 
 package org.opendaylight.sxp.core.messaging;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
 import io.netty.buffer.ByteBuf;
@@ -16,7 +15,7 @@ import io.netty.buffer.PooledByteBufAllocator;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nullable;
+import java.util.Locale;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
 import org.opendaylight.sxp.util.ArraysUtil;
@@ -42,6 +41,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequence;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityAttributeFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCode;
@@ -55,7 +55,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.SxpP
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.CapabilitiesAttribute;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.capabilities.attribute.capabilities.attributes.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.ErrorMessageBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.KeepaliveMessageBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
@@ -596,11 +595,11 @@ public class MessageFactory {
         if (data == null || data.length == 0) {
             return "";
         }
-        String result = " | ";
+        StringBuilder result = new StringBuilder();
         for (byte aData : data) {
-            result += aData + " ";
+            result.append(aData).append(" ");
         }
-        return result.trim();
+        return result.toString().trim();
     }
 
     /**
@@ -692,14 +691,14 @@ public class MessageFactory {
      * @return Gets String representation of Byte Array
      */
     public static String toString(byte[] message) {
-        String result = "";
+        StringBuilder result = new StringBuilder();
         for (int i = 0; i < message.length; i++) {
             if (i == MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH) {
-                result += "| ";
+                result.append("| ");
             }
-            result += (0xFF & message[i]) + " ";
+            result.append((0xFF & message[i])).append(" ");
         }
-        return result;
+        return result.toString();
     }
 
     /**
@@ -726,7 +725,7 @@ public class MessageFactory {
             if (messageType.equals(MessageType.OpenResp)) {
                 result = "RESP";
             } else {
-                result = messageType.toString().toUpperCase();
+                result = messageType.toString().toUpperCase(Locale.ROOT);
             }
 
             byte[] length = ArraysUtil.int2bytes(((SxpHeader) message).getLength());
@@ -771,14 +770,7 @@ public class MessageFactory {
                 (CapabilitiesAttribute) AttributeList.get(Preconditions.checkNotNull(message).getAttribute(),
                         AttributeType.Capabilities);
         return new ArrayList<>(
-                Collections2.transform(capabilitiesAttribute.getCapabilitiesAttributes().getCapabilities(),
-                        new Function<Capabilities, CapabilityType>() {
-
-                            @Nullable
-                            @Override
-                            public CapabilityType apply(Capabilities input) {
-                                return input.getCode();
-                            }
-                        }));
+                Collections2.transform(capabilitiesAttribute.getCapabilitiesAttributes().getCapabilities(), 
+                        CapabilityAttributeFields::getCode));
     }
 }

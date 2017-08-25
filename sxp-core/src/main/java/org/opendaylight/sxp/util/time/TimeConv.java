@@ -18,7 +18,10 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
 
 public final class TimeConv {
 
-    private static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    private static final DateFormat DF = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+    private TimeConv() {
+    }
 
     /**
      * Converts Long to DateAndTime with accuracy to seconds
@@ -27,7 +30,7 @@ public final class TimeConv {
      * @return DateAndTime generated from specified value
      */
     public static synchronized DateAndTime toDt(long currentTime) {
-        return new DateAndTime(df.format(new Date(currentTime)));
+        return new DateAndTime(DF.format(new Date(currentTime)));
     }
 
     /**
@@ -36,9 +39,9 @@ public final class TimeConv {
      *
      * @param timeZone Time zone to be set
      */
-    public static void setTimeZone(String timeZone) {
+    public static synchronized void setTimeZone(String timeZone) {
         if (timeZone != null) {
-            df.setTimeZone(TimeZone.getTimeZone(timeZone));
+            DF.setTimeZone(TimeZone.getTimeZone(timeZone));
         } else {
             throw new IllegalArgumentException("TimeZone cannot be null");
         }
@@ -56,7 +59,7 @@ public final class TimeConv {
         }
         Calendar calendar = Calendar.getInstance();
         try {
-            calendar.setTime(df.parse(dateAndTime.getValue()));
+            calendar.setTime(DF.parse(dateAndTime.getValue()));
         } catch (ParseException e) {
             throw new IllegalArgumentException("Unrecognized date and time format: \"" + dateAndTime.getValue() + "\"");
         }

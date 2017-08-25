@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class BindingDispatcher {
 
-    protected static final Logger LOG = LoggerFactory.getLogger(BindingDispatcher.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(BindingDispatcher.class);
 
     private final AtomicInteger partitionSize = new AtomicInteger(0);
     private final ThreadsWorker worker;
