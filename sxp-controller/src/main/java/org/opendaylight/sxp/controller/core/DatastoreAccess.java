@@ -32,11 +32,7 @@ import org.slf4j.LoggerFactory;
 
 public final class DatastoreAccess implements AutoCloseable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DatastoreAccess.class.getName());
-    private static final ReadFailedException ACCESS_CLOSED_ON_R = new ReadFailedException("Datastore was closed");
-    private static final TransactionCommitFailedException
-            ACCESS_CLOSED_ON_RW =
-            new TransactionCommitFailedException("Datastore was closed");
+    private static final Logger LOG = LoggerFactory.getLogger(DatastoreAccess.class);
 
     private final TransactionChainListener chainListener;
     private BindingTransactionChain bindingTransactionChain;
@@ -75,7 +71,7 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
-     * @param path                 Idetifier path to be checked
+     * @param path                 Identifier path to be checked
      * @param logicalDatastoreType DataStore type to be checked
      * @param <T>                  Any type extending DataObject
      */
@@ -121,7 +117,8 @@ public final class DatastoreAccess implements AutoCloseable {
     public synchronized <T extends DataObject> CheckedFuture<Void, TransactionCommitFailedException> merge(
             InstanceIdentifier<T> path, T data, LogicalDatastoreType logicalDatastoreType) {
         if (!checkParams(path, logicalDatastoreType)) {
-            return Futures.makeChecked(Futures.immediateCancelledFuture(), input -> ACCESS_CLOSED_ON_RW);
+            return Futures.makeChecked(Futures.immediateCancelledFuture(), input ->
+                    new TransactionCommitFailedException("Datastore was closed"));
         }
         Preconditions.checkNotNull(data);
         if (LOG.isDebugEnabled()) {
@@ -143,7 +140,8 @@ public final class DatastoreAccess implements AutoCloseable {
     public synchronized <T extends DataObject> CheckedFuture<Void, TransactionCommitFailedException> put(
             InstanceIdentifier<T> path, T data, LogicalDatastoreType logicalDatastoreType) {
         if (!checkParams(path, logicalDatastoreType)) {
-            return Futures.makeChecked(Futures.immediateCancelledFuture(), input -> ACCESS_CLOSED_ON_RW);
+            return Futures.makeChecked(Futures.immediateCancelledFuture(), input ->
+                    new TransactionCommitFailedException("Datastore was closed"));
         }
         Preconditions.checkNotNull(data);
         if (LOG.isDebugEnabled()) {
@@ -163,7 +161,8 @@ public final class DatastoreAccess implements AutoCloseable {
     public synchronized <T extends DataObject> CheckedFuture<Optional<T>, ReadFailedException> read(
             InstanceIdentifier<T> path, LogicalDatastoreType logicalDatastoreType) {
         if (!checkParams(path, logicalDatastoreType)) {
-            return Futures.makeChecked(Futures.immediateCancelledFuture(), input -> ACCESS_CLOSED_ON_R);
+            return Futures.makeChecked(Futures.immediateCancelledFuture(), input ->
+                    new ReadFailedException("Datastore was closed"));
         }
         try (ReadOnlyTransaction transaction = bindingTransactionChain.newReadOnlyTransaction()) {
             return transaction.read(logicalDatastoreType, path);
