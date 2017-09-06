@@ -896,7 +896,7 @@ public class SxpNode {
      * @return Gets HoldTime value or zero if disabled
      */
     public int getHoldTime() {
-        if (getNodeIdentity().getTimers() == null || getNodeIdentity().getTimers() == null
+        if (getNodeIdentity().getTimers() == null
                 || getNodeIdentity().getTimers().getHoldTime() == null) {
             return 0;
         }
@@ -907,7 +907,7 @@ public class SxpNode {
      * @return Gets HoldTimeMax value or zero if disabled
      */
     public int getHoldTimeMax() {
-        if (getNodeIdentity().getTimers() == null || getNodeIdentity().getTimers() == null
+        if (getNodeIdentity().getTimers() == null
                 || getNodeIdentity().getTimers().getHoldTimeMax() == null) {
             return 0;
         }
@@ -918,7 +918,7 @@ public class SxpNode {
      * @return Gets HoldTimeMin value or zero if disabled
      */
     public int getHoldTimeMin() {
-        if (getNodeIdentity().getTimers() == null || getNodeIdentity().getTimers() == null
+        if (getNodeIdentity().getTimers() == null
                 || getNodeIdentity().getTimers().getHoldTimeMin() == null) {
             return 0;
         }
@@ -929,7 +929,7 @@ public class SxpNode {
      * @return Gets HoldTimeMinAcceptable value or zero if disabled
      */
     public int getHoldTimeMinAcceptable() {
-        if (getNodeIdentity().getTimers() == null || getNodeIdentity().getTimers() == null
+        if (getNodeIdentity().getTimers() == null
                 || getNodeIdentity().getTimers().getHoldTimeMinAcceptable() == null) {
             return 0;
         }
@@ -940,7 +940,7 @@ public class SxpNode {
      * @return Gets KeepAlive value or zero if disabled
      */
     public int getKeepAliveTime() {
-        if (getNodeIdentity().getTimers() == null || getNodeIdentity().getTimers() == null
+        if (getNodeIdentity().getTimers() == null
                 || getNodeIdentity().getTimers().getKeepAliveTime() == null) {
             return 0;
         }
