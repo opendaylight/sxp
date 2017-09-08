@@ -28,7 +28,7 @@
         <dependency>
             <groupId>com.github.aenniw</groupId>
             <artifactId>jrobot-features</artifactId>
-            <version>3.4.2</version>
+            <version>3.5.0</version>
             <type>xml</type>
             <classifier>features</classifier>
         </dependency>
