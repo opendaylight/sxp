@@ -3,9 +3,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.opendaylight.odlparent</groupId>
-        <artifactId>odlparent</artifactId>
-        <version>2.0.4</version>
+        <groupId>org.opendaylight.mdsal</groupId>
+        <artifactId>binding-parent</artifactId>
+        <version>0.12.0-SNAPSHOT</version>
         <relativePath/>
     </parent>
 
@@ -21,130 +21,30 @@
         <module>sxp-controller</module>
         <module>sxp-cluster-route</module>
         <module>sxp-robot</module>
-        <!-- Karaf -->
-        <module>sxp-config</module>
         <module>features</module>
         <module>sxp-karaf</module>
 
     </modules>
 
     <properties>
-        <!-- Optional TODO: Rename your configfile to taste -->
-        <configfilebase>22-sxp-controller-one-node.xml</configfilebase>
-
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <packaging-suffix>jar</packaging-suffix>
-
-        <config.output.base.dir>${project.build.directory}/generated-sources/config</config.output.base.dir>
-        <gencode.output.base.dir>${project.build.directory}/generated-sources/sal</gencode.output.base.dir>
 
         <!-- Plugin Versions -->
         <maven.shade.plugin.version>2.3</maven.shade.plugin.version>
 
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <java.version.source>1.8</java.version.source>
-        <java.version.target>1.8</java.version.target>
-
         <yangtools.version>2.0.0-SNAPSHOT</yangtools.version>
-        <yangtools.feature.version>2.0.0-SNAPSHOT</yangtools.feature.version>
-        <mdsal.version>1.7.0-SNAPSHOT</mdsal.version>
+        <controller.mdsal.version>1.7.0-SNAPSHOT</controller.mdsal.version>
         <mdsal.singleton.version>2.4.0-SNAPSHOT</mdsal.singleton.version>
         <mdsal.model.version>0.12.0-SNAPSHOT</mdsal.model.version>
-        <config.version>0.8.0-SNAPSHOT</config.version>
         <restconf.version>1.7.0-SNAPSHOT</restconf.version>
-
-        <!-- Yang Module Versions -->
-        <ietf-yang-types.version>2013.07.15.12.0-SNAPSHOT</ietf-yang-types.version>
-        <ietf-inet-types.version>1.4.0-SNAPSHOT</ietf-inet-types.version>
-        <yang-ext.version>2013.09.07.12.0-SNAPSHOT</yang-ext.version>
-        <yang-nt.version>2013.10.21.12.0-SNAPSHOT</yang-nt.version>
 
         <!-- EPOLL artifacts -->
         <os.detected.classifier>linux-x86_64</os.detected.classifier>
     </properties>
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-artifact</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>${project.groupId}</groupId>
-                                    <artifactId>${project.artifactId}</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>${project.packaging}</type>
-                                    <destFileName>
-                                        ${project.groupId}.${project.artifactId}-${project.version}.${packaging-suffix}
-                                    </destFileName>
-                                </artifactItem>
-                            </artifactItems>
-                            <outputDirectory>../target</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-        </plugins>
         <pluginManagement>
             <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <configuration>
-                        <source>${maven.compiler.source}</source>
-                        <target>${maven.compiler.target}</target>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.felix</groupId>
-                    <artifactId>maven-bundle-plugin</artifactId>
-                    <extensions>true</extensions>
-                    <configuration>
-                        <instructions>
-                            <Bundle-Name>${project.groupId}.${project.artifactId}</Bundle-Name>
-                        </instructions>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>1.8</version>
-                    <executions>
-                        <execution>
-                            <id>add-source</id>
-                            <phase>generate-sources</phase>
-                            <goals>
-                                <goal>add-source</goal>
-                            </goals>
-                            <configuration>
-                                <sources>
-                                    <source>${config.output.base.dir}</source>
-                                    <source>${gencode.output.base.dir}</source>
-                                </sources>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-clean-plugin</artifactId>
-                    <configuration>
-                        <filesets>
-                            <fileset>
-                                <directory>../../target</directory>
-                                <followSymlinks>false</followSymlinks>
-                            </fileset>
-                        </filesets>
-                    </configuration>
-                </plugin>
                 <!--This plugin's configuration is used to store Eclipse
                     m2e settings only. It has no influence on the Maven build itself. -->
                 <plugin>
@@ -202,65 +102,49 @@
                 <artifactId>sxp-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <!-- yang model dependencies -->
+
+            <!-- md-sal model dependencies -->
             <dependency>
                 <groupId>org.opendaylight.mdsal.model</groupId>
-                <artifactId>ietf-inet-types-2013-07-15</artifactId>
-                <version>${ietf-inet-types.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opendaylight.mdsal.model</groupId>
-                <artifactId>ietf-yang-types-20130715</artifactId>
-                <version>${ietf-yang-types.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opendaylight.mdsal.model</groupId>
-                <artifactId>yang-ext</artifactId>
-                <version>${yang-ext.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opendaylight.mdsal.model</groupId>
-                <artifactId>ietf-topology</artifactId>
-                <version>${yang-nt.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opendaylight.controller</groupId>
-                <artifactId>config-api</artifactId>
-                <version>${config.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opendaylight.controller</groupId>
-                <artifactId>sal-binding-config</artifactId>
-                <version>${mdsal.version}</version>
+                <artifactId>mdsal-model-artifacts</artifactId>
+                <version>${mdsal.model.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
 
             <!-- yangtools dependencies -->
             <dependency>
-                <groupId>org.opendaylight.mdsal</groupId>
-                <artifactId>yang-binding</artifactId>
-                <version>${mdsal.model.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.opendaylight.yangtools</groupId>
-                <artifactId>yang-common</artifactId>
+                <artifactId>yangtools-artifacts</artifactId>
                 <version>${yangtools.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
 
             <!-- md-sal dependecies -->
             <dependency>
                 <groupId>org.opendaylight.controller</groupId>
-                <artifactId>sal-binding-api</artifactId>
-                <version>${mdsal.version}</version>
+                <artifactId>mdsal-artifacts</artifactId>
+                <version>${controller.mdsal.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
-            <dependency>
-                <groupId>org.opendaylight.controller</groupId>
-                <artifactId>sal-common-util</artifactId>
-                <version>${mdsal.version}</version>
-            </dependency>
+
             <dependency>
                 <groupId>org.opendaylight.mdsal</groupId>
-                <artifactId>mdsal-singleton-common-api</artifactId>
+                <artifactId>mdsal-artifacts</artifactId>
                 <version>${mdsal.singleton.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
+            <!--Restconf deps-->
+            <dependency>
+                <groupId>org.opendaylight.netconf</groupId>
+                <artifactId>restconf-artifacts</artifactId>
+                <version>${restconf.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <!-- CSIT testing dependency-->

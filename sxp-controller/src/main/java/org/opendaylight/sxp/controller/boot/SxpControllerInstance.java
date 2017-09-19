@@ -5,8 +5,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
-package org.opendaylight.controller.config.yang.sxp.controller.conf;
+package org.opendaylight.sxp.controller.boot;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.Futures;
@@ -45,22 +44,22 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
 
     protected static final Logger LOG = LoggerFactory.getLogger(SxpControllerInstance.class);
 
-    public static final ServiceGroupIdentifier
-            IDENTIFIER =
+    public static final ServiceGroupIdentifier IDENTIFIER =
             ServiceGroupIdentifier.create(SxpControllerInstance.class.getName());
 
-    private final DataBroker dataBroker;
+    private DataBroker dataBroker;
+    private ClusterSingletonServiceProvider clusteringServiceProvider;
     private DatastoreAccess datastoreAccess;
     private ClusterSingletonServiceRegistration clusterServiceRegistration;
     private final List<ListenerRegistration<DataTreeChangeListener>>
-            dataChangeListenerRegistrations =
-            new ArrayList<>();
+            dataChangeListenerRegistrations = new ArrayList<>();
 
-    public SxpControllerInstance(final DataBroker broker,
-            final ClusterSingletonServiceProvider clusteringServiceProvider) {
-        this.dataBroker = Preconditions.checkNotNull(broker);
+    public void init() {
+        Preconditions.checkNotNull(dataBroker);
+        Preconditions.checkNotNull(clusteringServiceProvider);
+        LOG.info("Registering into singleton clustering service");
         this.clusterServiceRegistration =
-                Preconditions.checkNotNull(clusteringServiceProvider).registerClusterSingletonService(this);
+                clusteringServiceProvider.registerClusterSingletonService(this);
         LOG.info("Clustering session initiated for {}", this.getClass().getSimpleName());
     }
 
@@ -94,7 +93,6 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         initTopology(datastoreAccess, LogicalDatastoreType.OPERATIONAL);
         dataChangeListenerRegistrations.add(datastoreListener.register(dataBroker, LogicalDatastoreType.CONFIGURATION));
         dataChangeListenerRegistrations.add(datastoreListener.register(dataBroker, LogicalDatastoreType.OPERATIONAL));
-        SxpControllerModule.notifyBundleActivated();
     }
 
     @Override
@@ -126,4 +124,21 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
             clusterServiceRegistration = null;
         }
     }
+
+    public DataBroker getDataBroker() {
+        return dataBroker;
+    }
+
+    public void setDataBroker(DataBroker dataBroker) {
+        this.dataBroker = dataBroker;
+    }
+
+    public ClusterSingletonServiceProvider getClusteringServiceProvider() {
+        return clusteringServiceProvider;
+    }
+
+    public void setClusteringServiceProvider(ClusterSingletonServiceProvider clusteringServiceProvider) {
+        this.clusteringServiceProvider = clusteringServiceProvider;
+    }
+
 }
