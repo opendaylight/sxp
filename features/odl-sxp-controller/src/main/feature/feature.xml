@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<features name="odl-sxp-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.2.0">
-    <feature name='odl-sxp-controller' version='${project.version}'>
-        <feature>http</feature>
-        <configfile finalname="etc/opendaylight/karaf/${configfilebase}">
-            mvn:org.opendaylight.sxp/sxp-config/${project.version}/xml/${configfilebase}
-        </configfile>
-    </feature>
-</features>

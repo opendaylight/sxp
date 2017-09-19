@@ -21,21 +21,15 @@
         <module>sxp-controller</module>
         <module>sxp-cluster-route</module>
         <module>sxp-robot</module>
-        <!-- Karaf -->
-        <module>sxp-config</module>
         <module>features</module>
         <module>sxp-karaf</module>
 
     </modules>
 
     <properties>
-        <!-- Optional TODO: Rename your configfile to taste -->
-        <configfilebase>22-sxp-controller-one-node.xml</configfilebase>
-
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <packaging-suffix>jar</packaging-suffix>
 
-        <config.output.base.dir>${project.build.directory}/generated-sources/config</config.output.base.dir>
         <gencode.output.base.dir>${project.build.directory}/generated-sources/sal</gencode.output.base.dir>
 
         <!-- Plugin Versions -->
@@ -51,7 +45,6 @@
         <mdsal.version>1.7.0-SNAPSHOT</mdsal.version>
         <mdsal.singleton.version>2.4.0-SNAPSHOT</mdsal.singleton.version>
         <mdsal.model.version>0.12.0-SNAPSHOT</mdsal.model.version>
-        <config.version>0.8.0-SNAPSHOT</config.version>
         <restconf.version>1.7.0-SNAPSHOT</restconf.version>
 
         <!-- Yang Module Versions -->
@@ -127,7 +120,6 @@
                             </goals>
                             <configuration>
                                 <sources>
-                                    <source>${config.output.base.dir}</source>
                                     <source>${gencode.output.base.dir}</source>
                                 </sources>
                             </configuration>
@@ -225,11 +217,6 @@
             </dependency>
             <dependency>
                 <groupId>org.opendaylight.controller</groupId>
-                <artifactId>config-api</artifactId>
-                <version>${config.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opendaylight.controller</groupId>
                 <artifactId>sal-binding-config</artifactId>
                 <version>${mdsal.version}</version>
             </dependency>
@@ -245,11 +232,21 @@
                 <artifactId>yang-common</artifactId>
                 <version>${yangtools.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.opendaylight.yangtools</groupId>
+                <artifactId>concepts</artifactId>
+                <version>${yangtools.version}</version>
+            </dependency>
 
             <!-- md-sal dependecies -->
             <dependency>
                 <groupId>org.opendaylight.controller</groupId>
                 <artifactId>sal-binding-api</artifactId>
+                <version>${mdsal.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opendaylight.controller</groupId>
+                <artifactId>sal-common-api</artifactId>
                 <version>${mdsal.version}</version>
             </dependency>
             <dependency>
