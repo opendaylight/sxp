@@ -5,8 +5,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
-package org.opendaylight.controller.config.yang.sxp.controller.conf;
+package org.opendaylight.sxp.controller.boot;
 
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
@@ -62,7 +61,9 @@ public class SxpControllerInstanceTest {
         listenerRegistration = mock(ListenerRegistration.class);
         when(dataBroker.registerDataTreeChangeListener(any(DataTreeIdentifier.class),
                 any(ClusteredDataTreeChangeListener.class))).thenReturn(listenerRegistration);
-        controllerInstance = new SxpControllerInstance(dataBroker, serviceProvider);
+        controllerInstance = new SxpControllerInstance();
+        controllerInstance.setClusteringServiceProvider(serviceProvider);
+        controllerInstance.setDataBroker(dataBroker);
         node = mock(SxpDatastoreNode.class);
         when(node.getNodeId()).thenReturn(new NodeId("1.1.1.1"));
         Configuration.register(node);

@@ -16,9 +16,6 @@
     <version>1.6.0-SNAPSHOT</version>
 
     <name>Feature :: OpenDaylight :: Sxp :: Controller</name>
-    <properties>
-        <configfilebase>22-sxp-controller-one-node.xml</configfilebase>
-    </properties>
 
     <dependencyManagement>
         <dependencies>
@@ -63,13 +60,6 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>sxp-controller</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>sxp-config</artifactId>
-            <version>${project.version}</version>
-            <type>xml</type>
-            <classifier>${configfilebase}</classifier>
         </dependency>
     </dependencies>
 </project>
