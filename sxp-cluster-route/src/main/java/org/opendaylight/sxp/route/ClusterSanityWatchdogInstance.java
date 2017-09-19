@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
-import org.opendaylight.controller.config.yang.sxp.controller.conf.SxpControllerInstance;
+import org.opendaylight.sxp.controller.boot.SxpControllerInstance;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvider;
