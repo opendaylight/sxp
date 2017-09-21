@@ -22,6 +22,30 @@
       "revId": "3cd3d787c1b2601827a0bc8d70a207c6190bd6f3",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba1f61a0_989233f4",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/boot/SxpControllerInstance.java",
+        "patchSetId": 4
+      },
+      "lineNbr": 64,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2017-09-21T13:10:13Z",
+      "side": 0,
+      "message": "Done",
+      "parentUuid": "ba1f61a0_15abac89",
+      "range": {
+        "startLine": 64,
+        "startChar": 14,
+        "endLine": 64,
+        "endChar": 89
+      },
+      "revId": "3cd3d787c1b2601827a0bc8d70a207c6190bd6f3",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
     }
   ]
 }
