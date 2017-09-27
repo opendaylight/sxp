@@ -40,6 +40,7 @@ import org.robotframework.remoteserver.RemoteServer;
 @RobotKeywords
 public class ConnectionTestLibrary extends AbstractLibrary {
 
+    private final Random retryTimeGen = new Random();
     private final AtomicLong connectedPeers = new AtomicLong(0), connectingTimeEnd = new AtomicLong(0);
     private final ThreadsWorker worker = new ThreadsWorker(10, 10, 10, 4);
     private long connectingTimeBegin, totalPeers;
@@ -108,7 +109,7 @@ public class ConnectionTestLibrary extends AbstractLibrary {
                                 .setHoldTimeMinAcceptable(120)
                                 .setReconciliationTime(120)
                                 .setDeleteHoldDownTime(120)
-                                .setRetryOpenTime(5 + (new Random().nextInt() % 10))
+                                .setRetryOpenTime(5 + (retryTimeGen.nextInt(11)))
                                 .build())
                         .build(), new MasterDatabaseImpl(), new SxpDatabaseImpl() {
 
