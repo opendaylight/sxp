@@ -137,6 +137,7 @@ public class ConnectFacade {
                 .forEach(connection -> keyMapping.put(connection.getDestination().getAddress(),
                         connection.getPassword().getBytes(StandardCharsets.US_ASCII)));
 
+        LOG.warn("Creating server for node {} with registered passwords {}", node, keyMapping);
         keyMapping.remove(node.getSourceIp());
         bootstrap.channel(EpollServerSocketChannel.class);
         bootstrap.option(EpollChannelOption.TCP_MD5SIG, keyMapping);

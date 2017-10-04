@@ -1286,19 +1286,17 @@ public class SxpNode {
         return bindServerFuture.updateAndGet(listenableFuture -> {
             if (!isEnabled() && (Objects.isNull(listenableFuture) || listenableFuture.isDone())) {
                 return getWorker().executeTask(() -> {
-                    final ChannelFuture channelFuture = ConnectFacade.createServer(this, handlerFactoryServer);
-                    channelFuture.addListener((ChannelFutureListener) serverFuture -> {
-                        if (serverFuture.isSuccess()) {
-                            serverChannel = serverFuture.channel();
-                            LOG.info("{} Server created [{}:{}]", this, getSourceIp().getHostAddress(),
-                                    getServerPort());
-                            setTimer(TimerType.RetryOpenTimer, getRetryOpenTime());
-                        } else {
-                            LOG.warn("{} Server [{}:{}] Could not be created", this, getSourceIp().getHostAddress(),
-                                    getServerPort(), serverFuture.cause());
-                        }
-                    });
-                    return channelFuture.syncUninterruptibly().isSuccess();
+                    ChannelFuture channelFuture = ConnectFacade.createServer(this, handlerFactoryServer);
+                    boolean success = channelFuture.syncUninterruptibly().isSuccess();
+                    if (success) {
+                        serverChannel = channelFuture.channel();
+                        LOG.info("{} Server created [{}:{}]", this, getSourceIp().getHostAddress(), getServerPort());
+                        setTimer(TimerType.RetryOpenTimer, getRetryOpenTime());
+                    } else {
+                        LOG.warn("{} Server [{}:{}] Could not be created", this, getSourceIp().getHostAddress(),
+                                getServerPort(), channelFuture.cause());
+                    }
+                    return success;
                 }, ThreadsWorker.WorkerType.DEFAULT);
             }
             return listenableFuture;
@@ -1309,31 +1307,42 @@ public class SxpNode {
      * @param connection Connection containing password for MD5 key update
      */
     private void updateMD5keys(final SxpConnection connection) {
-        if (SecurityType.Default.equals(connection.getSecurityType()) && Objects.nonNull(connection.getPassword())
+        if (SecurityType.Default.equals(connection.getSecurityType())
+                && connection.getPassword() != null
                 && !connection.getPassword().trim().isEmpty()) {
-            updateMD5keys();
+            LOG.warn("{} - Trying to update keys", connection);
+            updateMD5keys2(connection);
         }
     }
 
     /**
      * Updates TCP-MD5 keys of SxpNode
      */
-    public void updateMD5keys() {
+    public void updateMD5keys2(SxpConnection con) {
         if (md5UpdateCounter.incrementAndGet() != 1) {
+            LOG.warn("{} - Update already in progress, returning prematurely", con);
             return;
         }
+        LOG.warn("{} - Scheduling update", con);
         bindServerFuture.updateAndGet(listenableFuture -> {
-            if (isEnabled() && (Objects.nonNull(listenableFuture))) {
+            LOG.warn("{} - Future invoke, checking if enabled ({}) and nonnull ({})", con, isEnabled(), listenableFuture != null);
+            if (isEnabled() && listenableFuture != null) {
+                LOG.warn("{} - checking if future is done", con);
                 if (listenableFuture.isDone()) {
+                    LOG.warn("{} - Future is done, scheduling update task", con);
                     return getWorker().executeTask(() -> {
+                        LOG.warn("{} - Running update", con);
                         if (Objects.nonNull(serverChannel)) {
                             serverChannel.close().awaitUninterruptibly();
                         }
+                        LOG.warn("{} - Seting counter to 0", con);
                         md5UpdateCounter.set(0);
+                        LOG.warn("{} - Counter set to 0, creating server", con);
                         serverChannel =
                                 ConnectFacade.createServer(this, handlerFactoryServer).awaitUninterruptibly().channel();
                         if (md5UpdateCounter.getAndSet(0) > 0) {
-                            updateMD5keys();
+                            LOG.warn("{} - counter was non 0, setting to 0 and reruning update", con);
+                            updateMD5keys2(con);
                         }
                         return isEnabled();
                     }, ThreadsWorker.WorkerType.DEFAULT);

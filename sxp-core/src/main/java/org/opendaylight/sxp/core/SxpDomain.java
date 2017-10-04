@@ -547,7 +547,7 @@ public class SxpDomain implements AutoCloseable {
             templates.put(template.getTemplatePrefix(), template);
         }
         if (template.getTemplatePassword() != null && !template.getTemplatePassword().isEmpty()) {
-            node.updateMD5keys();
+            node.updateMD5keys2(null);
         }
         return true;
     }
@@ -562,7 +562,7 @@ public class SxpDomain implements AutoCloseable {
             template = templates.remove(templatePrefix);
         }
         if (template != null && template.getTemplatePassword() != null && !template.getTemplatePassword().isEmpty()) {
-            node.updateMD5keys();
+            node.updateMD5keys2(null);
         }
         return template;
     }
