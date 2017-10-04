@@ -18,7 +18,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -32,8 +31,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
+import javax.annotation.Nullable;
 import org.opendaylight.sxp.core.handler.ConnectionDecoder;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
@@ -166,7 +166,7 @@ public class SxpNode {
 
     private final AtomicReference<ListenableFuture> openConnectionFuture = new AtomicReference<>();
     private final AtomicReference<ListenableFuture<Boolean>> bindServerFuture = new AtomicReference<>();
-    private final AtomicInteger md5UpdateCounter = new AtomicInteger(0);
+    private final ReentrantLock md5UpdateLock = new ReentrantLock();
     private final ThreadsWorker worker;
     protected InetAddress sourceIp;
     private SslContextFactory sslContextFactory;
@@ -1286,19 +1286,17 @@ public class SxpNode {
         return bindServerFuture.updateAndGet(listenableFuture -> {
             if (!isEnabled() && (Objects.isNull(listenableFuture) || listenableFuture.isDone())) {
                 return getWorker().executeTask(() -> {
-                    final ChannelFuture channelFuture = ConnectFacade.createServer(this, handlerFactoryServer);
-                    channelFuture.addListener((ChannelFutureListener) serverFuture -> {
-                        if (serverFuture.isSuccess()) {
-                            serverChannel = serverFuture.channel();
-                            LOG.info("{} Server created [{}:{}]", this, getSourceIp().getHostAddress(),
-                                    getServerPort());
-                            setTimer(TimerType.RetryOpenTimer, getRetryOpenTime());
-                        } else {
-                            LOG.warn("{} Server [{}:{}] Could not be created", this, getSourceIp().getHostAddress(),
-                                    getServerPort(), serverFuture.cause());
-                        }
-                    });
-                    return channelFuture.syncUninterruptibly().isSuccess();
+                    ChannelFuture channelFuture = ConnectFacade.createServer(this, handlerFactoryServer);
+                    boolean success = channelFuture.syncUninterruptibly().isSuccess();
+                    if (success) {
+                        serverChannel = channelFuture.channel();
+                        LOG.info("{} Server created [{}:{}]", this, getSourceIp().getHostAddress(), getServerPort());
+                        setTimer(TimerType.RetryOpenTimer, getRetryOpenTime());
+                    } else {
+                        LOG.warn("{} Server [{}:{}] Could not be created", this, getSourceIp().getHostAddress(),
+                                getServerPort(), channelFuture.cause());
+                    }
+                    return success;
                 }, ThreadsWorker.WorkerType.DEFAULT);
             }
             return listenableFuture;
@@ -1306,41 +1304,74 @@ public class SxpNode {
     }
 
     /**
-     * @param connection Connection containing password for MD5 key update
+     * Updates TCP-MD5 keys of SxpNode.
+     * This is method is thread safe and uses selective blocking to avoid unnecessary server restarts in high-load
+     * situations.
+     * As a result, three situations may occur when calling this method. If the calling thread:
+     * 1. is the first to arrive at the critical section, it will blockingly restart the server with new keyset
+     * 2. invokes the method while another thread is already restarting the server, it waits until
+     * the previous restart is done
+     * 3. invokes the method while there is another thread already waiting for its turn, it will return immediately
+     *
+     * @param connection Connection containing the password for MD5 key update
      */
     private void updateMD5keys(final SxpConnection connection) {
-        if (SecurityType.Default.equals(connection.getSecurityType()) && Objects.nonNull(connection.getPassword())
+        if (SecurityType.Default.equals(connection.getSecurityType())
+                && connection.getPassword() != null
                 && !connection.getPassword().trim().isEmpty()) {
-            updateMD5keys();
+            getWorker().executeTask(()-> {doUpdateMD5keys(connection);}, ThreadsWorker.WorkerType.DEFAULT);
         }
     }
 
     /**
-     * Updates TCP-MD5 keys of SxpNode
+     * Updates TCP-MD5 keys of SxpNode.
+     * This is method is thread safe and uses selective blocking to avoid unnecessary server restarts in high-load
+     * situations.
+     * As a result, three situations may occur when calling this method. If the calling thread:
+     * 1. is the first to arrive at the critical section, it will blockingly restart the server with new keyset
+     * 2. invokes the method while another thread is already restarting the server, it waits until
+     * the previous restart is done
+     * 3. invokes the method while there is another thread already waiting for its turn, it will return immediately
      */
     public void updateMD5keys() {
-        if (md5UpdateCounter.incrementAndGet() != 1) {
+        getWorker().executeTask(()-> {doUpdateMD5keys(null);}, ThreadsWorker.WorkerType.DEFAULT);
+    }
+
+    /**
+     * Updates TCP-MD5 keys of SxpNode.
+     * This is method is thread safe and uses selective blocking to avoid unnecessary server restarts in high-load
+     * situations.
+     * As a result, three situations may occur when calling this method. If the calling thread:
+     * 1. is the first to arrive at the critical section, it will blockingly restart the server with new keyset
+     * 2. invokes the method while another thread is already restarting the server, it waits until
+     * the previous restart is done
+     * 3. invokes the method while there is another thread already waiting for its turn, it will return immediately
+     *
+     * @param con Connection containing the password for MD5 key update, or null
+     */
+    private void doUpdateMD5keys(@Nullable SxpConnection con) {
+        if(md5UpdateLock.hasQueuedThreads()) {
+            LOG.trace("{} - MD5 update already scheduled, skipping update request", con);
             return;
+        } else {
+            LOG.trace("{} - About to request the lock", con);
+            md5UpdateLock.lock();
         }
+        LOG.debug("{} - Updating MD5 keys", con);
         bindServerFuture.updateAndGet(listenableFuture -> {
-            if (isEnabled() && (Objects.nonNull(listenableFuture))) {
+            if (isEnabled() && listenableFuture != null) {
                 if (listenableFuture.isDone()) {
-                    return getWorker().executeTask(() -> {
-                        if (Objects.nonNull(serverChannel)) {
-                            serverChannel.close().awaitUninterruptibly();
-                        }
-                        md5UpdateCounter.set(0);
-                        serverChannel =
-                                ConnectFacade.createServer(this, handlerFactoryServer).awaitUninterruptibly().channel();
-                        if (md5UpdateCounter.getAndSet(0) > 0) {
-                            updateMD5keys();
-                        }
-                        return isEnabled();
-                    }, ThreadsWorker.WorkerType.DEFAULT);
+                    if (serverChannel != null) {
+                        LOG.debug("{} - shutting down the server", con);
+                        serverChannel.close().awaitUninterruptibly();
+                    }
+                    serverChannel
+                            = ConnectFacade.createServer(this, handlerFactoryServer).awaitUninterruptibly().channel();
                 }
             }
             return listenableFuture;
         });
+        md5UpdateLock.unlock();
     }
 
     /**
