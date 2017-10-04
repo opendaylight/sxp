@@ -91,7 +91,8 @@ public class ConnectFacadeTest {
                 HandlerFactory.instanceAddDecoder(MessageDecoder.createServerProfile(sxpNode),
                         HandlerFactory.Position.End);
 
-        Channel channel = ConnectFacade.createServer(sxpNode, handlerFactory).channel();
+        Channel channel = ConnectFacade.createServer(sxpNode, handlerFactory,
+                ConnectFacade.collectAllPasswords(sxpNode)).channel();
         assertTrue(channel.isOpen());
         assertTrue(channel.isWritable());
         channel.close().get();
