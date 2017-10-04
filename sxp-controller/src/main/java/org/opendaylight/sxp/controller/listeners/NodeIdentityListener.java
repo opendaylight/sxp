@@ -11,6 +11,8 @@ package org.opendaylight.sxp.controller.listeners;
 import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkDifference;
 
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -124,14 +126,17 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                 switch (c.getRootNode().getModificationType()) {
                     case WRITE:
                         if (c.getRootNode().getDataBefore() == null) {
-                            Configuration.register(SxpDatastoreNode.createInstance(
-                                    NodeId.getDefaultInstance(Preconditions.checkNotNull(nodeId)),
-                                    DatastoreAccess.getInstance(datastoreAccess), c.getRootNode().getDataAfter()))
+                            ListenableFuture<Boolean> nodeStartFuture = Configuration.register(
+                                    SxpDatastoreNode.createInstance(
+                                            NodeId.getDefaultInstance(Preconditions.checkNotNull(nodeId)),
+                                            DatastoreAccess.getInstance(datastoreAccess), c.getRootNode().getDataAfter()))
                                     .start();
-                            subListeners.forEach(l -> {
-                                l.handleChange(l.getModifications(c), c.getRootPath().getDatastoreType(),
-                                        c.getRootPath().getRootIdentifier());
-                            });
+                            nodeStartFuture.addListener(() -> {
+                                subListeners.forEach((l) -> {
+                                    l.handleChange(l.getModifications(c), c.getRootPath().getDatastoreType(),
+                                            c.getRootPath().getRootIdentifier());
+                                });
+                            }, MoreExecutors.directExecutor());
                         } else if (c.getRootNode().getDataAfter() == null) {
                             Configuration.unRegister(Preconditions.checkNotNull(nodeId)).shutdown();
                         }

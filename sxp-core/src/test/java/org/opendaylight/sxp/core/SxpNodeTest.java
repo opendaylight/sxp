@@ -319,10 +319,10 @@ public class SxpNodeTest {
         node.addConnection(mockConnection(ConnectionMode.Speaker, ConnectionState.PendingOn));
         node.addConnection(mockConnection(ConnectionMode.Listener, ConnectionState.On));
         node.openConnections();
-        verify(worker, times(1)).executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class));
+        verify(worker, times(5)).executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class));
         node.addConnection(mockConnection(ConnectionMode.Speaker, ConnectionState.Off));
         node.openConnections();
-        verify(worker, times(2)).executeTask(argument.capture(), any(ThreadsWorker.WorkerType.class));
+        verify(worker, times(7)).executeTask(argument.capture(), any(ThreadsWorker.WorkerType.class));
 
         PowerMockito.mockStatic(ConnectFacade.class);
         argument.getValue().run();
