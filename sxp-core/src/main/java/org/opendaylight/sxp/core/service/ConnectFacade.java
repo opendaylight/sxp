@@ -109,35 +109,21 @@ public class ConnectFacade {
     /**
      * Create new Node that listens to incoming connections
      *
-     * @param node SxpNode containing options
-     * @param hf   HandlerFactory providing handling of communication
+     * @param node       SxpNode containing options
+     * @param hf         HandlerFactory providing handling of communication
+     * @param keyMapping target to password mapping
      * @return ChannelFuture callback
      */
-    public static ChannelFuture createServer(final SxpNode node, final HandlerFactory hf) {
+    public static ChannelFuture createServer(final SxpNode node, final HandlerFactory hf,
+                                             final Map<InetAddress, byte[]> keyMapping) {
         if (!Epoll.isAvailable()) {
             throw new UnsupportedOperationException(Epoll.unavailabilityCause().getCause());
         }
         final Optional<SslContext> serverSslContext = node.getSslContextFactory().getServerContext();
-        Map<InetAddress, byte[]> keyMapping = new HashMap<>();
 
-        ServerBootstrap bootstrap = new ServerBootstrap();
-        node.getDomains()
-                .forEach(domain -> domain.getConnectionTemplates()
-                        .stream()
-                        .filter(TEMPLATE_ENTRY_WITH_MD5_PASSWORD)
-                        .forEach(template -> {
-                            final byte[] password = template.getTemplatePassword().getBytes(StandardCharsets.US_ASCII);
-                            Search.expandPrefix(template.getTemplatePrefix())
-                                    .forEach(inetAddress -> keyMapping.put(inetAddress, password));
-
-                        }));
-        node.getAllConnections()
-                .stream()
-                .filter(CONNECTION_ENTRY_WITH_MD5_PASSWORD)
-                .forEach(connection -> keyMapping.put(connection.getDestination().getAddress(),
-                        connection.getPassword().getBytes(StandardCharsets.US_ASCII)));
-
+        LOG.trace("Scheduling server creation for node {} with registered passwords {}", node, keyMapping);
         keyMapping.remove(node.getSourceIp());
+        final ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.channel(EpollServerSocketChannel.class);
         bootstrap.option(EpollChannelOption.TCP_MD5SIG, keyMapping);
         bootstrap.option(ChannelOption.SO_REUSEADDR, true);
@@ -162,5 +148,25 @@ public class ConnectFacade {
             }
         });
         return bootstrap.bind(node.getSourceIp(), node.getServerPort());
+    }
+
+    public static Map<InetAddress, byte[]> collectAllPasswords(final SxpNode node) {
+        Map<InetAddress, byte[]> keyMapping = new HashMap<>();
+        node.getDomains()
+                .forEach(domain -> domain.getConnectionTemplates()
+                        .stream()
+                        .filter(TEMPLATE_ENTRY_WITH_MD5_PASSWORD)
+                        .forEach(template -> {
+                            final byte[] password = template.getTemplatePassword().getBytes(StandardCharsets.US_ASCII);
+                            Search.expandPrefix(template.getTemplatePrefix())
+                                    .forEach(inetAddress -> keyMapping.put(inetAddress, password));
+
+                        }));
+        node.getAllConnections()
+                .stream()
+                .filter(CONNECTION_ENTRY_WITH_MD5_PASSWORD)
+                .forEach(connection -> keyMapping.put(connection.getDestination().getAddress(),
+                        connection.getPassword().getBytes(StandardCharsets.US_ASCII)));
+        return keyMapping;
     }
 }
