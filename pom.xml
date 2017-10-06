@@ -79,6 +79,15 @@
                         </lifecycleMappingMetadata>
                     </configuration>
                 </plugin>
+
+                <!--Ignore jdoc errors-->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <configuration>
+                        <additionalparam>-Xdoclint:none</additionalparam>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
         <finalName>${project.groupId}.${project.artifactId}-${project.version}</finalName>
