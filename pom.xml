@@ -5,13 +5,13 @@
     <parent>
         <groupId>org.opendaylight.odlparent</groupId>
         <artifactId>odlparent</artifactId>
-        <version>1.8.2-SNAPSHOT</version>
+        <version>1.8.2-Carbon</version>
         <relativePath/>
     </parent>
 
     <groupId>org.opendaylight.sxp</groupId>
     <artifactId>sxp-parent</artifactId>
-    <version>1.4.2-SNAPSHOT</version>
+    <version>1.4.2-Carbon</version>
     <name>sxp</name> <!-- Used by Sonar to set project name -->
     <packaging>pom</packaging>
 
@@ -46,19 +46,19 @@
         <java.version.source>1.8</java.version.source>
         <java.version.target>1.8</java.version.target>
 
-        <yangtools.version>1.1.2-SNAPSHOT</yangtools.version>
-        <yangtools.feature.version>1.1.2-SNAPSHOT</yangtools.feature.version>
-        <mdsal.version>1.5.2-SNAPSHOT</mdsal.version>
-        <mdsal.singleton.version>2.2.2-SNAPSHOT</mdsal.singleton.version>
-        <mdsal.model.version>0.10.2-SNAPSHOT</mdsal.model.version>
-        <config.version>0.6.2-SNAPSHOT</config.version>
-        <restconf.version>1.5.2-SNAPSHOT</restconf.version>
+        <yangtools.version>1.1.2-Carbon</yangtools.version>
+        <yangtools.feature.version>1.1.2-Carbon</yangtools.feature.version>
+        <mdsal.version>1.5.2-Carbon</mdsal.version>
+        <mdsal.singleton.version>2.2.2-Carbon</mdsal.singleton.version>
+        <mdsal.model.version>0.10.2-Carbon</mdsal.model.version>
+        <config.version>0.6.2-Carbon</config.version>
+        <restconf.version>1.5.2-Carbon</restconf.version>
 
         <!-- Yang Module Versions -->
-        <ietf-yang-types.version>2013.07.15.10.2-SNAPSHOT</ietf-yang-types.version>
-        <ietf-inet-types.version>1.2.2-SNAPSHOT</ietf-inet-types.version>
-        <yang-ext.version>2013.09.07.10.2-SNAPSHOT</yang-ext.version>
-        <yang-nt.version>2013.10.21.10.2-SNAPSHOT</yang-nt.version>
+        <ietf-yang-types.version>2013.07.15.10.2-Carbon</ietf-yang-types.version>
+        <ietf-inet-types.version>1.2.2-Carbon</ietf-inet-types.version>
+        <yang-ext.version>2013.09.07.10.2-Carbon</yang-ext.version>
+        <yang-nt.version>2013.10.21.10.2-Carbon</yang-nt.version>
 
         <!-- EPOLL artifacts -->
         <os.detected.classifier>linux-x86_64</os.detected.classifier>
