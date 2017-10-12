@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.controller.listeners.sublisteners;
 
 import static org.junit.Assert.assertNotNull;
@@ -75,7 +74,6 @@ public class ConnectionTemplateListenerTest {
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
         PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.getConstants()).thenCallRealMethod();
     }
 
     private DataObjectModification<ConnectionTemplate> getObjectModification(

@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.service;
 
 import static org.opendaylight.sxp.util.inet.Search.expandBindings;
@@ -22,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.Constants;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
@@ -100,7 +100,7 @@ public final class BindingDispatcher {
      */
     private int getPartitionSize() {
         if (partitionSize.get() == 0) {
-            return Math.max(2, Configuration.getConstants().getMessagesExportQuantity());
+            return Math.max(2, Constants.MESSAGE_EXPORT_QUANTITY);
         }
         return partitionSize.get();
     }

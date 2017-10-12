@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.Constants;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
@@ -85,9 +86,7 @@ public class ConnectFacade {
         }
         bootstrap.channel(EpollSocketChannel.class);
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, Configuration.NETTY_CONNECT_TIMEOUT_MILLIS);
-        RecvByteBufAllocator
-                recvByteBufAllocator =
-                new FixedRecvByteBufAllocator(Configuration.getConstants().getMessageLengthMax());
+        RecvByteBufAllocator recvByteBufAllocator = new FixedRecvByteBufAllocator(Constants.MESSAGE_LENGTH_MAX);
         bootstrap.option(ChannelOption.RCVBUF_ALLOCATOR, recvByteBufAllocator);
         bootstrap.option(ChannelOption.TCP_NODELAY, true);
         bootstrap.localAddress(node.getSourceIp().getHostAddress(), 0);
