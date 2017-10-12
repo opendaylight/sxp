@@ -24,8 +24,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
 
 public final class Configuration {
 
-    private static final Constants CONSTANTS = new Constants();
-
     public static final int DEFAULT_PREFIX_GROUP = 0;
 
     public static final int NETTY_CONNECT_TIMEOUT_MILLIS = 15000;
@@ -83,13 +81,6 @@ public final class Configuration {
         }
         capabilitiesBuilder.setCapability(capabilities);
         return capabilitiesBuilder.build();
-    }
-
-    /**
-     * @return Constants used to initialize SXP variables
-     */
-    public static Constants getConstants() {
-        return CONSTANTS;
     }
 
     /**

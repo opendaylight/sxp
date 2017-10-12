@@ -8,6 +8,10 @@
 
 package org.opendaylight.sxp.core.messaging;
 
+import static org.opendaylight.sxp.core.Constants.MESSAGE_HEADER_LENGTH_LENGTH;
+import static org.opendaylight.sxp.core.Constants.MESSAGE_HEADER_TYPE_LENGTH;
+import static org.opendaylight.sxp.core.Constants.MESSAGE_LENGTH_MAX;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
 import io.netty.buffer.ByteBuf;
@@ -16,7 +20,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.ErrorCodeDataLengthException;
@@ -67,12 +70,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
  * MessageFactory class contains logic for creating and parsing messages
  */
 public class MessageFactory {
-
-    public static final int MESSAGE_HEADER_LENGTH_LENGTH = Configuration.getConstants().getMessageHeaderLengthLength();
-
-    public static final int MESSAGE_HEADER_TYPE_LENGTH = Configuration.getConstants().getMessageHeaderTypeLength();
-
-    public static final int MESSAGE_LENGTH_MAX = Configuration.getConstants().getMessageLengthMax();
 
     /**
      * Creates Error message based on provided error code
@@ -673,8 +670,7 @@ public class MessageFactory {
             messageLength = ArraysUtil.bytes2int(headerLength);
             int
                     payloadLength =
-                    messageLength - (MESSAGE_HEADER_LENGTH_LENGTH + Configuration.getConstants()
-                            .getMessageHeaderTypeLength());
+                    messageLength - (MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_TYPE_LENGTH);
 
             payload = new byte[payloadLength];
             request = request.readBytes(payload);
@@ -770,7 +766,7 @@ public class MessageFactory {
                 (CapabilitiesAttribute) AttributeList.get(Preconditions.checkNotNull(message).getAttribute(),
                         AttributeType.Capabilities);
         return new ArrayList<>(
-                Collections2.transform(capabilitiesAttribute.getCapabilitiesAttributes().getCapabilities(), 
+                Collections2.transform(capabilitiesAttribute.getCapabilitiesAttributes().getCapabilities(),
                         CapabilityAttributeFields::getCode));
     }
 }
