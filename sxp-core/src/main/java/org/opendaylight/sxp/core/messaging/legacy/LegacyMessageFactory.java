@@ -5,13 +5,14 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.messaging.legacy;
+
+import static org.opendaylight.sxp.core.Constants.MESSAGE_HEADER_LENGTH_LENGTH;
+import static org.opendaylight.sxp.core.Constants.MESSAGE_HEADER_TYPE_LENGTH;
 
 import io.netty.buffer.ByteBuf;
 import java.net.UnknownHostException;
 import java.util.List;
-import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.ErrorCodeDataLengthException;
@@ -36,10 +37,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
  * LegacyMessageFactory class contains logic for creating and parsing legacy messages
  */
 public class LegacyMessageFactory extends MessageFactory {
-
-    private static final int MESSAGE_HEADER_LENGTH_LENGTH = Configuration.getConstants().getMessageHeaderLengthLength();
-
-    private static final int MESSAGE_HEADER_TYPE_LENGTH = Configuration.getConstants().getMessageHeaderTypeLength();
 
     /**
      * Creates Error message based on provided error code

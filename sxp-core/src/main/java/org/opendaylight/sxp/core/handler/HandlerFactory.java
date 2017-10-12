@@ -12,9 +12,11 @@ import com.google.common.base.Preconditions;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelOutboundHandler;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.bytes.ByteArrayEncoder;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import org.opendaylight.sxp.core.Constants;
 
 /**
  * HandlerFactory class represent unification for decoders and encoders used
@@ -58,7 +60,13 @@ public final class HandlerFactory {
      * @return Gets all decoders
      */
     public synchronized ChannelHandler[] getDecoders() {
-        decoders.addFirst(new LengthFieldBasedFrameDecoderImpl());
+        decoders.addFirst(new LengthFieldBasedFrameDecoder(
+                Constants.MESSAGE_LENGTH_MAX,
+                0,
+                Constants.MESSAGE_HEADER_LENGTH_LENGTH,
+                Constants.MESSAGE_HEADER_LENGTH_LENGTH * (-1),
+                0,
+                true));
         ChannelHandler[] out = decoders.toArray(new ChannelHandler[decoders.size()]);
         decoders.pollFirst();
         return out;

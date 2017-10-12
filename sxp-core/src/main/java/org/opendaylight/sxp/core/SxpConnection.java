@@ -273,7 +273,7 @@ public class SxpConnection {
         this.remoteAddress =
                 new InetSocketAddress(Search.getAddress(connectionBuilder.getPeerAddress()),
                         connectionBuilder.getTcpPort() != null ? connectionBuilder.getTcpPort()
-                                .getValue() : Configuration.getConstants().getPort());
+                                .getValue() : Constants.PORT);
         this.connectionId = new NodeId(connectionBuilder.getPeerAddress().getIpv4Address());
         for (FilterType filterType : FilterType.values()) {
             bindingFilterMap.put(filterType, new HashMap<>());

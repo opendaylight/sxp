@@ -70,7 +70,6 @@ public class DomainFilterListenerTest {
         PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
         PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
         PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.getConstants()).thenCallRealMethod();
     }
 
     private DataObjectModification<DomainFilter> getObjectModification(

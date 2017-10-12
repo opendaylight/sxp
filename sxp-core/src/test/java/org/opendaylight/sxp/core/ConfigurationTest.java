@@ -8,7 +8,6 @@
 
 package org.opendaylight.sxp.core;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -38,17 +37,6 @@ public class ConfigurationTest {
         assertTrue(capabilities.getCapability().contains(CapabilityType.SubnetBindings));
         assertTrue(capabilities.getCapability().contains(CapabilityType.SxpCapabilityExchange));
         assertTrue(capabilities.getCapability().contains(CapabilityType.LoopDetection));
-    }
-
-    @Test
-    public void testGetConstants() throws Exception {
-        Constants defaultValues = Configuration.getConstants();
-        assertEquals(4, (long) defaultValues.getMessageHeaderLengthLength());
-        assertEquals(4, (long) defaultValues.getMessageHeaderTypeLength());
-        assertEquals(4096, (long) defaultValues.getMessageLengthMax());
-        assertEquals(150, (long) defaultValues.getMessagesExportQuantity());
-        assertEquals(20, (long) defaultValues.getNodeConnectionsInitialSize());
-        assertEquals(64999, (long) defaultValues.getPort());
     }
 
 }
