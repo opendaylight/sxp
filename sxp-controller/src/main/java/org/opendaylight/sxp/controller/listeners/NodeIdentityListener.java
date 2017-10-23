@@ -92,16 +92,16 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
     public void onDataTreeChanged(@Nonnull Collection<DataTreeModification<SxpNodeIdentity>> changes) {
         changes.forEach(c -> {
             final String nodeId = c.getRootPath().getRootIdentifier().firstKeyOf(Node.class).getNodeId().getValue();
-            final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
+            final DatastoreAccess nodesDatastoreAccess = getDatastoreAccess(nodeId);
             if (LogicalDatastoreType.CONFIGURATION.equals(c.getRootPath().getDatastoreType())) {
                 switch (c.getRootNode().getModificationType()) {
                     case WRITE:
                         if (c.getRootNode().getDataBefore() == null) {
-                            ConfigLoader.initTopologyNode(nodeId, LogicalDatastoreType.OPERATIONAL, datastoreAccess);
-                            datastoreAccess.merge(c.getRootPath().getRootIdentifier(), c.getRootNode().getDataAfter(),
+                            ConfigLoader.initTopologyNode(nodeId, LogicalDatastoreType.OPERATIONAL, nodesDatastoreAccess);
+                            nodesDatastoreAccess.merge(c.getRootPath().getRootIdentifier(), c.getRootNode().getDataAfter(),
                                     LogicalDatastoreType.OPERATIONAL);
                         } else if (c.getRootNode().getDataAfter() != null) {
-                            datastoreAccess.merge(c.getRootPath().getRootIdentifier(),
+                            nodesDatastoreAccess.merge(c.getRootPath().getRootIdentifier(),
                                     new SxpNodeIdentityBuilder(c.getRootNode().getDataAfter()).setSxpDomains(null)
                                             .setSxpPeerGroups(null)
                                             .build(), LogicalDatastoreType.OPERATIONAL);
@@ -115,10 +115,12 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                             break;
                         }
                     case DELETE:
-                        datastoreAccess.checkAndDelete(c.getRootPath().getRootIdentifier(),
+                        nodesDatastoreAccess.checkAndDelete(
+                                c.getRootPath().getRootIdentifier().firstIdentifierOf(Node.class),
                                 LogicalDatastoreType.OPERATIONAL);
-                        if (!this.datastoreAccess.equals(datastoreAccess))
-                            datastoreAccess.close();
+                        if (!this.datastoreAccess.equals(nodesDatastoreAccess)) {
+                            nodesDatastoreAccess.close();
+                        }
                         break;
                 }
             } else {
@@ -129,7 +131,7 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                             ListenableFuture<Boolean> nodeStartFuture = Configuration.register(
                                     SxpDatastoreNode.createInstance(
                                             NodeId.getDefaultInstance(Preconditions.checkNotNull(nodeId)),
-                                            DatastoreAccess.getInstance(datastoreAccess), c.getRootNode().getDataAfter()))
+                                            DatastoreAccess.getInstance(nodesDatastoreAccess), c.getRootNode().getDataAfter()))
                                     .start();
                             nodeStartFuture.addListener(() -> {
                                 subListeners.forEach((l) -> {
@@ -180,7 +182,7 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                         });
                         break;
                     case DELETE:
-                        Configuration.unRegister(Preconditions.checkNotNull(nodeId));
+                        Configuration.unRegister(nodeId);
                         if (node instanceof SxpDatastoreNode) {
                             ((SxpDatastoreNode) node).close();
                         } else {
