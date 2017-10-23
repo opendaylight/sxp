@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core;
 
 import com.google.common.base.Preconditions;
@@ -13,9 +12,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.CapabilitiesBuilder;
@@ -30,7 +29,7 @@ public final class Configuration {
 
     public static final boolean NETTY_LOGGER_HANDLER = false;
 
-    private static final Map<String, SxpNode> nodes = new HashMap<>();
+    private static final Map<String, SxpNode> NODES = new ConcurrentHashMap<>();
 
     public static final boolean SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS = true;
 
@@ -86,32 +85,32 @@ public final class Configuration {
     /**
      * @return Currently added SxpNodes
      */
-    public synchronized static Collection<SxpNode> getNodes() {
-        return Collections.unmodifiableCollection(nodes.values());
+    public static Collection<SxpNode> getNodes() {
+        return Collections.unmodifiableCollection(NODES.values());
     }
 
     /**
      * @param nodeId NodeId specifying Node
      * @return SxpNode with provided NodeId
      */
-    public synchronized static SxpNode getRegisteredNode(String nodeId) {
-        return nodes.get(nodeId);
+    public static SxpNode getRegisteredNode(String nodeId) {
+        return NODES.get(nodeId);
     }
 
     /**
      * @param nodeId NodeId specifying Node
      * @return Removed SxpNode
      */
-    public synchronized static SxpNode unRegister(String nodeId) {
-        return nodes.remove(Preconditions.checkNotNull(nodeId));
+    public static SxpNode unRegister(String nodeId) {
+        return NODES.remove(Preconditions.checkNotNull(nodeId));
     }
 
     /**
      * @param node SxpNode that will be registered
      * @return Registered SxpNode
      */
-    public synchronized static SxpNode register(SxpNode node) {
-        nodes.put(NodeIdConv.toString(Preconditions.checkNotNull(node).getNodeId()), node);
+    public static SxpNode register(SxpNode node) {
+        NODES.put(NodeIdConv.toString(Preconditions.checkNotNull(node).getNodeId()), node);
         return node;
     }
 }
