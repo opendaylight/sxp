@@ -362,14 +362,9 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testDeleteNode() throws Exception {
-        RpcResult<DeleteNodeOutput> result = service.deleteNode(new DeleteNodeInputBuilder().build()).get();
-        assertNotNull(result);
-        assertTrue(result.isSuccessful());
-        assertNotNull(result.getResult());
-        assertFalse(result.getResult().isResult());
-
         Configuration.unRegister(NodeIdConv.toString(node.getNodeId()));
-        result = service.deleteNode(new DeleteNodeInputBuilder().setNodeId(new NodeId("0.0.0.0")).build()).get();
+        RpcResult<DeleteNodeOutput> result = service.deleteNode(
+                new DeleteNodeInputBuilder().setNodeId(new NodeId("0.0.0.0")).build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
@@ -457,13 +452,7 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testGetConnections() throws Exception {
-        RpcResult<GetConnectionsOutput> result = service.getConnections(new GetConnectionsInputBuilder().build()).get();
-        assertNotNull(result);
-        assertTrue(result.isSuccessful());
-        assertNotNull(result.getResult());
-        assertNotNull(result.getResult().getConnections());
-
-        result =
+        RpcResult<GetConnectionsOutput> result =
                 service.getConnections(new GetConnectionsInputBuilder().setRequestedNode(new NodeId("0.0.0.0")).build())
                         .get();
         assertNotNull(result);
