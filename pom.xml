@@ -23,6 +23,7 @@
         <module>sxp-robot</module>
         <module>features</module>
         <module>sxp-karaf</module>
+        <module>sxp-system-tests</module>
 
     </modules>
 
