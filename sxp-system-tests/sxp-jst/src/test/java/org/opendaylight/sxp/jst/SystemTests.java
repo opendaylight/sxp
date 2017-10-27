@@ -1,5 +1,9 @@
 package org.opendaylight.sxp.jst;
 
+import org.opendaylight.sxp.jst.util.NormalizedNodeUtils;
+import org.opendaylight.sxp.jst.util.SxpSchemaPaths;
+import org.opendaylight.sxp.jst.util.YangIdentifiers;
+import com.google.common.base.Optional;
 import com.owlike.genson.Genson;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,12 +14,19 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import org.opendaylight.sxp.restconfclient.DSType;
+import org.opendaylight.sxp.restconfclient.JsonDeserializer;
 import org.opendaylight.sxp.restconfclient.RestconfClient;
 import org.opendaylight.sxp.restconfclient.UserCredentials;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
+import org.opendaylight.yangtools.yang.binding.DataObject;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.opendaylight.yangtools.yang.data.api.YangInstanceIdentifier;
+import org.opendaylight.yangtools.yang.data.api.schema.NormalizedNode;
 import org.testng.annotations.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.reporters.Files;
@@ -30,8 +41,42 @@ public class SystemTests {
     private static final String SXP_TOPO_URL = "network-topology:network-topology/topology/sxp";
     private RestconfClient configClient, operationalClient;
     private Genson genson;
+    private JsonDeserializer jsonDeserializer;
 
     @Test
+    public void testGetNode() {
+        String nodeId = "1.1.5.1";
+        Response resp = configClient.get(SXP_TOPO_URL, "node", nodeId);
+        String respString = resp.readEntity(String.class);
+        LOG.info("RESP content: {}", respString);
+        NormalizedNode<? extends YangInstanceIdentifier.PathArgument, ?> nn
+                = jsonDeserializer.deserializeJson(respString, SxpSchemaPaths.TOPOLOGY_PATH);
+        LOG.info("Normalized node {}", nn);
+        Optional<NormalizedNode<?, ?>> sxpNodeOpt = NormalizedNodeUtils.findNode(nn, nodeId);
+        LOG.info("SXPNode optional {}", sxpNodeOpt);
+        Map.Entry<InstanceIdentifier<?>, DataObject> sxpNode = jsonDeserializer.unmarshallNormalizedNode(
+                sxpNodeOpt.get(),
+                YangIdentifiers.NODE_LIST);
+        LOG.info("Sxp node {}", ((Node) sxpNode.getValue()).getAugmentation(SxpNodeIdentity.class));
+    }
+
+    @Test
+    public void testGetTopo() {
+        Response resp = configClient.get(SXP_TOPO_URL);
+        String respString = resp.readEntity(String.class);
+        LOG.info("RESP content: {}", respString);
+        NormalizedNode<? extends YangInstanceIdentifier.PathArgument, ?> nn
+                = jsonDeserializer.deserializeJson(respString, SxpSchemaPaths.NT_PATH);
+        LOG.info("Normalized node {}", nn);
+        Optional<NormalizedNode<?, ?>> sxpTopoOpt = NormalizedNodeUtils.findTopology(nn, "sxp");
+        LOG.info("Found sxp topo: {}", sxpTopoOpt);
+        Map.Entry<InstanceIdentifier<?>, DataObject> topo = jsonDeserializer.unmarshallNormalizedNode(
+                sxpTopoOpt.get(),
+                YangIdentifiers.TOPO_LIST);
+        LOG.info("Topo {}", (Topology) topo.getValue());
+    }
+
+//    @Test
     public void testNodeAddDeleteRaceCondition() throws IOException, InterruptedException {
         InputStream node1 = this.getClass().getResourceAsStream("/SXP-node-1.1.5.1.xml");
         String node1String = Files.readFile(node1);
@@ -79,9 +124,10 @@ public class SystemTests {
                 .setHost("localhost")
                 .setPort(8181)
                 .build();
+        jsonDeserializer = new JsonDeserializer();
     }
 
-    @AfterTest
+//    @AfterTest
     public void cleanupTopo() {
         LOG.info("Cleaning SXP topo...");
         Response deleteResp = configClient.delete(SXP_TOPO_URL);
