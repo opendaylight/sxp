@@ -9,48 +9,48 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+
+        <javax.ws.rs.api.version>2.0.1</javax.ws.rs.api.version>
+        <sxp.api.version>1.6.0-SNAPSHOT</sxp.api.version>
+        <testng.version>6.11</testng.version>
+        <slf4j.version>1.7.21</slf4j.version>
+        <restconf.client.version>0.0.1-SNAPSHOT</restconf.client.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>javax.ws.rs</groupId>
             <artifactId>javax.ws.rs-api</artifactId>
-            <version>2.0.1</version>
+            <version>${javax.ws.rs.api.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.sxp</groupId>
             <artifactId>restconf-client</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>${restconf.client.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.sxp</groupId>
             <artifactId>sxp-api</artifactId>
-            <version>1.6.0-SNAPSHOT</version>
+            <version>${sxp.api.version}</version>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>6.11</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.owlike</groupId>
-            <artifactId>genson</artifactId>
-            <version>1.4</version>
+            <version>${testng.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.21</version>
+            <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.21</version>
+            <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
