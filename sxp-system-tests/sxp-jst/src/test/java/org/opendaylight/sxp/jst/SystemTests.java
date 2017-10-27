@@ -10,8 +10,13 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import org.opendaylight.sxp.restconfclient.DSType;
+import org.opendaylight.sxp.restconfclient.JsonDeserializer;
 import org.opendaylight.sxp.restconfclient.RestconfClient;
 import org.opendaylight.sxp.restconfclient.UserCredentials;
+import org.opendaylight.yangtools.yang.binding.DataObject;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.opendaylight.yangtools.yang.data.api.YangInstanceIdentifier;
+import org.opendaylight.yangtools.yang.data.api.schema.NormalizedNode;
 import org.testng.annotations.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +35,18 @@ public class SystemTests {
     private static final String SXP_TOPO_URL = "network-topology:network-topology/topology/sxp";
     private RestconfClient configClient, operationalClient;
     private Genson genson;
+    private JsonDeserializer jsonDeserializer;
+
+    @Test
+    public void testGetTopo() {
+        Response resp = configClient.get(SXP_TOPO_URL, "node", "1.1.5.1");
+        String respString = resp.readEntity(String.class);
+        LOG.info("RESP content: {}", respString);
+        NormalizedNode<? extends YangInstanceIdentifier.PathArgument, ?> nn = jsonDeserializer.deserializeJson(respString);
+        LOG.info("Normalized node {}", nn);
+        Map.Entry<InstanceIdentifier<?>, DataObject> dataObject = jsonDeserializer.unmarshallNormalizedNode(nn);
+        LOG.info("Data Object: {}", dataObject);
+    }
 
     @Test
     public void testNodeAddDeleteRaceCondition() throws IOException, InterruptedException {
@@ -79,9 +96,10 @@ public class SystemTests {
                 .setHost("localhost")
                 .setPort(8181)
                 .build();
+        jsonDeserializer = new JsonDeserializer();
     }
 
-    @AfterTest
+//    @AfterTest
     public void cleanupTopo() {
         LOG.info("Cleaning SXP topo...");
         Response deleteResp = configClient.delete(SXP_TOPO_URL);
