@@ -40,12 +40,12 @@ public class KeepAliveTimerTask extends SxpTimerTask<Void> {
     public Void call() {
         LOG.debug(connection + " {} [{}]", getClass().getSimpleName(), getPeriod());
 
-        if (connection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext) && connection.isModeSpeaker()
+        if (connection.isStateOn(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT) && connection.isModeSpeaker()
                 && connection.isVersion4()) {
             ByteBuf keepAlive = MessageFactory.createKeepalive();
             try {
                 LOG.info("{} Sent KEEPALIVE {}", connection, MessageFactory.toString(keepAlive));
-                connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext)
+                connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT)
                         .writeAndFlush(keepAlive);
             } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
                 LOG.warn("{} ERROR sending KEEPALIVE ", connection, e);

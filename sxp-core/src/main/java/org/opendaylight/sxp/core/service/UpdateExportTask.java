@@ -97,14 +97,14 @@ public final class UpdateExportTask implements Callable<Void> {
                 }
             }
             for (int i = 0; i < generatedMessages.length; i++) {
-                connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext)
+                connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT)
                         .write(generatedMessages[i].duplicate().retain());
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("{} {} UPDATEv{} {}", connection, i, connection.getVersion().getIntValue(),
                             MessageFactory.toString(generatedMessages[i]));
                 }
             }
-            connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext).flush();
+            connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT).flush();
             connection.setUpdateOrKeepaliveMessageTimestamp();
         } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
             LOG.warn("{} Cannot find context aborting bindings export.", connection);

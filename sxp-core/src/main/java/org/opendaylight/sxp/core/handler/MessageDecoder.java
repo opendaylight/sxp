@@ -155,7 +155,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
                                 messageValidationException.getErrorSubCode(), messageValidationException.getData());
             }
             if (ctx == null) {
-                ctx = connection.getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
+                ctx = connection.getChannelHandlerContext(ChannelHandlerContextType.SPEAKER_CNTXT);
             }
         } catch (ErrorCodeDataLengthException e) {
             LOG.info("{} ERROR sending Error {}", connection, messageValidationException, e);

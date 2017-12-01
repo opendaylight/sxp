@@ -46,8 +46,7 @@ public class HoldTimerTask extends SxpTimerTask<Void> {
             try {
                 if (connection.getTimestampUpdateOrKeepAliveMessage()
                         < System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(getPeriod())) {
-                    MessageDecoder.sendErrorMessage(connection.getChannelHandlerContext(
-                            SxpConnection.ChannelHandlerContextType.ListenerContext),
+                    MessageDecoder.sendErrorMessage(connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT),
                             new ErrorMessageException(null, ErrorSubCode.UnacceptableHoldTime, null), connection);
                     connection.setDeleteHoldDownTimer();
                     LOG.info("{} State to DeleteHoldDown", connection);

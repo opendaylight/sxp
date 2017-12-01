@@ -101,14 +101,12 @@ public class SxpLegacyTest {
     @Test
     public void testOnChannelInactivation() throws Exception {
         when(connection.isStateOn(Matchers.<SxpConnection.ChannelHandlerContextType>any())).thenReturn(true);
-        when(connection.getContextType(any(ChannelHandlerContext.class))).thenReturn(
-                SxpConnection.ChannelHandlerContextType.ListenerContext);
+        when(connection.getContextType(any(ChannelHandlerContext.class))).thenReturn(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT);
 
         sxpLegacy.onChannelInactivation(channelHandlerContext, connection);
         verify(connection).setDeleteHoldDownTimer();
 
-        when(connection.getContextType(any(ChannelHandlerContext.class))).thenReturn(
-                SxpConnection.ChannelHandlerContextType.SpeakerContext);
+        when(connection.getContextType(any(ChannelHandlerContext.class))).thenReturn(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT);
         sxpLegacy.onChannelInactivation(channelHandlerContext, connection);
         verify(channelHandlerContext).writeAndFlush(any(ByteBuf.class));
         verify(connection, times(1)).setStateOff(any(ChannelHandlerContext.class));
@@ -167,13 +165,13 @@ public class SxpLegacyTest {
         when(messageLegacy.getType()).thenReturn(MessageType.Update);
         when(messageLegacy.getPayload()).thenReturn(new byte[] {});
 
-        when(connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)).thenReturn(true);
+        when(connection.isStateOn(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT)).thenReturn(true);
         sxpLegacy.onInputMessage(channelHandlerContext, connection, messageLegacy);
         verify(connection).setUpdateOrKeepaliveMessageTimestamp();
         verify(connection).processUpdateMessage(any(UpdateMessageLegacy.class));
 
         when(connection.getState()).thenReturn(ConnectionState.Off);
-        when(connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)).thenReturn(false);
+        when(connection.isStateOn(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT)).thenReturn(false);
         exception.expect(UpdateMessageConnectionStateException.class);
         sxpLegacy.onInputMessage(channelHandlerContext, connection, messageLegacy);
     }

@@ -209,7 +209,7 @@ public final class BindingDispatcher {
     public static boolean sendPurgeAllMessageSync(final SxpConnection connection) {
         try {
             LOG.info("{} Sending PurgeAll {}", connection, connection.getNodeIdRemote());
-            connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext)
+            connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT)
                     .writeAndFlush(MessageFactory.createPurgeAll());
             return true;
         } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
