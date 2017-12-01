@@ -54,7 +54,7 @@ public class ConnectFacadeTest {
         HandlerFactory
                 handlerFactory =
                 HandlerFactory.instanceAddDecoder(MessageDecoder.createClientProfile(sxpNode),
-                        HandlerFactory.Position.End);
+                        HandlerFactory.Position.END);
 
         SxpConnection connection = mock(SxpConnection.class);
         when(connection.getPassword()).thenReturn("passwd");
@@ -89,7 +89,7 @@ public class ConnectFacadeTest {
         HandlerFactory
                 handlerFactory =
                 HandlerFactory.instanceAddDecoder(MessageDecoder.createServerProfile(sxpNode),
-                        HandlerFactory.Position.End);
+                        HandlerFactory.Position.END);
 
         Channel channel = ConnectFacade.createServer(sxpNode, handlerFactory,
                 ConnectFacade.collectAllPasswords(sxpNode)).channel();

@@ -82,7 +82,9 @@ public class ThreadsWorker implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(ThreadsWorker.class.getName());
 
     private final ListeningScheduledExecutorService scheduledExecutorService;
-    private final ListeningExecutorService executorService, executorServiceOutbound, executorServiceInbound;
+    private final ListeningExecutorService executorService;
+    private final ListeningExecutorService executorServiceOutbound;
+    private final ListeningExecutorService executorServiceInbound;
     private final Map<QueueKey, Deque<SettableListenableFuture>> dequeMap = new HashMap<>(WorkerType.values().length);
 
     /**
@@ -115,7 +117,7 @@ public class ThreadsWorker implements AutoCloseable {
      * have 2 threads both
      */
     public ThreadsWorker() {
-        this(2, 2, 2, 1);
+        this(2, 2, 2, 1);//NOSONAR
     }
 
     /**

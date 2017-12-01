@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.handler;
 
 import io.netty.buffer.ByteBuf;
@@ -38,10 +37,11 @@ import org.slf4j.LoggerFactory;
  * Handles server and client sides of a channel.
  */
 @Sharable
-public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
+@SuppressWarnings("all")
+public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {//NOSONAR
 
     private enum Profile {
-        Client, Server
+        CLIENT, PROFILE
     }
 
 
@@ -54,7 +54,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
      * @return MessageDecoder
      */
     public static ChannelInboundHandler createClientProfile(SxpNode owner) {
-        return new MessageDecoder(owner, Profile.Client);
+        return new MessageDecoder(owner, Profile.CLIENT);
     }
 
     /**
@@ -64,7 +64,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
      * @return MessageDecoder
      */
     public static ChannelInboundHandler createServerProfile(SxpNode owner) {
-        return new MessageDecoder(owner, Profile.Server);
+        return new MessageDecoder(owner, Profile.PROFILE);
     }
 
     /**
@@ -77,15 +77,15 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
      */
     private static String getChannelHandlerContextId(SxpNode owner, SocketAddress localAddress,
             SocketAddress remoteAddress) {
-        String _localAddress = localAddress.toString();
-        if (_localAddress.startsWith("/")) {
-            _localAddress = _localAddress.substring(1);
+        String localAddressString = localAddress.toString();
+        if (localAddressString.startsWith("/")) {
+            localAddressString = localAddressString.substring(1);
         }
-        String _remoteAddress = remoteAddress.toString();
-        if (_remoteAddress.startsWith("/")) {
-            _remoteAddress = _remoteAddress.substring(1);
+        String remoteAddressString = remoteAddress.toString();
+        if (remoteAddressString.startsWith("/")) {
+            remoteAddressString = remoteAddressString.substring(1);
         }
-        return owner.toString() + "[" + _localAddress + "/" + _remoteAddress + "]";
+        return owner.toString() + "[" + localAddressString + "/" + remoteAddressString + "]";
     }
 
     /**
@@ -155,14 +155,16 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
                                 messageValidationException.getErrorSubCode(), messageValidationException.getData());
             }
             if (ctx == null) {
-                ctx = connection.getChannelHandlerContext(ChannelHandlerContextType.SpeakerContext);
+                ctx = connection.getChannelHandlerContext(ChannelHandlerContextType.SPEAKER_CNTXT);
             }
         } catch (ErrorCodeDataLengthException e) {
             LOG.info("{} ERROR sending Error {}", connection, messageValidationException, e);
             return;
         } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
             LOG.info("{} ERROR sending Error {}", connection, messageValidationException, e);
-            message.release();
+            if (message != null) {
+                message.release();
+            }
             return;
         }
         LOG.info("{} Sent ERROR {}", connection, MessageFactory.toString(message));
@@ -194,8 +196,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
             ctx.close();
             return;
         }
-        if (profile.equals(Profile.Server)) {
-            // System.out.println("L" + ctx.channel().remoteAddress());
+        if (profile.equals(Profile.PROFILE)) {
             connection.setInetSocketAddresses(ctx.channel().localAddress());
             connection.addChannelHandlerContext(ctx);
             return;
@@ -217,7 +218,6 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, ByteBuf message) {
-        // LOG.debug(getLogMessage(owner, ctx, "Input received", null) + ": {}", MessageFactory.toString(message));
         final SxpConnection connection = owner.getConnection(ctx.channel().remoteAddress());
         if (connection == null) {
             LOG.warn(getLogMessage(owner, ctx, "Channel read0"));

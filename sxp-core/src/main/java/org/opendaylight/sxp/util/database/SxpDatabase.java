@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.database;
 
 import com.google.common.base.Preconditions;
@@ -74,8 +73,9 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
 
     @Override
     public synchronized List<SxpDatabaseBinding> deleteBindings(NodeId nodeId) {
-        if (nodeId == null)
+        if (nodeId == null) {
             return new ArrayList<>();
+        }
         List<SxpDatabaseBinding>
                 bindings =
                 new ArrayList<>(getBindings(BindingDatabase.BindingType.ActiveBindings, nodeId));
@@ -88,8 +88,9 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
     @Override
     public synchronized <T extends SxpBindingFields> List<SxpDatabaseBinding> deleteBindings(NodeId nodeId,
             List<T> bindings) {
-        if (nodeId == null || bindings == null || bindings.isEmpty())
+        if (nodeId == null || bindings == null || bindings.isEmpty()) {
             return new ArrayList<>();
+        }
         Set<IpPrefix> ipPrefices = bindings.stream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
         List<SxpDatabaseBinding>
                 databaseBindings =
@@ -171,9 +172,11 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
      * @param binding Binding to be checked
      * @return If binding will be ignored
      */
+    @SuppressWarnings("all")
     private static <T extends SxpBindingFields> boolean ignoreBinding(T binding) {
-        if (binding == null)
+        if (binding == null) {
             return true;
+        }
         return binding.getIpPrefix().getIpv6Prefix() != null && "0:0:0:0:0:0:0:0/0".equals(
                 binding.getIpPrefix().getIpv6Prefix().getValue()) || (binding.getIpPrefix().getIpv4Prefix() != null
                 && "0.0.0.0/0".equals(binding.getIpPrefix().getIpv4Prefix().getValue()));
@@ -205,10 +208,12 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
      * @param <T>      Any type extending SxpBindingFields
      * @return List of replacements
      */
+    @SuppressWarnings("all")
     public static <T extends SxpBindingFields> List<SxpDatabaseBinding> getReplaceForBindings(List<T> bindings,
             final SxpDatabaseInf database, final Map<NodeId, SxpBindingFilter> filters) {
-        if (bindings == null || database == null || bindings.isEmpty())
+        if (bindings == null || database == null || bindings.isEmpty()) {
             return new ArrayList<>();
+        }
         Set<IpPrefix>
                 prefixesForReplace =
                 bindings.stream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
@@ -244,7 +249,8 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
         if (nodeId == null || filter == null) {
             return new ArrayList<>();
         }
-        List<SxpDatabaseBinding> active = database.getBindings(nodeId), filtered = new ArrayList<>();
+        List<SxpDatabaseBinding> active = database.getBindings(nodeId);
+        List<SxpDatabaseBinding> filtered = new ArrayList<>();
         if (!active.isEmpty()) {
             filtered.addAll(Collections2.filter(active, filter::apply));
         }

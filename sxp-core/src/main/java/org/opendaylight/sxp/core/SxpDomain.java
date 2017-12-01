@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core;
 
 import static org.opendaylight.sxp.util.ArraysUtil.getBitAddress;
@@ -18,6 +17,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
  * and Bindings learned from them to only Peers of the same domain.
  * Sharing of Bindings can be achieved by filters between domains.
  */
+@SuppressWarnings("all")
 public class SxpDomain implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(SxpDomain.class.getName());
@@ -60,7 +61,7 @@ public class SxpDomain implements AutoCloseable {
     private final SxpNode node;
     private final Map<FilterSpecific, Map<String, SxpBindingFilter<?, ? extends SxpDomainFilterFields>>>
             filters =
-            new HashMap<>(FilterSpecific.values().length);
+            new EnumMap<>(FilterSpecific.class);
     private final Map<InetAddress, SxpConnection> connections = new HashMap<>();
     private final Map<IpPrefix, SxpConnectionTemplateFields> templates = new HashMap<>();
 
@@ -112,8 +113,9 @@ public class SxpDomain implements AutoCloseable {
         }
         if (domain.getDomainFilters() != null && domain.getDomainFilters().getDomainFilter() != null) {
             for (DomainFilter filter : domain.getDomainFilters().getDomainFilter()) {
-                if (!sxpDomain.addFilter(SxpBindingFilter.generateFilter(filter, sxpDomain.getName())))
+                if (!sxpDomain.addFilter(SxpBindingFilter.generateFilter(filter, sxpDomain.getName()))) {
                     throw new IllegalArgumentException("Cannot create domain Filters contains invalid values");
+                }
             }
         }
         return sxpDomain;
@@ -382,7 +384,9 @@ public class SxpDomain implements AutoCloseable {
         if (Objects.isNull(domain) || this.name.equals(domain.getName()) || (remove.isEmpty() && add.isEmpty())) {
             return;
         }
-        List<SxpBindingFields> added = new ArrayList<>(), deleted = new ArrayList<>(), replace = new ArrayList<>(add);
+        List<SxpBindingFields> added = new ArrayList<>();
+        List<SxpBindingFields> deleted = new ArrayList<>();
+        List<SxpBindingFields> replace = new ArrayList<>(add);
         Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(node, domain.getName());
         synchronized (domain) {
             deleted.addAll(domain.getMasterDatabase().deleteBindings(remove));
@@ -417,9 +421,9 @@ public class SxpDomain implements AutoCloseable {
             return;
         }
         synchronized (domain) {
-            final List<SxpDatabaseBinding> deleted = domain.getSxpDatabase().deleteBindings(nodeIdRemote, remove),
-                    added =
-                            domain.getSxpDatabase().addBinding(nodeIdRemote, add);
+            final List<SxpDatabaseBinding> deleted = domain.getSxpDatabase().deleteBindings(nodeIdRemote, remove);
+            List<SxpDatabaseBinding> added
+                    = domain.getSxpDatabase().addBinding(nodeIdRemote, add);
             if (!added.isEmpty() || !deleted.isEmpty()) {
                 if (Objects.isNull(filter)) {
                     propagateToSharedMasterDatabases(deleted, added, domain);
@@ -452,11 +456,12 @@ public class SxpDomain implements AutoCloseable {
         if (!sxpDomains.isEmpty()) {
             final Map<String, SxpBindingFilter<?, ? extends SxpDomainFilterFields>> filters = getFilters();
             for (Map.Entry<String, SxpBindingFilter<?, ? extends SxpDomainFilterFields>> filter : filters.entrySet()) {
-                if (sxpDomains.containsKey(filter.getKey()))
+                if (sxpDomains.containsKey(filter.getKey())) {
                     propagateToSharedMasterDatabases(
                             removed.stream().filter(filter.getValue()).collect(Collectors.toList()),
                             added.stream().filter(filter.getValue()).collect(Collectors.toList()),
                             sxpDomains.get(filter.getKey()));
+                }
             }
         }
     }
@@ -621,9 +626,10 @@ public class SxpDomain implements AutoCloseable {
      */
     public SxpConnection putConnection(SxpConnection connection) {
         synchronized (connections) {
-            if (connections.containsKey(Preconditions.checkNotNull(connection).getDestination().getAddress()))
+            if (connections.containsKey(Preconditions.checkNotNull(connection).getDestination().getAddress())) {
                 throw new IllegalArgumentException(
                         "Connection " + connection + " with destination " + connection.getDestination() + " exist.");
+            }
             connections.put(Preconditions.checkNotNull(connection).getDestination().getAddress(), connection);
             return connection;
         }

@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.filtering;
 
 import java.util.Comparator;
@@ -17,7 +16,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.peer.sequence.filter.entries.PeerSequenceEntry;
 
 /**
- * Filters Bindings according their peer sequence length
+ * Filters Bindings according their peer sequence length.
+ * Uses a first-match lookup logic.
+ *
+ * @param <T> something that extends FilterEntriesFields
  */
 public class PeerSequenceFilter<T extends FilterEntriesFields> extends SxpBindingFilter<PeerSequenceFilterEntries, T> {
 
@@ -44,6 +46,9 @@ public class PeerSequenceFilter<T extends FilterEntriesFields> extends SxpBindin
         }
     }
 
+    /**
+     * {@inheritDoc }
+     */
     @Override
     protected boolean filter(PeerSequenceFilterEntries filterEntries, SxpBindingFields binding) {
         if (filterEntries.getPeerSequenceEntry() == null || filterEntries.getPeerSequenceEntry().isEmpty()

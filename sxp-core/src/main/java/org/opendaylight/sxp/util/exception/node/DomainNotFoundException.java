@@ -5,13 +5,21 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.exception.node;
 
+/**
+ * DomainNotFoundException
+ */
 public class DomainNotFoundException extends RuntimeException {
 
-    public DomainNotFoundException(String ownerName, String message) {
-        super("[" + ownerName + "] " + message);
+    /**
+     * Create a new DomainNotFoundException.
+     *
+     * @param ownerName the name of the owner
+     * @param domain a domain
+     */
+    public DomainNotFoundException(String ownerName, String domain) {
+        super("[" + ownerName + "] Domain " + domain + "not found");
     }
 
 }

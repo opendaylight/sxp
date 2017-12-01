@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.behavior;
 
 import com.google.common.base.Preconditions;
@@ -52,7 +51,7 @@ public final class Context {
      * @param version Version according to which strategy will be set
      * @throws UnknownVersionException If Version isn't supported
      */
-    public Context(SxpNode owner, Version version) throws UnknownVersionException {
+    public Context(SxpNode owner, Version version) {
         this.owner = owner;
         this.version = version;
         this.strategy = StrategyFactory.getStrategy(this, version);

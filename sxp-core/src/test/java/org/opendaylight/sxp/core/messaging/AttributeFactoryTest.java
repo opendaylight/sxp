@@ -139,7 +139,7 @@ public class AttributeFactoryTest {
     public void testCreateIpv4AddPrefix() throws Exception {
         List<IpPrefix> ipPrefixes = new ArrayList<>();
         ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
-        Attribute attribute = AttributeFactory.createIpv4AddPrefix(ipPrefixes, AttributeFactory._onpCe);
+        Attribute attribute = AttributeFactory.createIpv4AddPrefix(ipPrefixes, AttributeFactory.COMPACT);
         assertEquals(AttributeType.Ipv4AddPrefix, attribute.getType());
         assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
 
@@ -152,7 +152,7 @@ public class AttributeFactoryTest {
             ipPrefixes.add(new IpPrefix(ip.toCharArray()));
         }
 
-        attribute = AttributeFactory.createIpv4AddPrefix(ipPrefixes, AttributeFactory._onpCe);
+        attribute = AttributeFactory.createIpv4AddPrefix(ipPrefixes, AttributeFactory.COMPACT);
         assertEquals(AttributeType.Ipv4AddPrefix, attribute.getType());
         assertEquals(AttributeVariant.CompactExtendedLength, attribute.getAttributeVariant());
 
@@ -165,7 +165,7 @@ public class AttributeFactoryTest {
     public void testCreateIpv4DeletePrefix() throws Exception {
         List<IpPrefix> ipPrefixes = new ArrayList<>();
         ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
-        Attribute attribute = AttributeFactory.createIpv4DeletePrefix(ipPrefixes, AttributeFactory._onpCe);
+        Attribute attribute = AttributeFactory.createIpv4DeletePrefix(ipPrefixes, AttributeFactory.COMPACT);
         assertEquals(AttributeType.Ipv4DeletePrefix, attribute.getType());
         assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
 
@@ -180,7 +180,7 @@ public class AttributeFactoryTest {
             ipPrefixes.add(new IpPrefix(ip.toCharArray()));
         }
 
-        attribute = AttributeFactory.createIpv4DeletePrefix(ipPrefixes, AttributeFactory._onpCe);
+        attribute = AttributeFactory.createIpv4DeletePrefix(ipPrefixes, AttributeFactory.COMPACT);
         assertEquals(AttributeType.Ipv4DeletePrefix, attribute.getType());
         assertEquals(AttributeVariant.CompactExtendedLength, attribute.getAttributeVariant());
 
@@ -193,7 +193,7 @@ public class AttributeFactoryTest {
     public void testCreateIpv6AddPrefix() throws Exception {
         List<IpPrefix> ipPrefixes = new ArrayList<>();
         ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
-        Attribute attribute = AttributeFactory.createIpv6AddPrefix(ipPrefixes, AttributeFactory._onpCe);
+        Attribute attribute = AttributeFactory.createIpv6AddPrefix(ipPrefixes, AttributeFactory.COMPACT);
         assertEquals(AttributeType.Ipv6AddPrefix, attribute.getType());
         assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
 
@@ -206,7 +206,7 @@ public class AttributeFactoryTest {
             ipPrefixes.add(new IpPrefix(ip.toCharArray()));
         }
 
-        attribute = AttributeFactory.createIpv6AddPrefix(ipPrefixes, AttributeFactory._onpCe);
+        attribute = AttributeFactory.createIpv6AddPrefix(ipPrefixes, AttributeFactory.COMPACT);
         assertEquals(AttributeType.Ipv6AddPrefix, attribute.getType());
         assertEquals(AttributeVariant.CompactExtendedLength, attribute.getAttributeVariant());
 
@@ -219,7 +219,7 @@ public class AttributeFactoryTest {
     public void testCreateIpv6DeletePrefix() throws Exception {
         List<IpPrefix> ipPrefixes = new ArrayList<>();
         ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
-        Attribute attribute = AttributeFactory.createIpv6DeletePrefix(ipPrefixes, AttributeFactory._onpCe);
+        Attribute attribute = AttributeFactory.createIpv6DeletePrefix(ipPrefixes, AttributeFactory.COMPACT);
         assertEquals(AttributeType.Ipv6DeletePrefix, attribute.getType());
         assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
 
@@ -234,7 +234,7 @@ public class AttributeFactoryTest {
             ipPrefixes.add(new IpPrefix(ip.toCharArray()));
         }
 
-        attribute = AttributeFactory.createIpv6DeletePrefix(ipPrefixes, AttributeFactory._onpCe);
+        attribute = AttributeFactory.createIpv6DeletePrefix(ipPrefixes, AttributeFactory.COMPACT);
         assertEquals(AttributeType.Ipv6DeletePrefix, attribute.getType());
         assertEquals(AttributeVariant.CompactExtendedLength, attribute.getAttributeVariant());
 

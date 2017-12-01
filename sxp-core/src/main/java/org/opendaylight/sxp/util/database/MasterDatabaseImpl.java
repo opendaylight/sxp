@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.database;
 
 import java.util.ArrayList;
@@ -27,29 +26,40 @@ public class MasterDatabaseImpl extends MasterDatabase {
     private final Map<IpPrefix, MasterDatabaseBinding> bindingMap = new HashMap<>();
     private final Map<IpPrefix, MasterDatabaseBinding> localBindingMap = new HashMap<>();
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    synchronized public List<MasterDatabaseBinding> getBindings() {
+    public synchronized List<MasterDatabaseBinding> getBindings() {
         List<MasterDatabaseBinding> bindings = new ArrayList<>(bindingMap.values());
         Set<IpPrefix>
                 ipPrefixSet =
                 bindings.parallelStream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
         getLocalBindings().forEach(b -> {
-            if (!ipPrefixSet.contains(b.getIpPrefix()))
+            if (!ipPrefixSet.contains(b.getIpPrefix())) {
                 bindings.add(b);
+            }
         });
         return bindings;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    synchronized public List<MasterDatabaseBinding> getLocalBindings() {
+    public synchronized List<MasterDatabaseBinding> getLocalBindings() {
         return new ArrayList<>(localBindingMap.values());
     }
 
+    /**
+     * Add given bindings.
+     */
     private <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings,
             Map<IpPrefix, MasterDatabaseBinding> map) {
         List<MasterDatabaseBinding> added = new ArrayList<>();
-        if (map == null || bindings == null || bindings.isEmpty())
+        if (map == null || bindings == null || bindings.isEmpty()) {
             return added;
+        }
         Map<IpPrefix, MasterDatabaseBinding>
                 prefixMap =
                 filterIncomingBindings(bindings, map::get, p -> map.remove(p) != null);
@@ -61,6 +71,8 @@ public class MasterDatabaseImpl extends MasterDatabase {
     }
 
     /**
+     * Delete given bindings from a given map.
+     *
      * @param bindings Bindings to be removed
      * @param map      Map from where bindings will be removed
      * @param <T>      Any type extending SxpBindingFields
@@ -69,8 +81,9 @@ public class MasterDatabaseImpl extends MasterDatabase {
     private <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings,
             Map<IpPrefix, MasterDatabaseBinding> map) {
         List<MasterDatabaseBinding> removed = new ArrayList<>();
-        if (map == null || bindings == null || bindings.isEmpty())
+        if (map == null || bindings == null || bindings.isEmpty()) {
             return removed;
+        }
         bindings.forEach(b -> {
             if (map.containsKey(b.getIpPrefix()) && map.get(b.getIpPrefix())
                     .getSecurityGroupTag()
@@ -82,23 +95,35 @@ public class MasterDatabaseImpl extends MasterDatabase {
         return removed;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    synchronized public <T extends SxpBindingFields> List<MasterDatabaseBinding> addLocalBindings(List<T> bindings) {
+    public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> addLocalBindings(List<T> bindings) {
         return addBindings(bindings, localBindingMap);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    synchronized public <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindingsLocal(List<T> bindings) {
+    public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindingsLocal(List<T> bindings) {
         return deleteBindings(bindings, localBindingMap);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    synchronized public <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings) {
+    public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings) {
         return addBindings(bindings, bindingMap);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    synchronized public <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings) {
+    public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings) {
         return deleteBindings(bindings, bindingMap);
     }
 }

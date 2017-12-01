@@ -5,14 +5,20 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.exception.message;
 
+/**
+ * UpdateMessagePrefixException
+ */
 public class UpdateMessagePrefixException extends Exception {
 
-    /** */
     private static final long serialVersionUID = 801190427695923174L;
 
+    /**
+     * Create a new UpdateMessagePrefixException.
+     *
+     * @param string an error message
+     */
     public UpdateMessagePrefixException(String string) {
         super(string);
     }

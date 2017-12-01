@@ -7,6 +7,11 @@
  */
 package org.opendaylight.sxp.core;
 
+/**
+ * Default SXP constant values.
+ *
+ * @author Martin Dindoffer
+ */
 public final class Constants {
 
     public static final int MESSAGE_HEADER_LENGTH_LENGTH = 4;
@@ -14,7 +19,7 @@ public final class Constants {
     public static final int MESSAGE_LENGTH_MAX = 4096;
     public static final int MESSAGE_EXPORT_QUANTITY = 150;
     public static final int NODE_CONNECTIONS_INITIAL_SIZE = 20;
-    public static final int PORT = 64999;
+    public static final int SXP_DEFAULT_PORT = 64999;
 
     private Constants() {
     }

@@ -5,16 +5,15 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.exception.message;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorSubCode;
 
+@SuppressWarnings("all")
 public class ErrorMessageException extends Exception {
 
-    /** */
     private static final long serialVersionUID = 801190427695923174L;
 
     private final Exception carriedException;
@@ -29,6 +28,14 @@ public class ErrorMessageException extends Exception {
 
     private boolean legacy = true;
 
+    /**
+     * Create a new ErrorMessageException
+     *
+     * @param errorCode error code
+     * @param errorSubCode error subcode
+     * @param data data
+     * @param carriedException carried exception
+     */
     public ErrorMessageException(ErrorCode errorCode, ErrorSubCode errorSubCode, byte[] data,
             Exception carriedException) {
         this.errorCode = errorCode;
@@ -38,10 +45,23 @@ public class ErrorMessageException extends Exception {
         this.carriedException = carriedException;
     }
 
+    /**
+     * Create a new ErrorMessageException with null data.
+     *
+     * @param errorCode error code
+     * @param errorSubCode error subcode
+     * @param carriedException  carried exception
+     */
     public ErrorMessageException(ErrorCode errorCode, ErrorSubCode errorSubCode, Exception carriedException) {
         this(errorCode, errorSubCode, null, carriedException);
     }
 
+    /**
+     * Create a new ErrorMessageException with null data.
+     *
+     * @param errorCode error code
+     * @param carriedException carried exception
+     */
     public ErrorMessageException(ErrorCode errorCode, Exception carriedException) {
         this(errorCode, null, null, carriedException);
     }
@@ -56,7 +76,11 @@ public class ErrorMessageException extends Exception {
     }
 
     public byte[] getData() {
-        return data;
+        if (data != null) {
+            return data.clone();
+        } else {
+            return data;
+        }
     }
 
     public ErrorCode getErrorCode() {

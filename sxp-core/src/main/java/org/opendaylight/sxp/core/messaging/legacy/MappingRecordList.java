@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.messaging.legacy;
 
 import com.google.common.net.InetAddresses;
@@ -49,27 +48,27 @@ public class MappingRecordList extends ArrayList<MappingRecord> {
      * @return Byte representation of MappingRecord
      */
     private static byte[] toBytes(MappingRecord mappingRecord) {
-        String _prefix = new String(mappingRecord.getAddress().getValue());
-        if (_prefix.startsWith("/")) {
-            _prefix = _prefix.substring(1);
+        String prefix = new String(mappingRecord.getAddress().getValue());
+        if (prefix.startsWith("/")) {
+            prefix = prefix.substring(1);
         }
-        int i = _prefix.lastIndexOf('/');
+        int i = prefix.lastIndexOf('/');
         if (i != -1) {
-            _prefix = _prefix.substring(0, i);
+            prefix = prefix.substring(0, i);
         }
 
-        byte[] bprefix = InetAddresses.forString(_prefix).getAddress();
+        byte[] bprefix = InetAddresses.forString(prefix).getAddress();
         byte[]
-                _mappingRecord =
+                mappingRecordBytes =
                 ArraysUtil.combine(ArraysUtil.int2bytes(mappingRecord.getOperationCode().getIntValue()),
                         ArraysUtil.int2bytes(mappingRecord.getLength()), bprefix);
 
         for (Tlv tlv : mappingRecord.getTlv()) {
-            _mappingRecord =
-                    ArraysUtil.combine(_mappingRecord, ArraysUtil.int2bytes(tlv.getType().getIntValue()),
+            mappingRecordBytes =
+                    ArraysUtil.combine(mappingRecordBytes, ArraysUtil.int2bytes(tlv.getType().getIntValue()),
                             ArraysUtil.int2bytes(tlv.getLength()), tlv.getValue());
         }
-        return _mappingRecord;
+        return mappingRecordBytes;
     }
 
     /**

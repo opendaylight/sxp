@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.inet;
 
 import com.google.common.net.InetAddresses;
@@ -21,6 +20,7 @@ import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 
+@SuppressWarnings("all")
 public final class IpPrefixConv {
 
     private IpPrefixConv() {

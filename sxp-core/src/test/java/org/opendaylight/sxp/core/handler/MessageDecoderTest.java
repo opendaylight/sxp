@@ -157,7 +157,7 @@ public class MessageDecoderTest {
     @Test
     public void testSendErrorMessage() throws Exception {
         ChannelHandlerContext context = mock(ChannelHandlerContext.class);
-        when(connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext)).thenReturn(
+        when(connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT)).thenReturn(
                 context);
         MessageDecoder.sendErrorMessage(null,
                 new ErrorMessageException(ErrorCodeNonExtended.NoError, new Exception("")), connection);

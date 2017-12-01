@@ -238,13 +238,13 @@ public class Sxpv4Test {
         when(message.getType()).thenReturn(MessageType.Update);
         when(message.getPayload()).thenReturn(new byte[] {});
 
-        when(connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)).thenReturn(true);
+        when(connection.isStateOn(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT)).thenReturn(true);
         sxpv4.onInputMessage(channelHandlerContext, connection, message);
         verify(connection).setUpdateOrKeepaliveMessageTimestamp();
         verify(connection).processUpdateMessage(any(UpdateMessage.class));
 
         when(connection.getState()).thenReturn(ConnectionState.Off);
-        when(connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)).thenReturn(false);
+        when(connection.isStateOn(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT)).thenReturn(false);
         exception.expect(UpdateMessageConnectionStateException.class);
         sxpv4.onInputMessage(channelHandlerContext, connection, message);
     }

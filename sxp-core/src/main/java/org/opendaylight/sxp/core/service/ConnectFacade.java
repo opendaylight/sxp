@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.service;
 
 import io.netty.bootstrap.Bootstrap;
@@ -44,7 +43,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpConne
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConnectFacade {
+public class ConnectFacade {//NOSONAR
 
     private static final EventLoopGroup bossGroup = new EpollEventLoopGroup(1);
     private static final EventLoopGroup eventLoopGroup = new EpollEventLoopGroup();
@@ -95,7 +94,7 @@ public class ConnectFacade {
 
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
-                if (SecurityType.TLS.equals(securityType)) {
+                if (SecurityType.TLS.equals(securityType) && clientSslContext.isPresent()) {
                     ch.pipeline().addLast(clientSslContext.get().newHandler(ch.alloc()));
                 }
                 ch.pipeline().addLast(hf.getDecoders());
@@ -139,7 +138,7 @@ public class ConnectFacade {
                         && !serverSslContext.isPresent())) {
                     LOG.warn("{} Closing {} as TLS or Connection not available", node, ch);
                     ch.close();
-                } else if (SecurityType.TLS.equals(connection.getSecurityType())) {
+                } else if (SecurityType.TLS.equals(connection.getSecurityType()) && serverSslContext.isPresent()) {
                     ch.pipeline().addLast(serverSslContext.get().newHandler(ch.alloc()));
                 }
                 ch.pipeline().addLast(hf.getDecoders());

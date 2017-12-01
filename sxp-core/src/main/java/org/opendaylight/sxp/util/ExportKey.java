@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util;
 
 import java.util.List;
@@ -20,7 +19,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
  */
 public class ExportKey {
 
+    /**
+     * Version
+     */
     private final Version version;
+    /**
+     * Group name
+     */
     private final String groupName;
     private final List<CapabilityType> capabilityTypes;
 
@@ -35,18 +40,26 @@ public class ExportKey {
         this.capabilityTypes = connection.getCapabilitiesRemote();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
         ExportKey exportKey = (ExportKey) o;
         return Objects.equals(version, exportKey.version) && Objects.equals(groupName, exportKey.groupName)
                 && capabilityTypes.containsAll(exportKey.capabilityTypes) && exportKey.capabilityTypes.containsAll(
                 capabilityTypes);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int hashCode() {
         int hash = Objects.hash(version, groupName);

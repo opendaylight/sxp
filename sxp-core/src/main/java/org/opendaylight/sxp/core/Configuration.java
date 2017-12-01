@@ -21,7 +21,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabili
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 
+@SuppressWarnings("all")
 public final class Configuration {
+
+    private static final String FALSE = "false";
+    private static final String TRUE = "true";
 
     public static final int DEFAULT_PREFIX_GROUP = 0;
 
@@ -36,22 +40,22 @@ public final class Configuration {
     public static final String TOPOLOGY_NAME = "sxp";
 
     static {
-        _initializeLogger();
+        initializeLogger();
     }
 
     /**
      * Initialize Logger services
      */
-    private static void _initializeLogger() {
+    private static void initializeLogger() {
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
-        System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
+        System.setProperty("org.slf4j.simpleLogger.showDateTime", TRUE);
         System.setProperty("org.slf4j.simpleLogger.dateTimeFormat",
                 new SimpleDateFormat("yyMMdd HH:mm:ss").toPattern());
-        System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
-        System.setProperty("org.slf4j.simpleLogger.showLogName", "false");
-        System.setProperty("org.slf4j.simpleLogger.showShortLogName", "false");
+        System.setProperty("org.slf4j.simpleLogger.showThreadName", FALSE);
+        System.setProperty("org.slf4j.simpleLogger.showLogName", FALSE);
+        System.setProperty("org.slf4j.simpleLogger.showShortLogName", FALSE);
         System.setProperty("org.slf4j.simpleLogger.logFile", "System.out");
-        System.setProperty("org.slf4j.simpleLogger.levelInBrackets", "false");
+        System.setProperty("org.slf4j.simpleLogger.levelInBrackets", FALSE);
     }
 
     /**
@@ -62,13 +66,13 @@ public final class Configuration {
         CapabilitiesBuilder capabilitiesBuilder = new CapabilitiesBuilder();
 
         List<CapabilityType> capabilities = new ArrayList<>();
-        if (version.getIntValue() > 0) {
+        if (version.getIntValue() >= Version.Version1.getIntValue()) {
             capabilities.add(CapabilityType.Ipv4Unicast);
-            if (version.getIntValue() > 1) {
+            if (version.getIntValue() >= Version.Version2.getIntValue()) {
                 capabilities.add(CapabilityType.Ipv6Unicast);
-                if (version.getIntValue() > 2) {
+                if (version.getIntValue() >= Version.Version3.getIntValue()) {
                     capabilities.add(CapabilityType.SubnetBindings);
-                    if (version.getIntValue() > 3) {
+                    if (version.getIntValue() >= Version.Version4.getIntValue()) {
                         capabilities.add(CapabilityType.LoopDetection);
                         capabilities.add(CapabilityType.SxpCapabilityExchange);
                     }
@@ -83,6 +87,8 @@ public final class Configuration {
     }
 
     /**
+     * Get all registered nodes.
+     *
      * @return Currently added SxpNodes
      */
     public static Collection<SxpNode> getNodes() {
@@ -90,6 +96,8 @@ public final class Configuration {
     }
 
     /**
+     * Retrieve a registered node.
+     *
      * @param nodeId NodeId specifying Node
      * @return SxpNode with provided NodeId
      */
@@ -98,6 +106,8 @@ public final class Configuration {
     }
 
     /**
+     * Unregister a given node.
+     *
      * @param nodeId NodeId specifying Node
      * @return Removed SxpNode
      */
@@ -106,6 +116,8 @@ public final class Configuration {
     }
 
     /**
+     * Register a given node.
+     *
      * @param node SxpNode that will be registered
      * @return Registered SxpNode
      */

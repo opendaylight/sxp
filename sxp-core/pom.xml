@@ -12,6 +12,12 @@
     <!-- <name> formatting is used by autorelease to parse and notify projects on
          build failure. Please do not modify this unless you have a good reason. -->
     <name>ODL :: sxp :: ${project.artifactId}</name>
+
+    <properties>
+        <sonar.exclusions>**SxpConnection.java,**SxpNode.java, **ConnectFacade.java, **UpdateExportTask.java</sonar.exclusions>
+        <sonar.cpd.exclusions>**SxpBindingFilter.java</sonar.cpd.exclusions>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
