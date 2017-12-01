@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
-import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.Constants;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
@@ -41,6 +40,7 @@ import org.slf4j.LoggerFactory;
  * application, because it provides data to a SXP Listener, which is the client,
  * a service requester.
  */
+@SuppressWarnings("all")
 public final class BindingDispatcher {
 
     private static final Logger LOG = LoggerFactory.getLogger(BindingDispatcher.class);
@@ -66,7 +66,7 @@ public final class BindingDispatcher {
      * @param partitionSize Size which will be used for partitioning
      * @throws IllegalArgumentException If size of partitioning is bellow 2 or above 150
      */
-    public void setPartitionSize(int partitionSize) throws IllegalArgumentException {
+    public void setPartitionSize(int partitionSize) {
         if (partitionSize > 1 && partitionSize < 151) {
             this.partitionSize.set(partitionSize);
         } else {
@@ -209,11 +209,11 @@ public final class BindingDispatcher {
     public static boolean sendPurgeAllMessageSync(final SxpConnection connection) {
         try {
             LOG.info("{} Sending PurgeAll {}", connection, connection.getNodeIdRemote());
-            connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext)
+            connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT)
                     .writeAndFlush(MessageFactory.createPurgeAll());
             return true;
         } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
-            LOG.error(connection + " Cannot send PURGE ALL message | {} | ", e.getClass().getSimpleName());
+            LOG.error(connection + " Cannot send PURGE ALL message | {} | ", e.getClass().getSimpleName(), e);
             return false;
         }
 

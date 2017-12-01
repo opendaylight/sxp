@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.messaging;
 
 import static org.opendaylight.sxp.core.Constants.MESSAGE_HEADER_LENGTH_LENGTH;
@@ -69,6 +68,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 /**
  * MessageFactory class contains logic for creating and parsing messages
  */
+@SuppressWarnings("all")
 public class MessageFactory {
 
     /**
@@ -117,7 +117,7 @@ public class MessageFactory {
      * @throws CapabilityLengthException If some Attributes has incorrect length
      */
     private static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID, Attribute attribute)
-            throws AttributeVariantException, UnknownVersionException, CapabilityLengthException {
+            throws AttributeVariantException, CapabilityLengthException {
         AttributeList attributes = createOpenAttribute(version, nodeMode, nodeID);
         if (attribute != null) {
             attributes.add(attribute);
@@ -144,7 +144,7 @@ public class MessageFactory {
      * @throws CapabilityLengthException If some Attributes has incorrect length
      */
     public static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID, int holdTimeMinAcceptable)
-            throws HoldTimeMinException, AttributeVariantException, UnknownVersionException, CapabilityLengthException {
+            throws HoldTimeMinException, AttributeVariantException, CapabilityLengthException {
         return createOpen(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMinAcceptable));
     }
 
@@ -165,7 +165,7 @@ public class MessageFactory {
      */
     public static ByteBuf createOpen(Version version, ConnectionMode nodeMode, NodeId nodeID, int holdTimeMin,
             int holdTimeMax)
-            throws HoldTimeMaxException, HoldTimeMinException, AttributeVariantException, UnknownVersionException,
+            throws HoldTimeMaxException, HoldTimeMinException, AttributeVariantException,
             CapabilityLengthException {
         return createOpen(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMin, holdTimeMax));
     }
@@ -181,7 +181,7 @@ public class MessageFactory {
      * @throws CapabilityLengthException If some Attributes has incorrect length
      */
     private static AttributeList createOpenAttribute(Version version, ConnectionMode nodeMode, NodeId nodeID)
-            throws UnknownVersionException, CapabilityLengthException {
+            throws CapabilityLengthException {
         AttributeList attributes = new AttributeList();
         if (nodeMode.equals(ConnectionMode.Speaker)) {
             attributes.add(AttributeFactory.createSxpNodeId(nodeID));
@@ -204,7 +204,7 @@ public class MessageFactory {
      * @throws AttributeVariantException If attribute variant isn't supported
      */
     private static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID, Attribute attribute)
-            throws UnknownVersionException, CapabilityLengthException, AttributeVariantException {
+            throws CapabilityLengthException, AttributeVariantException {
         AttributeList attributes = createOpenAttribute(version, nodeMode, nodeID);
         if (attribute != null) {
             attributes.add(attribute);
@@ -229,7 +229,7 @@ public class MessageFactory {
      * @throws AttributeVariantException If attribute variant isn't supported
      */
     public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID)
-            throws CapabilityLengthException, UnknownVersionException, AttributeVariantException {
+            throws CapabilityLengthException, AttributeVariantException {
         return createOpenResp(version, nodeMode, nodeID, null);
     }
 
@@ -248,7 +248,7 @@ public class MessageFactory {
      */
     public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID,
             int holdTimeMinAcceptable)
-            throws HoldTimeMinException, CapabilityLengthException, UnknownVersionException, AttributeVariantException {
+            throws HoldTimeMinException, CapabilityLengthException, AttributeVariantException {
         return createOpenResp(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMinAcceptable));
     }
 
@@ -269,7 +269,7 @@ public class MessageFactory {
      */
     public static ByteBuf createOpenResp(Version version, ConnectionMode nodeMode, NodeId nodeID, int holdTimeMin,
             int holdTimeMax)
-            throws HoldTimeMaxException, HoldTimeMinException, CapabilityLengthException, UnknownVersionException,
+            throws HoldTimeMaxException, HoldTimeMinException, CapabilityLengthException,
             AttributeVariantException {
         return createOpenResp(version, nodeMode, nodeID, AttributeFactory.createHoldTime(holdTimeMin, holdTimeMax));
     }
@@ -310,11 +310,11 @@ public class MessageFactory {
             // Binding delete attributes include any of IPv4-Del-Prefix,
             // IPv6-Del-Prefix, Del-IPv4, or Del-IPv6 attributes.
             if (!ipv4Prefixes.isEmpty()) {
-                attributes.add(AttributeFactory.createIpv4DeletePrefix(ipv4Prefixes, AttributeFactory._oNpCe));
+                attributes.add(AttributeFactory.createIpv4DeletePrefix(ipv4Prefixes, AttributeFactory.NONTRANSITIVE_COMPACT));
                 ipv4Prefixes.clear();
             }
             if (!ipv6Prefixes.isEmpty()) {
-                attributes.add(AttributeFactory.createIpv6DeletePrefix(ipv6Prefixes, AttributeFactory._oNpCe));
+                attributes.add(AttributeFactory.createIpv6DeletePrefix(ipv6Prefixes, AttributeFactory.NONTRANSITIVE_COMPACT));
                 ipv6Prefixes.clear();
             }
         }
@@ -324,18 +324,19 @@ public class MessageFactory {
             Sgt sgt = null;
             PeerSequence peerSequence = null;
             for (T binding : addBindings) {
-                if (bindingFilter != null && bindingFilter.apply(binding))
+                if (bindingFilter != null && bindingFilter.apply(binding)) {
                     continue;
+                }
                 if ((!binding.getPeerSequence().equals(peerSequence) || !binding.getSecurityGroupTag().equals(sgt))) {
 
                     if (!ipv4Prefixes.isEmpty() && sgt != null && peerSequence != null) {
                         attributes.add(AttributeFactory.createIpv4AddPrefix(ipv4Prefixes, capabilities.contains(
-                                CapabilityType.Ipv4Unicast) ? AttributeFactory._oNpCe : AttributeFactory._OnpCe));
+                                CapabilityType.Ipv4Unicast) ? AttributeFactory.NONTRANSITIVE_COMPACT : AttributeFactory.OPTIONAL_COMPACT));
                         ipv4Prefixes.clear();
                     }
                     if (!ipv6Prefixes.isEmpty() && sgt != null && peerSequence != null) {
                         attributes.add(AttributeFactory.createIpv6AddPrefix(ipv6Prefixes, capabilities.contains(
-                                CapabilityType.Ipv6Unicast) ? AttributeFactory._oNpCe : AttributeFactory._OnpCe));
+                                CapabilityType.Ipv6Unicast) ? AttributeFactory.NONTRANSITIVE_COMPACT : AttributeFactory.OPTIONAL_COMPACT));
                         ipv6Prefixes.clear();
                     }
 
@@ -357,12 +358,12 @@ public class MessageFactory {
             }
             if (!ipv4Prefixes.isEmpty()) {
                 attributes.add(AttributeFactory.createIpv4AddPrefix(ipv4Prefixes, capabilities.contains(
-                        CapabilityType.Ipv4Unicast) ? AttributeFactory._oNpCe : AttributeFactory._OnpCe));
+                        CapabilityType.Ipv4Unicast) ? AttributeFactory.NONTRANSITIVE_COMPACT : AttributeFactory.OPTIONAL_COMPACT));
                 ipv4Prefixes.clear();
             }
             if (!ipv6Prefixes.isEmpty()) {
                 attributes.add(AttributeFactory.createIpv6AddPrefix(ipv6Prefixes, capabilities.contains(
-                        CapabilityType.Ipv6Unicast) ? AttributeFactory._oNpCe : AttributeFactory._OnpCe));
+                        CapabilityType.Ipv6Unicast) ? AttributeFactory.NONTRANSITIVE_COMPACT : AttributeFactory.OPTIONAL_COMPACT));
                 ipv6Prefixes.clear();
             }
         }

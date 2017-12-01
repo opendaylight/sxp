@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.service;
 
 import com.google.common.base.Preconditions;
@@ -69,6 +68,7 @@ import org.slf4j.LoggerFactory;
  * BindingHandler class contains logic for parsing and propagating
  * changes into SxpDatabase based on received UpdateMessages
  */
+@SuppressWarnings("all")
 public final class BindingHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(BindingHandler.class);
@@ -78,6 +78,8 @@ public final class BindingHandler {
     private final Map<SxpConnection, Deque<DecodedMessage>> buffer = new HashMap<>();
 
     /**
+     * Creates a new BindingHandler.
+     *
      * @param node       Owner of Handler
      * @param dispatcher Dispatcher service used for sending Bindings
      */
@@ -88,6 +90,8 @@ public final class BindingHandler {
     }
 
     /**
+     * Creates a new BindingHandler.
+     *
      * @param node       Owner of Handler
      * @param dispatcher Dispatcher service used for sending Bindings
      * @param bufferSize Size which will be used for message joining
@@ -348,6 +352,8 @@ public final class BindingHandler {
     }
 
     /**
+     * Update message callback.
+     *
      * @param message    Decoded message that will be proceed
      * @param connection Connection on which message was received
      * @param deque      Buffer containing Update messages from peer
@@ -430,6 +436,8 @@ public final class BindingHandler {
         private Stream<SxpBindingFields> addBindings;
 
         /**
+         * Creates a new DecodedMessage.
+         *
          * @param deleted Bindings to delete
          * @param added   Bindings to add
          */
@@ -440,6 +448,8 @@ public final class BindingHandler {
         }
 
         /**
+         * Get "addBindings". Whatever that is.
+         *
          * @return Bindings that will be addBindings
          */
         Stream<SxpBindingFields> getAddBindings() {
@@ -447,13 +457,17 @@ public final class BindingHandler {
         }
 
         /**
-         * @param stream Stream to be addBindings to dded bindings
+         * Concatenates "addBindings" with a given stream.
+         *
+         * @param stream Stream to be addBindings to added bindings
          */
         private void joinAddBindings(Stream<SxpBindingFields> stream) {
             addBindings = Stream.concat(addBindings, Objects.requireNonNull(stream));
         }
 
         /**
+         * Get "delBindings". Whatever that is.
+         *
          * @return Bindings that will be delBindings
          */
         Stream<SxpBindingFields> getDelBindings() {

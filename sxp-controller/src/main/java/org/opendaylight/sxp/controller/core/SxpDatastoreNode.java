@@ -87,7 +87,7 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
                                         new ConnectionKey(connection.getPeerAddress(), connection.getTcpPort())), connection,
                         LogicalDatastoreType.OPERATIONAL, false);
             }
-        }, HandlerFactory.Position.Begin);
+        }, HandlerFactory.Position.BEGIN);
         return sxpNode;
     }
 
@@ -136,7 +136,7 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
 
         final org.opendaylight.sxp.core.SxpDomain sxpDomain = getDomain(domainName);
         if (sxpDomain == null)
-            throw new DomainNotFoundException(getName(), "Domain " + domainName + " not found");
+            throw new DomainNotFoundException(getName(), domainName);
         synchronized (sxpDomain) {
             svcBindingDispatcher.propagateUpdate(null, bindings, getAllOnSpeakerConnections(domainName));
             sxpDomain.pushToSharedMasterDatabases(Collections.emptyList(), bindings);
@@ -150,7 +150,7 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
 
         final org.opendaylight.sxp.core.SxpDomain sxpDomain = getDomain(domainName);
         if (sxpDomain == null)
-            throw new DomainNotFoundException(getName(), "Domain " + domainName + " not found");
+            throw new DomainNotFoundException(getName(), domainName);
         Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(this, domainName);
         synchronized (sxpDomain) {
             svcBindingDispatcher.propagateUpdate(bindings, sxpDomain.getMasterDatabase()

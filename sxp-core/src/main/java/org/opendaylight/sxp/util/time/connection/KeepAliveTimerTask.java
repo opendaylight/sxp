@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.time.connection;
 
 import io.netty.buffer.ByteBuf;
@@ -38,14 +37,14 @@ public class KeepAliveTimerTask extends SxpTimerTask<Void> {
 
     @Override
     public Void call() {
-        LOG.debug(connection + " {} [{}]", getClass().getSimpleName(), getPeriod());
+        LOG.debug("{} {} [{}]", connection, getClass().getSimpleName(), getPeriod());
 
-        if (connection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext) && connection.isModeSpeaker()
+        if (connection.isStateOn(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT) && connection.isModeSpeaker()
                 && connection.isVersion4()) {
             ByteBuf keepAlive = MessageFactory.createKeepalive();
             try {
-                LOG.info("{} Sent KEEPALIVE {}", connection, MessageFactory.toString(keepAlive));
-                connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext)
+                LOG.info("{} Sent KEEPALIVE {}", connection, MessageFactory.toString(keepAlive));//NOSONAR
+                connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT)
                         .writeAndFlush(keepAlive);
             } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
                 LOG.warn("{} ERROR sending KEEPALIVE ", connection, e);

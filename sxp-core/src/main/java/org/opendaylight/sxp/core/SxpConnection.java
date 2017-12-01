@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core;
 
 import com.google.common.base.Preconditions;
@@ -15,6 +14,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,9 +85,8 @@ public class SxpConnection {
      * ChannelHandlerContextType enum specifies role of ChannelHandlerContext
      */
     public enum ChannelHandlerContextType {
-        ListenerContext, None, SpeakerContext
+        LISTENER_CNTXT, NONE_CNTXT, SPEAKER_CNTXT
     }
-
 
     protected static final Logger LOG = LoggerFactory.getLogger(SxpConnection.class.getName());
 
@@ -100,8 +99,7 @@ public class SxpConnection {
      * @return SxpConnection created by specified values
      * @throws UnknownVersionException If version in provided values isn't supported
      */
-    public static SxpConnection create(SxpNode owner, Connection connection, String domain)
-            throws UnknownVersionException {
+    public static SxpConnection create(SxpNode owner, Connection connection, String domain) {
         SxpConnection sxpConnection = new SxpConnection(owner, connection, domain);
         sxpConnection.setCapabilities(Configuration.getCapabilities(sxpConnection.getVersion()));
         return sxpConnection;
@@ -111,23 +109,24 @@ public class SxpConnection {
     private Context context;
 
     private final List<ChannelHandlerContext> initCtxs = new ArrayList<>(2);
-    private final HashMap<ChannelHandlerContextType, ChannelHandlerContext> ctxs = new HashMap<>(2);
+    private final Map<ChannelHandlerContextType, ChannelHandlerContext> ctxs = new EnumMap(ChannelHandlerContextType.class);
     private final List<CapabilityType> remoteCapabilityTypes = new ArrayList<>();
 
-    protected InetSocketAddress localAddress, remoteAddress;
+    protected InetSocketAddress localAddress;
+    protected InetSocketAddress remoteAddress;
 
     private final SxpNode owner;
     protected final String domain;
     private final NodeId connectionId;
 
-    protected final HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(5);
+    protected final Map<TimerType, ListenableScheduledFuture<?>> timers = new EnumMap(TimerType.class);
     private final Map<FilterType, Map<FilterSpecific, SxpBindingFilter<?, ? extends SxpFilterFields>>>
             bindingFilterMap =
-            new HashMap<>(FilterType.values().length);
+            new EnumMap(FilterType.class);
 
     /**
      * @param filterType Type of SxpBindingFilter to look for
-     * @return Filter with specified type or null if connection doesnt have one
+     * @return Filter with specified type or null if connection doesn't have one
      */
     public SxpBindingFilter<?, ? extends SxpFilterFields> getFilter(FilterType filterType) {
         synchronized (bindingFilterMap) {
@@ -141,7 +140,7 @@ public class SxpConnection {
      * @param filterType Type of SxpBindingFilter that was set
      */
     private void updateFlagsForDatabase(final FilterType filterType, boolean filterRemoved) {
-        if (!isStateOn(ChannelHandlerContextType.SpeakerContext)
+        if (!isStateOn(ChannelHandlerContextType.SPEAKER_CNTXT)
                 || filterType.equals(FilterType.Outbound) && !isModeSpeaker()
                 || (filterType.equals(FilterType.Inbound) || filterType.equals(FilterType.InboundDiscarding))
                 && !isModeListener()) {
@@ -260,7 +259,7 @@ public class SxpConnection {
      * @param connection Connection that contains settings
      * @throws UnknownVersionException If version in provided values isn't supported
      */
-    protected SxpConnection(SxpNode owner, Connection connection, String domain) throws UnknownVersionException {
+    protected SxpConnection(SxpNode owner, Connection connection, String domain) {
         this.owner = Preconditions.checkNotNull(owner);
         this.domain = Preconditions.checkNotNull(domain);
         this.connectionBuilder = new ConnectionBuilder(Preconditions.checkNotNull(connection));
@@ -273,7 +272,7 @@ public class SxpConnection {
         this.remoteAddress =
                 new InetSocketAddress(Search.getAddress(connectionBuilder.getPeerAddress()),
                         connectionBuilder.getTcpPort() != null ? connectionBuilder.getTcpPort()
-                                .getValue() : Constants.PORT);
+                                .getValue() : Constants.SXP_DEFAULT_PORT);
         this.connectionId = new NodeId(connectionBuilder.getPeerAddress().getIpv4Address());
         for (FilterType filterType : FilterType.values()) {
             bindingFilterMap.put(filterType, new HashMap<>());
@@ -392,7 +391,7 @@ public class SxpConnection {
     public void addChannelHandlerContext(ChannelHandlerContext ctx) {
         synchronized (initCtxs) {
             initCtxs.add(ctx);
-            LOG.debug(this + " Add init channel context {}/{}", ctx, initCtxs);
+            LOG.debug("{} Add init channel context {}/{}", this, ctx, initCtxs);
         }
     }
 
@@ -414,7 +413,7 @@ public class SxpConnection {
      * @param ctx ChannelHandlerContext to be closed
      */
     public ChannelHandlerContextType closeChannelHandlerContext(ChannelHandlerContext ctx) {
-        ChannelHandlerContextType type = ChannelHandlerContextType.None;
+        ChannelHandlerContextType type = ChannelHandlerContextType.NONE_CNTXT;
         synchronized (initCtxs) {
             initCtxs.remove(ctx);
         }
@@ -424,7 +423,7 @@ public class SxpConnection {
                     type = e.getKey();
                 }
             }
-            if (type != ChannelHandlerContextType.None) {
+            if (type != ChannelHandlerContextType.NONE_CNTXT) {
                 ctxs.remove(type);
             }
         }
@@ -477,7 +476,7 @@ public class SxpConnection {
         } else if (isModeSpeaker()) {
             setKeepaliveTime(0);
         }
-        LOG.info("{} Connection keep-alive mechanism is disabled | {}", toString(), log);
+        LOG.info("{} Connection keep-alive mechanism is disabled | {}", this, log);
     }
 
     /**
@@ -540,7 +539,7 @@ public class SxpConnection {
             throws ChannelHandlerContextNotFoundException, ChannelHandlerContextDiscrepancyException {
         synchronized (ctxs) {
             if ((isModeBoth() && ctxs.size() > 2) || (!isModeBoth() && ctxs.size() > 1)) {
-                LOG.warn(this + " Registered contexts: " + ctxs);
+                LOG.warn("{} Registered contexts: {}", this, ctxs);
                 throw new ChannelHandlerContextDiscrepancyException();
             }
             ChannelHandlerContext ctx = ctxs.get(channelHandlerContextType);
@@ -657,10 +656,11 @@ public class SxpConnection {
      * @return Inverted Mode
      */
     public static ConnectionMode invertMode(ConnectionMode mode) {
-        if (ConnectionMode.Listener.equals(mode))
+        if (ConnectionMode.Listener.equals(mode)) {
             return ConnectionMode.Speaker;
-        else if (ConnectionMode.Speaker.equals(mode))
+        } else if (ConnectionMode.Speaker.equals(mode)) {
             return ConnectionMode.Listener;
+        }
         return ConnectionMode.Both;
     }
 
@@ -762,15 +762,11 @@ public class SxpConnection {
      * @param connectionMode ConnectionMode used for setup
      */
     private void initializeTimers(ConnectionMode connectionMode) {
-        if (connectionMode.equals(ConnectionMode.Listener)) {
-            if (getHoldTime() > 0) {
-                setTimer(TimerType.HoldTimer, getHoldTime());
-            }
+        if (connectionMode.equals(ConnectionMode.Listener) && (getHoldTime() > 0)) {
+            setTimer(TimerType.HoldTimer, getHoldTime());
         }
-        if (connectionMode.equals(ConnectionMode.Speaker)) {
-            if (getKeepaliveTime() > 0) {
-                setTimer(TimerType.KeepAliveTimer, getKeepaliveTime());
-            }
+        if (connectionMode.equals(ConnectionMode.Speaker) && (getKeepaliveTime() > 0)) {
+            setTimer(TimerType.KeepAliveTimer, getKeepaliveTime());
         }
     }
 
@@ -779,9 +775,7 @@ public class SxpConnection {
      */
     public boolean isBidirectionalBoth() {
         synchronized (ctxs) {
-            return ctxs.containsKey(ChannelHandlerContextType.ListenerContext) && !ctxs.get(
-                    ChannelHandlerContextType.ListenerContext).isRemoved() && ctxs.containsKey(
-                    ChannelHandlerContextType.SpeakerContext) && !ctxs.get(ChannelHandlerContextType.SpeakerContext)
+            return ctxs.containsKey(ChannelHandlerContextType.LISTENER_CNTXT) && !ctxs.get(ChannelHandlerContextType.LISTENER_CNTXT).isRemoved() && ctxs.containsKey(ChannelHandlerContextType.SPEAKER_CNTXT) && !ctxs.get(ChannelHandlerContextType.SPEAKER_CNTXT)
                     .isRemoved();
         }
     }
@@ -827,7 +821,7 @@ public class SxpConnection {
      */
     public boolean isStateOn() {
         return isModeBoth() ?
-                ConnectionState.On.equals(getState()) && isBidirectionalBoth() : ConnectionState.On.equals(getState());
+                (ConnectionState.On.equals(getState()) && isBidirectionalBoth()) : ConnectionState.On.equals(getState());
     }
 
     /**
@@ -837,7 +831,7 @@ public class SxpConnection {
      * @return if functionality is active on Connection
      */
     public boolean isStateOn(ChannelHandlerContextType type) {
-        if (isModeBoth() && !type.equals(ChannelHandlerContextType.None)) {
+        if (isModeBoth() && !type.equals(ChannelHandlerContextType.NONE_CNTXT)) {
             synchronized (ctxs) {
                 return ctxs.containsKey(type) && !ctxs.get(type).isRemoved();
             }
@@ -872,9 +866,9 @@ public class SxpConnection {
             initCtxs.remove(ctx);
         }
         synchronized (ctxs) {
-            ChannelHandlerContext context = ctxs.put(channelHandlerContextType, ctx);
-            if (context != null) {
-                context.close();
+            ChannelHandlerContext oldContext = ctxs.put(channelHandlerContextType, ctx);
+            if (oldContext != null) {
+                oldContext.close();
             }
         }
     }
@@ -890,9 +884,9 @@ public class SxpConnection {
         if (isModeBoth()) {
             LOG.warn("{} Cannot automatically mark ChannelHandlerContext {}", this, ctx);
         } else if (isModeListener()) {
-            markChannelHandlerContext(ctx, ChannelHandlerContextType.ListenerContext);
+            markChannelHandlerContext(ctx, ChannelHandlerContextType.LISTENER_CNTXT);
         } else if (isModeSpeaker()) {
-            markChannelHandlerContext(ctx, ChannelHandlerContextType.SpeakerContext);
+            markChannelHandlerContext(ctx, ChannelHandlerContextType.SPEAKER_CNTXT);
         }
     }
 
@@ -903,7 +897,7 @@ public class SxpConnection {
         // Get message relevant peer node ID.
         getOwner().getWorker().addListener(getOwner().getSvcBindingHandler().processPurgeAllMessage(this), () -> {
             try {
-                setStateOff(getChannelHandlerContext(ChannelHandlerContextType.ListenerContext));
+                setStateOff(getChannelHandlerContext(ChannelHandlerContextType.LISTENER_CNTXT));
             } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
                 setStateOff();
             }
@@ -916,7 +910,7 @@ public class SxpConnection {
      * @param version Version to be set
      * @throws UnknownVersionException If Version isn't supported
      */
-    public void setBehaviorContexts(Version version) throws UnknownVersionException {
+    public void setBehaviorContexts(Version version) {
         setCapabilities(Configuration.getCapabilities(version));
         setVersion(version);
         context = new Context(owner, version);
@@ -929,7 +923,7 @@ public class SxpConnection {
      * @throws UnknownConnectionModeException If connection mode isn't compatible
      * @throws ErrorMessageException          If da in OpenMessage are incorrect
      */
-    public void setConnection(OpenMessage message) throws ErrorMessageException, UnknownConnectionModeException {
+    public void setConnection(OpenMessage message) throws ErrorMessageException {
         if (isModeListener() && message.getSxpMode().equals(ConnectionMode.Speaker)) {
             setConnectionListenerPart(message);
         } else if (isModeSpeaker() && message.getSxpMode().equals(ConnectionMode.Listener)) {
@@ -937,7 +931,7 @@ public class SxpConnection {
             try {
                 setCapabilitiesRemote(MessageFactory.decodeCapabilities(message));
             } catch (AttributeNotFoundException e) {
-                LOG.warn("{} No Capabilities received by remote peer.", this);
+                LOG.warn("{} No Capabilities received by remote peer.", this, e);
             }
         } else {
             throw new UnknownConnectionModeException();
@@ -1095,8 +1089,9 @@ public class SxpConnection {
      * Start DeleteHoldDown timer and if Reconciliation timer is started stop it
      */
     public void setDeleteHoldDownTimer() {
-        if (connectionBuilder.getConnectionTimers().getDeleteHoldDownTime() == 0)
+        if (connectionBuilder.getConnectionTimers().getDeleteHoldDownTime() == 0) {
             return;
+        }
         LOG.info("{} onChannelInactivation/setDeleteHoldDownTimer", this);
         setTimer(TimerType.DeleteHoldDownTimer, connectionBuilder.getConnectionTimers().getDeleteHoldDownTime());
         ListenableScheduledFuture<?> ctReconciliation = getTimer(TimerType.ReconciliationTimer);
@@ -1216,7 +1211,7 @@ public class SxpConnection {
      * @return Type of ChannelHandlerContext in this connection
      */
     public ChannelHandlerContextType getContextType(ChannelHandlerContext ctx) {
-        ChannelHandlerContextType type = ChannelHandlerContextType.None;
+        ChannelHandlerContextType type = ChannelHandlerContextType.NONE_CNTXT;
         synchronized (ctxs) {
             for (Map.Entry<ChannelHandlerContextType, ChannelHandlerContext> e : ctxs.entrySet()) {
                 if (e.getValue().equals(ctx)) {
@@ -1241,13 +1236,13 @@ public class SxpConnection {
             setStateOff();
         } else {
             switch (type) {
-                case ListenerContext:
+                case LISTENER_CNTXT:
                     setTimer(TimerType.DeleteHoldDownTimer, 0);
                     setTimer(TimerType.ReconciliationTimer, 0);
                     setTimer(TimerType.HoldTimer, 0);
                     getOwner().getWorker().cancelTasksInSequence(true, ThreadsWorker.WorkerType.INBOUND, this);
                     break;
-                case SpeakerContext:
+                case SPEAKER_CNTXT:
                     setTimer(TimerType.KeepAliveTimer, 0);
                     getOwner().getWorker().cancelTasksInSequence(true, ThreadsWorker.WorkerType.OUTBOUND, this);
                     break;
@@ -1298,8 +1293,7 @@ public class SxpConnection {
      * @return ListenableScheduledFuture callback
      * @throws UnknownTimerTypeException If current TimerType isn't supported
      */
-    public synchronized ListenableScheduledFuture<?> setTimer(TimerType timerType, int period)
-            throws UnknownTimerTypeException {
+    public synchronized ListenableScheduledFuture<?> setTimer(TimerType timerType, int period) {
         SxpTimerTask timer;
         switch (timerType) {
             case DeleteHoldDownTimer:
@@ -1317,8 +1311,8 @@ public class SxpConnection {
             default:
                 throw new UnknownTimerTypeException(timerType);
         }
-        ListenableScheduledFuture<?> timer_ = getTimer(timerType);
-        if (period > 0 && (timer_ == null || !timer_.isCancelled())) {
+        ListenableScheduledFuture<?> oldTimer = getTimer(timerType);
+        if (period > 0 && (oldTimer == null || !oldTimer.isCancelled())) {
             return this.setTimer(timerType, owner.getWorker().scheduleTask(timer, period, TimeUnit.SECONDS));
         } else {
             return this.setTimer(timerType, null);
@@ -1350,10 +1344,10 @@ public class SxpConnection {
                 getOwner().getSvcBindingHandler().processPurgeAllMessage(this).get();
                 LOG.info("{} PURGE bindings ", this);
             } catch (InterruptedException | ExecutionException e) {
-                LOG.warn("{} Error PURGE bindings ", this);
+                LOG.error("{} Error PURGE bindings ", this, e);
             }
         }
-        if (isModeSpeaker() && isStateOn(ChannelHandlerContextType.SpeakerContext)) {
+        if (isModeSpeaker() && isStateOn(ChannelHandlerContextType.SPEAKER_CNTXT)) {
             BindingDispatcher.sendPurgeAllMessageSync(this);
         }
         setStateOff();
@@ -1361,15 +1355,15 @@ public class SxpConnection {
 
     @Override
     public String toString() {
-        String localAddress = this.localAddress != null ? this.localAddress.toString() : "";
-        if (localAddress.startsWith("/")) {
-            localAddress = localAddress.substring(1);
+        String localAddressString = this.localAddress != null ? this.localAddress.toString() : "";
+        if (localAddressString.startsWith("/")) {
+            localAddressString = localAddressString.substring(1);
         }
-        String remoteAddress = this.remoteAddress != null ? this.remoteAddress.toString() : "";
-        if (remoteAddress.startsWith("/")) {
-            remoteAddress = remoteAddress.substring(1);
+        String remoteAddressString = this.remoteAddress != null ? this.remoteAddress.toString() : "";
+        if (remoteAddressString.startsWith("/")) {
+            remoteAddressString = remoteAddressString.substring(1);
         }
-        String result = owner.toString() + "[" + localAddress + "/" + remoteAddress + "]";
+        String result = owner.toString() + "[" + localAddressString + "/" + remoteAddressString + "]";
 
         result +=
                 "[" + (getState().equals(ConnectionState.Off) ? "X" : getState().toString().charAt(0)) + "|" + getMode()

@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core;
 
 import com.google.common.base.Preconditions;
@@ -24,6 +23,7 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -141,24 +141,25 @@ public class SxpNode {
         if (node.getSxpDomains() != null && node.getSxpDomains().getSxpDomain() != null) {
             node.getSxpDomains().getSxpDomain().forEach(sxpNode::addDomain);
         }
-        if (!sxpNode.sxpDomains.containsKey(DEFAULT_DOMAIN))
+        if (!sxpNode.sxpDomains.containsKey(DEFAULT_DOMAIN)) {
             sxpNode.sxpDomains.put(DEFAULT_DOMAIN,
                     SxpDomain.createInstance(sxpNode, DEFAULT_DOMAIN, sxpDatabase, masterDatabase));
+        }
         if (node.getSxpPeerGroups() != null && node.getSxpPeerGroups().getSxpPeerGroup() != null) {
             node.getSxpPeerGroups()
                     .getSxpPeerGroup()
                     .forEach(g -> sxpNode.addPeerGroup(new SxpPeerGroupBuilder(g).build()));
         }
-        sxpNode.handlerFactoryServer.addDecoder(new ConnectionDecoder(sxpNode), HandlerFactory.Position.Begin);
+        sxpNode.handlerFactoryServer.addDecoder(new ConnectionDecoder(sxpNode), HandlerFactory.Position.BEGIN);
         return sxpNode;
     }
 
     protected final HandlerFactory
             handlerFactoryClient =
-            HandlerFactory.instanceAddDecoder(MessageDecoder.createClientProfile(this), HandlerFactory.Position.End);
+            HandlerFactory.instanceAddDecoder(MessageDecoder.createClientProfile(this), HandlerFactory.Position.END);
     protected final HandlerFactory
             handlerFactoryServer =
-            HandlerFactory.instanceAddDecoder(MessageDecoder.createServerProfile(this), HandlerFactory.Position.End);
+            HandlerFactory.instanceAddDecoder(MessageDecoder.createServerProfile(this), HandlerFactory.Position.END);
     protected final BindingDispatcher svcBindingDispatcher;
     protected final BindingHandler svcBindingHandler;
     protected final Map<String, SxpPeerGroupBuilder> peerGroupMap = new HashMap<>();
@@ -174,7 +175,7 @@ public class SxpNode {
     private final SxpNodeIdentityBuilder nodeBuilder;
     private final NodeId nodeId;
     private Channel serverChannel;
-    private final HashMap<TimerType, ListenableScheduledFuture<?>> timers = new HashMap<>(6);
+    private final Map<TimerType, ListenableScheduledFuture<?>> timers = new EnumMap<>(TimerType.class);
 
     /**
      * Default constructor that creates and start SxpNode using provided values
@@ -194,7 +195,7 @@ public class SxpNode {
                 && Objects.nonNull(node.getMessageBuffering().getOutBuffer())) {
             this.svcBindingHandler =
                     new BindingHandler(this, this.svcBindingDispatcher, node.getMessageBuffering().getInBuffer());
-            setMessagePartitionSize(node.getMessageBuffering().getOutBuffer());
+            svcBindingDispatcher.setPartitionSize(node.getMessageBuffering().getOutBuffer());
         } else {
             this.svcBindingHandler = new BindingHandler(this, this.svcBindingDispatcher);
         }
@@ -221,7 +222,7 @@ public class SxpNode {
         synchronized (sxpDomains) {
             if (!sxpDomains.containsKey(connection.getDomainName())) {
                 LOG.warn("{} Domain {} does not exist", this, connection.getDomainName());
-                throw new DomainNotFoundException(getName(), "Domain " + connection.getDomainName() + " not found");
+                throw new DomainNotFoundException(getName(), connection.getDomainName());
             }
             sxpDomains.get(connection.getDomainName()).putConnection(connection);
         }
@@ -280,7 +281,7 @@ public class SxpNode {
             SxpConnection
                     connection =
                     getByAddress(new InetSocketAddress(Search.getAddress(sxpPeer.getPeerAddress()),
-                            sxpPeer.getPeerPort() == null ? 64999 : sxpPeer.getPeerPort().getValue()));
+                            sxpPeer.getPeerPort() == null ? Constants.SXP_DEFAULT_PORT : sxpPeer.getPeerPort().getValue()));
             if (connection != null) {
                 sxpConnections.add(connection);
             }
@@ -446,9 +447,7 @@ public class SxpNode {
             List<SxpFilter> sxpFilters = peerGroup.getSxpFilter();
             SxpFilter oldFilter = null;
             for (SxpFilter filter : sxpFilters) {
-                if (SxpBindingFilter.checkInCompatibility(filter, newFilter) && filter.getFilterEntries()
-                        .getClass()
-                        .equals(filter.getFilterEntries().getClass())) {
+                if (SxpBindingFilter.checkInCompatibility(filter, newFilter)) {
                     oldFilter = filter;
                     break;
                 }
@@ -487,7 +486,7 @@ public class SxpNode {
                 boolean
                         remove =
                         specific == null ? f.getFilterType().equals(filterType) :
-                                f.getFilterType().equals(filterType) && specific.equals(f.getFilterSpecific());
+                                (f.getFilterType().equals(filterType) && specific.equals(f.getFilterSpecific()));
                 if (remove) {
                     connections.forEach(c -> c.removeFilter(filterType, f.getFilterSpecific()));
                 }
@@ -507,10 +506,11 @@ public class SxpNode {
         Preconditions.checkNotNull(domain);
         Preconditions.checkNotNull(domain.getDomainName());
         synchronized (sxpDomains) {
-            if (!sxpDomains.containsKey(domain.getDomainName()))
+            if (!sxpDomains.containsKey(domain.getDomainName())) {
                 sxpDomains.put(domain.getDomainName(), SxpDomain.createInstance(this, domain));
-            else
+            } else {
                 return false;
+            }
         }
         return true;
     }
@@ -518,7 +518,7 @@ public class SxpNode {
     /**
      * Remove Domain from SxpNode if there is not domain with specified name thrown IllegalArgumentException
      *
-     * @param domainName Nme assigned to domain that will be removed
+     * @param domainName Name assigned to domain that will be removed
      * @return SxpDomain that was removed
      */
     public SxpDomain removeDomain(String domainName) {
@@ -596,6 +596,7 @@ public class SxpNode {
     /**
      * Adds and afterward start new Connection
      *
+     * @deprecated replaced by {@link #addConnection(Connection, String)}
      * @param connection Connection to be added
      * @throws IllegalArgumentException If Connection exist in Node
      */
@@ -620,6 +621,7 @@ public class SxpNode {
     /**
      * Adds and afterwards starts new Connections
      *
+     * @deprecated replaced by {@link #addConnections(Connections, String)}
      * @param connections Connections to be added
      */
     @Deprecated
@@ -660,12 +662,14 @@ public class SxpNode {
      * @return List of Connections matching specified criteria
      */
     private List<SxpConnection> filterConnections(Predicate<SxpConnection> predicate, String domain) {
-        if (domain == null)
+        if (domain == null) {
             return filterConnections(predicate);
+        }
         List<SxpConnection> connections = new ArrayList<>();
         synchronized (sxpDomains) {
-            if (sxpDomains.containsKey(Preconditions.checkNotNull(domain)))
+            if (sxpDomains.containsKey(Preconditions.checkNotNull(domain))) {
                 connections.addAll(Collections2.filter(sxpDomains.get(domain).getConnections(), predicate));
+            }
         }
         return Collections.unmodifiableList(connections);
     }
@@ -688,8 +692,9 @@ public class SxpNode {
     public List<SxpConnection> getAllConnections(String domain) {
         List<SxpConnection> connections = new ArrayList<>();
         synchronized (sxpDomains) {
-            if (sxpDomains.containsKey(Preconditions.checkNotNull(domain)))
+            if (sxpDomains.containsKey(Preconditions.checkNotNull(domain))) {
                 connections.addAll(sxpDomains.get(domain).getConnections());
+            }
         }
         return Collections.unmodifiableList(connections);
     }
@@ -750,6 +755,7 @@ public class SxpNode {
     }
 
     /**
+     * @deprecated replaced by {@link #getAllOnListenerConnections(String)}
      * @return Gets all SxpConnections with state set to On and mode Listener or Both
      */
     @Deprecated
@@ -764,11 +770,12 @@ public class SxpNode {
      */
     public List<SxpConnection> getAllOnListenerConnections(String domain) {
         return filterConnections(
-                connection -> connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext) && (
+                connection -> connection.isStateOn(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT) && (
                         connection.getMode().equals(ConnectionMode.Listener) || connection.isModeBoth()), domain);
     }
 
     /**
+     * @deprecated replaced by {@link #getAllOnSpeakerConnections(String)}
      * @return Gets all SxpConnections with state set to On and mode Speaker or Both
      */
     @Deprecated
@@ -783,11 +790,12 @@ public class SxpNode {
      */
     public List<SxpConnection> getAllOnSpeakerConnections(String domain) {
         return filterConnections(
-                connection -> connection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext) && (
+                connection -> connection.isStateOn(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT) && (
                         connection.getMode().equals(ConnectionMode.Speaker) || connection.isModeBoth()), domain);
     }
 
     /**
+     * @deprecated replaced by {@link #getBindingMasterDatabase(String)}
      * @return Gets MasterDatabase that is used in Node
      */
     @Deprecated
@@ -796,6 +804,7 @@ public class SxpNode {
     }
 
     /**
+     * @deprecated replaced by {@link #getBindingSxpDatabase(String)}
      * @return Gets SxpDatabase that is used in Node
      */
     @Deprecated
@@ -810,9 +819,10 @@ public class SxpNode {
      */
     public MasterDatabaseInf getBindingMasterDatabase(String domainName) {
         synchronized (sxpDomains) {
-            if (sxpDomains.containsKey(Preconditions.checkNotNull(domainName)))
+            if (sxpDomains.containsKey(Preconditions.checkNotNull(domainName))) {
                 return sxpDomains.get(domainName).getMasterDatabase();
-            throw new DomainNotFoundException(getName(), "Domain " + domainName + " not found");
+            }
+            throw new DomainNotFoundException(getName(), domainName);
         }
     }
 
@@ -823,9 +833,10 @@ public class SxpNode {
      */
     public SxpDatabaseInf getBindingSxpDatabase(String domainName) {
         synchronized (sxpDomains) {
-            if (sxpDomains.containsKey(Preconditions.checkNotNull(domainName)))
+            if (sxpDomains.containsKey(Preconditions.checkNotNull(domainName))) {
                 return sxpDomains.get(domainName).getSxpDatabase();
-            throw new DomainNotFoundException(getName(), "Domain " + domainName + " not found");
+            }
+            throw new DomainNotFoundException(getName(), domainName);
         }
     }
 
@@ -841,8 +852,9 @@ public class SxpNode {
         List<SxpConnection> sxpConnections = new ArrayList<>();
         synchronized (sxpDomains) {
             sxpDomains.values().forEach(d -> {
-                if (d.hasConnection(inetSocketAddress))
+                if (d.hasConnection(inetSocketAddress)) {
                     sxpConnections.add(d.getConnection(inetSocketAddress));
+                }
             });
         }
         if (sxpConnections.isEmpty()) {
@@ -857,8 +869,8 @@ public class SxpNode {
      * Gets SxpConnection by its port
      *
      * @param port Port that is used by SxpConnection
-     * @return SxpConnection or null if Node doesn't contains address with specified port
-     * @throws IllegalStateException If found more than 1 SxpConnection
+     * @return SxpConnection or null if the Node doesn't contain an address with the specified port
+     * @throws IllegalStateException If more than 1 SxpConnection was found
      */
     @Deprecated
     public SxpConnection getByPort(final int port) {
@@ -1025,9 +1037,8 @@ public class SxpNode {
         return openConnectionFuture.updateAndGet(listenableFuture -> {
             if (Objects.isNull(listenableFuture) || listenableFuture.isDone()) {
                 return worker.executeTask(() -> {
-                    final int connectionsAllSize = getAllConnections().size(),
-                            connectionsOnSize =
-                                    getAllOnConnections().size();
+                    final int connectionsAllSize = getAllConnections().size();
+                    int connectionsOnSize = getAllOnConnections().size();
                     final List<SxpConnection>
                             connections =
                             filterConnections(RetryOpenTimerTask.INACTIVE_CONNECTION_FILTER::test);
@@ -1050,8 +1061,7 @@ public class SxpNode {
             if (!connection.isModeBoth()) {
                 connection.closeChannelHandlerContextComplements(null);
             }
-            if (!connection.isModeBoth() || !connection.hasChannelHandlerContext(
-                    SxpConnection.ChannelHandlerContextType.ListenerContext)) {
+            if (!connection.isModeBoth() || !connection.hasChannelHandlerContext(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT)) {
                 ConnectFacade.createClient(this, connection, handlerFactoryClient);
             }
         }
@@ -1074,6 +1084,7 @@ public class SxpNode {
     /**
      * Adds Bindings to database as Local bindings
      *
+     * @deprecated replaced by {@link #putLocalBindingsMasterDatabase(List, String)}
      * @param bindings MasterDatabase containing bindings that will be added
      */
     @Deprecated
@@ -1084,6 +1095,7 @@ public class SxpNode {
     /**
      * Removes Local Bindings from database
      *
+     * @deprecated replaced by {@link #removeLocalBindingsMasterDatabase(List, String)}
      * @param bindings MasterDatabase containing bindings that will be removed
      */
     @Deprecated
@@ -1099,10 +1111,11 @@ public class SxpNode {
      * @throws DomainNotFoundException if Domain does not exist
      */
     public List<MasterDatabaseBinding> putLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings,
-            String domainName) throws DomainNotFoundException {
+            String domainName) {
         final SxpDomain sxpDomain = getDomain(domainName);
-        if (sxpDomain == null)
-            throw new DomainNotFoundException(getName(), "Domain " + domainName + " not found");
+        if (sxpDomain == null) {
+            throw new DomainNotFoundException(getName(), domainName);
+        }
         List<MasterDatabaseBinding> addedBindings;
         synchronized (sxpDomain) {
             addedBindings = sxpDomain.getMasterDatabase().addLocalBindings(bindings);
@@ -1120,10 +1133,11 @@ public class SxpNode {
      * @throws DomainNotFoundException if Domain does not exist
      */
     public List<MasterDatabaseBinding> removeLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings,
-            String domainName) throws DomainNotFoundException {
+            String domainName) {
         final SxpDomain sxpDomain = getDomain(domainName);
-        if (sxpDomain == null)
-            throw new DomainNotFoundException(getName(), "Domain " + domainName + " not found");
+        if (sxpDomain == null) {
+            throw new DomainNotFoundException(getName(), domainName);
+        }
         Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(this, domainName);
         List<MasterDatabaseBinding> deletedBindings;
         synchronized (sxpDomain) {
@@ -1184,18 +1198,16 @@ public class SxpNode {
      * @return ListenableScheduledFuture callback
      * @throws UnknownTimerTypeException If current TimerType isn't supported
      */
-    public ListenableScheduledFuture<?> setTimer(TimerType timerType, int period) throws UnknownTimerTypeException {
+    public ListenableScheduledFuture<?> setTimer(TimerType timerType, int period) {
         synchronized (timers) {
             SxpTimerTask timer;
-            switch (timerType) {
-                case RetryOpenTimer:
-                    timer = new RetryOpenTimerTask(this, period);
-                    break;
-                default:
-                    throw new UnknownTimerTypeException(timerType);
+            if (timerType == TimerType.RetryOpenTimer) {
+                timer = new RetryOpenTimerTask(this, period);
+            } else {
+                throw new UnknownTimerTypeException(timerType);
             }
-            ListenableScheduledFuture<?> timer_ = getTimer(timerType);
-            if (period > 0 && (timer_ == null || !timer_.isCancelled())) {
+            ListenableScheduledFuture<?> formerTimer = getTimer(timerType);
+            if (period > 0 && (formerTimer == null || !formerTimer.isCancelled())) {
                 return this.setTimer(timerType, getWorker().scheduleTask(timer, period, TimeUnit.SECONDS));
             } else {
                 return this.setTimer(timerType, null);
@@ -1224,7 +1236,7 @@ public class SxpNode {
      * @param size Size which will be used for partitioning
      * @throws IllegalArgumentException If size of partitioning is bellow 2 or above 150
      */
-    public void setMessagePartitionSize(int size) throws IllegalArgumentException {
+    public void setMessagePartitionSize(int size) {
         svcBindingDispatcher.setPartitionSize(size);
     }
 
@@ -1234,7 +1246,7 @@ public class SxpNode {
      * @param size Size which will be used for message joining
      * @throws IllegalArgumentException If size of message merge is bellow 1
      */
-    public void setMessageMergeSize(int size) throws IllegalArgumentException {
+    public void setMessageMergeSize(int size) {
         svcBindingHandler.setBufferLimit(size);
     }
 
@@ -1324,7 +1336,7 @@ public class SxpNode {
         if (SecurityType.Default.equals(connection.getSecurityType())
                 && connection.getPassword() != null
                 && !connection.getPassword().trim().isEmpty()) {
-            getWorker().executeTask(()-> {doUpdateMD5keys(connection);}, ThreadsWorker.WorkerType.DEFAULT);
+            getWorker().executeTask(()-> doUpdateMD5keys(connection), ThreadsWorker.WorkerType.DEFAULT);
         }
     }
 
@@ -1343,7 +1355,7 @@ public class SxpNode {
      *
      */
     public void updateMD5keys() {
-        getWorker().executeTask(()-> {doUpdateMD5keys(null);}, ThreadsWorker.WorkerType.DEFAULT);
+        getWorker().executeTask(()-> doUpdateMD5keys(null), ThreadsWorker.WorkerType.DEFAULT);
     }
 
     /**
@@ -1372,27 +1384,25 @@ public class SxpNode {
 
         LOG.debug("{} - Updating MD5 keys", con);
         bindServerFuture.updateAndGet(listenableFuture -> {
-            if (isEnabled() && listenableFuture != null) {
-                if (listenableFuture.isDone()) {
-                    Map<InetAddress, byte[]> keyMapping;
-                    md5UpdateLock.lock();
-                    try { // exclusive password extraction from all node connections
-                        //revoke processing flag
-                        processingConnectionData = false;
-                        //read keyMap
-                        keyMapping = ConnectFacade.collectAllPasswords(this);
-                    } finally {
-                        md5UpdateLock.unlock();
-                    }
+            if (isEnabled() && listenableFuture != null && listenableFuture.isDone()) {
+                Map<InetAddress, byte[]> keyMapping;
+                md5UpdateLock.lock();
+                try { // exclusive password extraction from all node connections
+                    //revoke processing flag
+                    processingConnectionData = false;
+                    //read keyMap
+                    keyMapping = ConnectFacade.collectAllPasswords(this);
+                } finally {
+                    md5UpdateLock.unlock();
+                }
 
-                    synchronized (md5UpdateLock) {
-                        if (serverChannel != null) {
-                            LOG.debug("{} - shutting down the server", con);
-                            serverChannel.close().awaitUninterruptibly();
-                        }
-                        serverChannel = ConnectFacade.createServer(this, handlerFactoryServer, keyMapping)
-                                .awaitUninterruptibly().channel();
+                synchronized (md5UpdateLock) {
+                    if (serverChannel != null) {
+                        LOG.debug("{} - shutting down the server", con);
+                        serverChannel.close().awaitUninterruptibly();
                     }
+                    serverChannel = ConnectFacade.createServer(this, handlerFactoryServer, keyMapping)
+                            .awaitUninterruptibly().channel();
                 }
             }
             return listenableFuture;
@@ -1409,7 +1419,7 @@ public class SxpNode {
     @Override
     public String toString() {
         return "[" + (
-                nodeBuilder.getName() != null && !nodeBuilder.getName().isEmpty() ? nodeBuilder.getName() + ":" : "")
+                nodeBuilder.getName() != null && !nodeBuilder.getName().isEmpty() ? (nodeBuilder.getName() + ":") : "")
                 + NodeIdConv.toString(nodeId) + "]";
     }
 }

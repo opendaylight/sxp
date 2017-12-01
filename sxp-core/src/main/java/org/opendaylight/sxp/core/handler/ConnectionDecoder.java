@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.handler;
 
 import static org.opendaylight.sxp.core.SxpConnection.invertMode;
@@ -53,6 +52,9 @@ import org.slf4j.LoggerFactory;
 public class ConnectionDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectionDecoder.class.getName());
+    /**
+     * SxpNode owner
+     */
     protected final SxpNode owner;
 
     /**
@@ -65,6 +67,8 @@ public class ConnectionDecoder extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     /**
+     * Add a connection to a given domain.
+     *
      * @param domain     Domain name
      * @param connection Connection that will be added
      */
@@ -73,6 +77,8 @@ public class ConnectionDecoder extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     /**
+     * Get an SXP domain template with a given address.
+     *
      * @param address Address to look for
      * @return SxpDomain containing template with provided address
      */
@@ -86,6 +92,8 @@ public class ConnectionDecoder extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     /**
+     * Get an address of a remote peer.
+     *
      * @param ctx Context containing remote address
      * @return Address of remote peer
      */
@@ -94,6 +102,9 @@ public class ConnectionDecoder extends SimpleChannelInboundHandler<ByteBuf> {
                 .remoteAddress() : null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws SocketAddressNotRecognizedException {
         InetSocketAddress address = getAddress(ctx);
@@ -104,6 +115,9 @@ public class ConnectionDecoder extends SimpleChannelInboundHandler<ByteBuf> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void channelRead0(ChannelHandlerContext ctx, ByteBuf message)
             throws ErrorCodeDataLengthException, AttributeLengthException, TlvNotFoundException, AddressLengthException,
@@ -141,26 +155,32 @@ public class ConnectionDecoder extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     /**
+     * Get mode of remote peer from a given notification.
+     *
      * @param notification Notification to be parsed
      * @return Mode of remotePeer or null if message is of unsupported type
      */
     private ConnectionMode getMode(Notification notification) {
-        if (notification instanceof OpenMessage)
+        if (notification instanceof OpenMessage) {
             return ((OpenMessage) notification).getSxpMode();
-        else if (notification instanceof OpenMessageLegacy)
+        } else if (notification instanceof OpenMessageLegacy) {
             return ((OpenMessageLegacy) notification).getSxpMode();
+        }
         throw new IllegalArgumentException("Not supported message received");
     }
 
     /**
+     * Get version of remote peer from a given notification.
+     *
      * @param notification Notification to be parsed
      * @return Version of remotePeer or null if message is of unsupported type
      */
     private Version getVersion(Notification notification) {
-        if (notification instanceof OpenMessage)
+        if (notification instanceof OpenMessage) {
             return ((OpenMessage) notification).getVersion();
-        else if (notification instanceof OpenMessageLegacy)
+        } else if (notification instanceof OpenMessageLegacy) {
             return ((OpenMessageLegacy) notification).getVersion();
+        }
         throw new IllegalArgumentException("Not supported message received");
     }
 }

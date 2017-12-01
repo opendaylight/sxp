@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.behavior;
 
 import io.netty.buffer.ByteBuf;
@@ -39,6 +38,7 @@ import org.slf4j.LoggerFactory;
  * +-----+----------+----------+------------+-----------+--------------+
  * </pre>
  */
+@SuppressWarnings("all")
 public interface Strategy {
 
     Logger LOG = LoggerFactory.getLogger(Strategy.class.getName());

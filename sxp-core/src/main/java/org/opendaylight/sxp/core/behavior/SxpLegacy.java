@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.behavior;
 
 import io.netty.buffer.ByteBuf;
@@ -45,6 +44,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 /**
  * SxpLegacy class provides logic for handling connection on Version 1/2/3
  */
+@SuppressWarnings("all")
 public class SxpLegacy implements Strategy {
 
     protected final Context context;
@@ -63,6 +63,9 @@ public class SxpLegacy implements Strategy {
         return context.getOwner();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void onChannelActivation(ChannelHandlerContext ctx, SxpConnection connection) {
         // Default connection mode.
@@ -81,15 +84,18 @@ public class SxpLegacy implements Strategy {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void onChannelInactivation(ChannelHandlerContext ctx, SxpConnection connection) {
         SxpConnection.ChannelHandlerContextType type = connection.getContextType(ctx);
         if (connection.isStateOn(type)) {
             switch (type) {
-                case ListenerContext:
+                case LISTENER_CNTXT:
                     connection.setDeleteHoldDownTimer();
                     return;
-                case SpeakerContext:
+                case SPEAKER_CNTXT:
                     ctx.writeAndFlush(MessageFactory.createPurgeAll());
                     break;
             }
@@ -97,23 +103,26 @@ public class SxpLegacy implements Strategy {
         connection.setStateOff(ctx);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void onException(ChannelHandlerContext ctx, SxpConnection connection) {
-        LOG.warn(connection + " onException");
+        LOG.warn("{} onException", connection);
     }
 
     /**
      * Checks if SxpConnections and its peer have correct connection modes
      *
      * @param connection SxpConnection to check version against
-     * @param _message   Message containing version to check
+     * @param legacyOpenMsg   Message containing version to check
      * @param ctx        ChannelHandlerContext on which error will be send if mismatch occurred
      * @return If ModeMismatch occurred
      */
-    private boolean checkModeMismatch(SxpConnection connection, OpenMessageLegacy _message, ChannelHandlerContext ctx) {
-        if (!(connection.isModeListener() && _message.getSxpMode().equals(ConnectionMode.Speaker)) && !(
-                connection.isModeSpeaker() && _message.getSxpMode().equals(ConnectionMode.Listener)) && !(
-                connection.isModeBoth() && _message.getSxpMode().equals(ConnectionMode.Both))) {
+    private boolean checkModeMismatch(SxpConnection connection, OpenMessageLegacy legacyOpenMsg, ChannelHandlerContext ctx) {
+        if (!(connection.isModeListener() && legacyOpenMsg.getSxpMode().equals(ConnectionMode.Speaker)) && !(
+                connection.isModeSpeaker() && legacyOpenMsg.getSxpMode().equals(ConnectionMode.Listener)) && !(
+                connection.isModeBoth() && legacyOpenMsg.getSxpMode().equals(ConnectionMode.Both))) {
             MessageDecoder.sendErrorMessage(ctx, new ErrorMessageException(ErrorCode.OpenMessageError, null),
                     connection);
             connection.setStateOff(ctx);
@@ -131,18 +140,21 @@ public class SxpLegacy implements Strategy {
         try {
             connection.setNodeIdRemote(NodeIdConv.createNodeId(connection.getDestination().getAddress()));
         } catch (UnknownNodeIdException e) {
-            LOG.error("{} Unknown message relevant peer node ID", connection);
+            LOG.error("{} Unknown message relevant peer node ID", connection, e);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void onInputMessage(ChannelHandlerContext ctx, SxpConnection connection, Notification message)
             throws ErrorMessageException, UpdateMessageConnectionStateException, ErrorMessageReceivedException {
         LOG.info("{} Handle {}", connection, MessageFactory.toString(message));
 
         if (message instanceof OpenMessageLegacy) {
-            OpenMessageLegacy _message = (OpenMessageLegacy) message;
-            if (_message.getType().equals(MessageType.Open)) {
+            OpenMessageLegacy legacyOpenMsg = (OpenMessageLegacy) message;
+            if (legacyOpenMsg.getType().equals(MessageType.Open)) {
                 if (connection.isStateDeleteHoldDown()) {
                     connection.setReconciliationTimer();
                 }
@@ -150,7 +162,7 @@ public class SxpLegacy implements Strategy {
                 // is set to the opposite value of the one received in the OPEN
                 // message.
                 setNodeIdRemote(connection);
-                if (!checkModeMismatch(connection, _message, ctx)) {
+                if (!checkModeMismatch(connection, legacyOpenMsg, ctx)) {
                     // Close the dual channels.
                     connection.closeChannelHandlerContextComplements(ctx);
                     connection.markChannelHandlerContext(ctx);
@@ -166,15 +178,15 @@ public class SxpLegacy implements Strategy {
                     ctx.writeAndFlush(response);
                     return;
                 }
-            } else if (_message.getType().equals(MessageType.OpenResp)) {
+            } else if (legacyOpenMsg.getType().equals(MessageType.OpenResp)) {
                 // Verifies that the SXP version is compatible with its SXP. If
                 // not then send error and close connection.
-                if (!connection.getVersion().equals(_message.getVersion())) {
+                if (!connection.getVersion().equals(legacyOpenMsg.getVersion())) {
                     throw new ErrorMessageException(ErrorCodeNonExtended.VersionMismatch,
-                            new IncompatiblePeerVersionException(connection.getVersion(), _message.getVersion()));
+                            new IncompatiblePeerVersionException(connection.getVersion(), legacyOpenMsg.getVersion()));
                 }
                 setNodeIdRemote(connection);
-                if (!checkModeMismatch(connection, _message, ctx)) {
+                if (!checkModeMismatch(connection, legacyOpenMsg, ctx)) {
                     // Close the dual channels.
                     connection.closeChannelHandlerContextComplements(ctx);
                     connection.markChannelHandlerContext(ctx);
@@ -188,7 +200,7 @@ public class SxpLegacy implements Strategy {
 
         } else if (message instanceof UpdateMessageLegacy) {
             // Accepted only if connection is in ON state.
-            if (!connection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)) {
+            if (!connection.isStateOn(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT)) {
                 throw new UpdateMessageConnectionStateException(connection.getState());
             }
             connection.setUpdateOrKeepaliveMessageTimestamp();
@@ -203,6 +215,9 @@ public class SxpLegacy implements Strategy {
         LOG.warn("{} Cannot handle message, ignoring: {}", connection, MessageFactory.toString(message));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Notification onParseInput(ByteBuf request) throws ErrorMessageException {
         try {
@@ -212,6 +227,9 @@ public class SxpLegacy implements Strategy {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends SxpBindingFields> ByteBuf onUpdateMessage(SxpConnection connection, List<T> deleteBindings,
             List<T> addBindings, SxpBindingFilter bindingFilter) throws UpdateMessageCompositionException {

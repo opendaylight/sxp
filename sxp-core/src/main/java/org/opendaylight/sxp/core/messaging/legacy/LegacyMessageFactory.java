@@ -36,6 +36,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 /**
  * LegacyMessageFactory class contains logic for creating and parsing legacy messages
  */
+@SuppressWarnings("all")
 public class LegacyMessageFactory extends MessageFactory {
 
     /**
@@ -109,9 +110,10 @@ public class LegacyMessageFactory extends MessageFactory {
      * as host address.
      */
     public static <T extends SxpBindingFields> ByteBuf createUpdate(List<T> deleteBindings, List<T> addBindings,
-            Version version, SxpBindingFilter bindingFilter) throws UnknownVersionException {
-        if (version == null || !MessageFactory.isLegacy(version))
+            Version version, SxpBindingFilter bindingFilter) {
+        if (version == null || !MessageFactory.isLegacy(version)) {
             throw new UnknownVersionException();
+        }
 
         MappingRecordList mappingRecords = new MappingRecordList();
         if (deleteBindings != null && !deleteBindings.isEmpty()) {
@@ -144,8 +146,9 @@ public class LegacyMessageFactory extends MessageFactory {
 
         if (addBindings != null && !addBindings.isEmpty()) {
             addBindings.forEach(binding -> {
-                if (bindingFilter != null && bindingFilter.apply(binding))
+                if (bindingFilter != null && bindingFilter.apply(binding)) {
                     return;
+                }
                 switch (version) {
                     case Version3:
                         if (binding.getIpPrefix().getIpv4Prefix() != null) {

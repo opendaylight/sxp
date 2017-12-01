@@ -166,10 +166,10 @@ public class SxpConnectionTest {
         sxpConnection.closeChannelHandlerContext(context);
         verify(context).close();
 
-        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.ListenerContext);
+        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT);
         sxpConnection.closeChannelHandlerContext(context);
         exception.expect(ChannelHandlerContextNotFoundException.class);
-        sxpConnection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.ListenerContext);
+        sxpConnection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT);
     }
 
     @Test
@@ -196,10 +196,10 @@ public class SxpConnectionTest {
         sxpConnection.closeChannelHandlerContexts();
         verify(context).close();
 
-        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.ListenerContext);
+        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT);
         sxpConnection.closeChannelHandlerContexts();
         exception.expect(ChannelHandlerContextNotFoundException.class);
-        sxpConnection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.ListenerContext);
+        sxpConnection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT);
     }
 
     @Test
@@ -249,16 +249,15 @@ public class SxpConnectionTest {
         ChannelHandlerContext context1 = mock(ChannelHandlerContext.class);
         when(context1.close()).thenReturn(mock(ChannelFuture.class));
         sxpConnection = spy(sxpConnection);
-        when(sxpConnection.getContextType(any(ChannelHandlerContext.class))).thenReturn(
-                SxpConnection.ChannelHandlerContextType.ListenerContext);
+        when(sxpConnection.getContextType(any(ChannelHandlerContext.class))).thenReturn(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT);
         //ListenerDown
         sxpConnection.setTimer(TimerType.DeleteHoldDownTimer, 120);
         sxpConnection.setTimer(TimerType.KeepAliveTimer, 120);
         sxpConnection.setTimer(TimerType.ReconciliationTimer, 120);
         sxpConnection.setTimer(TimerType.HoldTimer, 120);
 
-        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.ListenerContext);
-        sxpConnection.markChannelHandlerContext(context1, SxpConnection.ChannelHandlerContextType.SpeakerContext);
+        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT);
+        sxpConnection.markChannelHandlerContext(context1, SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT);
 
         sxpConnection.setStateOff(context);
         assertNull(sxpConnection.getTimer(TimerType.DeleteHoldDownTimer));
@@ -267,12 +266,11 @@ public class SxpConnectionTest {
         assertNotNull(sxpConnection.getTimer(TimerType.KeepAliveTimer));
 
         //Speaker Down
-        when(sxpConnection.getContextType(any(ChannelHandlerContext.class))).thenReturn(
-                SxpConnection.ChannelHandlerContextType.SpeakerContext);
+        when(sxpConnection.getContextType(any(ChannelHandlerContext.class))).thenReturn(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT);
         sxpConnection.setTimer(TimerType.DeleteHoldDownTimer, 120);
         sxpConnection.setTimer(TimerType.HoldTimer, 120);
         sxpConnection.setTimer(TimerType.ReconciliationTimer, 120);
-        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.ListenerContext);
+        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT);
 
         sxpConnection.setStateOff(context1);
         assertNotNull(sxpConnection.getTimer(TimerType.DeleteHoldDownTimer));
@@ -320,7 +318,7 @@ public class SxpConnectionTest {
         sxpConnection.shutdown();
         assertNull(sxpConnection.getTimer(TimerType.KeepAliveTimer));
         try {
-            sxpConnection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext);
+            sxpConnection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT);
             fail();
         } catch (ChannelHandlerContextNotFoundException e) {
             assertEquals(ConnectionState.Off, sxpConnection.getState());
@@ -484,25 +482,25 @@ public class SxpConnectionTest {
 
     @Test
     public void testIsStateOn() throws Exception {
-        assertTrue(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext));
-        assertTrue(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext));
+        assertTrue(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT));
+        assertTrue(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT));
 
         sxpConnection.setStateOff();
-        assertFalse(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext));
-        assertFalse(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext));
+        assertFalse(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT));
+        assertFalse(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT));
 
         sxpConnection =
                 SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On), DOMAIN_NAME);
 
         ChannelHandlerContext context = mock(ChannelHandlerContext.class);
         when(context.isRemoved()).thenReturn(false);
-        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.ListenerContext);
-        assertTrue(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext));
+        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT);
+        assertTrue(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT));
 
         context = mock(ChannelHandlerContext.class);
         when(context.isRemoved()).thenReturn(true);
-        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.SpeakerContext);
-        assertFalse(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext));
+        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT);
+        assertFalse(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT));
     }
 
     @Test
@@ -521,16 +519,16 @@ public class SxpConnectionTest {
 
     @Test
     public void testGetContextType() throws Exception {
-        assertEquals(SxpConnection.ChannelHandlerContextType.None,
+        assertEquals(SxpConnection.ChannelHandlerContextType.NONE_CNTXT,
                 sxpConnection.getContextType(mock(ChannelHandlerContext.class)));
         ChannelHandlerContext context = mock(ChannelHandlerContext.class);
 
-        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.ListenerContext);
-        assertEquals(SxpConnection.ChannelHandlerContextType.ListenerContext, sxpConnection.getContextType(context));
+        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT);
+        assertEquals(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT, sxpConnection.getContextType(context));
 
         context = mock(ChannelHandlerContext.class);
-        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.SpeakerContext);
-        assertEquals(SxpConnection.ChannelHandlerContextType.SpeakerContext, sxpConnection.getContextType(context));
+        sxpConnection.markChannelHandlerContext(context, SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT);
+        assertEquals(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT, sxpConnection.getContextType(context));
     }
 
     private SxpBindingFilter<?, SxpFilter> getFilter(FilterType type, String name) {
@@ -564,7 +562,7 @@ public class SxpConnectionTest {
         sxpConnection =
                 SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On), DOMAIN_NAME);
         sxpConnection.markChannelHandlerContext(mock(ChannelHandlerContext.class),
-                SxpConnection.ChannelHandlerContextType.SpeakerContext);
+                SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT);
         assertNull(sxpConnection.getFilter(FilterType.Inbound));
         assertNull(sxpConnection.getFilter(FilterType.Outbound));
         assertNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
@@ -604,7 +602,7 @@ public class SxpConnectionTest {
         sxpConnection =
                 SxpConnection.create(sxpNode, mockConnection(ConnectionMode.Both, ConnectionState.On), DOMAIN_NAME);
         sxpConnection.markChannelHandlerContext(mock(ChannelHandlerContext.class),
-                SxpConnection.ChannelHandlerContextType.SpeakerContext);
+                SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT);
         assertNull(sxpConnection.getFilter(FilterType.Inbound));
         assertNull(sxpConnection.getFilter(FilterType.InboundDiscarding));
         assertNull(sxpConnection.getFilter(FilterType.Outbound));

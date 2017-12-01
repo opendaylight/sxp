@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.messaging;
 
 import java.net.UnknownHostException;
@@ -30,6 +29,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
  * AttributeList class represent entity that contains Attributes,
  * and has logic to work with Attributes
  */
+@SuppressWarnings("all")
 public class AttributeList extends ArrayList<Attribute> {
 
     private static final int INITIAL_CAPACITY = 5;

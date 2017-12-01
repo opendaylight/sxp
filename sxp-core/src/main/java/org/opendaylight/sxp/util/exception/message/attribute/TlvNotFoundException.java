@@ -5,16 +5,22 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.exception.message.attribute;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.TlvType;
 
+/**
+ * TlvNotFoundException
+ */
 public class TlvNotFoundException extends Exception {
 
-    /** */
     private static final long serialVersionUID = 801190427695923174L;
 
+    /**
+     * Create a new TlvNotFoundException.
+     *
+     * @param type TLV type
+     */
     public TlvNotFoundException(TlvType type) {
         super("[" + type.toString() + "]");
     }

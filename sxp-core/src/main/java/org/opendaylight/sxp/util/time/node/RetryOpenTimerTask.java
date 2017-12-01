@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.time.node;
 
 import java.util.function.Predicate;
@@ -31,7 +30,8 @@ public class RetryOpenTimerTask extends SxpTimerTask<Void> {
     private final SxpNode owner;
 
     /**
-     * Constructor that sets timer period, and set node on which it will try to bring up Connections
+     * Constructor that sets timer period, and set node on which
+     * it will try to bring up Connections
      *
      * @param owner  SxpNode that timer belongs to
      * @param period Value representing time in some Time unit
@@ -43,7 +43,7 @@ public class RetryOpenTimerTask extends SxpTimerTask<Void> {
 
     @Override
     public Void call() {
-        LOG.debug(owner + " Default{} [{}]", getClass().getSimpleName(), getPeriod());
+        LOG.debug("{} Default{} [{}]", owner, getClass().getSimpleName(), getPeriod());
         if (owner.isEnabled() && owner.getAllConnections().stream().anyMatch(INACTIVE_CONNECTION_FILTER)) {
             owner.openConnections();
         }

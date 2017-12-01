@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.handler;
 
 import com.google.common.base.Preconditions;
@@ -26,10 +25,24 @@ public final class HandlerFactory {
     private final Deque<ChannelInboundHandler> decoders = new ArrayDeque<>();
     private final Deque<ChannelOutboundHandler> encoders = new ArrayDeque<>();
 
+    /**
+     * Creates a HandlerFactory instance with a given decoder.
+     *
+     * @param decoder decoder to add
+     * @param pos position
+     * @return new HandlerFactory instance
+     */
     public static HandlerFactory instanceAddDecoder(ChannelInboundHandler decoder, Position pos) {
         return new HandlerFactory().addDecoder(decoder, pos);
     }
 
+    /**
+     * Creates a HandlerFactory instance with a given encoder.
+     *
+     * @param encoder encoder to add
+     * @param pos position
+     * @return new HandlerFactory instance
+     */
     public static HandlerFactory instanceAddEncoder(ChannelOutboundHandler encoder, Position pos) {
         return new HandlerFactory().addEncoder(encoder, pos);
     }
@@ -37,7 +50,7 @@ public final class HandlerFactory {
     public synchronized HandlerFactory addDecoder(ChannelInboundHandler decoder, Position pos) {
         Preconditions.checkNotNull(decoder);
         Preconditions.checkNotNull(pos);
-        if (Position.End.equals(pos)) {
+        if (Position.END.equals(pos)) {
             decoders.addLast(decoder);
         } else {
             decoders.addFirst(decoder);
@@ -48,7 +61,7 @@ public final class HandlerFactory {
     public synchronized HandlerFactory addEncoder(ChannelOutboundHandler encoder, Position pos) {
         Preconditions.checkNotNull(encoder);
         Preconditions.checkNotNull(pos);
-        if (Position.End.equals(pos)) {
+        if (Position.END.equals(pos)) {
             encoders.addLast(encoder);
         } else {
             encoders.addFirst(encoder);
@@ -82,5 +95,5 @@ public final class HandlerFactory {
         return out;
     }
 
-    public enum Position {Begin, End}
+    public enum Position {BEGIN, END}
 }
