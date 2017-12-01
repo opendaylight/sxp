@@ -39,7 +39,8 @@ import org.slf4j.LoggerFactory;
 public final class SslContextFactory {
 
     private static final Logger LOG = LoggerFactory.getLogger(SslContextFactory.class);
-    private SslContext clientSslContext = null, serverSslContext = null;
+    private SslContext clientSslContext = null;
+    private SslContext serverSslContext = null;
 
     /**
      * @param tlsConfig TLS configuration object, contains keystore locations and
@@ -70,7 +71,7 @@ public final class SslContextFactory {
             LOG.error("NoSuchAlgorithmException - Unsupported algorithm.", e);
         } catch (final CertificateException e) {
             LOG.error("CertificateException - Unable to access certificate (check password).", e);
-        } catch (final Exception e) {
+        } catch (final Exception e) {//NOSONAR
             LOG.error("Exception - Failed to initialize the SSLContext", e);
         }
     }
@@ -89,7 +90,7 @@ public final class SslContextFactory {
                 in = SslContextFactory.class.getClassLoader().getResourceAsStream(filename);
                 Preconditions.checkArgument(in != null, "File not found: %s", filename);
                 break;
-            case PATH:
+            case PATH://NOSONAR
                 LOG.debug("Current dir using System: {}", System.getProperty("user.dir"));
                 final File keystorefile = new File(filename);
                 try {

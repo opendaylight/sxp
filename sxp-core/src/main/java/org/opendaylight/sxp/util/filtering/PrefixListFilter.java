@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.filtering;
 
 import static org.opendaylight.sxp.util.ArraysUtil.getBitAddress;
@@ -22,16 +21,24 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.entry.PrefixListMatch;
 
 /**
- * PrefixList Filter logic based on Most specific Match that supports SGT matching
+ * PrefixList Filter logic.
+ * Filtering of bindings is based on a most-specific matching lookup
+ * with a support for SGT matching.
+ * A PrefixListFilterEntries is used as a filtering input.
+ *
+ * @param <T> something that extends FilterEntriesFields
  */
+@SuppressWarnings("all")
 public class PrefixListFilter<T extends FilterEntriesFields> extends SxpBindingFilter<PrefixListFilterEntries, T> {
 
     /**
-     * Creates PrefixList Filter that filters Bindings according to specified PrefixList
+     * Creates a new PrefixList Filter.
+     * Filters Bindings according to a specified PrefixList
      *
      * @param filter        SxpFilter containing PrefixList entries
      * @param peerGroupName PeerGroupName of Group containing specified filter
-     * @throws IllegalArgumentException If no filter entries are defined or type of entries is not supported by this implementation
+     * @throws IllegalArgumentException If no filter entries are defined or type
+     *                                  of entries is not supported by this implementation
      */
     public PrefixListFilter(T filter, String peerGroupName) {
         super(filter, peerGroupName);
@@ -49,6 +56,9 @@ public class PrefixListFilter<T extends FilterEntriesFields> extends SxpBindingF
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean filter(PrefixListFilterEntries prefixListFilterEntries, SxpBindingFields binding) {
         if (prefixListFilterEntries.getPrefixListEntry() == null || prefixListFilterEntries.getPrefixListEntry()
@@ -56,7 +66,8 @@ public class PrefixListFilter<T extends FilterEntriesFields> extends SxpBindingF
             return false;
         }
         FilterEntryType entryType = FilterEntryType.Deny;
-        int entryPriority = 0, sgtRank = binding.getIpPrefix().getIpv6Prefix() == null ? 32 : 128;
+        int entryPriority = 0;
+        int sgtRank = binding.getIpPrefix().getIpv6Prefix() == null ? 32 : 128;
 
         for (PrefixListEntry prefixListEntry : prefixListFilterEntries.getPrefixListEntry()) {
             boolean sgtTest = filterSgtMatch(prefixListEntry.getSgtMatch(), binding.getSecurityGroupTag());
@@ -78,7 +89,9 @@ public class PrefixListFilter<T extends FilterEntriesFields> extends SxpBindingF
     }
 
     /**
-     * Filter out IpPrefix according to specified PrefixList match
+     * Filter out an IpPrefix according to a specified PrefixList match.
+     *
+     * Returns true if an IpPrefix will be filtered.
      *
      * @param prefixListMatch PrefixList match according to which value is filtered
      * @param prefix          IpPrefix tested
@@ -102,16 +115,19 @@ public class PrefixListFilter<T extends FilterEntriesFields> extends SxpBindingF
                 int mask = prefixListMatch.getMask().getMaskValue().getValue();
                 switch (prefixListMatch.getMask().getMaskRange()) {
                     case Ge:
-                        if (bindingMask < mask)
+                        if (bindingMask < mask) {
                             return 0;
+                }
                         break;
                     case Le:
-                        if (bindingMask > mask)
+                        if (bindingMask > mask) {
                             return 0;
+                }
                         break;
                     case Eq:
-                        if (bindingMask != mask)
+                        if (bindingMask != mask) {
                             return 0;
+                }
                         break;
                 }
                 addressMask++;

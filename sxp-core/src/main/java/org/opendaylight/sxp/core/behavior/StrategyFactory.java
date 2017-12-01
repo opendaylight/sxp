@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.behavior;
 
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
@@ -27,6 +26,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
  * +-----+----------+----------+------------+-----------+--------------+
  * </pre>
  */
+@SuppressWarnings("all")
 public class StrategyFactory {
 
     /**
@@ -35,7 +35,7 @@ public class StrategyFactory {
      * @return Chosen strategy
      * @throws UnknownVersionException If version is not supported
      */
-    public static Strategy getStrategy(Context context, Version version) throws UnknownVersionException {
+    public static Strategy getStrategy(Context context, Version version) {
         if (version != null) {
             switch (version) {
                 case Version1:

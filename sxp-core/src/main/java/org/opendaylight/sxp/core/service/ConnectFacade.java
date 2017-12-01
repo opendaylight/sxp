@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.service;
 
 import io.netty.bootstrap.Bootstrap;
@@ -44,23 +43,38 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpConne
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConnectFacade {
+/**
+ * A "facade" used for creating SXP servers and clients.
+ * Hardwired to use netty epoll.
+ * Able to use TLS when certificates are provided.
+ */
+public class ConnectFacade {//NOSONAR
 
     private static final EventLoopGroup bossGroup = new EpollEventLoopGroup(1);
     private static final EventLoopGroup eventLoopGroup = new EpollEventLoopGroup();
     protected static final Logger LOG = LoggerFactory.getLogger(ConnectFacade.class.getName());
 
+    /**
+     * A test if given connection has an MD5 password
+     */
     private static final Predicate<SxpConnection>
             CONNECTION_ENTRY_WITH_MD5_PASSWORD =
             input -> Objects.nonNull(input) && SecurityType.Default.equals(input.getSecurityType()) && Objects.nonNull(
                     input.getPassword()) && !input.getPassword().isEmpty();
+    /**
+     * A test if given connection template has an MD5 password
+     */
     private static final Predicate<SxpConnectionTemplateFields>
             TEMPLATE_ENTRY_WITH_MD5_PASSWORD =
             input -> Objects.nonNull(input) && SecurityType.Default.equals(input.getTemplateSecurityType())
                     && Objects.nonNull(input.getTemplatePassword()) && !input.getTemplatePassword().isEmpty();
 
     /**
-     * Create new Connection to Peer
+     * Create new Connection to Peer.
+     * The supplied connection object provides password
+     * and destination info.
+     * A connection attempt will be made with a future
+     * holding the connection result.
      *
      * @param node       SxpNode containing Security options
      * @param connection SxpConnection containing connection details
@@ -95,7 +109,7 @@ public class ConnectFacade {
 
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
-                if (SecurityType.TLS.equals(securityType)) {
+                if (SecurityType.TLS.equals(securityType) && clientSslContext.isPresent()) {
                     ch.pipeline().addLast(clientSslContext.get().newHandler(ch.alloc()));
                 }
                 ch.pipeline().addLast(hf.getDecoders());
@@ -106,7 +120,9 @@ public class ConnectFacade {
     }
 
     /**
-     * Create new Node that listens to incoming connections
+     * Create new Node that listens to incoming connections.
+     * This method will bind the given node to its specified source IP and port.
+     * A future is returned holding a result of the bind operation.
      *
      * @param node       SxpNode containing options
      * @param hf         HandlerFactory providing handling of communication
@@ -139,7 +155,7 @@ public class ConnectFacade {
                         && !serverSslContext.isPresent())) {
                     LOG.warn("{} Closing {} as TLS or Connection not available", node, ch);
                     ch.close();
-                } else if (SecurityType.TLS.equals(connection.getSecurityType())) {
+                } else if (SecurityType.TLS.equals(connection.getSecurityType()) && serverSslContext.isPresent()) {
                     ch.pipeline().addLast(serverSslContext.get().newHandler(ch.alloc()));
                 }
                 ch.pipeline().addLast(hf.getDecoders());
@@ -149,6 +165,12 @@ public class ConnectFacade {
         return bootstrap.bind(node.getSourceIp(), node.getServerPort());
     }
 
+    /**
+     * Retrieves all passwords from a given node.
+     *
+     * @param node node to collect passwords from
+     * @return a map of adresses and passwords
+     */
     public static Map<InetAddress, byte[]> collectAllPasswords(final SxpNode node) {
         Map<InetAddress, byte[]> keyMapping = new HashMap<>();
         node.getDomains()

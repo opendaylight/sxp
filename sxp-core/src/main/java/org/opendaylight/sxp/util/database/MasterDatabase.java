@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.database;
 
 import java.util.HashMap;
@@ -21,6 +20,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.mast
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Abstract implementation of a MasterDatabse
+ */
 public abstract class MasterDatabase implements MasterDatabaseInf {
 
     protected static final Logger LOG = LoggerFactory.getLogger(MasterDatabase.class.getName());
@@ -41,8 +43,9 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
             return prefixMap;
         }
         bindings.forEach(b -> {
-            if (ignoreBinding(b))
+            if (ignoreBinding(b)) {
                 return;
+            }
             MasterDatabaseBinding
                     binding =
                     !prefixMap.containsKey(b.getIpPrefix()) ? get.apply(b.getIpPrefix()) : prefixMap.get(
@@ -57,6 +60,9 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
         return prefixMap;
     }
 
+    /**
+     * Get the length of the peer sequence.
+     */
     public static <T extends SxpBindingFields> int getPeerSequenceLength(T b) {
         return b == null || b.getPeerSequence() == null
                 || b.getPeerSequence().getPeer() == null ? 0 : b.getPeerSequence().getPeer().size();
@@ -69,9 +75,11 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
      * @param binding Binding to be checked
      * @return If binding will be ignored
      */
+    @SuppressWarnings("all")
     private static <T extends SxpBindingFields> boolean ignoreBinding(T binding) {
-        if (binding == null)
+        if (binding == null) {
             return true;
+        }
         return binding.getIpPrefix().getIpv6Prefix() != null && "0:0:0:0:0:0:0:0/0".equals(
                 binding.getIpPrefix().getIpv6Prefix().getValue()) || (binding.getIpPrefix().getIpv4Prefix() != null
                 && "0.0.0.0/0".equals(binding.getIpPrefix().getIpv4Prefix().getValue()));

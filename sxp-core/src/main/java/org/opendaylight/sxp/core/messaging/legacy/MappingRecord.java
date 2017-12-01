@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.messaging.legacy;
 
 import com.google.common.net.InetAddresses;
@@ -39,6 +38,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlvs
  * MappingRecord class represent entity that contains Tlv,
  * and has logic to work with Tlv
  */
+@SuppressWarnings("all")
 public class MappingRecord extends ArrayList<Tlv> {
 
     private static final long serialVersionUID = -6818880065966274888L;

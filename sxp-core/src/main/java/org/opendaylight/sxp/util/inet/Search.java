@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.inet;
 
 import com.google.common.base.Preconditions;
@@ -27,6 +26,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.mast
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("all")
 public final class Search {
 
     private static final Logger LOG = LoggerFactory.getLogger(Search.class.getName());
@@ -54,7 +54,7 @@ public final class Search {
                 }
             }
         } catch (SocketException e) {
-            throw new NoNetworkInterfacesException();
+            throw new NoNetworkInterfacesException(e);
         }
         inetAddresses.sort(new InetAddressComparator());
         return inetAddresses.get(inetAddresses.size() > bestAddresPointer + 1 ?
@@ -119,10 +119,12 @@ public final class Search {
         int prefixLength = IpPrefixConv.getPrefixLength(prefix),
                 addressFamily =
                         prefix.getIpv4Prefix() != null ? 32 : 128;
-        byte[] address = InetAddresses.forString(IpPrefixConv.toString(prefix).split("/")[0]).getAddress(), address_;
+        byte[] address = InetAddresses.forString(IpPrefixConv.toString(prefix).split("/")[0]).getAddress();
+        byte[] address_;
         BitSet bitSet = BitSet.valueOf(address);
-        if (bitSet.length() >= prefixLength)
+        if (bitSet.length() >= prefixLength) {
             bitSet.clear(prefixLength, bitSet.length());
+        }
         address_ = bitSet.toByteArray();
         for (int i = 0; i < address.length; i++) {
             address[i] = i < address_.length ? address_[i] : 0;

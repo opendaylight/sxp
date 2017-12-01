@@ -25,6 +25,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Erro
  */
 public class HoldTimerTask extends SxpTimerTask<Void> {
 
+    /**
+     * An associated connection
+     */
     private final SxpConnection connection;
 
     /**
@@ -40,14 +43,13 @@ public class HoldTimerTask extends SxpTimerTask<Void> {
 
     @Override
     public Void call() {
-        LOG.debug(connection + " {} [{}]", getClass().getSimpleName(), getPeriod());
+        LOG.debug("{} {} [{}]", connection, getClass().getSimpleName(), getPeriod());
 
         if (connection.isStateOn() && connection.isModeListener() && connection.isVersion4()) {
             try {
                 if (connection.getTimestampUpdateOrKeepAliveMessage()
                         < System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(getPeriod())) {
-                    MessageDecoder.sendErrorMessage(connection.getChannelHandlerContext(
-                            SxpConnection.ChannelHandlerContextType.ListenerContext),
+                    MessageDecoder.sendErrorMessage(connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT),
                             new ErrorMessageException(null, ErrorSubCode.UnacceptableHoldTime, null), connection);
                     connection.setDeleteHoldDownTimer();
                     LOG.info("{} State to DeleteHoldDown", connection);
@@ -55,7 +57,7 @@ public class HoldTimerTask extends SxpTimerTask<Void> {
                 }
             } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
                 LOG.warn(connection.getOwner() + " {} {} | {}", getClass().getSimpleName(),
-                        e.getClass().getSimpleName(), e.getMessage());
+                        e.getClass().getSimpleName(), e.getMessage(), e);
             }
             connection.setTimer(TimerType.HoldTimer, getPeriod());
         }

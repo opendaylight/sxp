@@ -47,8 +47,8 @@ public class SxpTimerTaskTest {
         List<SxpConnection> connections = new ArrayList<>();
         connections.add(sxpConnection);
         PowerMockito.when(sxpNode.getAllConnections()).thenReturn(connections);
-        when(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext)).thenReturn(true);
-        when(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.ListenerContext)).thenReturn(true);
+        when(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT)).thenReturn(true);
+        when(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT)).thenReturn(true);
         when(sxpConnection.isStateOn()).thenReturn(true);
         when(sxpConnection.isModeSpeaker()).thenReturn(true);
         when(sxpConnection.isModeListener()).thenReturn(true);
@@ -69,7 +69,7 @@ public class SxpTimerTaskTest {
     @Test
     public void testKeepAliveTimerTask() throws Exception {
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
-        when(sxpConnection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext)).thenReturn(
+        when(sxpConnection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT)).thenReturn(
                 ctx);
         KeepAliveTimerTask timerTask = new KeepAliveTimerTask(sxpConnection, 0);
 
@@ -83,7 +83,7 @@ public class SxpTimerTaskTest {
         verify(ctx, times(2)).writeAndFlush(any());
         verify(sxpConnection, times(2)).setTimer(TimerType.KeepAliveTimer, timerTask.getPeriod());
 
-        when(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SpeakerContext)).thenReturn(false);
+        when(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT)).thenReturn(false);
         timerTask.call();
         verifyNoMoreInteractions(ctx);
         verify(sxpConnection, times(2)).setTimer(TimerType.KeepAliveTimer, timerTask.getPeriod());

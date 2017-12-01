@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.filtering;
 
 import static org.opendaylight.sxp.util.ArraysUtil.getBitAddress;
@@ -24,8 +23,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.acl.filter.entries.AclEntry;
 
 /**
- * AclFilter logic based on First Match that support SGT matching
+ * Acl filtering logic.
+ * Filtering is based on a First Match lookup that supports SGT matching.
+ *
+ * @param <T> something that extends FilterEntriesFields
  */
+@SuppressWarnings("all")
 public final class AclFilter<T extends FilterEntriesFields> extends SxpBindingFilter<AclFilterEntries, T> {
 
     /**
@@ -33,7 +36,8 @@ public final class AclFilter<T extends FilterEntriesFields> extends SxpBindingFi
      *
      * @param filter        SxpFilter containing ACL entries
      * @param peerGroupName PeerGroupName of Group containing specified filter
-     * @throws IllegalArgumentException If no filter entries are defined or type of entries is not supported by this implementation
+     * @throws IllegalArgumentException If no filter entries are defined or type
+     *                                  of entries is not supported by this implementation
      */
     public AclFilter(T filter, String peerGroupName) {
         super(filter, peerGroupName);
@@ -51,6 +55,9 @@ public final class AclFilter<T extends FilterEntriesFields> extends SxpBindingFi
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean filter(AclFilterEntries aclFilterEntries, SxpBindingFields binding) {
         if (aclFilterEntries.getAclEntry() == null || aclFilterEntries.getAclEntry().isEmpty()) {

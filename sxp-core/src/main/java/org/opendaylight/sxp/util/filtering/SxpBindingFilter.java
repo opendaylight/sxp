@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.filtering;
 
 import com.google.common.base.Preconditions;
@@ -36,6 +35,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.fi
  *
  * @param <T> Type representing entries used inside filter
  */
+@SuppressWarnings("all")
 public abstract class SxpBindingFilter<T extends FilterEntries, R extends FilterEntriesFields>
         implements Function<SxpBindingFields, Boolean>, Predicate<SxpBindingFields> {
 
@@ -124,7 +124,7 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
      * @throws IllegalArgumentException If entries of Filter are not supported or other parameters are wrong
      */
     public static <T extends SxpFilterFields> SxpBindingFilter<?, ? extends SxpFilterFields> generateFilter(T filter,
-            String peerGroupName) throws IllegalArgumentException {
+            String peerGroupName) {
         if (peerGroupName == null) {
             throw new IllegalArgumentException("PeerGroup name cannot be null");
         }
@@ -156,7 +156,7 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
      * @throws IllegalArgumentException If entries of Filter are not supported or other parameters are wrong
      */
     public static <T extends SxpDomainFilterFields> SxpBindingFilter<?, ? extends SxpDomainFilterFields> generateFilter(
-            T filter, String domainName) throws IllegalArgumentException {
+            T filter, String domainName) {
         if (domainName == null) {
             throw new IllegalArgumentException("Domain name cannot be null");
         }
@@ -180,10 +180,12 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
         SxpBindingFilter that = (SxpBindingFilter) o;
         if (sxpFilter instanceof SxpDomainFilterFields && that.sxpFilter instanceof SxpDomainFilterFields) {
             return Objects.equals(this.identifier, that.identifier) && Objects.equals(
@@ -218,8 +220,9 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
         if (values == null || values.isEmpty()) {
             return null;
         }
-        if (values.size() == 1)
+        if (values.size() == 1) {
             return Iterables.get(values, 0);
+        }
         StringBuilder builder = new StringBuilder().append("MultiGroup[ ");
         values.stream().map(SxpBindingFilter::getIdentifier).sorted().forEach(g -> builder.append(g).append(" "));
         //noinspection unchecked
@@ -227,8 +230,9 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
 
             protected boolean filter(FilterEntries filterEntries, SxpBindingFields binding) {
                 for (SxpBindingFilter filter : values) {
-                    if (filter.apply(binding))
+                    if (filter.apply(binding)) {
                         return true;
+                    }
                 }
                 return false;
             }
@@ -244,12 +248,15 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
      * @return If filters are incompatible
      */
     public static <F extends SxpFilterFields> boolean checkInCompatibility(F filter1, F filter2) {
-        if (filter1 == null || filter2 == null)
+        if (filter1 == null || filter2 == null) {
             return false;
-        if (filter1 == filter2)
+        }
+        if (filter1 == filter2) {
             return true;
-        if (!Preconditions.checkNotNull(filter1.getFilterType()).equals(filter2.getFilterType()))
+        }
+        if (!Preconditions.checkNotNull(filter1.getFilterType()).equals(filter2.getFilterType())) {
             return false;
+        }
         return Preconditions.checkNotNull(filter1.getFilterEntries())
                 .getClass()
                 .equals(Preconditions.checkNotNull(filter2.getFilterEntries()).getClass())
@@ -274,8 +281,9 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
         if (values == null || values.isEmpty()) {
             throw new IllegalArgumentException("Filter list is Empty.");
         }
-        if (values.size() == 1)
+        if (values.size() == 1) {
             return Iterables.get(values, 0);
+        }
         StringBuilder builder = new StringBuilder().append("MultiGroup[ ");
         values.stream().map(SxpBindingFilter::getIdentifier).sorted().forEach(g -> builder.append(g).append(" "));
         //noinspection unchecked
@@ -283,8 +291,9 @@ public abstract class SxpBindingFilter<T extends FilterEntries, R extends Filter
 
             protected boolean filter(FilterEntries filterEntries, SxpBindingFields binding) {
                 for (SxpBindingFilter filter : values) {
-                    if (filter.apply(binding))
+                    if (filter.apply(binding)) {
                         return true;
+                    }
                 }
                 return false;
             }

@@ -30,7 +30,7 @@ public class HandlerFactoryTest {
     @Test
     public void testAddDecoder() throws Exception {
         ChannelInboundHandler decoder = getDecoder();
-        HandlerFactory handler = HandlerFactory.instanceAddDecoder(decoder, HandlerFactory.Position.End);
+        HandlerFactory handler = HandlerFactory.instanceAddDecoder(decoder, HandlerFactory.Position.END);
 
         assertNotNull(handler);
         assertEquals(2, handler.getDecoders().length);
@@ -38,7 +38,7 @@ public class HandlerFactoryTest {
         assertEquals(decoder, handler.getDecoders()[1]);
 
         decoder = getDecoder();
-        handler.addDecoder(decoder, HandlerFactory.Position.Begin);
+        handler.addDecoder(decoder, HandlerFactory.Position.BEGIN);
         assertEquals(3, handler.getDecoders().length);
         assertNotEquals(decoder, handler.getDecoders()[0]);
         assertEquals(decoder, handler.getDecoders()[1]);
@@ -48,7 +48,7 @@ public class HandlerFactoryTest {
     @Test
     public void testAddEncoder() throws Exception {
         ChannelOutboundHandler encoder = getEncoder();
-        HandlerFactory handler = HandlerFactory.instanceAddEncoder(encoder, HandlerFactory.Position.End);
+        HandlerFactory handler = HandlerFactory.instanceAddEncoder(encoder, HandlerFactory.Position.END);
 
         assertNotNull(handler);
         assertEquals(2, handler.getEncoders().length);
@@ -56,7 +56,7 @@ public class HandlerFactoryTest {
         assertEquals(encoder, handler.getEncoders()[1]);
 
         encoder = getEncoder();
-        handler.addEncoder(encoder, HandlerFactory.Position.Begin);
+        handler.addEncoder(encoder, HandlerFactory.Position.BEGIN);
         assertEquals(3, handler.getEncoders().length);
         assertNotEquals(encoder, handler.getEncoders()[0]);
         assertEquals(encoder, handler.getEncoders()[1]);

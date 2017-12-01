@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.service;
 
 import com.google.common.base.Preconditions;
@@ -25,13 +24,26 @@ import org.slf4j.LoggerFactory;
 /**
  * UpdateExportTask class contains logic for Binding export
  */
+@SuppressWarnings("all")
 public final class UpdateExportTask implements Callable<Void> {
 
     private static final Logger LOG = LoggerFactory.getLogger(UpdateExportTask.class);
 
+    /**
+     * Connection used for the export
+     */
     private final SxpConnection connection;
+    /**
+     * Pool of generated messages to export
+     */
     private final ByteBuf[] generatedMessages;
+    /**
+     * Pool of bindings from which are messages generated
+     */
     private final BiFunction<SxpConnection, SxpBindingFilter, ByteBuf>[] partitions;
+    /**
+     * Monitor for releasing weak references of ByteBuf
+     */
     private final AtomicInteger messagesReleaseCounter;
 
     /**
@@ -51,6 +63,8 @@ public final class UpdateExportTask implements Callable<Void> {
     }
 
     /**
+     * Get connections of this export task.
+     *
      * @return SxpConnection associated with current ExportTask
      */
     public SxpConnection getConnection() {
@@ -97,14 +111,14 @@ public final class UpdateExportTask implements Callable<Void> {
                 }
             }
             for (int i = 0; i < generatedMessages.length; i++) {
-                connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext)
+                connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT)
                         .write(generatedMessages[i].duplicate().retain());
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("{} {} UPDATEv{} {}", connection, i, connection.getVersion().getIntValue(),
                             MessageFactory.toString(generatedMessages[i]));
                 }
             }
-            connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SpeakerContext).flush();
+            connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT).flush();
             connection.setUpdateOrKeepaliveMessageTimestamp();
         } catch (ChannelHandlerContextNotFoundException | ChannelHandlerContextDiscrepancyException e) {
             LOG.warn("{} Cannot find context aborting bindings export.", connection);
@@ -116,7 +130,8 @@ public final class UpdateExportTask implements Callable<Void> {
     }
 
     /**
-     * Decrease weak references on ByteBuf and if reference is zero free content of buffer
+     * Decrease weak references on ByteBuf.
+     * If reference count is zero free content of buffer
      */
     public void freeReferences() {
         if (messagesReleaseCounter.decrementAndGet() == 0) {

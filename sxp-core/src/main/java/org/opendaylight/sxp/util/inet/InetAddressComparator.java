@@ -5,16 +5,17 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.inet;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.Comparator;
 
 /**
  * InetAddressComparator class used for comparing InetAddresses
  */
-public class InetAddressComparator implements Comparator<InetAddress> {
+@SuppressWarnings("all")
+public class InetAddressComparator implements Comparator<InetAddress>, Serializable {
 
     private static final InetAddressComparator INET_ADDRESS_COMPARATOR = new InetAddressComparator();
 

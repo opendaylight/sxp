@@ -25,20 +25,30 @@ import java.util.concurrent.TimeoutException;
  */
 public final class SettableListenableFuture<T> implements ListenableFuture<T> {
 
-    private boolean canceled = false, done = false;
+    private boolean canceled = false;
+    private boolean done = false;
     private final List<ListenerTuple> listeners = new ArrayList<>();
     private final Callable<T> task;
     private final ListeningExecutorService executor;
     private ListenableFuture<T> future = null;
     private T result = null;
 
+    /**
+     * Create a new SettableListenableFuture.
+     *
+     * @param task task
+     * @param executor executor
+     */
     public SettableListenableFuture(Callable<T> task, ListeningExecutorService executor) {
         this.task = Preconditions.checkNotNull(task);
         this.executor = Preconditions.checkNotNull(executor);
     }
 
+    /**
+     * {@inheritDoc }
+     */
     @Override
-    synchronized public void addListener(Runnable listener, Executor executor) {
+    public synchronized void addListener(Runnable listener, Executor executor) {
         if (future == null) {
             listeners.add(
                     new ListenerTuple(Preconditions.checkNotNull(listener), Preconditions.checkNotNull(executor)));
@@ -47,9 +57,12 @@ public final class SettableListenableFuture<T> implements ListenableFuture<T> {
         }
     }
 
+    /**
+     * {@inheritDoc }
+     */
     @Override
-    synchronized public boolean cancel(boolean b) {
-        boolean result = future == null ? (canceled = true) : future.cancel(b);
+    public synchronized boolean cancel(boolean b) {
+        boolean result = future == null ? (canceled = true) : future.cancel(b);//NOSONAR
         if (future == null) {
             for (ListenerTuple listenerTuple : listeners) {
                 listenerTuple.execute();
@@ -58,18 +71,27 @@ public final class SettableListenableFuture<T> implements ListenableFuture<T> {
         return result;
     }
 
+    /**
+     * {@inheritDoc }
+     */
     @Override
-    synchronized public boolean isCancelled() {
+    public synchronized boolean isCancelled() {
         return future == null ? canceled : future.isCancelled();
     }
 
+    /**
+     * {@inheritDoc }
+     */
     @Override
-    synchronized public boolean isDone() {
-        return future == null ? done || isCancelled() : future.isDone();
+    public synchronized boolean isDone() {
+        return future == null ? done || isCancelled() : future.isDone();//NOSONAR
     }
 
+    /**
+     * {@inheritDoc }
+     */
     @Override
-    synchronized public T get() throws InterruptedException, ExecutionException {
+    public synchronized T get() throws InterruptedException, ExecutionException {
         if (future == null) {
             if (isDone()) {
                 return result;
@@ -84,8 +106,11 @@ public final class SettableListenableFuture<T> implements ListenableFuture<T> {
         return future.get();
     }
 
+    /**
+     * {@inheritDoc }
+     */
     @Override
-    synchronized public T get(long l, TimeUnit timeUnit)
+    public synchronized T get(long l, TimeUnit timeUnit)
             throws InterruptedException, ExecutionException, TimeoutException {
         if (future == null) {
             if (isDone()) {
@@ -135,7 +160,7 @@ public final class SettableListenableFuture<T> implements ListenableFuture<T> {
     /**
      * Future callback task and execution holder
      */
-    private final class ListenerTuple {
+    private static final class ListenerTuple {
 
         private final Runnable listener;
         private final Executor executor;

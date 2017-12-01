@@ -8,11 +8,18 @@
 
 package org.opendaylight.sxp.util.exception.message;
 
+/**
+ * UpdateMessagePeerSequenceException
+ */
 public class UpdateMessagePeerSequenceException extends Exception {
 
-    /** */
     private static final long serialVersionUID = 801190427695923174L;
 
+    /**
+     * Create a new UpdateMessagePeerSequenceException.
+     *
+     * @param string an error message
+     */
     public UpdateMessagePeerSequenceException(String string) {
         super(string);
     }

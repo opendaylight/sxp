@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.messaging;
 
 import java.net.UnknownHostException;
@@ -61,14 +60,15 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 /**
  * AttributeFactory class contains logic for decoding and encoding Attributes
  */
+@SuppressWarnings("all")
 public final class AttributeFactory {
 
     /**
      * ONPCE000 (Optional-NonTransitive-Partial-Compact-ExtendedLength-0-0-0)
      */
-    public static final byte _onpCe = 16;
-    public static final byte _OnpCe = -112;
-    public static final byte _oNpCe = 80;
+    public static final byte COMPACT = 16;
+    public static final byte OPTIONAL_COMPACT = -112;
+    public static final byte NONTRANSITIVE_COMPACT = 80;
 
     /**
      * Decode Capabilities from Byte Array
@@ -115,7 +115,7 @@ public final class AttributeFactory {
     public static Attribute createCapabilities(Version version)
             throws UnknownVersionException, CapabilityLengthException {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
-        attributeBuilder.setFlags(getFlags(_oNpCe));
+        attributeBuilder.setFlags(getFlags(NONTRANSITIVE_COMPACT));
         attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         attributeBuilder.setType(AttributeType.Capabilities);
 
@@ -141,7 +141,7 @@ public final class AttributeFactory {
      */
     public static Attribute createHoldTime(int holdTimeMin) throws HoldTimeMinException {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
-        attributeBuilder.setFlags(getFlags(_oNpCe));
+        attributeBuilder.setFlags(getFlags(NONTRANSITIVE_COMPACT));
         attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         attributeBuilder.setType(AttributeType.HoldTime);
 
@@ -182,7 +182,7 @@ public final class AttributeFactory {
     public static Attribute createHoldTime(int holdTimeMin, int holdTimeMax)
             throws HoldTimeMinException, HoldTimeMaxException {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
-        attributeBuilder.setFlags(getFlags(_oNpCe));
+        attributeBuilder.setFlags(getFlags(NONTRANSITIVE_COMPACT));
         attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         attributeBuilder.setType(AttributeType.HoldTime);
 
@@ -340,7 +340,7 @@ public final class AttributeFactory {
      */
     public static Attribute createPeerSequence(List<NodeId> nodesIds) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
-        attributeBuilder.setFlags(getFlags(_onpCe));
+        attributeBuilder.setFlags(getFlags(COMPACT));
         attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         attributeBuilder.setType(AttributeType.PeerSequence);
 
@@ -365,7 +365,7 @@ public final class AttributeFactory {
      */
     public static Attribute createSourceGroupTag(int sgt) throws SecurityGroupTagValueException {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
-        attributeBuilder.setFlags(getFlags(_onpCe));
+        attributeBuilder.setFlags(getFlags(COMPACT));
         attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         attributeBuilder.setType(AttributeType.SourceGroupTag);
 
@@ -395,7 +395,7 @@ public final class AttributeFactory {
      */
     public static Attribute createSxpNodeId(NodeId nodeId) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
-        attributeBuilder.setFlags(getFlags(_oNpCe));
+        attributeBuilder.setFlags(getFlags(NONTRANSITIVE_COMPACT));
         attributeBuilder.setAttributeVariant(AttributeVariant.Compact);
         attributeBuilder.setType(AttributeType.SxpNodeId);
 
