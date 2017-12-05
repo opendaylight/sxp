@@ -14,12 +14,15 @@ import static org.junit.Assert.assertNotNull;
 
 import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opendaylight.sxp.util.exception.ErrorCodeDataLengthException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
+import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
@@ -69,6 +72,11 @@ public class LegacyMessageFactoryTest {
         message = LegacyMessageFactory.createError(ErrorCodeNonExtended.VersionMismatch);
         result = new byte[] {0, 0, 0, 12, 0, 0, 0, 4, 0, 0, 0, 1};
         assertArrayEquals(result, toBytes(message));
+    }
+
+    @Test(expected = ErrorCodeDataLengthException.class)
+    public void testCreateErrorWithTooBigData() throws Exception {
+        LegacyMessageFactory.createError(ErrorCodeNonExtended.NoError, new byte[11]);
     }
 
     @Test
@@ -173,6 +181,22 @@ public class LegacyMessageFactoryTest {
                         0, 23, 11, 11, 11, 0, 0, 0, 0, 2, 0, 0, 0, 1, 29, 0, 0, 0, 1, 0, 0, 0, 2, -100, 64, 0, 0, 0, 1,
                         0, 0, 0, 23, -84, -88, 1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 28, 0, 0, 0, 1, 0, 0, 0, 2, -3, -24};
         assertArrayEquals(result, toBytes(message));
+    }
+
+    @Test(expected = UnknownVersionException.class)
+    public void testCreateUpdateWithNullInput() {
+        LegacyMessageFactory.createUpdate(null, null, null, null);
+    }
+
+    @Test(expected = UnknownVersionException.class)
+    public void testCreateUpdateWithNonLegacyInput() {
+        LegacyMessageFactory.createUpdate(null, null, Version.Version4, null);
+    }
+
+    @Test()
+    public void testCreateUpdateWithEmptyBindings() {
+        assertNotNull(LegacyMessageFactory.createUpdate(Collections.EMPTY_LIST,
+                Collections.EMPTY_LIST, Version.Version1, null));
     }
 
     @Test

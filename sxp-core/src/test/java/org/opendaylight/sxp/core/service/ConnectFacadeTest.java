@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.service;
 
 import static org.junit.Assert.assertNotNull;
@@ -18,14 +17,18 @@ import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.opendaylight.sxp.core.SxpConnection;
+import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
+import org.opendaylight.sxp.test.utils.templates.PrebuiltConnectionTemplates;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SecurityType;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
@@ -47,13 +50,15 @@ public class ConnectFacadeTest {
         PowerMockito.when(sxpNode.getSslContextFactory()).thenReturn(contextFactory);
         PowerMockito.when(contextFactory.getClientContext()).thenReturn(Optional.of(mock(SslContext.class)));
         PowerMockito.when(contextFactory.getServerContext()).thenReturn(Optional.of(mock(SslContext.class)));
+        SxpDomain domainMock = PowerMockito.mock(SxpDomain.class);
+        PowerMockito.when(domainMock.getConnectionTemplates()).thenReturn(Arrays.asList(PrebuiltConnectionTemplates.DEFAULT_CT));
+        PowerMockito.when(sxpNode.getDomains()).thenReturn(Arrays.asList(domainMock));
     }
 
     @Test
     public void testCreateClient() throws Exception {
-        HandlerFactory
-                handlerFactory =
-                HandlerFactory.instanceAddDecoder(MessageDecoder.createClientProfile(sxpNode),
+        HandlerFactory handlerFactory
+                = HandlerFactory.instanceAddDecoder(MessageDecoder.createClientProfile(sxpNode),
                         HandlerFactory.Position.END);
 
         SxpConnection connection = mock(SxpConnection.class);
@@ -86,10 +91,15 @@ public class ConnectFacadeTest {
 
     @Test
     public void testCreateServer() throws Exception {
-        HandlerFactory
-                handlerFactory =
-                HandlerFactory.instanceAddDecoder(MessageDecoder.createServerProfile(sxpNode),
+        HandlerFactory handlerFactory
+                = HandlerFactory.instanceAddDecoder(MessageDecoder.createServerProfile(sxpNode),
                         HandlerFactory.Position.END);
+
+        SxpConnection connectionMock = mock(SxpConnection.class);
+        when(connectionMock.getPassword()).thenReturn("passwd");
+        when(connectionMock.getDestination()).thenReturn(new InetSocketAddress("0.0.0.0", 64999));
+        when(connectionMock.getSecurityType()).thenReturn(SecurityType.Default);
+        Mockito.when(sxpNode.getAllConnections()).thenReturn(Arrays.asList(connectionMock));
 
         Channel channel = ConnectFacade.createServer(sxpNode, handlerFactory,
                 ConnectFacade.collectAllPasswords(sxpNode)).channel();

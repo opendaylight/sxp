@@ -8,12 +8,22 @@
 
 package org.opendaylight.sxp.util;
 
+import java.lang.reflect.Constructor;
+import org.junit.Assert;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
 public class SecurityTest {
+
+    @Test
+    public void testInstantiation() throws Exception {
+        Constructor<Security> c = Security.class.getDeclaredConstructor(new Class[0]);
+        c.setAccessible(true);
+        Security newInstance = c.newInstance(new Object[0]);
+        Assert.assertNotNull(newInstance);
+    }
 
     @Test
     public void testGetMD5b() throws Exception {
