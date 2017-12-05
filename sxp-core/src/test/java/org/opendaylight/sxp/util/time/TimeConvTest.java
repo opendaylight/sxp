@@ -45,6 +45,13 @@ public class TimeConvTest {
         time = new DateAndTime("1970-01-08T17:33:35Z");
         assertEquals(660815000, TimeConv.toLong(time));
 
+        DateAndTime dateMock = mock(DateAndTime.class);
+        when(dateMock.getValue()).thenReturn(null);
+        assertEquals(-1, TimeConv.toLong(dateMock));
+
+        when(dateMock.getValue()).thenReturn("");
+        assertEquals(-1, TimeConv.toLong(dateMock));
+
         time = mock(DateAndTime.class);
         when(time.getValue()).thenReturn("temp");
         exception.expect(Exception.class);
