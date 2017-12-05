@@ -108,6 +108,14 @@ public class AttributeFactoryTest {
         assertEquals(0l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMinValue());
         assertEquals(0l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMaxValue());
 
+        attribute = AttributeFactory.createHoldTime(50, 0);
+        assertEquals(AttributeType.HoldTime, attribute.getType());
+        assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+
+        holdTimeAttribute = (HoldTimeAttribute) attribute.getAttributeOptionalFields();
+        assertEquals(0l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMinValue());
+        assertEquals(0l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMaxValue());
+
         attribute = AttributeFactory.createHoldTime(50, 150);
         assertEquals(AttributeType.HoldTime, attribute.getType());
         assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
@@ -126,11 +134,29 @@ public class AttributeFactoryTest {
     @Test
     public void testCreateHoldTimeException1() throws Exception {
         exception.expect(HoldTimeMinException.class);
-        AttributeFactory.createHoldTime(2, 50);
+        AttributeFactory.createHoldTime(-1);
     }
 
     @Test
     public void testCreateHoldTimeException2() throws Exception {
+        exception.expect(HoldTimeMinException.class);
+        AttributeFactory.createHoldTime(65536);
+    }
+
+    @Test
+    public void testCreateHoldTimeMinException1() throws Exception {
+        exception.expect(HoldTimeMinException.class);
+        AttributeFactory.createHoldTime(2, 50);
+    }
+
+    @Test
+    public void testCreateHoldTimeMinException2() throws Exception {
+        exception.expect(HoldTimeMinException.class);
+        AttributeFactory.createHoldTime(65536, 50);
+    }
+
+    @Test
+    public void testCreateHoldTimeMaxException1() throws Exception {
         exception.expect(HoldTimeMaxException.class);
         AttributeFactory.createHoldTime(25, 5);
     }
@@ -310,7 +336,21 @@ public class AttributeFactoryTest {
         capability.setValue(new byte[300]);
         exception.expect(CapabilityLengthException.class);
         AttributeFactory.encodeCapability(capability.build());
+    }
 
+    @Test
+    public void testEncodeCapabilityErrHandling() throws CapabilityLengthException {
+        CapabilitiesBuilder capability = new CapabilitiesBuilder();
+        capability.setCode(CapabilityType.SubnetBindings);
+        capability.setValue(null);
+        byte[] message = AttributeFactory.encodeCapability(capability.build());
+        assertArrayEquals(new byte[]{3, 0}, message);
+
+        CapabilitiesBuilder capability2 = new CapabilitiesBuilder();
+        capability2.setCode(CapabilityType.SubnetBindings);
+        capability2.setValue(new byte[0]);
+        byte[] message2 = AttributeFactory.encodeCapability(capability2.build());
+        assertArrayEquals(new byte[]{3, 0}, message2);
     }
 
     @Test
