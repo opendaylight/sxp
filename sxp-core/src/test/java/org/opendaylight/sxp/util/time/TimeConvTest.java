@@ -5,9 +5,10 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.time;
 
+import java.lang.reflect.Constructor;
+import org.junit.Assert;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -20,7 +21,16 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
 
 public class TimeConvTest {
 
-    @Rule public ExpectedException exception = ExpectedException.none();
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
+    @Test
+    public void testInstantiation() throws Exception {
+        Constructor<TimeConv> c = TimeConv.class.getDeclaredConstructor(new Class[0]);
+        c.setAccessible(true);
+        TimeConv newInstance = c.newInstance(new Object[0]);
+        Assert.assertNotNull(newInstance);
+    }
 
     @Test
     public void testToDt() throws Exception {
@@ -44,6 +54,13 @@ public class TimeConvTest {
         TimeConv.setTimeZone("GMT+2");
         time = new DateAndTime("1970-01-08T17:33:35Z");
         assertEquals(660815000, TimeConv.toLong(time));
+
+        DateAndTime dateMock = mock(DateAndTime.class);
+        when(dateMock.getValue()).thenReturn(null);
+        assertEquals(-1, TimeConv.toLong(dateMock));
+
+        when(dateMock.getValue()).thenReturn("");
+        assertEquals(-1, TimeConv.toLong(dateMock));
 
         time = mock(DateAndTime.class);
         when(time.getValue()).thenReturn("temp");

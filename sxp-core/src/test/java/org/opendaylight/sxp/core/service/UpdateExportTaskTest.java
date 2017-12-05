@@ -36,7 +36,7 @@ public class UpdateExportTaskTest {
 
     private static SxpConnection connection;
     private static ByteBuf[] byteBuffs;
-    private static BiFunction<SxpConnection, SxpBindingFilter, ByteBuf>[] parttions;
+    private static BiFunction<SxpConnection, SxpBindingFilter, ByteBuf>[] partitions;
     private static AtomicInteger atomicInteger;
     private static UpdateExportTask exportTask;
 
@@ -51,9 +51,9 @@ public class UpdateExportTaskTest {
         PowerMockito.when(context.executeUpdateMessageStrategy(any(SxpConnection.class), anyList(), anyList(),
                 any(SxpBindingFilter.class))).thenReturn(byteBuf);
         byteBuffs = new ByteBuf[] {byteBuf};
-        parttions = new BiFunction[] {(c, f) -> byteBuf};
+        partitions = new BiFunction[] {(c, f) -> byteBuf};
         atomicInteger = new AtomicInteger(1);
-        exportTask = new UpdateExportTask(connection, byteBuffs, parttions, atomicInteger);
+        exportTask = new UpdateExportTask(connection, byteBuffs, partitions, atomicInteger);
 
     }
 
@@ -65,7 +65,7 @@ public class UpdateExportTaskTest {
 
         atomicInteger = new AtomicInteger(2);
 
-        exportTask = new UpdateExportTask(connection, byteBuffs, parttions, atomicInteger);
+        exportTask = new UpdateExportTask(connection, byteBuffs, partitions, atomicInteger);
         exportTask.freeReferences();
         assertEquals(1, atomicInteger.get());
         verify(byteBuffs[0]).release();
@@ -73,7 +73,7 @@ public class UpdateExportTaskTest {
 
     @Test
     public void testCall() throws Exception {
-        exportTask = new UpdateExportTask(connection, new ByteBuf[1], parttions, atomicInteger);
+        exportTask = new UpdateExportTask(connection, new ByteBuf[1], partitions, atomicInteger);
         when(connection.getChannelHandlerContext(any(SxpConnection.ChannelHandlerContextType.class))).thenReturn(
                 mock(ChannelHandlerContext.class));
         exportTask.call();
@@ -83,5 +83,12 @@ public class UpdateExportTaskTest {
                 new ChannelHandlerContextNotFoundException());
         exportTask.call();
         verify(connection).setUpdateOrKeepaliveMessageTimestamp();
+    }
+
+    @Test
+    public void testCallWithNullMessage() {
+        partitions[0] = (t, u) -> null;
+        new UpdateExportTask(connection, byteBuffs, partitions, atomicInteger).call();
+        PowerMockito.verifyNoMoreInteractions(byteBuffs);
     }
 }

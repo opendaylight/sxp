@@ -15,13 +15,17 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import static org.mockito.Matchers.any;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.filtering.PrefixListFilter;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv6Prefix;
@@ -30,6 +34,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpB
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.BindingDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.PrefixListFilterEntriesBuilder;
@@ -57,6 +63,7 @@ public class SxpDatabaseImplTest {
         node = PowerMockito.mock(SxpNode.class);
         PowerMockito.when(node.getBindingSxpDatabase()).thenReturn(database);
         PowerMockito.when(node.getAllConnections()).thenReturn(sxpConnections);
+        PowerMockito.when(node.getAllConnections(any())).thenReturn(sxpConnections);
     }
 
     private SxpConnection mockConnection(String remoteId) {
@@ -141,6 +148,73 @@ public class SxpDatabaseImplTest {
     }
 
     @Test
+    public void testDeleteBindingsOnBadInputs() {
+        List<SxpDatabaseBinding> deleted = database.deleteBindings(null);
+        assertTrue(deleted.isEmpty());
+        List<SxpDatabaseBinding> deleted2 = database.deleteBindings(null, Collections.EMPTY_LIST);
+        assertTrue(deleted2.isEmpty());
+        List<SxpDatabaseBinding> deleted3 = database.deleteBindings(NodeId.getDefaultInstance("30.30.30.30"), Collections.EMPTY_LIST);
+        assertTrue(deleted3.isEmpty());
+        List<SxpDatabaseBinding> deleted4 = database.deleteBindings(NodeId.getDefaultInstance("30.30.30.30"), (List) null);
+        assertTrue(deleted4.isEmpty());
+        List<SxpDatabaseBinding> deleted5 = database.deleteBindings(null, (List) null);
+        assertTrue(deleted5.isEmpty());
+    }
+
+    @Test
+    public void testGetBindingsOnNullNode() {
+        NodeId nodeId = null;
+        List<SxpDatabaseBinding> bindings = database.getBindings(nodeId);
+        assertTrue(bindings.isEmpty());
+    }
+
+    @Test
+    public void testAddBindingsToNullNode() {
+        NodeId nodeId = null;
+        List<SxpDatabaseBinding> bindings = database.addBinding(nodeId, Collections.EMPTY_LIST);
+        assertTrue(bindings.isEmpty());
+    }
+
+    @Test
+    public void testAddBindingsWithNull() {
+        NodeId nodeId = NodeId.getDefaultInstance("20.20.20.20");
+        List<SxpDatabaseBinding> bindings = database.addBinding(nodeId, null);
+        assertTrue(bindings.isEmpty());
+    }
+
+    @Test
+    public void testAddBindingsWithEmptyList() {
+        NodeId nodeId = NodeId.getDefaultInstance("20.20.20.20");
+        List<SxpDatabaseBinding> bindings = database.addBinding(nodeId, Collections.EMPTY_LIST);
+        assertTrue(bindings.isEmpty());
+    }
+
+    @Test
+    public void testSetReconcilliationOnNullNode() {
+        NodeId nodeId = null;
+        database.setReconciliation(nodeId);
+    }
+
+    @Test
+    public void testReconcileBindingsOnNullNode() {
+        NodeId nodeId = null;
+        List<SxpDatabaseBinding> reconciled = database.reconcileBindings(nodeId);
+        assertTrue(reconciled.isEmpty());
+    }
+
+    @Test
+    public void testGetInboundFilters() {
+        SxpConnection lConnectionMock = mockConnection("127.0.0.2");
+        SxpConnection sConnectionMock = mockConnection("127.0.0.2");
+        when(sConnectionMock.isModeListener()).thenReturn(Boolean.FALSE);
+        sxpConnections.add(lConnectionMock);
+        sxpConnections.add(sConnectionMock);
+
+        Map<NodeId, SxpBindingFilter> inboundFilters = SxpDatabaseImpl.getInboundFilters(node, "test");
+        assertTrue(!inboundFilters.isEmpty());
+    }
+
+    @Test
     public void testFilterDatabase() throws Exception {
         List<PrefixListEntry> prefixListEntryList = new ArrayList<>();
         PrefixListFilterEntriesBuilder builder = new PrefixListFilterEntriesBuilder();
@@ -162,6 +236,19 @@ public class SxpDatabaseImplTest {
     }
 
     @Test
+    public void testFilterDatabaseOnNullNode() {
+        List<SxpDatabaseBinding> filtered = SxpDatabaseImpl.filterDatabase(database, null, null);
+        assertTrue(filtered.isEmpty());
+    }
+
+    @Test
+    public void testFilterDatabaseWithNullFilter() {
+        NodeId nodeId = NodeId.getDefaultInstance("10.10.10.10");
+        List<SxpDatabaseBinding> filtered = SxpDatabaseImpl.filterDatabase(database, nodeId, null);
+        assertTrue(filtered.isEmpty());
+    }
+
+    @Test
     public void testGetReplaceForBindings() throws Exception {
         database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),
                 mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("2.2.2.2/32", 200, "10.10.10.10"),
@@ -179,6 +266,7 @@ public class SxpDatabaseImplTest {
         sxpConnections.add(mockConnection("20.20.20.20"));
         sxpConnections.add(mockConnection("30.30.30.30"));
 
+
         database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), mergeBindings(getBinding("2.2.2.2/32", 200)));
         assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(), database,
                 SxpDatabase.getInboundFilters(node, "global")), mergeBindings());
@@ -194,6 +282,14 @@ public class SxpDatabaseImplTest {
                 SxpDatabase.getInboundFilters(node, "global")), mergeBindings(getBinding("2.2.2.2/32", 200)));
         assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(getBinding("25.2.2.2/32", 20)), database,
                 SxpDatabase.getInboundFilters(node, "global")), mergeBindings());
+    }
+
+    @Test
+    public void testGetReplaceForBindingsWithNullInputs() throws Exception {
+        assertTrue(SxpDatabase.getReplaceForBindings(null, null, null).isEmpty());
+        assertTrue(SxpDatabase.getReplaceForBindings(Collections.EMPTY_LIST, database, null).isEmpty());
+        assertTrue(SxpDatabase.getReplaceForBindings(Collections.EMPTY_LIST, null, null).isEmpty());
+        assertTrue(SxpDatabase.getReplaceForBindings(null, database, null).isEmpty());
     }
 
     @Test
@@ -273,5 +369,14 @@ public class SxpDatabaseImplTest {
                         getBinding("2.2.2.2/32", 200, "20.20.20.20")));
         assertEquals("SxpDatabaseImpl\n" + "\t10 1.1.1.1/32\n" + "\t100 1.1.1.1/32\n" + "\t20 2.2.2.2/32\n"
                 + "\t200 2.2.2.2/32\n", database.toString());
+    }
+
+    @Test
+    public void testPutBindings() {
+        NodeId nodeId = new NodeId("127.0.0.1");
+        boolean resultOfPut = database.putBindings(nodeId, BindingDatabase.BindingType.ActiveBindings, Collections.EMPTY_LIST);
+        assertTrue(resultOfPut);
+        boolean resultOfPut2 = database.putBindings(nodeId, BindingDatabase.BindingType.ActiveBindings, Collections.EMPTY_LIST);
+        assertTrue(!resultOfPut2);
     }
 }

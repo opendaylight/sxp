@@ -14,6 +14,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,6 +23,7 @@ import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
@@ -197,5 +199,11 @@ public class MasterDatabaseImplTest {
 
         assertEquals("\t100 1.1.1.1/32\n" + "\t15 0:0:0:0:0:0:0:A/32\n" + "\t2000 2.2.2.2/32\n" + "\t2000 2.2.2.20/32\n"
                 + "MasterDatabaseImpl\n", value.toString());
+    }
+
+    @Test
+    public void testFilterIncomingBindingsWithNullInputs() throws Exception {
+        Map<IpPrefix, MasterDatabaseBinding> response = MasterDatabase.filterIncomingBindings(null, null, null);
+        assertTrue(response.isEmpty());
     }
 }

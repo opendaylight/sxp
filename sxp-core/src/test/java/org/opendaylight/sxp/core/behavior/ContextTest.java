@@ -18,6 +18,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import java.net.SocketAddress;
+import java.util.Collections;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,6 +29,7 @@ import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageLegacy;
 import org.powermock.api.mockito.PowerMockito;
@@ -110,5 +113,45 @@ public class ContextTest {
         when(message.getType()).thenReturn(MessageType.OpenResp);
         context.executeInputMessageStrategy(channelHandlerContext, connection, message);
         verify(connection, times(2)).setBehaviorContexts(Version.Version1);
+    }
+
+    @Test
+    public void testExecuteChannelActivationStrategy() {
+        Context ctxt = new Context(sxpNode, Version.Version4);
+        ctxt.executeChannelActivationStrategy(channelHandlerContext, connection);
+    }
+
+    @Test
+    public void testExecuteChannelInactivationStrategy() {
+        Context ctxt = new Context(sxpNode, Version.Version4);
+        ctxt.executeChannelInactivationStrategy(channelHandlerContext, connection);
+    }
+
+    @Test
+    public void testExecuteExceptionCaughtStrategy() {
+        Context ctxt = new Context(sxpNode, Version.Version4);
+        ctxt.executeExceptionCaughtStrategy(channelHandlerContext, connection);
+    }
+
+    @Test
+    public void testExecuteParseInput() throws Exception {
+        Context ctxt = new Context(sxpNode, Version.Version4);
+        Notification notificationMock = mock(Notification.class);
+        when(strategy.onParseInput(any())).thenReturn(notificationMock);
+        Assert.assertNotNull(ctxt.executeParseInput(mock(ByteBuf.class)));
+    }
+
+    @Test
+    public void testGetVersion() {
+        Context ctxt = new Context(sxpNode, Version.Version4);
+        Assert.assertEquals(Version.Version4, ctxt.getVersion());
+    }
+
+    @Test
+    public void testExecuteUpdateMessageStrategy() throws Exception {
+        Context ctxt = new Context(sxpNode, Version.Version4);
+        ByteBuf bbufMock = mock(ByteBuf.class);
+        when(strategy.onUpdateMessage(any(), any(), any(), any())).thenReturn(bbufMock);
+        Assert.assertNotNull(ctxt.executeUpdateMessageStrategy(connection, Collections.EMPTY_LIST, Collections.EMPTY_LIST, null));
     }
 }

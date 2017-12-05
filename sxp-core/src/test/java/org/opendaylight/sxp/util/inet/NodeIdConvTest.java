@@ -5,9 +5,9 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.util.inet;
 
+import java.lang.reflect.Constructor;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -16,10 +16,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.Peer;
@@ -49,10 +52,18 @@ public class NodeIdConvTest {
     }
 
     @Test
+    public void testInstantiation() throws Exception {
+        Constructor<NodeIdConv> c = NodeIdConv.class.getDeclaredConstructor(new Class[0]);
+        c.setAccessible(true);
+        NodeIdConv newInstance = c.newInstance(new Object[0]);
+        Assert.assertNotNull(newInstance);
+    }
+
+    @Test
     public void test_decode() throws Exception {
-        assertEquals(node1, NodeIdConv._decode(new byte[] {127, 0, 0, 1}));
-        assertEquals(node2, NodeIdConv._decode(new byte[] {0, 0, 0, 1}));
-        assertEquals(node3, NodeIdConv._decode(new byte[] {127, 124, 56, 1}));
+        assertEquals(node1, NodeIdConv._decode(new byte[]{127, 0, 0, 1}));
+        assertEquals(node2, NodeIdConv._decode(new byte[]{0, 0, 0, 1}));
+        assertEquals(node3, NodeIdConv._decode(new byte[]{127, 124, 56, 1}));
     }
 
     @Test
@@ -73,6 +84,22 @@ public class NodeIdConvTest {
         assertEquals(node3, NodeIdConv.createNodeId("127.124.56.1"));
     }
 
+    @Test(expected = UnknownNodeIdException.class)
+    public void testCreateNodeIdWithBadInput() throws Exception {
+        NodeIdConv.createNodeId(Inet6Address.getByName("2001:db8:85a3:0:0:8a2e:370:7334"));
+    }
+
+    @Test(expected = UnknownNodeIdException.class)
+    public void testCreateNodeIdWithEmptyInput() throws Exception {
+        String s = null;
+        NodeIdConv.createNodeId(s);
+    }
+
+    @Test(expected = UnknownNodeIdException.class)
+    public void testCreateNodeIdWithEmptyInput2() throws Exception {
+        NodeIdConv.createNodeId("");
+    }
+
     @Test
     public void testCreatePeerSequence() throws Exception {
         assertNotNull(NodeIdConv.createPeerSequence(nodeIds1));
@@ -85,9 +112,9 @@ public class NodeIdConvTest {
     @Test
     public void testDecode() throws Exception {
         assertNotNull(NodeIdConv.decode(null));
-        assertNotNull(NodeIdConv.decode(new byte[] {}));
-        assertEquals(nodeIds1, NodeIdConv.decode(new byte[] {127, 0, 0, 1, 0, 0, 0, 1, 127, 124, 56, 1}));
-        assertNotEquals(nodeIds2, NodeIdConv.decode(new byte[] {127, 0, 0, 1, 0, 0, 0, 1, 127, 124, 56, 1}));
+        assertNotNull(NodeIdConv.decode(new byte[]{}));
+        assertEquals(nodeIds1, NodeIdConv.decode(new byte[]{127, 0, 0, 1, 0, 0, 0, 1, 127, 124, 56, 1}));
+        assertNotEquals(nodeIds2, NodeIdConv.decode(new byte[]{127, 0, 0, 1, 0, 0, 0, 1, 127, 124, 56, 1}));
     }
 
     @Test
@@ -109,10 +136,10 @@ public class NodeIdConvTest {
     public void testToBytes() throws Exception {
         assertNotNull(NodeIdConv.toBytes(new ArrayList<NodeId>()));
         assertNotNull(NodeIdConv.toBytes(nodeIds1));
-        assertArrayEquals(new byte[] {127, 0, 0, 1, 0, 0, 0, 1, 127, 124, 56, 1}, NodeIdConv.toBytes(nodeIds1));
+        assertArrayEquals(new byte[]{127, 0, 0, 1, 0, 0, 0, 1, 127, 124, 56, 1}, NodeIdConv.toBytes(nodeIds1));
 
         assertNotNull(NodeIdConv.toBytes(node1));
-        assertArrayEquals(new byte[] {127, 0, 0, 1}, NodeIdConv.toBytes(node1));
+        assertArrayEquals(new byte[]{127, 0, 0, 1}, NodeIdConv.toBytes(node1));
     }
 
     @Test
@@ -135,5 +162,8 @@ public class NodeIdConvTest {
         peerList.add(peerBuilder.build());
 
         assertEquals("127.0.0.1,0.0.0.1", NodeIdConv.toString(peerSequenceBuilder.build()));
+
+        NodeId nullNodeId = null;
+        assertEquals("", NodeIdConv.toString(nullNodeId));
     }
 }

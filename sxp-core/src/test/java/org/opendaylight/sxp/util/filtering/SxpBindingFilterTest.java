@@ -24,6 +24,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.Filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.MaskRangeOperator;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpDomainFilterFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpFilterFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.FilterEntries;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntriesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.PeerSequenceFilterEntriesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.PrefixListFilterEntriesBuilder;
@@ -81,6 +82,12 @@ public class SxpBindingFilterTest {
         }
         try {
             SxpBindingFilter.generateFilter(filter, "NAME");
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        try {
+            SxpFilter f = null;
+            SxpBindingFilter.generateFilter(f, "NAME");
             fail();
         } catch (IllegalArgumentException e) {
         }
@@ -298,6 +305,12 @@ public class SxpBindingFilterTest {
                 getAclFilter(FilterType.Inbound)));
         assertFalse(SxpBindingFilter.checkInCompatibility(getPeerSequenceFilter(FilterType.Inbound),
                 getPrefixListFilter(FilterType.Inbound)));
+
+        SxpFilter aclFilter = getAclFilter(FilterType.Inbound);
+        assertFalse(SxpBindingFilter.checkInCompatibility(null, aclFilter));
+        assertFalse(SxpBindingFilter.checkInCompatibility(aclFilter, null));
+        assertTrue(SxpBindingFilter.checkInCompatibility(aclFilter, aclFilter));
+
     }
 
     @Test
@@ -329,5 +342,11 @@ public class SxpBindingFilterTest {
                 SxpBindingFilter.generateFilter(getAclFilter(FilterType.Outbound), "TEST"));
         assertEquals(SxpBindingFilter.generateFilter(getAclFilter("basic-domain"), "TEST"),
                 SxpBindingFilter.generateFilter(getAclFilter("basic-domain"), "TEST"));
+
+        SxpBindingFilter<? extends FilterEntries, ? extends SxpFilterFields> defaultFilter =
+                SxpBindingFilter.generateFilter(getAclFilter(FilterType.Outbound), "TEST");
+
+        assertEquals(defaultFilter, defaultFilter);
+        assertFalse(defaultFilter.equals(null));
     }
 }
