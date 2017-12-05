@@ -197,4 +197,9 @@ public class SxpLegacyTest {
                 any(SxpConnection.class));
     }
 
+    @Test
+    public void testOnException() {
+        sxpLegacy.onException(channelHandlerContext, connection);
+    }
+
 }

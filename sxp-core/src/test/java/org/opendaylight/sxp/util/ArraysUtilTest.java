@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.util;
 
+import java.lang.reflect.Constructor;
+import org.junit.Assert;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -15,6 +17,14 @@ import static org.junit.Assert.assertNull;
 import org.junit.Test;
 
 public class ArraysUtilTest {
+
+    @Test
+    public void testInstantiation() throws Exception {
+        Constructor<ArraysUtil> c = ArraysUtil.class.getDeclaredConstructor(new Class[0]);
+        c.setAccessible(true);
+        ArraysUtil newInstance = c.newInstance(new Object[0]);
+        Assert.assertNotNull(newInstance);
+    }
 
     @Test
     public void testGetBitAddress() throws Exception {
