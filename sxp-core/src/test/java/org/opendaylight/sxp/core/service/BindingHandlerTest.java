@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -167,6 +168,15 @@ public class BindingHandlerTest {
         assertNotNull(bindings);
         assertEquals(1, bindings_.size());
         assertEquals("5.5.5.5/32", IpPrefixConv.toString(bindings_.get(0).getIpPrefix()));
+
+        //test with null node
+        Stream<SxpBindingFields> result = BindingHandler.loopDetection(null, bindings.stream());
+        assertEquals(result.count(), bindings.size());
+
+        //test with null bindings
+        Stream<SxpBindingFields> result2 = BindingHandler.loopDetection(new NodeId("127.0.2.1"), null);
+        assertEquals(result2, null);
+
     }
 
     private List<IpPrefix> getIpPrefixes(String... strings) {
@@ -452,5 +462,11 @@ public class BindingHandlerTest {
         handler.setBufferLimit(25);
         exception.expect(IllegalArgumentException.class);
         handler.setBufferLimit(-10);
+    }
+
+    @Test
+    public void testCreateHandlerWithSetBufferSize() {
+        BindingHandler bindingHandler = new BindingHandler(sxpNode, PowerMockito.mock(BindingDispatcher.class), 1);
+        assertNotNull(bindingHandler);
     }
 }

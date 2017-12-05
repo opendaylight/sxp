@@ -16,10 +16,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opendaylight.sxp.util.exception.unknown.UnknownNodeIdException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.Peer;
@@ -71,6 +73,22 @@ public class NodeIdConvTest {
         assertEquals(node1, NodeIdConv.createNodeId("127.0.0.1"));
         assertEquals(node2, NodeIdConv.createNodeId("0.0.0.1"));
         assertEquals(node3, NodeIdConv.createNodeId("127.124.56.1"));
+    }
+
+    @Test(expected = UnknownNodeIdException.class)
+    public void testCreateNodeIdWithBadInput() throws Exception {
+        NodeIdConv.createNodeId(Inet6Address.getByName("2001:db8:85a3:0:0:8a2e:370:7334"));
+    }
+
+    @Test(expected = UnknownNodeIdException.class)
+    public void testCreateNodeIdWithEmptyInput() throws Exception {
+        String s = null;
+        NodeIdConv.createNodeId(s);
+    }
+
+    @Test(expected = UnknownNodeIdException.class)
+    public void testCreateNodeIdWithEmptyInput2() throws Exception {
+        NodeIdConv.createNodeId("");
     }
 
     @Test
@@ -135,5 +153,8 @@ public class NodeIdConvTest {
         peerList.add(peerBuilder.build());
 
         assertEquals("127.0.0.1,0.0.0.1", NodeIdConv.toString(peerSequenceBuilder.build()));
+
+        NodeId nullNodeId = null;
+        assertEquals("", NodeIdConv.toString(nullNodeId));
     }
 }
