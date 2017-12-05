@@ -17,6 +17,10 @@ import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import org.opendaylight.sxp.core.messaging.legacy.LegacyAttributeFactory;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.CapabilityLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.HoldTimeMaxException;
@@ -43,7 +47,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.capabilities.attribute.CapabilitiesAttributesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.capabilities.attribute.capabilities.attributes.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.capabilities.attribute.capabilities.attributes.CapabilitiesBuilder;
+import org.powermock.api.mockito.PowerMockito;
+import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({LegacyAttributeFactory.class})
 public class AttributeFactoryTest {
 
     @Rule public ExpectedException exception = ExpectedException.none();
@@ -108,6 +119,14 @@ public class AttributeFactoryTest {
         assertEquals(0l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMinValue());
         assertEquals(0l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMaxValue());
 
+        attribute = AttributeFactory.createHoldTime(50, 0);
+        assertEquals(AttributeType.HoldTime, attribute.getType());
+        assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
+
+        holdTimeAttribute = (HoldTimeAttribute) attribute.getAttributeOptionalFields();
+        assertEquals(0l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMinValue());
+        assertEquals(0l, (long) holdTimeAttribute.getHoldTimeAttributes().getHoldTimeMaxValue());
+
         attribute = AttributeFactory.createHoldTime(50, 150);
         assertEquals(AttributeType.HoldTime, attribute.getType());
         assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
@@ -126,11 +145,29 @@ public class AttributeFactoryTest {
     @Test
     public void testCreateHoldTimeException1() throws Exception {
         exception.expect(HoldTimeMinException.class);
-        AttributeFactory.createHoldTime(2, 50);
+        AttributeFactory.createHoldTime(-1);
     }
 
     @Test
     public void testCreateHoldTimeException2() throws Exception {
+        exception.expect(HoldTimeMinException.class);
+        AttributeFactory.createHoldTime(65536);
+    }
+
+    @Test
+    public void testCreateHoldTimeMinException1() throws Exception {
+        exception.expect(HoldTimeMinException.class);
+        AttributeFactory.createHoldTime(2, 50);
+    }
+
+    @Test
+    public void testCreateHoldTimeMinException2() throws Exception {
+        exception.expect(HoldTimeMinException.class);
+        AttributeFactory.createHoldTime(65536, 50);
+    }
+
+    @Test
+    public void testCreateHoldTimeMaxException1() throws Exception {
         exception.expect(HoldTimeMaxException.class);
         AttributeFactory.createHoldTime(25, 5);
     }
@@ -310,29 +347,85 @@ public class AttributeFactoryTest {
         capability.setValue(new byte[300]);
         exception.expect(CapabilityLengthException.class);
         AttributeFactory.encodeCapability(capability.build());
+    }
 
+    @Test
+    public void testEncodeCapabilityErrHandling() throws CapabilityLengthException {
+        CapabilitiesBuilder capability = new CapabilitiesBuilder();
+        capability.setCode(CapabilityType.SubnetBindings);
+        capability.setValue(null);
+        byte[] message = AttributeFactory.encodeCapability(capability.build());
+        assertArrayEquals(new byte[]{3, 0}, message);
+
+        CapabilitiesBuilder capability2 = new CapabilitiesBuilder();
+        capability2.setCode(CapabilityType.SubnetBindings);
+        capability2.setValue(new byte[0]);
+        byte[] message2 = AttributeFactory.encodeCapability(capability2.build());
+        assertArrayEquals(new byte[]{3, 0}, message2);
     }
 
     @Test
     public void testDecode() throws Exception {
-        assertEquals(AttributeType.Capabilities,
-                AttributeFactory.decode(new byte[] {80, 6, 6, 3, 0, 2, 0, 1, 0}).getType());
+        assertEquals(AttributeType.SxpNodeId, AttributeFactory.decode(new byte[]{80, 5, 4, 0, 0, 0, 0}).getType());
 
-        assertEquals(AttributeType.SourceGroupTag, AttributeFactory.decode(new byte[] {16, 17, 2, 0, 20}).getType());
+        assertEquals(AttributeType.Capabilities, AttributeFactory.decode(new byte[]{80, 6, 6, 3, 0, 2, 0, 1, 0}).getType());
 
-        assertEquals(AttributeType.HoldTime, AttributeFactory.decode(new byte[] {80, 7, 2, 0, 10}).getType());
+        assertEquals(AttributeType.HoldTime, AttributeFactory.decode(new byte[]{80, 7, 2, 0, 10}).getType());
 
-        assertEquals(AttributeType.SxpNodeId, AttributeFactory.decode(new byte[] {80, 5, 4, 0, 0, 0, 0}).getType());
+        assertEquals(AttributeType.Ipv4AddPrefix, AttributeFactory.decode(new byte[]{16, 11, 0}).getType());
 
-        assertEquals(AttributeType.PeerSequence, AttributeFactory.decode(new byte[] {16, 16, 4, 0, 0, 0, 0}).getType());
+        assertEquals(AttributeType.Ipv6AddPrefix, AttributeFactory.decode(new byte[]{16, 12, 0}).getType());
 
-        assertEquals(AttributeType.Ipv4AddPrefix, AttributeFactory.decode(new byte[] {16, 11, 0}).getType());
+        assertEquals(AttributeType.Ipv4DeletePrefix, AttributeFactory.decode(new byte[]{16, 13, 0}).getType());
 
-        assertEquals(AttributeType.Ipv6AddPrefix, AttributeFactory.decode(new byte[] {16, 12, 0}).getType());
+        assertEquals(AttributeType.Ipv6DeletePrefix, AttributeFactory.decode(new byte[]{16, 14, 0}).getType());
 
-        assertEquals(AttributeType.Ipv4DeletePrefix, AttributeFactory.decode(new byte[] {16, 13, 0}).getType());
+        assertEquals(AttributeType.PeerSequence, AttributeFactory.decode(new byte[]{16, 16, 4, 0, 0, 0, 0}).getType());
+        assertEquals(AttributeType.SourceGroupTag, AttributeFactory.decode(new byte[]{16, 17, 2, 0, 20}).getType());
+    }
 
-        assertEquals(AttributeType.Ipv6DeletePrefix, AttributeFactory.decode(new byte[] {16, 14, 0}).getType());
+    @Test
+    public void testDecodeWithLegacyMocks() throws Exception {
+        PowerMockito.mockStatic(LegacyAttributeFactory.class);
+        AttributeOptionalFields attrFieldsMock = mock(AttributeOptionalFields.class);
+        when(LegacyAttributeFactory.decodeAddIPv4(any(), anyInt(), any())).thenReturn(attrFieldsMock);
+        byte[] payload = new byte[500];
+        payload[0] = 24;
+        payload[1] = 1;
+        payload[2] = 1;
+        payload[3] = 4;
+        Attribute attr = AttributeFactory.decode(payload);
+        assertNotNull(attr);
+
+        when(LegacyAttributeFactory.decodeAddIPv6(any(), anyInt(), any())).thenReturn(attrFieldsMock);
+        payload = new byte[500];
+        payload[0] = 0;
+        payload[3] = 2;
+        payload[4] = 0;
+        payload[5] = 0;
+        payload[6] = 1;
+        attr = AttributeFactory.decode(payload);
+        assertNotNull(attr);
+
+
+        when(LegacyAttributeFactory.decodeDeleteIPv4(any(), anyInt(), any())).thenReturn(attrFieldsMock);
+        payload = new byte[500];
+        payload[0] = (byte) 0b10111000;
+        payload[1] = 3;
+        payload[2] = 1;
+        payload[3] = 4;
+        attr = AttributeFactory.decode(payload);
+        assertNotNull(attr);
+
+        when(LegacyAttributeFactory.decodeDeleteIPv6(any(), anyInt(), any())).thenReturn(attrFieldsMock);
+        payload = new byte[500];
+        payload[0] = 24;
+        payload[1] = 4;
+        payload[2] = 1;
+        payload[3] = 4;
+        attr = AttributeFactory.decode(payload);
+        assertNotNull(attr);
+
     }
 
     @Test

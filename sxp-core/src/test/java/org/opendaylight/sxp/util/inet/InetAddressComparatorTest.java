@@ -12,6 +12,7 @@ import static org.junit.Assert.assertFalse;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
@@ -37,6 +38,14 @@ public class InetAddressComparatorTest {
     public void testGreaterThan() throws Exception {
         assertFalse(InetAddressComparator.greaterThan(address1, address3));
         assertFalse(InetAddressComparator.greaterThan(address2, address3));
+    }
+
+    @Test
+    public void testCompareWithNulls() {
+        InetAddressComparator comparator = new InetAddressComparator();
+        Assert.assertEquals(0, comparator.compare(null, null));
+        Assert.assertEquals(-1, comparator.compare(null, address1));
+        Assert.assertEquals(1, comparator.compare(address1, null));
     }
 
 }

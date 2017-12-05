@@ -40,6 +40,7 @@ public class ExportKeyTest {
         assertTrue(exportKey.equals(getKey(Version.Version4, null, new ArrayList<CapabilityType>())));
         assertTrue(exportKey.equals(exportKey));
         assertFalse(exportKey.equals(null));
+        assertFalse(exportKey.equals(new String()));
 
         assertFalse(exportKey.equals(getKey(Version.Version3, null, new ArrayList<CapabilityType>())));
         assertFalse(exportKey.equals(getKey(Version.Version4, "wad", new ArrayList<CapabilityType>())));

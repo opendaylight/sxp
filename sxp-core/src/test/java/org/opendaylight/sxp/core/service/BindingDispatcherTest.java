@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.core.service;
 
+import io.netty.channel.ChannelHandlerContext;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -18,8 +19,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -134,6 +137,12 @@ public class BindingDispatcherTest {
         sxpConnections.add(mockConnection(Version.Version2));
         sxpConnections.add(mockConnection(Version.Version3));
         sxpConnections.add(mockConnection(Version.Version4));
+        SxpConnection connection5Mock = mockConnection(Version.Version4);
+        when(connection5Mock.isStateOn()).thenReturn(Boolean.FALSE);
+        SxpConnection connection6Mock = mockConnection(Version.Version4);
+        when(connection6Mock.isModeSpeaker()).thenReturn(Boolean.FALSE);
+        sxpConnections.add(connection5Mock);
+        sxpConnections.add(connection6Mock);
 
         dispatcher.propagateUpdate(null, null, null);
         verify(worker, never()).executeTaskInSequence(any(Callable.class), eq(ThreadsWorker.WorkerType.OUTBOUND),
@@ -151,6 +160,30 @@ public class BindingDispatcherTest {
                 getBindings("5.5.5.5/32", "6.6.6.6/32", "7.7.7.7/32", "8.8.8.0/24"), sxpConnections);
         verify(worker, times(4)).executeTaskInSequence(any(Callable.class), eq(ThreadsWorker.WorkerType.OUTBOUND),
                 any(SxpConnection.class));
+
+        dispatcher.propagateUpdate(getBindings("1.1.1.1/32", "2.2.2.2/32", "3.3.3.3/32", "4.4.4.0/24"),
+                getBindings("5.5.5.5/32", "6.6.6.6/32", "7.7.7.7/32", "8.8.8.0/24"), null);
+        verify(worker, times(4)).executeTaskInSequence(any(Callable.class), eq(ThreadsWorker.WorkerType.OUTBOUND),
+                any(SxpConnection.class));
+        dispatcher.propagateUpdate(getBindings("1.1.1.1/32", "2.2.2.2/32", "3.3.3.3/32", "4.4.4.0/24"),
+                getBindings("5.5.5.5/32", "6.6.6.6/32", "7.7.7.7/32", "8.8.8.0/24"), Collections.EMPTY_LIST);
+        verify(worker, times(4)).executeTaskInSequence(any(Callable.class), eq(ThreadsWorker.WorkerType.OUTBOUND),
+                any(SxpConnection.class));
+
+        dispatcher.propagateUpdate(getBindings("1.1.1.1/32", "2.2.2.2/32", "3.3.3.3/32", "4.4.4.0/24"),
+                getBindings("5.5.5.5/32", "6.6.6.6/32", "7.7.7.7/32", "8.8.8.0/24"), sxpConnections);
+        verify(worker, times(8)).executeTaskInSequence(any(Callable.class), eq(ThreadsWorker.WorkerType.OUTBOUND),
+                any(SxpConnection.class));
+    }
+
+    @Test
+    public void testPropagateUpdateWithEmptyInputs() {
+        dispatcher.propagateUpdate(null, null, null);
+        dispatcher.propagateUpdate(Collections.EMPTY_LIST, null, null);
+        dispatcher.propagateUpdate(Collections.EMPTY_LIST, Collections.EMPTY_LIST, null);
+        dispatcher.propagateUpdate(Collections.EMPTY_LIST, Collections.EMPTY_LIST, Collections.EMPTY_LIST);
+        verify(worker, never()).executeTaskInSequence(any(Callable.class), eq(ThreadsWorker.WorkerType.OUTBOUND),
+                any(SxpConnection.class));
     }
 
     @Test
@@ -159,5 +192,14 @@ public class BindingDispatcherTest {
         BindingDispatcher.sendPurgeAllMessage(connection);
         verify(worker).executeTaskInSequence(any(Callable.class), eq(ThreadsWorker.WorkerType.OUTBOUND),
                 eq(connection));
+    }
+
+    @Test
+    public void testSendPurgeAllMessageSync() throws Exception {
+        SxpConnection connection = mockConnection(Version.Version4);
+        ChannelHandlerContext ctxtMock = mock(ChannelHandlerContext.class);
+        when(connection.getChannelHandlerContext(any())).thenReturn(ctxtMock);
+        boolean result = BindingDispatcher.sendPurgeAllMessageSync(connection);
+        Assert.assertTrue(result);
     }
 }
