@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.handler;
 
 import static org.mockito.Mockito.any;
@@ -32,7 +31,9 @@ import org.mockito.Matchers;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.behavior.Context;
+import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
+import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
@@ -43,10 +44,11 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, Context.class})
+@PrepareForTest({SxpNode.class, Context.class, LegacyMessageFactory.class})
 public class MessageDecoderTest {
 
-    @Rule public ExpectedException exception = ExpectedException.none();
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     private static SxpConnection connection;
     private static SxpNode sxpNode;
@@ -125,11 +127,10 @@ public class MessageDecoderTest {
         verify(context).executeParseInput(any(ByteBuf.class));
         verify(context).executeInputMessageStrategy(any(ChannelHandlerContext.class), any(SxpConnection.class),
                 any(Notification.class));
-        Exception[]
-                classes =
-                new Exception[] {new ErrorMessageException(ErrorCodeNonExtended.NoError, null),
-                        new ErrorMessageReceivedException(""),
-                        new UpdateMessageConnectionStateException(ConnectionState.AdministrativelyDown)};
+        Exception[] classes
+                = new Exception[]{new ErrorMessageException(ErrorCodeNonExtended.NoError, null),
+                    new ErrorMessageReceivedException(""),
+                    new UpdateMessageConnectionStateException(ConnectionState.AdministrativelyDown)};
         for (byte i = 0; i < classes.length; i++) {
             doThrow(classes[i]).when(context)
                     .executeInputMessageStrategy(any(ChannelHandlerContext.class), any(SxpConnection.class),
@@ -163,6 +164,19 @@ public class MessageDecoderTest {
                 new ErrorMessageException(ErrorCodeNonExtended.NoError, new Exception("")), connection);
 
         verify(context).writeAndFlush(any(ByteBuf.class));
+    }
+
+    @Test
+    public void testSendErrorMessageExceptionHandling() throws Exception {
+        PowerMockito.mockStatic(LegacyMessageFactory.class);
+        when(connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT))
+                .thenThrow(ChannelHandlerContextNotFoundException.class);
+        ByteBuf byteBufMock = mock(ByteBuf.class);
+        when(LegacyMessageFactory.createError(ErrorCodeNonExtended.NoError, null)).thenReturn(byteBufMock);
+        MessageDecoder.sendErrorMessage(null,
+                new ErrorMessageException(ErrorCodeNonExtended.NoError, new Exception("")), connection);
+
+        verify(byteBufMock).release();
     }
 
     @Test

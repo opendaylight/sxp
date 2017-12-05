@@ -8,13 +8,22 @@
 
 package org.opendaylight.sxp.core;
 
+import org.junit.Assert;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
+import org.powermock.api.mockito.PowerMockito;
+import static org.powermock.api.mockito.PowerMockito.when;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(Version.class)
 public class ConfigurationTest {
 
     @Test
@@ -37,6 +46,25 @@ public class ConfigurationTest {
         assertTrue(capabilities.getCapability().contains(CapabilityType.SubnetBindings));
         assertTrue(capabilities.getCapability().contains(CapabilityType.SxpCapabilityExchange));
         assertTrue(capabilities.getCapability().contains(CapabilityType.LoopDetection));
+
+        Version versionMock = PowerMockito.mock(Version.class);
+        when(versionMock.getIntValue()).thenReturn(0);
+        capabilities = Configuration.getCapabilities(versionMock);
+        assertTrue(capabilities.getCapability().contains(CapabilityType.None));
+    }
+
+    @Test
+    public void testRegisterNode() {
+        SxpNode nodeMock = PowerMockito.mock(SxpNode.class);
+        String nodeIdString = "127.0.0.1";
+        NodeId nodeId = new NodeId(nodeIdString);
+        when(nodeMock.getNodeId()).thenReturn(nodeId);
+        Configuration.register(nodeMock);
+        Assert.assertEquals(1, Configuration.getNodes().size());
+        SxpNode registeredNode = Configuration.getRegisteredNode(nodeIdString);
+        Assert.assertEquals(registeredNode, nodeMock);
+        Configuration.unRegister(nodeIdString);
+        Assert.assertEquals(0, Configuration.getNodes().size());
     }
 
 }

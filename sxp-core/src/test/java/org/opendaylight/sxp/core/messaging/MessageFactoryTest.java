@@ -206,6 +206,12 @@ public class MessageFactoryTest {
     }
 
     @Test
+    public void testDecodeErrorMessageWithZeroPayload() {
+        ErrorMessage message = (ErrorMessage) MessageFactory.decodeErrorMessage(new byte[] {0, 0, 0, 0});
+        assertNotNull(message);
+    }
+
+    @Test
     public void testDecodeKeepalive() throws Exception {
         KeepaliveMessage
                 message =

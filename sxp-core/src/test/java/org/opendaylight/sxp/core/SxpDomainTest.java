@@ -35,6 +35,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
+import org.opendaylight.sxp.test.utils.templates.PrebuiltDomains;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
@@ -262,6 +263,7 @@ public class SxpDomainTest {
         assertNull(domain.removeFilter(FilterSpecific.PeerSequence, "domain0"));
         assertNotNull(domain.removeFilter(FilterSpecific.AccessOrPrefixList, "domain1"));
         assertNotNull(domain.removeFilter(FilterSpecific.PeerSequence, "domain1"));
+        assertNotNull(domain.removeFilter(FilterSpecific.AccessOrPrefixList, "domain8"));
     }
 
     @Test
@@ -360,6 +362,8 @@ public class SxpDomainTest {
         when(masterDatabase.deleteBindings(captorDell.capture())).thenReturn(new ArrayList<>());
         domains.add(SxpDomain.createInstance(sxpNode, "testDomain", sxpDatabase, masterDatabase));
         when(sxpNode.getDomains()).thenReturn(domains);
+        SxpConnection dummyConnection = getSxpConnection("127.0.0.254");
+        domain.putConnection(dummyConnection);
 
         SxpBindingFilter<?, ? extends SxpDomainFilterFields>
                 bindingFilter =
@@ -382,6 +386,22 @@ public class SxpDomainTest {
                         domain.getName());
         domain.updateFilter(bindingFilter);
         assertEquals(1, captorAdd.getAllValues().get(captorAdd.getAllValues().size() - 1).size());
+        assertEquals(2, captorDell.getAllValues().get(captorDell.getAllValues().size() - 1).size());
+
+        bindingFilter =
+                SxpBindingFilter.generateFilter(
+                        getDomainFilter(domain.getName(), "anotherDomain", FilterEntryType.Permit, 1, 4),
+                        domain.getName());
+        domain.updateFilter(bindingFilter);
+        assertEquals(0, captorAdd.getAllValues().get(captorAdd.getAllValues().size() - 1).size());
+        assertEquals(2, captorDell.getAllValues().get(captorDell.getAllValues().size() - 1).size());
+
+        bindingFilter
+                = SxpBindingFilter.generateFilter(
+                        getDomainFilter(domain.getName(), "testDomain", FilterEntryType.Permit, 1, 4),
+                        domain.getName());
+        domain.updateFilter(bindingFilter);
+        assertEquals(0, captorAdd.getAllValues().get(captorAdd.getAllValues().size() - 1).size());
         assertEquals(2, captorDell.getAllValues().get(captorDell.getAllValues().size() - 1).size());
     }
 
@@ -451,5 +471,17 @@ public class SxpDomainTest {
         assertNull(domain.getTemplate(new InetSocketAddress("1.1.0.0", 64999)));
         assertNull(domain.getTemplate(new InetSocketAddress("1.0.0.0", 64999)));
         assertNull(domain.getTemplate(new InetSocketAddress("0.0.0.0", 64999)));
+    }
+
+    @Test
+    public void testCreateInstance() {
+        SxpDomain instance = SxpDomain.createInstance(sxpNode, PrebuiltDomains.DEFAULT);
+        assertNotNull(instance);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateInstanceWithClashingDomainAndFilterName() {
+        SxpDomain instance = SxpDomain.createInstance(sxpNode, PrebuiltDomains.DEFAULT_CLASHING_FILTER_DOMAIN_NAME);
+        assertNull(instance);
     }
 }

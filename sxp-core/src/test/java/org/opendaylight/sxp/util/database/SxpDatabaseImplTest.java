@@ -15,13 +15,17 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import static org.mockito.Matchers.any;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.filtering.PrefixListFilter;
+import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv6Prefix;
@@ -30,6 +34,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpB
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.PrefixListFilterEntriesBuilder;
@@ -57,6 +62,7 @@ public class SxpDatabaseImplTest {
         node = PowerMockito.mock(SxpNode.class);
         PowerMockito.when(node.getBindingSxpDatabase()).thenReturn(database);
         PowerMockito.when(node.getAllConnections()).thenReturn(sxpConnections);
+        PowerMockito.when(node.getAllConnections(any())).thenReturn(sxpConnections);
     }
 
     private SxpConnection mockConnection(String remoteId) {
@@ -141,6 +147,53 @@ public class SxpDatabaseImplTest {
     }
 
     @Test
+    public void testDeleteBindingsOnNullNode() {
+        List<SxpDatabaseBinding> deleted = database.deleteBindings(null);
+        assertTrue(deleted.isEmpty());
+        List<SxpDatabaseBinding> deleted2 = database.deleteBindings(null, Collections.EMPTY_LIST);
+        assertTrue(deleted2.isEmpty());
+    }
+
+    @Test
+    public void testGetBindingsOnNullNode() {
+        NodeId nodeId = null;
+        List<SxpDatabaseBinding> bindings = database.getBindings(nodeId);
+        assertTrue(bindings.isEmpty());
+    }
+
+    @Test
+    public void testAddBindingsToNullNode() {
+        NodeId nodeId = null;
+        List<SxpDatabaseBinding> bindings = database.addBinding(nodeId, Collections.EMPTY_LIST);
+        assertTrue(bindings.isEmpty());
+    }
+
+    @Test
+    public void testSetReconcilliationOnNullNode() {
+        NodeId nodeId = null;
+        database.setReconciliation(nodeId);
+    }
+
+    @Test
+    public void testReconcileBindingsOnNullNode() {
+        NodeId nodeId = null;
+        List<SxpDatabaseBinding> reconciled = database.reconcileBindings(nodeId);
+        assertTrue(reconciled.isEmpty());
+    }
+
+    @Test
+    public void testGetInboundFilters() {
+        SxpConnection lConnectionMock = mockConnection("127.0.0.2");
+        SxpConnection sConnectionMock = mockConnection("127.0.0.2");
+        when(sConnectionMock.isModeListener()).thenReturn(Boolean.FALSE);
+        sxpConnections.add(lConnectionMock);
+        sxpConnections.add(sConnectionMock);
+
+        Map<NodeId, SxpBindingFilter> inboundFilters = SxpDatabaseImpl.getInboundFilters(node, "test");
+        assertTrue(!inboundFilters.isEmpty());
+    }
+
+    @Test
     public void testFilterDatabase() throws Exception {
         List<PrefixListEntry> prefixListEntryList = new ArrayList<>();
         PrefixListFilterEntriesBuilder builder = new PrefixListFilterEntriesBuilder();
@@ -162,6 +215,12 @@ public class SxpDatabaseImplTest {
     }
 
     @Test
+    public void testFilterDatabaseOnNullNode() {
+        List<SxpDatabaseBinding> filtered = SxpDatabaseImpl.filterDatabase(database, null, null);
+        assertTrue(filtered.isEmpty());
+    }
+
+    @Test
     public void testGetReplaceForBindings() throws Exception {
         database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),
                 mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("2.2.2.2/32", 200, "10.10.10.10"),
@@ -178,6 +237,7 @@ public class SxpDatabaseImplTest {
         sxpConnections.add(mockConnection("10.10.10.10"));
         sxpConnections.add(mockConnection("20.20.20.20"));
         sxpConnections.add(mockConnection("30.30.30.30"));
+
 
         database.deleteBindings(NodeId.getDefaultInstance("10.10.10.10"), mergeBindings(getBinding("2.2.2.2/32", 200)));
         assertBindings(SxpDatabase.getReplaceForBindings(mergeBindings(), database,
