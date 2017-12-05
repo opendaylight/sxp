@@ -102,6 +102,8 @@ public class MessageFactoryTest {
             assertArrayEquals(new byte[] {0, 0, 0, 12, 0, 0, 0, 4, -125, i, 0, 0}, toBytes(message));
         }
 
+        MessageFactory.createError(ErrorCode.OpenMessageError, ErrorSubCode.MalformedAttribute, new byte[5]);
+
         exception.expect(ErrorCodeDataLengthException.class);
         MessageFactory.createError(ErrorCode.MessageHeaderError, ErrorSubCode.MalformedAttributeList, new byte[11]);
     }
@@ -126,6 +128,7 @@ public class MessageFactoryTest {
                 new byte[] {0, 0, 0, 30, 0, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 1, 80, 5, 4, -64, -88, 0, 1, 80, 7, 4, 0, 120,
                         0, -106};
         assertArrayEquals(result, toBytes(message));
+
     }
 
     @Test
@@ -203,6 +206,12 @@ public class MessageFactoryTest {
             assertEquals(ErrorCode.UpdateMessageError, message.getErrorCode());
             assertEquals(ErrorSubCode.forValue(i), message.getErrorSubCode());
         }
+    }
+
+    @Test
+    public void testDecodeErrorMessageWithZeroPayload() {
+        ErrorMessage message = (ErrorMessage) MessageFactory.decodeErrorMessage(new byte[] {0, 0, 0, 0});
+        assertNotNull(message);
     }
 
     @Test

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 
@@ -47,8 +48,19 @@ public class IpPrefixConvTest {
     public void testCreatePrefix() throws Exception {
         assertEquals(ipPrefix1, IpPrefixConv.createPrefix("127.0.0.1/32"));
         assertEquals(ipPrefix2, IpPrefixConv.createPrefix("0.0.0.0/16"));
+        assertEquals(ipPrefix2, IpPrefixConv.createPrefix("/0.0.0.0/16"));
         assertEquals(ipPrefix3, IpPrefixConv.createPrefix("2001:db8:0:0:0:0:0:1/128"));
         assertEquals(ipPrefix4, IpPrefixConv.createPrefix("2001:d8:0:0:0:0:0:0/32"));
+    }
+
+    @Test(expected = UnknownPrefixException.class)
+    public void testCreatePrefixErrorHandling() throws Exception {
+        IpPrefixConv.createPrefix(null);
+    }
+
+    @Test(expected = UnknownPrefixException.class)
+    public void testCreatePrefixErrorHandling2() throws Exception {
+        IpPrefixConv.createPrefix("");
     }
 
     @Test
@@ -59,6 +71,11 @@ public class IpPrefixConvTest {
         cmp.add(ipPrefix1);
         cmp.add(ipPrefix2);
         assertEquals(cmp, IpPrefixConv.decodeIpv4(new byte[] {32, 127, 0, 0, 1, 16, 0, 0}, true));
+    }
+
+    @Test(expected = UnknownPrefixException.class)
+    public void testDecodeIpv4WithIncorrectType() throws Exception {
+        IpPrefixConv.decodeIpv4(new byte[] {-128, 32, 1, 13, -72, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 32, 32, 1, 0, -40}, true);
     }
 
     @Test
@@ -104,6 +121,9 @@ public class IpPrefixConvTest {
                 IpPrefixConv.parseInetPrefix("2001:db8::1/128"));
         assertEquals(new InetSocketAddress(Inet6Address.getByName("201:d8::1"), 32),
                 IpPrefixConv.parseInetPrefix("201:d8::1/32"));
+
+        assertEquals(new InetSocketAddress(Inet6Address.getByName("2001:db8::1"), 128),
+                IpPrefixConv.parseInetPrefix("2001:db8::1"));
     }
 
     @Test
@@ -126,6 +146,11 @@ public class IpPrefixConvTest {
         assertEquals("0.0.0.0/16", IpPrefixConv.toString(ipPrefix2));
         assertEquals("2001:db8:0:0:0:0:0:1/128", IpPrefixConv.toString(ipPrefix3));
         assertEquals("2001:d8:0:0:0:0:0:0/32", IpPrefixConv.toString(ipPrefix4));
+
+        IpPrefix pref = null;
+        assertEquals("", IpPrefixConv.toString(pref));
+        List<IpPrefix> prefList = null;
+        assertEquals("", IpPrefixConv.toString(prefList));
 
         assertEquals("127.0.0.1/32,0.0.0.0/16,2001:db8:0:0:0:0:0:1/128,2001:d8:0:0:0:0:0:0/32",
                 IpPrefixConv.toString(ipPrefixes));

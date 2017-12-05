@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.util.time;
 
+import io.netty.buffer.ByteBuf;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -23,6 +24,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.messaging.MessageFactory;
+import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
+import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.time.connection.DeleteHoldDownTimerTask;
 import org.opendaylight.sxp.util.time.connection.HoldTimerTask;
 import org.opendaylight.sxp.util.time.connection.KeepAliveTimerTask;
@@ -34,7 +38,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class})
+@PrepareForTest({SxpNode.class, MessageFactory.class})
 public class SxpTimerTaskTest {
 
     private static SxpNode sxpNode;
@@ -87,6 +91,28 @@ public class SxpTimerTaskTest {
         timerTask.call();
         verifyNoMoreInteractions(ctx);
         verify(sxpConnection, times(2)).setTimer(TimerType.KeepAliveTimer, timerTask.getPeriod());
+
+        when(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT)).thenReturn(true);
+        when(sxpConnection.isModeSpeaker()).thenReturn(Boolean.FALSE);
+        timerTask.call();
+        verifyNoMoreInteractions(ctx);
+        verify(sxpConnection, times(2)).setTimer(TimerType.KeepAliveTimer, timerTask.getPeriod());
+
+        when(sxpConnection.isVersion4()).thenReturn(Boolean.FALSE);
+        timerTask.call();
+        verifyNoMoreInteractions(ctx);
+        verify(sxpConnection, times(2)).setTimer(TimerType.KeepAliveTimer, timerTask.getPeriod());
+    }
+
+    @Test
+    public void testKeepAliveTimerTaskErrorHandling() throws Exception {
+        KeepAliveTimerTask timerTask = new KeepAliveTimerTask(sxpConnection, 0);
+        when(sxpConnection.getChannelHandlerContext(any())).thenThrow(ChannelHandlerContextNotFoundException.class);
+        ByteBuf byteBufMock = mock(ByteBuf.class);
+        PowerMockito.mockStatic(MessageFactory.class);
+        when(MessageFactory.createKeepalive()).thenReturn(byteBufMock);
+        timerTask.call();
+        verify(byteBufMock).release();
     }
 
     @Test
@@ -102,12 +128,30 @@ public class SxpTimerTaskTest {
         verify(sxpConnection, times(1)).setTimer(TimerType.HoldTimer, timerTask.getPeriod());
 
         when(sxpConnection.isStateOn()).thenReturn(true);
+        when(sxpConnection.isModeListener()).thenReturn(Boolean.FALSE);
+        timerTask.call();
+        verify(sxpConnection, times(1)).setTimer(TimerType.HoldTimer, timerTask.getPeriod());
+
+        when(sxpConnection.isModeListener()).thenReturn(Boolean.TRUE);
+        when(sxpConnection.isVersion4()).thenReturn(Boolean.FALSE);
+        timerTask.call();
+        verify(sxpConnection, times(1)).setTimer(TimerType.HoldTimer, timerTask.getPeriod());
+
+        when(sxpConnection.isStateOn()).thenReturn(true);
+        when(sxpConnection.isVersion4()).thenReturn(true);
         when(sxpConnection.getTimestampUpdateOrKeepAliveMessage()).thenReturn(0l);
         when(sxpConnection.getChannelHandlerContext(any(SxpConnection.ChannelHandlerContextType.class))).thenReturn(
                 mock(ChannelHandlerContext.class));
         timerTask.call();
         verify(sxpConnection).setDeleteHoldDownTimer();
+    }
 
+    @Test
+    public void testHoldTimerTaskErrorHandling() {
+        HoldTimerTask timerTask = new HoldTimerTask(sxpConnection, 0);
+        when(sxpConnection.getTimestampUpdateOrKeepAliveMessage()).thenThrow(ChannelHandlerContextDiscrepancyException.class);
+        timerTask.call();
+        verify(sxpConnection, times(0)).setDeleteHoldDownTimer();
     }
 
     @Test
@@ -121,6 +165,10 @@ public class SxpTimerTaskTest {
         when(sxpConnection.isStateDeleteHoldDown()).thenReturn(false);
         timerTask.call();
         verify(sxpConnection).purgeBindings();
+
+        when(sxpConnection.isStatePendingOn()).thenReturn(Boolean.TRUE);
+        timerTask.call();
+        verify(sxpConnection, times(2)).purgeBindings();
     }
 
     @Test
