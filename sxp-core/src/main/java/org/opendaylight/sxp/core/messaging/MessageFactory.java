@@ -341,7 +341,9 @@ public class MessageFactory {
                     }
 
                     List<NodeId> peers = NodeIdConv.getPeerSequence(binding.getPeerSequence());
-                    peers.add(0, nodeId);
+                    if (nodeId != null) {
+                        peers.add(0, nodeId);
+                    }
                     attributes.add(AttributeFactory.createPeerSequence(peers));
                     attributes.add(AttributeFactory.createSourceGroupTag(binding.getSecurityGroupTag().getValue()));
 
