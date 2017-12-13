@@ -266,7 +266,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {//NOSO
             if (cause.getCause() instanceof SSLHandshakeException) {
                 LOG.warn("{} SSL invalid certificate {}", connection, cause.getCause().getMessage());
             } else if (cause.getCause() instanceof SSLException) {
-                LOG.warn("{} SSL {} shutting down", connection, cause.getCause().getMessage());
+                LOG.error("{} SSLException caught, shutting down", connection, cause);
             } else {
                 LOG.warn("{} Decoder error {} shutting down", connection, cause);
             }
