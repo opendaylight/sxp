@@ -12,8 +12,8 @@
 
         <javax.ws.rs.api.version>2.0.1</javax.ws.rs.api.version>
         <sxp.api.version>1.6.0-SNAPSHOT</sxp.api.version>
-        <testng.version>6.11</testng.version>
-        <slf4j.version>1.7.21</slf4j.version>
+        <testng.version>6.13.1</testng.version>
+        <slf4j.version>1.7.25</slf4j.version>
         <restconf.client.version>0.0.1-SNAPSHOT</restconf.client.version>
     </properties>
 
