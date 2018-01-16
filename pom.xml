@@ -31,9 +31,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <packaging-suffix>jar</packaging-suffix>
 
-        <!-- Plugin Versions -->
-        <maven.shade.plugin.version>2.3</maven.shade.plugin.version>
-
         <yangtools.version>2.0.0</yangtools.version>
         <controller.mdsal.version>1.7.0-SNAPSHOT</controller.mdsal.version>
         <mdsal.singleton.version>2.4.0-SNAPSHOT</mdsal.singleton.version>
