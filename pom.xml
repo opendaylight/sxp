@@ -31,9 +31,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <packaging-suffix>jar</packaging-suffix>
 
-        <controller.mdsal.version>1.7.0-SNAPSHOT</controller.mdsal.version>
-        <mdsal.singleton.version>2.4.0-SNAPSHOT</mdsal.singleton.version>
-        <mdsal.model.version>0.12.0-SNAPSHOT</mdsal.model.version>
         <restconf.version>1.7.0-SNAPSHOT</restconf.version>
 
         <!-- EPOLL artifacts -->
@@ -100,37 +97,11 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <!-- md-sal model dependencies -->
-            <dependency>
-                <groupId>org.opendaylight.mdsal.model</groupId>
-                <artifactId>mdsal-model-artifacts</artifactId>
-                <version>${mdsal.model.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-
-            <!-- yangtools dependencies -->
-            <dependency>
-                <groupId>org.opendaylight.yangtools</groupId>
-                <artifactId>yangtools-artifacts</artifactId>
-                <version>2.0.1</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-
             <!-- md-sal dependecies -->
             <dependency>
                 <groupId>org.opendaylight.controller</groupId>
                 <artifactId>mdsal-artifacts</artifactId>
-                <version>${controller.mdsal.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-
-            <dependency>
-                <groupId>org.opendaylight.mdsal</groupId>
-                <artifactId>mdsal-artifacts</artifactId>
-                <version>${mdsal.singleton.version}</version>
+                <version>1.7.0-SNAPSHOT</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
