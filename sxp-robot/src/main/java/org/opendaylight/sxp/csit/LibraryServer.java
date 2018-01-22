@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.csit;
 
 import com.google.common.base.Preconditions;
@@ -21,8 +20,8 @@ import org.opendaylight.sxp.csit.libraries.ConnectionTestLibrary;
 import org.opendaylight.sxp.csit.libraries.DeviceTestLibrary;
 import org.opendaylight.sxp.csit.libraries.ExportTestLibrary;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.robotframework.remoteserver.RemoteServer;
-import org.robotframework.remoteserver.RemoteServerImpl;
+import org.opendaylight.sxp.jrobot.remoteserver.RemoteServer;
+import org.opendaylight.sxp.jrobot.remoteserver.RemoteServerImpl;
 
 /**
  * Remote Robot library server providing libraries to robot framework

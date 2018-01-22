@@ -13,7 +13,7 @@
     <name>ODL :: sxp :: ${project.artifactId}</name>
     <dependencies>
         <dependency>
-            <groupId>com.github.aenniw</groupId>
+            <groupId>org.opendaylight.sxp</groupId>
             <artifactId>jrobot-remote-server</artifactId>
         </dependency>
         <dependency>
@@ -23,29 +23,13 @@
         <dependency>
             <groupId>org.robotframework</groupId>
             <artifactId>javalib-core</artifactId>
+            <version>1.2.1</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
     </dependencies>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
     <profiles>
         <profile>
             <id>jar-with-dependencies</id>

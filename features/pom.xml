@@ -21,6 +21,7 @@
         <module>odl-sxp-controller</module>
         <module>odl-sxp-routing</module>
         <module>odl-sxp-robot</module>
+        <module>odl-sxp-jrobot-remote-library</module>
         <module>features-sxp</module>
     </modules>
 </project>

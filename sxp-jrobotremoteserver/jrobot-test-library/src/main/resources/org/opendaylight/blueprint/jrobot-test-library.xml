@@ -1,0 +1,24 @@
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0">
+    <!-- References -->
+    <reference id="robot-remote-server" interface="org.opendaylight.sxp.jrobot.remoteserver.RemoteServer"/>
+    <!-- Beans -->
+    <bean id="test-library-parent" class="org.opendaylight.sxp.jrobot.remoteserver.test.BaseLibrary">
+        <argument ref="robot-remote-server"/>
+    </bean>
+    <bean id="test-library" class="org.opendaylight.sxp.jrobot.remoteserver.test.ExtendedLibrary">
+        <argument ref="robot-remote-server"/>
+    </bean>
+    <bean id="test-library-arguments" class="org.opendaylight.sxp.jrobot.remoteserver.test.ArgumentsLibrary">
+        <argument ref="robot-remote-server"/>
+    </bean>
+    <bean id="test-library-collections" class="org.opendaylight.sxp.jrobot.remoteserver.test.CollectionsLibrary">
+        <argument ref="robot-remote-server"/>
+    </bean>
+    <bean id="test-library-serializers" class="org.opendaylight.sxp.jrobot.remoteserver.test.SerializersLibrary">
+        <argument ref="robot-remote-server"/>
+    </bean>
+    <bean id="test-library-conflicts" class="org.opendaylight.sxp.jrobot.remoteserver.test.ConflictLibrary">
+        <argument ref="robot-remote-server"/>
+    </bean>
+</blueprint>
+
