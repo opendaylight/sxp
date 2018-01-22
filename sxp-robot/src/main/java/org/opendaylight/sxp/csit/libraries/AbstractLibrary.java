@@ -25,8 +25,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
 import org.robotframework.javalib.annotation.ArgumentNames;
 import org.robotframework.javalib.annotation.RobotKeyword;
 import org.robotframework.javalib.annotation.RobotKeywords;
-import org.robotframework.remoteserver.RemoteServer;
-import org.robotframework.remoteserver.library.AbstractClassLibrary;
+import org.opendaylight.sxp.jrobot.remoteserver.RemoteServer;
+import org.opendaylight.sxp.jrobot.remoteserver.library.AbstractClassLibrary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
