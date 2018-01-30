@@ -14,7 +14,7 @@
     <name>ODL :: sxp :: ${project.artifactId}</name>
 
     <properties>
-        <sonar.exclusions>**SxpConnection.java,**SxpNode.java</sonar.exclusions>
+        <sonar.exclusions>**SxpConnection.java,**SxpNode.java,**ConnectFacade.java</sonar.exclusions>
         <sonar.cpd.exclusions>**SxpBindingFilter.java</sonar.cpd.exclusions>
     </properties>
 

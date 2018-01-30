@@ -50,23 +50,24 @@ import org.slf4j.LoggerFactory;
  */
 public class ConnectFacade {//NOSONAR
 
-    private static final EventLoopGroup bossGroup = new EpollEventLoopGroup(1);
-    private static final EventLoopGroup eventLoopGroup = new EpollEventLoopGroup();
-    protected static final Logger LOG = LoggerFactory.getLogger(ConnectFacade.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectFacade.class);
+
+    private static final EventLoopGroup BOSS_GROUP = new EpollEventLoopGroup(1);
+    private static final EventLoopGroup EVENT_LOOP_GROUP = new EpollEventLoopGroup();
 
     /**
      * A test if given connection has an MD5 password
      */
     private static final Predicate<SxpConnection>
             CONNECTION_ENTRY_WITH_MD5_PASSWORD =
-            input -> Objects.nonNull(input) && SecurityType.Default.equals(input.getSecurityType()) && Objects.nonNull(
+            input -> Objects.nonNull(input) && (input.getSecurityType() == SecurityType.Default) && Objects.nonNull(
                     input.getPassword()) && !input.getPassword().isEmpty();
     /**
      * A test if given connection template has an MD5 password
      */
     private static final Predicate<SxpConnectionTemplateFields>
             TEMPLATE_ENTRY_WITH_MD5_PASSWORD =
-            input -> Objects.nonNull(input) && SecurityType.Default.equals(input.getTemplateSecurityType())
+            input -> Objects.nonNull(input) && (input.getTemplateSecurityType() == SecurityType.Default)
                     && Objects.nonNull(input.getTemplatePassword()) && !input.getTemplatePassword().isEmpty();
 
     /**
@@ -81,41 +82,42 @@ public class ConnectFacade {//NOSONAR
      * @param hf         HandlerFactory providing handling of communication
      * @return ChannelFuture callback
      */
-    public static ChannelFuture createClient(SxpNode node, SxpConnection connection, final HandlerFactory hf) {
+    public static ChannelFuture createClient(SxpNode node, SxpConnection connection, HandlerFactory hf) {
         if (!Epoll.isAvailable()) {
             throw new UnsupportedOperationException(Epoll.unavailabilityCause().getCause());
         }
-        final SecurityType securityType = connection.getSecurityType();
-        final Optional<SslContext> clientSslContext = node.getSslContextFactory().getClientContext();
+        SecurityType connectionSecurityType = connection.getSecurityType();
+        Optional<SslContext> clientSslContext = node.getSslContextFactory().getClientContext();
 
+        RecvByteBufAllocator recvByteBufAllocator = new FixedRecvByteBufAllocator(Constants.MESSAGE_LENGTH_MAX);
         Bootstrap bootstrap = new Bootstrap();
-        if (SecurityType.Default.equals(securityType) && connection.getPassword() != null && !connection.getPassword()
-                .isEmpty()) {
+        if ((connectionSecurityType == SecurityType.Default)
+                && connection.getPassword() != null
+                && !connection.getPassword().isEmpty()) {
             bootstrap.option(EpollChannelOption.TCP_MD5SIG,
                     Collections.singletonMap(connection.getDestination().getAddress(),
                             connection.getPassword().getBytes(StandardCharsets.US_ASCII)));
-        } else if (SecurityType.TLS.equals(securityType) && !clientSslContext.isPresent()) {
+        } else if ((connectionSecurityType == SecurityType.TLS) && !clientSslContext.isPresent()) {
             throw new IllegalStateException(
                     String.format("%s has TSL enabled but %s does not provide any certificates.", connection, node));
         }
-        bootstrap.channel(EpollSocketChannel.class);
-        bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, Configuration.NETTY_CONNECT_TIMEOUT_MILLIS);
-        RecvByteBufAllocator recvByteBufAllocator = new FixedRecvByteBufAllocator(Constants.MESSAGE_LENGTH_MAX);
-        bootstrap.option(ChannelOption.RCVBUF_ALLOCATOR, recvByteBufAllocator);
-        bootstrap.option(ChannelOption.TCP_NODELAY, true);
-        bootstrap.localAddress(node.getSourceIp().getHostAddress(), 0);
-        bootstrap.group(eventLoopGroup);
-        bootstrap.handler(new ChannelInitializer<SocketChannel>() {
-
-            @Override
-            protected void initChannel(SocketChannel ch) throws Exception {
-                if (SecurityType.TLS.equals(securityType) && clientSslContext.isPresent()) {
-                    ch.pipeline().addLast(clientSslContext.get().newHandler(ch.alloc()));
-                }
-                ch.pipeline().addLast(hf.getDecoders());
-                ch.pipeline().addLast(hf.getEncoders());
-            }
-        });
+        bootstrap.channel(EpollSocketChannel.class)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, Configuration.NETTY_CONNECT_TIMEOUT_MILLIS)
+                .option(ChannelOption.RCVBUF_ALLOCATOR, recvByteBufAllocator)
+                .option(ChannelOption.TCP_NODELAY, true)
+                .option(ChannelOption.SO_KEEPALIVE, true)
+                .localAddress(node.getSourceIp().getHostAddress(), 0)
+                .group(EVENT_LOOP_GROUP)
+                .handler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    protected void initChannel(SocketChannel ch) throws Exception {
+                        if ((connectionSecurityType == SecurityType.TLS) && clientSslContext.isPresent()) {
+                            ch.pipeline().addLast(clientSslContext.get().newHandler(ch.alloc()));
+                        }
+                        ch.pipeline().addLast(hf.getDecoders());
+                        ch.pipeline().addLast(hf.getEncoders());
+                    }
+                });
         return bootstrap.connect(connection.getDestination());
     }
 
@@ -129,34 +131,38 @@ public class ConnectFacade {//NOSONAR
      * @param keyMapping target to password mapping
      * @return ChannelFuture callback
      */
-    public static ChannelFuture createServer(final SxpNode node, final HandlerFactory hf,
-                                             final Map<InetAddress, byte[]> keyMapping) {
+    public static ChannelFuture createServer(SxpNode node, HandlerFactory hf, Map<InetAddress, byte[]> keyMapping) {
         if (!Epoll.isAvailable()) {
             throw new UnsupportedOperationException(Epoll.unavailabilityCause().getCause());
         }
-        final Optional<SslContext> serverSslContext = node.getSslContextFactory().getServerContext();
-
         LOG.trace("Scheduling server creation for node {} with registered passwords {}", node, keyMapping);
+        Optional<SslContext> serverSslContext = node.getSslContextFactory().getServerContext();
         keyMapping.remove(node.getSourceIp());
-        final ServerBootstrap bootstrap = new ServerBootstrap();
-        bootstrap.channel(EpollServerSocketChannel.class);
-        bootstrap.option(EpollChannelOption.TCP_MD5SIG, keyMapping);
-        bootstrap.option(ChannelOption.SO_REUSEADDR, true);
-        bootstrap.group(bossGroup, eventLoopGroup);
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        bootstrap.channel(EpollServerSocketChannel.class)
+                .option(EpollChannelOption.TCP_MD5SIG, keyMapping)
+                .option(ChannelOption.SO_REUSEADDR, true)
+                .childOption(ChannelOption.SO_KEEPALIVE, true)
+                .group(BOSS_GROUP, EVENT_LOOP_GROUP);
         if (Configuration.NETTY_LOGGER_HANDLER) {
             bootstrap.handler(new LoggingHandler(LogLevel.INFO));
         }
         bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
-
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
-                final SxpConnection connection = node.getConnection(ch.remoteAddress());
-                if (Objects.isNull(connection) || (SecurityType.TLS.equals(connection.getSecurityType())
-                        && !serverSslContext.isPresent())) {
-                    LOG.warn("{} Closing {} as TLS or Connection not available", node, ch);
-                    ch.close();
-                } else if (SecurityType.TLS.equals(connection.getSecurityType()) && serverSslContext.isPresent()) {
-                    ch.pipeline().addLast(serverSslContext.get().newHandler(ch.alloc()));
+                SxpConnection connection = node.getConnection(ch.remoteAddress());
+                if (connection == null) {
+                    LOG.error("Could not find a connection on node: {} for the peer: {}, closing channel: {}",
+                            node, ch.remoteAddress(), ch);
+                    throw new IllegalStateException("Could not find a connection for the peer " + ch.remoteAddress());
+                }
+                if (connection.getSecurityType() == SecurityType.TLS) {
+                    if (serverSslContext.isPresent()) {
+                        ch.pipeline().addLast(serverSslContext.get().newHandler(ch.alloc()));
+                    } else {
+                        LOG.error("{} - Closing {} as the SSL context is not available", node, ch);
+                        throw new IllegalStateException("SSL connection specified, but no serverSSLContext found");
+                    }
                 }
                 ch.pipeline().addLast(hf.getDecoders());
                 ch.pipeline().addLast(hf.getEncoders());
@@ -169,19 +175,18 @@ public class ConnectFacade {//NOSONAR
      * Retrieves all passwords from a given node.
      *
      * @param node node to collect passwords from
-     * @return a map of adresses and passwords
+     * @return a map of addresses and passwords
      */
-    public static Map<InetAddress, byte[]> collectAllPasswords(final SxpNode node) {
+    public static Map<InetAddress, byte[]> collectAllPasswords(SxpNode node) {
         Map<InetAddress, byte[]> keyMapping = new HashMap<>();
         node.getDomains()
                 .forEach(domain -> domain.getConnectionTemplates()
                         .stream()
                         .filter(TEMPLATE_ENTRY_WITH_MD5_PASSWORD)
                         .forEach(template -> {
-                            final byte[] password = template.getTemplatePassword().getBytes(StandardCharsets.US_ASCII);
+                            byte[] password = template.getTemplatePassword().getBytes(StandardCharsets.US_ASCII);
                             Search.expandPrefix(template.getTemplatePrefix())
                                     .forEach(inetAddress -> keyMapping.put(inetAddress, password));
-
                         }));
         node.getAllConnections()
                 .stream()
