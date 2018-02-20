@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {//NOSONAR
 
     private enum Profile {
-        CLIENT, PROFILE
+        CLIENT, SERVER
     }
 
 
@@ -64,7 +64,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {//NOSO
      * @return MessageDecoder
      */
     public static ChannelInboundHandler createServerProfile(SxpNode owner) {
-        return new MessageDecoder(owner, Profile.PROFILE);
+        return new MessageDecoder(owner, Profile.SERVER);
     }
 
     /**
@@ -196,7 +196,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {//NOSO
             ctx.close();
             return;
         }
-        if (profile.equals(Profile.PROFILE)) {
+        if (profile.equals(Profile.SERVER)) {
             connection.setInetSocketAddresses(ctx.channel().localAddress());
             connection.addChannelHandlerContext(ctx);
             return;
