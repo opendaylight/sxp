@@ -211,7 +211,7 @@ public class SxpNode {
     /**
      * @param connection Adds connection and update MD5 keys if needed
      */
-    protected SxpConnection addConnection(SxpConnection connection) {
+    public SxpConnection addConnection(SxpConnection connection) {
         synchronized (peerGroupMap) {
             for (SxpPeerGroup peerGroup : getPeerGroup(connection)) {
                 for (SxpFilter filter : peerGroup.getSxpFilter()) {
