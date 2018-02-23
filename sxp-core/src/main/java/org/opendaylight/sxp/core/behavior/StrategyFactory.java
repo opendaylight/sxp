@@ -7,6 +7,7 @@
  */
 package org.opendaylight.sxp.core.behavior;
 
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 
@@ -27,23 +28,28 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
  * </pre>
  */
 @SuppressWarnings("all")
-public class StrategyFactory {
+public final class StrategyFactory {
+
+    private StrategyFactory() {
+    }
 
     /**
-     * @param context Contexts that will be used for strategy
-     * @param version Version according to which strategy wil be chosen
+     * Creates a behaviour strategy for given SXP version and an SXP node.
+     *
+     * @param ownerNode SXPNode accompanying the new strategy
+     * @param version   Version of SXP to use
      * @return Chosen strategy
      * @throws UnknownVersionException If version is not supported
      */
-    public static Strategy getStrategy(Context context, Version version) {
+    public static Strategy getStrategy(SxpNode ownerNode, Version version) {
         if (version != null) {
             switch (version) {
                 case Version1:
                 case Version2:
                 case Version3:
-                    return new SxpLegacy(context);
+                    return new SxpLegacy(version);
                 case Version4:
-                    return new Sxpv4(context);
+                    return new Sxpv4(ownerNode);
             }
         }
         throw new UnknownVersionException();

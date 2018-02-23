@@ -61,7 +61,7 @@ public class ContextTest {
         when(channelHandlerContext.channel()).thenReturn(channel);
         strategy = mock(Strategy.class);
         PowerMockito.mockStatic(StrategyFactory.class);
-        PowerMockito.when(StrategyFactory.getStrategy(any(Context.class), any(Version.class))).thenReturn(strategy);
+        PowerMockito.when(StrategyFactory.getStrategy(any(SxpNode.class), any(Version.class))).thenReturn(strategy);
     }
 
     @Test

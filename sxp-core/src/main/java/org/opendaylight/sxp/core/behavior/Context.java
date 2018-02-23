@@ -39,9 +39,7 @@ public final class Context {
     private static final Logger LOG = LoggerFactory.getLogger(Context.class);
 
     private final SxpNode owner;
-
     private final Strategy strategy;
-
     private final Version version;
 
     /**
@@ -54,7 +52,7 @@ public final class Context {
     public Context(SxpNode owner, Version version) {
         this.owner = owner;
         this.version = version;
-        this.strategy = StrategyFactory.getStrategy(this, version);
+        this.strategy = StrategyFactory.getStrategy(owner, version);
     }
 
     /**

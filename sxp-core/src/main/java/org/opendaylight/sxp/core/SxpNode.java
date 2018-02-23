@@ -211,7 +211,7 @@ public class SxpNode {
     /**
      * @param connection Adds connection and update MD5 keys if needed
      */
-    protected SxpConnection addConnection(SxpConnection connection) {
+    public SxpConnection addConnection(SxpConnection connection) {
         synchronized (peerGroupMap) {
             for (SxpPeerGroup peerGroup : getPeerGroup(connection)) {
                 for (SxpFilter filter : peerGroup.getSxpFilter()) {
@@ -226,7 +226,11 @@ public class SxpNode {
             }
             sxpDomains.get(connection.getDomainName()).putConnection(connection);
         }
-        updateMD5keys(connection);
+        if (SecurityType.Default == connection.getSecurityType()
+                && connection.getPassword() != null
+                && !connection.getPassword().trim().isEmpty()) {
+            updateMD5keys();
+        }
         return connection;
     }
 
@@ -1169,7 +1173,11 @@ public class SxpNode {
         }
         if (connection != null) {
             connection.shutdown();
-            updateMD5keys(connection);
+            if (SecurityType.Default == connection.getSecurityType()
+                    && connection.getPassword() != null
+                    && !connection.getPassword().trim().isEmpty()) {
+                updateMD5keys();
+            }
         }
         return connection;
     }
@@ -1330,32 +1338,9 @@ public class SxpNode {
      * a server restart will block until previous restarts are done. However, please do note, this method does not
      * guarantee fair order of such invocations.
      *
-     * @param connection Connection containing the password for MD5 key update
-     */
-    private void updateMD5keys(final SxpConnection connection) {
-        if (SecurityType.Default.equals(connection.getSecurityType())
-                && connection.getPassword() != null
-                && !connection.getPassword().trim().isEmpty()) {
-            getWorker().executeTask(()-> doUpdateMD5keys(connection), ThreadsWorker.WorkerType.DEFAULT);
-        }
-    }
-
-    /**
-     * Updates TCP-MD5 keys of SxpNode.
-     * This method is thread safe and uses fast path optimization to avoid unnecessary server restarts in high-load
-     * situations.
-     * As a result, two situations may occur when calling this method. If the calling thread:
-     * 1. is the first to arrive at the critical section, it sets the processing flag on and restarts the server
-     *  with new keyset
-     * 2. invokes the method while the processing flag is on, it returns side-effect free
-     *
-     * The server restart is guarded by a separate mutex, so successive invocations of this method resulting in
-     * a server restart will block until previous restarts are done. However, please do note, this method does not
-     * guarantee fair order of such invocations.
-     *
      */
     public void updateMD5keys() {
-        getWorker().executeTask(()-> doUpdateMD5keys(null), ThreadsWorker.WorkerType.DEFAULT);
+        worker.executeTask(this::doUpdateMD5keys, ThreadsWorker.WorkerType.DEFAULT);
     }
 
     /**
@@ -1371,9 +1356,8 @@ public class SxpNode {
      * a server restart will block until previous restarts are done. However, please do note, this method does not
      * guarantee fair order of such invocations.
      *
-     * @param con Connection containing the password for MD5 key update, or null
      */
-    private void doUpdateMD5keys(@Nullable SxpConnection con) {
+    private void doUpdateMD5keys() {
         md5UpdateLock.lock();
         if (processingConnectionData) {
             md5UpdateLock.unlock();
@@ -1382,7 +1366,7 @@ public class SxpNode {
         processingConnectionData = true;
         md5UpdateLock.unlock();
 
-        LOG.debug("{} - Updating MD5 keys", con);
+        LOG.debug("{} - Updating MD5 keys", this);
         bindServerFuture.updateAndGet(listenableFuture -> {
             if (isEnabled() && listenableFuture != null && listenableFuture.isDone()) {
                 Map<InetAddress, byte[]> keyMapping;
@@ -1398,7 +1382,7 @@ public class SxpNode {
 
                 synchronized (md5UpdateLock) {
                     if (serverChannel != null) {
-                        LOG.debug("{} - shutting down the server", con);
+                        LOG.debug("{} - shutting down the server", this);
                         serverChannel.close().awaitUninterruptibly();
                     }
                     serverChannel = ConnectFacade.createServer(this, handlerFactoryServer, keyMapping)
