@@ -41,8 +41,6 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("all")
 public interface Strategy {
 
-    Logger LOG = LoggerFactory.getLogger(Strategy.class.getName());
-
     /**
      * @return Gets SxpNode on which is this strategy executed
      */
