@@ -40,12 +40,16 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageLegacy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SxpLegacy class provides logic for handling connection on Version 1/2/3
  */
 @SuppressWarnings("all")
 public class SxpLegacy implements Strategy {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SxpLegacy.class);
 
     protected final Context context;
 
@@ -96,6 +100,7 @@ public class SxpLegacy implements Strategy {
                     connection.setDeleteHoldDownTimer();
                     return;
                 case SPEAKER_CNTXT:
+                    LOG.debug("Context status on channel inactivation: {},{},{}, writing purgeall", ctx.isRemoved(), ctx.channel().isActive(), ctx.channel().isOpen());
                     ctx.writeAndFlush(MessageFactory.createPurgeAll());
                     break;
             }
