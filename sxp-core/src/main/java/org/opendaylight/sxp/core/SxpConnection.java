@@ -867,6 +867,7 @@ public class SxpConnection {
         }
         synchronized (ctxs) {
             ChannelHandlerContext oldContext = ctxs.put(channelHandlerContextType, ctx);
+//            if (oldContext != null && oldContext!= ctx) {
             if (oldContext != null) {
                 oldContext.close();
             }
