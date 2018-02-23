@@ -12,7 +12,6 @@ import io.netty.channel.ChannelHandlerContext;
 import java.net.UnknownHostException;
 import java.util.List;
 import org.opendaylight.sxp.core.SxpConnection;
-import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
@@ -35,32 +34,32 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.ErrorMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageLegacy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SxpLegacy class provides logic for handling connection on Version 1/2/3
  */
 @SuppressWarnings("all")
-public class SxpLegacy implements Strategy {
+public final class SxpLegacy extends AbstractStrategy {
 
-    protected final Context context;
+    private static final Logger LOG = LoggerFactory.getLogger(SxpLegacy.class);
+
+    private final Version sxpVersion;
 
     /**
-     * Default constructor that sets its Context
+     * Default constructor specifying the legacy version
      *
-     * @param context Context to be set
+     * @param sxpVersion SXP version to be set
      */
-    public SxpLegacy(Context context) {
-        this.context = context;
-    }
-
-    @Override
-    public SxpNode getOwner() {
-        return context.getOwner();
+    public SxpLegacy(Version sxpVersion) {
+        this.sxpVersion = sxpVersion;
     }
 
     /**
@@ -82,33 +81,6 @@ public class SxpLegacy implements Strategy {
         if (!connection.isStateOn()) {
             connection.setStatePendingOn();
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onChannelInactivation(ChannelHandlerContext ctx, SxpConnection connection) {
-        SxpConnection.ChannelHandlerContextType type = connection.getContextType(ctx);
-        if (connection.isStateOn(type)) {
-            switch (type) {
-                case LISTENER_CNTXT:
-                    connection.setDeleteHoldDownTimer();
-                    return;
-                case SPEAKER_CNTXT:
-                    ctx.writeAndFlush(MessageFactory.createPurgeAll());
-                    break;
-            }
-        }
-        connection.setStateOff(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onException(ChannelHandlerContext ctx, SxpConnection connection) {
-        LOG.warn("{} onException", connection);
     }
 
     /**
@@ -221,7 +193,7 @@ public class SxpLegacy implements Strategy {
     @Override
     public Notification onParseInput(ByteBuf request) throws ErrorMessageException {
         try {
-            return MessageFactory.parse(context.getVersion(), request);
+            return MessageFactory.parse(sxpVersion, request);
         } catch (AttributeVariantException | UnknownNodeIdException | UnknownSxpMessageTypeException | AddressLengthException | AttributeLengthException | UnknownHostException | TlvNotFoundException | UnknownPrefixException e) {
             throw new ErrorMessageException(ErrorCodeNonExtended.MessageParseError, e);
         }
