@@ -31,7 +31,7 @@ public final class Configuration {
 
     public static final int NETTY_CONNECT_TIMEOUT_MILLIS = 15000;
 
-    public static final boolean NETTY_LOGGER_HANDLER = false;
+    public static final boolean NETTY_LOGGER_HANDLER = true;
 
     private static final Map<String, SxpNode> NODES = new ConcurrentHashMap<>();
 
