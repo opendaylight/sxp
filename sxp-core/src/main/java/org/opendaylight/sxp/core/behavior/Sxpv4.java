@@ -48,12 +48,16 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Sxpv4 class provides logic for handling connection on Version 4
  */
 @SuppressWarnings("all")
 public final class Sxpv4 extends SxpLegacy {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Sxpv4.class);
 
     /**
      * OpenMessageType enum is used to distinguish between messages types
@@ -205,7 +209,7 @@ public final class Sxpv4 extends SxpLegacy {
             LOG.error("{} Error sending OpenMessage due to creation error ", this, e);
             return;
         }
-        LOG.info("{} Sent OPEN {}", connection, MessageFactory.toString(message));
+        LOG.info("{} Sending OPEN {}", connection, MessageFactory.toString(message));
         ctx.writeAndFlush(message);
         if (connection.isStateDeleteHoldDown()) {
             connection.setReconciliationTimer();
@@ -277,6 +281,17 @@ public final class Sxpv4 extends SxpLegacy {
                     // Close the current channel.
                     connection.closeChannelHandlerContext(ctx);
                     return;
+                } else if (connection.isStateOn()) { // A valid scenario during VSS switchover, see SXP-135,
+                    // we close the connection to allow a new one to form
+                    LOG.info("{} Received an Open message from a live connection", connection);
+                    if(connection.isModeSpeaker() && !connection.isModeBoth()) {
+                    LOG.info("{} Shutting down", connection);
+                        connection.setStateOff();
+                    } else {
+                    LOG.info("{} Setting Delete Hold-down", connection);
+                        connection.setDeleteHoldDownTimer();
+                    }
+                    return;
                 }
                 connection.markChannelHandlerContext(ctx);
                 // Setup connection parameters.
@@ -285,7 +300,7 @@ public final class Sxpv4 extends SxpLegacy {
                 // Send a response.
                 try {
                     ByteBuf response = composeOpenRespHoldTimeMessage(connection, openMsg, connection.getMode());
-                    LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
+                    LOG.info("{} Sending RESP {}", connection, MessageFactory.toString(response));
                     ctx.writeAndFlush(response);
                 } catch (CapabilityLengthException | HoldTimeMinException | HoldTimeMaxException | AttributeVariantException e) {
                     LOG.error("{} Error sending RESP shutting down connection {} ", this, connection, e);
@@ -321,6 +336,7 @@ public final class Sxpv4 extends SxpLegacy {
                 } else if (connection.isStateOn()) {
                     // Close the current channel.
                     connection.closeChannelHandlerContext(ctx);
+//                    LOG.info("{} - Got an Open Response msg from an already open connection, ignoring", connection);
                     return;
                 }
                 connection.markChannelHandlerContext(ctx);
