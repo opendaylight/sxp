@@ -86,7 +86,7 @@ public class Sxpv4Test {
         PowerMockito.when(sxpNode.getSvcBindingHandler())
                 .thenReturn(new BindingHandler(sxpNode, mock(BindingDispatcher.class)));
         Context context = PowerMockito.mock(Context.class);
-        sxpv4 = new Sxpv4(context);
+        sxpv4 = new Sxpv4(sxpNode);
         PowerMockito.when(context.getOwner()).thenReturn(sxpNode);
         when(connection.getContext()).thenReturn(context);
         when(connection.getOwner()).thenReturn(sxpNode);

@@ -13,6 +13,7 @@ import java.net.UnknownHostException;
 import java.util.List;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpConnection.ChannelHandlerContextType;
+import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.messaging.AttributeList;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
@@ -48,12 +49,18 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Sxpv4 class provides logic for handling connection on Version 4
  */
 @SuppressWarnings("all")
-public final class Sxpv4 extends SxpLegacy {
+public final class Sxpv4 extends AbstractStrategy {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Sxpv4.class);
+
+    private final SxpNode ownerNode;
 
     /**
      * OpenMessageType enum is used to distinguish between messages types
@@ -63,12 +70,12 @@ public final class Sxpv4 extends SxpLegacy {
     }
 
     /**
-     * Default constructor that sets its Context
+     * Default constructor requiring an owner node to be set.
      *
-     * @param context Context to be set
+     * @param ownerNode the SXP Node associated with this strategy
      */
-    public Sxpv4(Context context) {
-        super(context);
+    public Sxpv4(SxpNode ownerNode) {
+        this.ownerNode = ownerNode;
     }
 
     /**
@@ -95,8 +102,8 @@ public final class Sxpv4 extends SxpLegacy {
             // Global time settings: Default values have been pulled during node
             // creation TimeSettings.pullDefaults().
             if (holdTimeMin == 0 || holdTimeMax < 0) {
-                holdTimeMin = getOwner().getHoldTimeMin();
-                holdTimeMax = getOwner().getHoldTimeMax();
+                holdTimeMin = ownerNode.getHoldTimeMin();
+                holdTimeMax = ownerNode.getHoldTimeMax();
             }
             // Local current connection settings.
             if (openMessageType.equals(OpenMessageType.OPEN_RESP)) {
@@ -122,7 +129,7 @@ public final class Sxpv4 extends SxpLegacy {
             // Global time settings: Default values have been pulled during node
             // creation TimeSettings.pullDefaults().
             if (holdTimeMinAcc == 0) {
-                holdTimeMinAcc = getOwner().getHoldTimeMinAcceptable();
+                holdTimeMinAcc = ownerNode.getHoldTimeMinAcceptable();
             }
             // Local current connection settings.
             if (openMessageType.equals(OpenMessageType.OPEN_RESP)) {
@@ -205,7 +212,7 @@ public final class Sxpv4 extends SxpLegacy {
             LOG.error("{} Error sending OpenMessage due to creation error ", this, e);
             return;
         }
-        LOG.info("{} Sent OPEN {}", connection, MessageFactory.toString(message));
+        LOG.info("{} Sending OPEN {}", connection, MessageFactory.toString(message));
         ctx.writeAndFlush(message);
         if (connection.isStateDeleteHoldDown()) {
             connection.setReconciliationTimer();
@@ -221,112 +228,14 @@ public final class Sxpv4 extends SxpLegacy {
     @Override
     public void onInputMessage(ChannelHandlerContext ctx, SxpConnection connection, Notification message)
             throws ErrorMessageReceivedException, ErrorMessageException, UpdateMessageConnectionStateException {
-
+        LOG.info("{} Handle {}", connection, MessageFactory.toString(message));
         if (message instanceof OpenMessage) {
-            LOG.info("{} Handle {}", connection, MessageFactory.toString(message));
             OpenMessage openMsg = (OpenMessage) message;
             if (openMsg.getType().equals(MessageType.Open)) {
-
-                if (connection.isModeBoth()) {
-                    if (openMsg.getSxpMode().equals(ConnectionMode.Listener)) {
-                        if (!connection.isBidirectionalBoth()) {
-                            connection.markChannelHandlerContext(ctx, ChannelHandlerContextType.SPEAKER_CNTXT);
-                            connection.setConnectionSpeakerPart(openMsg);
-                            try {
-                                connection.setCapabilitiesRemote(MessageFactory.decodeCapabilities(openMsg));
-                                ByteBuf
-                                        response =
-                                        composeOpenRespHoldTimeMessage(connection, openMsg, ConnectionMode.Speaker);
-                                LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
-                                ctx.writeAndFlush(response);
-                            } catch (AttributeNotFoundException e) {
-                                LOG.warn("{} No Capabilities received by remote peer.", this, e);
-                            } catch (CapabilityLengthException | HoldTimeMinException | HoldTimeMaxException | AttributeVariantException e) {
-                                LOG.error("{} Error sending RESP shutting down connection {} ", this, connection, e);
-                                connection.setStateOff(ctx);
-                                return;
-                            }
-                        }
-
-                    } else if (openMsg.getSxpMode().equals(ConnectionMode.Speaker)) {
-                        ByteBuf response = MessageFactory.createPurgeAll();
-                        LOG.info("{} Sent PURGEALL {}", connection, MessageFactory.toString(response));
-                        ctx.writeAndFlush(response);
-                        connection.setStateOff(ctx);
-                    }
-
-                    if (connection.isBidirectionalBoth()) {
-                        // Setup connection parameters.
-                        connection.setConnection(openMsg);
-                        LOG.info("{} Connected", connection);
-                    }
-                    return;
-                }
-
-                if (InetAddressComparator.greaterThan(connection.getDestination().getAddress(),
-                        connection.getLocalAddress().getAddress())) {
-                    // Close the dual channel.
-                    connection.closeChannelHandlerContextComplements(ctx);
-
-                }
-                if (connection.isStateDeleteHoldDown()) {
-                    // Replace the existing one.
-                    connection.closeChannelHandlerContextComplements(ctx);
-                    connection.setReconciliationTimer();
-                } else if (connection.isStatePendingOn()) {
-                    // Close the current channel.
-                    connection.closeChannelHandlerContext(ctx);
-                    return;
-                }
-                connection.markChannelHandlerContext(ctx);
-                // Setup connection parameters.
-                connection.setConnection(openMsg);
-
-                // Send a response.
-                try {
-                    ByteBuf response = composeOpenRespHoldTimeMessage(connection, openMsg, connection.getMode());
-                    LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
-                    ctx.writeAndFlush(response);
-                } catch (CapabilityLengthException | HoldTimeMinException | HoldTimeMaxException | AttributeVariantException e) {
-                    LOG.error("{} Error sending RESP shutting down connection {} ", this, connection, e);
-                    connection.setStateOff();
-                }
+                handleOpenMessage(ctx, connection, openMsg);
                 return;
-
             } else if (openMsg.getType().equals(MessageType.OpenResp)) {
-                if (connection.isModeBoth()) {
-                    if (openMsg.getSxpMode().equals(ConnectionMode.Listener)) {
-                        if (!connection.isBidirectionalBoth()) {
-                            connection.markChannelHandlerContext(ctx, ChannelHandlerContextType.SPEAKER_CNTXT);
-                            connection.setConnectionSpeakerPart(openMsg);
-                        }
-
-                    } else if (openMsg.getSxpMode().equals(ConnectionMode.Speaker)) {
-                        if (!connection.isBidirectionalBoth()) {
-                            connection.markChannelHandlerContext(ctx, ChannelHandlerContextType.LISTENER_CNTXT);
-                            connection.setConnectionListenerPart(openMsg);
-                        }
-                    }
-
-                    if (connection.isBidirectionalBoth()) {
-                        // Setup connection parameters.
-                        connection.setConnection(openMsg);
-                        LOG.info("{} Connected", connection);
-                    }
-                    return;
-                }
-                if (connection.isStateDeleteHoldDown()) {
-                    // Replace the existing one.
-                    connection.closeChannelHandlerContextComplements(ctx);
-                } else if (connection.isStateOn()) {
-                    // Close the current channel.
-                    connection.closeChannelHandlerContext(ctx);
-                    return;
-                }
-                connection.markChannelHandlerContext(ctx);
-                // Setup connection parameters.
-                connection.setConnection(openMsg);
-                LOG.info("{} Connected", connection);
+                handleOpenResponseMessage(ctx, connection, openMsg);
                 return;
             }
         } else if (message instanceof UpdateMessage) {
@@ -346,8 +255,111 @@ public final class Sxpv4 extends SxpLegacy {
             connection.setUpdateOrKeepaliveMessageTimestamp();
             return;
         }
-
         LOG.warn("{} Cannot handle message, ignoring: {}", connection, MessageFactory.toString(message));
+    }
+
+    private void handleOpenResponseMessage(ChannelHandlerContext ctx, SxpConnection connection, OpenMessage openMsg) throws ErrorMessageException {
+        if (connection.isModeBoth()) {
+            if (openMsg.getSxpMode().equals(ConnectionMode.Listener)) {
+                if (!connection.isBidirectionalBoth()) {
+                    connection.markChannelHandlerContext(ctx, ChannelHandlerContextType.SPEAKER_CNTXT);
+                    connection.setConnectionSpeakerPart(openMsg);
+                }
+            } else if (openMsg.getSxpMode().equals(ConnectionMode.Speaker)) {
+                if (!connection.isBidirectionalBoth()) {
+                    connection.markChannelHandlerContext(ctx, ChannelHandlerContextType.LISTENER_CNTXT);
+                    connection.setConnectionListenerPart(openMsg);
+                }
+            }
+            if (connection.isBidirectionalBoth()) {
+                // Setup connection parameters.
+                connection.setConnection(openMsg);
+                LOG.info("{} Connected", connection);
+            }
+            return;
+        }
+        if (connection.isStateDeleteHoldDown()) {
+            // Replace the existing one.
+            connection.closeChannelHandlerContextComplements(ctx);
+        } else if (connection.isStateOn()) {
+            // Close the current channel.
+            connection.closeChannelHandlerContext(ctx);
+            return;
+        }
+        connection.markChannelHandlerContext(ctx);
+        // Setup connection parameters.
+        connection.setConnection(openMsg);
+        LOG.info("{} Connected", connection);
+    }
+
+    private void handleOpenMessage(ChannelHandlerContext ctx, SxpConnection connection, OpenMessage openMsg) throws ErrorMessageException {
+        if (connection.isModeBoth()) {
+            if (openMsg.getSxpMode().equals(ConnectionMode.Listener)) {
+                if (!connection.isBidirectionalBoth()) {
+                    connection.markChannelHandlerContext(ctx, ChannelHandlerContextType.SPEAKER_CNTXT);
+                    connection.setConnectionSpeakerPart(openMsg);
+                    try {
+                        connection.setCapabilitiesRemote(MessageFactory.decodeCapabilities(openMsg));
+                        ByteBuf response = composeOpenRespHoldTimeMessage(connection, openMsg, ConnectionMode.Speaker);
+                        LOG.info("{} Sent RESP {}", connection, MessageFactory.toString(response));
+                        ctx.writeAndFlush(response);
+                    } catch (AttributeNotFoundException e) {
+                        LOG.warn("{} No Capabilities received by remote peer.", this, e);
+                    } catch (CapabilityLengthException | HoldTimeMinException | HoldTimeMaxException | AttributeVariantException e) {
+                        LOG.error("{} Error sending RESP shutting down connection {} ", this, connection, e);
+                        connection.setStateOff(ctx);
+                        return;
+                    }
+                } else { // A valid scenario during VSS switchover, see SXP-135
+                    LOG.info("{} Received an Open message from a live bi-directional connection, performing administrative shutdown", connection);
+                    connection.shutdown();
+                }
+            } else if (openMsg.getSxpMode().equals(ConnectionMode.Speaker)) {
+                ByteBuf response = MessageFactory.createPurgeAll();
+                LOG.info("{} Sent PURGEALL {}", connection, MessageFactory.toString(response));
+                ctx.writeAndFlush(response);
+                connection.setStateOff(ctx);
+            }
+            if (connection.isBidirectionalBoth()) {
+                // Setup connection parameters.
+                connection.setConnection(openMsg);
+                LOG.info("{} Connected", connection);
+            }
+            return;
+        }
+        if (InetAddressComparator.greaterThan(connection.getDestination().getAddress(),
+                connection.getLocalAddress().getAddress())) {
+            // Close the dual channel.
+            connection.closeChannelHandlerContextComplements(ctx);
+        }
+        if (connection.isStateDeleteHoldDown()) {
+            // Replace the existing one.
+            connection.closeChannelHandlerContextComplements(ctx);
+            connection.setReconciliationTimer();
+        } else if (connection.isStatePendingOn()) {
+            // Close the current channel.
+            connection.closeChannelHandlerContext(ctx);
+            return;
+        } else if (connection.isStateOn()) { // A valid scenario during VSS switchover, see SXP-135,
+            // we close the connection to allow a new one to form
+            LOG.info("{} Received an Open message from a live connection, performing administrative shutdown",
+                    connection);
+            connection.shutdown();
+            return;
+        }
+        connection.markChannelHandlerContext(ctx);
+        // Setup connection parameters.
+        connection.setConnection(openMsg);
+
+        // Send a response.
+        try {
+            ByteBuf response = composeOpenRespHoldTimeMessage(connection, openMsg, connection.getMode());
+            LOG.info("{} Sending RESP {}", connection, MessageFactory.toString(response));
+            ctx.writeAndFlush(response);
+        } catch (CapabilityLengthException | HoldTimeMinException | HoldTimeMaxException | AttributeVariantException e) {
+            LOG.error("{} Error sending RESP shutting down connection {} ", this, connection, e);
+            connection.setStateOff();
+        }
     }
 
     /**
@@ -369,11 +381,10 @@ public final class Sxpv4 extends SxpLegacy {
     public <T extends SxpBindingFields> ByteBuf onUpdateMessage(SxpConnection connection, List<T> deleteBindings,
             List<T> addBindings, SxpBindingFilter bindingFilter) throws UpdateMessageCompositionException {
         try {
-            return MessageFactory.createUpdate(deleteBindings, addBindings, getOwner().getNodeId(),
+            return MessageFactory.createUpdate(deleteBindings, addBindings, ownerNode.getNodeId(),
                     connection.getCapabilitiesRemote(), bindingFilter);
         } catch (SecurityGroupTagValueException | AttributeVariantException e) {
             throw new UpdateMessageCompositionException(connection.getVersion(), false, e);
         }
     }
-
 }

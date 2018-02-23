@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core.behavior;
 
 import static org.junit.Assert.assertTrue;
@@ -28,22 +27,20 @@ public class StrategyFactoryTest {
 
     @Rule public ExpectedException exception = ExpectedException.none();
 
-    private static Context context;
     private static SxpNode sxpNode;
 
     @Before
     public void init() {
         sxpNode = PowerMockito.mock(SxpNode.class);
-        context = new Context(sxpNode, Version.Version4);
     }
 
     @Test
     public void testGetStrategy() throws Exception {
-        assertTrue(StrategyFactory.getStrategy(context, Version.Version4) instanceof Sxpv4);
-        assertTrue(StrategyFactory.getStrategy(context, Version.Version3) instanceof SxpLegacy);
-        assertTrue(StrategyFactory.getStrategy(context, Version.Version2) instanceof SxpLegacy);
-        assertTrue(StrategyFactory.getStrategy(context, Version.Version1) instanceof SxpLegacy);
+        assertTrue(StrategyFactory.getStrategy(sxpNode, Version.Version4) instanceof Sxpv4);
+        assertTrue(StrategyFactory.getStrategy(sxpNode, Version.Version3) instanceof SxpLegacy);
+        assertTrue(StrategyFactory.getStrategy(sxpNode, Version.Version2) instanceof SxpLegacy);
+        assertTrue(StrategyFactory.getStrategy(sxpNode, Version.Version1) instanceof SxpLegacy);
         exception.expect(UnknownVersionException.class);
-        assertTrue(StrategyFactory.getStrategy(context, null) instanceof SxpLegacy);
+        assertTrue(StrategyFactory.getStrategy(sxpNode, null) instanceof SxpLegacy);
     }
 }

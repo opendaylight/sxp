@@ -50,7 +50,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, Context.class, BindingDispatcher.class})
+@PrepareForTest({SxpNode.class, Context.class, BindingDispatcher.class, Version.class})
 public class SxpLegacyTest {
 
     @Rule public ExpectedException exception = ExpectedException.none();
@@ -62,7 +62,7 @@ public class SxpLegacyTest {
 
     @Before
     public void init() throws UnknownHostException {
-        sxpLegacy = new SxpLegacy(PowerMockito.mock(Context.class));
+        sxpLegacy = new SxpLegacy(PowerMockito.mock(Version.class));
         channelHandlerContext = mock(ChannelHandlerContext.class);
         connection = mock(SxpConnection.class);
         when(connection.getVersion()).thenReturn(Version.Version1);

@@ -18,7 +18,6 @@ public final class Constants {
     public static final int MESSAGE_HEADER_TYPE_LENGTH = 4;
     public static final int MESSAGE_LENGTH_MAX = 4096;
     public static final int MESSAGE_EXPORT_QUANTITY = 150;
-    public static final int NODE_CONNECTIONS_INITIAL_SIZE = 20;
     public static final int SXP_DEFAULT_PORT = 64999;
 
     private Constants() {
