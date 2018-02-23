@@ -111,7 +111,7 @@ public class ConnectFacade {//NOSONAR
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
-                        if ((connectionSecurityType == SecurityType.TLS) && clientSslContext.isPresent()) {
+                        if ((connectionSecurityType == SecurityType.TLS)) {
                             ch.pipeline().addLast(clientSslContext.get().newHandler(ch.alloc()));
                         }
                         ch.pipeline().addLast(hf.getDecoders());

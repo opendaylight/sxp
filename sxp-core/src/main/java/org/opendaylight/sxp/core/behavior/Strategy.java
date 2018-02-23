@@ -11,7 +11,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import java.util.List;
 import org.opendaylight.sxp.core.SxpConnection;
-import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageCompositionException;
@@ -19,8 +18,6 @@ import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateE
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * SXP supports various versions. The details of what is supported in each of
@@ -40,13 +37,6 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("all")
 public interface Strategy {
-
-    Logger LOG = LoggerFactory.getLogger(Strategy.class.getName());
-
-    /**
-     * @return Gets SxpNode on which is this strategy executed
-     */
-    SxpNode getOwner();
 
     /**
      * Logic for establishment of Connection
