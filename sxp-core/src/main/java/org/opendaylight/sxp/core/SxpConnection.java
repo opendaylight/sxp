@@ -1089,11 +1089,12 @@ public class SxpConnection {
      * Start DeleteHoldDown timer and if Reconciliation timer is started stop it
      */
     public void setDeleteHoldDownTimer() {
-        if (connectionBuilder.getConnectionTimers().getDeleteHoldDownTime() == 0) {
+        Integer deleteHoldDownTime = connectionBuilder.getConnectionTimers().getDeleteHoldDownTime();
+        if (deleteHoldDownTime == 0) {
             return;
         }
-        LOG.info("{} onChannelInactivation/setDeleteHoldDownTimer", this);
-        setTimer(TimerType.DeleteHoldDownTimer, connectionBuilder.getConnectionTimers().getDeleteHoldDownTime());
+        LOG.info("{} Setting DeleteHoldDownTimer with hold-down time {}", this, deleteHoldDownTime);
+        setTimer(TimerType.DeleteHoldDownTimer, deleteHoldDownTime);
         ListenableScheduledFuture<?> ctReconciliation = getTimer(TimerType.ReconciliationTimer);
         if (ctReconciliation != null && !ctReconciliation.isDone()
                 && connectionBuilder.getConnectionTimers().getReconciliationTime() != 0) {

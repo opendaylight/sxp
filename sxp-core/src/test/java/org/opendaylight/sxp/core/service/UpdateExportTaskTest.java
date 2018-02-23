@@ -26,6 +26,7 @@ import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -45,6 +46,7 @@ public class UpdateExportTaskTest {
         connection = mock(SxpConnection.class);
         Context context = PowerMockito.mock(Context.class);
         when(connection.getContext()).thenReturn(context);
+        when(connection.getVersion()).thenReturn(Version.Version4);
         ByteBuf byteBuf = mock(ByteBuf.class);
         when(byteBuf.duplicate()).thenReturn(byteBuf);
         when(byteBuf.capacity()).thenReturn(10);
