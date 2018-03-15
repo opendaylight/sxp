@@ -17,6 +17,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -30,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import org.opendaylight.sxp.core.handler.ConnectionDecoder;
@@ -48,12 +49,9 @@ import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.node.DomainNotFoundException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.inet.Search;
-import org.opendaylight.sxp.util.time.SxpTimerTask;
-import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
@@ -70,7 +68,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.TimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.slf4j.Logger;
@@ -87,8 +87,33 @@ import org.slf4j.LoggerFactory;
  */
 public class SxpNode {
 
-    protected static final Logger LOG = LoggerFactory.getLogger(SxpNode.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SxpNode.class);
     public static final String DEFAULT_DOMAIN = "global";
+    private static final Predicate<SxpConnection> INACTIVE_CONNECTION_FILTER = sxpConnection -> {
+        if (!sxpConnection.isModeBoth() && ConnectionState.On == sxpConnection.getState()) {
+            return false;
+        }
+        return !(sxpConnection.isModeBoth() && sxpConnection.isBidirectionalBoth());
+    };
+
+    protected final HandlerFactory handlerFactoryServer = HandlerFactory.instanceAddDecoder(
+            MessageDecoder.createServerProfile(this), HandlerFactory.Position.END);
+    protected final BindingDispatcher svcBindingDispatcher;
+    protected final BindingHandler svcBindingHandler;
+    protected final Map<String, SxpPeerGroupBuilder> peerGroupMap = new HashMap<>();
+    protected final Map<String, SxpDomain> sxpDomains = new HashMap<>();
+
+    private final AtomicReference<ListenableFuture> openConnectionFuture = new AtomicReference<>();
+    private final AtomicReference<ListenableFuture<Boolean>> bindServerFuture = new AtomicReference<>();
+    private final ReentrantLock md5UpdateLock = new ReentrantLock();
+    private volatile boolean processingConnectionData;
+    private final ThreadsWorker worker;
+    private InetAddress sourceIp;
+    private SslContextFactory sslContextFactory;
+    private final SxpNodeIdentityBuilder nodeBuilder;
+    private final NodeId nodeId;
+    private Channel serverChannel;
+    private final Map<TimerType, ListenableScheduledFuture<?>> timers = new EnumMap<>(TimerType.class);
 
     /**
      * Create new instance of SxpNode with empty databases
@@ -124,7 +149,6 @@ public class SxpNode {
      * and custom ThreadWorkers
      * Be aware that sharing of the same DB among multiple SxpNode isn't
      * supported and may cause unexpected behaviour
-     *
      * @param nodeId         ID of newly created Node
      * @param node           Node setup data
      * @param masterDatabase Data which will be added to Master-DB
@@ -153,29 +177,6 @@ public class SxpNode {
         return sxpNode;
     }
 
-    protected final HandlerFactory
-            handlerFactoryClient =
-            HandlerFactory.instanceAddDecoder(MessageDecoder.createClientProfile(this), HandlerFactory.Position.END);
-    protected final HandlerFactory
-            handlerFactoryServer =
-            HandlerFactory.instanceAddDecoder(MessageDecoder.createServerProfile(this), HandlerFactory.Position.END);
-    protected final BindingDispatcher svcBindingDispatcher;
-    protected final BindingHandler svcBindingHandler;
-    protected final Map<String, SxpPeerGroupBuilder> peerGroupMap = new HashMap<>();
-    protected final Map<String, SxpDomain> sxpDomains = new HashMap<>();
-
-    private final AtomicReference<ListenableFuture> openConnectionFuture = new AtomicReference<>();
-    private final AtomicReference<ListenableFuture<Boolean>> bindServerFuture = new AtomicReference<>();
-    private final ReentrantLock md5UpdateLock = new ReentrantLock();
-    private volatile boolean processingConnectionData = false;
-    private final ThreadsWorker worker;
-    protected InetAddress sourceIp;
-    private SslContextFactory sslContextFactory;
-    private final SxpNodeIdentityBuilder nodeBuilder;
-    private final NodeId nodeId;
-    private Channel serverChannel;
-    private final Map<TimerType, ListenableScheduledFuture<?>> timers = new EnumMap<>(TimerType.class);
-
     /**
      * Default constructor that creates and start SxpNode using provided values
      *
@@ -198,6 +199,7 @@ public class SxpNode {
         } else {
             this.svcBindingHandler = new BindingHandler(this, this.svcBindingDispatcher);
         }
+        this.sourceIp = InetAddresses.forString(Search.getAddress(node.getSourceIp()));
     }
 
     /**
@@ -208,7 +210,9 @@ public class SxpNode {
     }
 
     /**
-     * @param connection Adds connection and update MD5 keys if needed
+     * Add and open a new connection. If the connection contains a password, update the MD5 keys.
+     *
+     * @param connection connection to add.
      */
     public SxpConnection addConnection(SxpConnection connection) {
         synchronized (peerGroupMap) {
@@ -230,6 +234,13 @@ public class SxpNode {
                 && !connection.getPassword().trim().isEmpty()) {
             updateMD5keys();
         }
+        Future<Void> openConnection = connection.openConnection();
+        openConnection.addListener((FutureListener<Void>) future -> {
+            if (!future.isSuccess() && !future.isCancelled()) {
+                LOG.warn("{} Failed to connect to remote peer, scheduling retry", connection);
+                connection.scheduleRetryOpen();
+            }
+        });
         return connection;
     }
 
@@ -1040,34 +1051,18 @@ public class SxpNode {
         return openConnectionFuture.updateAndGet(listenableFuture -> {
             if (Objects.isNull(listenableFuture) || listenableFuture.isDone()) {
                 return worker.executeTask(() -> {
-                    final int connectionsAllSize = getAllConnections().size();
+                    int connectionsAllSize = getAllConnections().size();
                     int connectionsOnSize = getAllOnConnections().size();
-                    final List<SxpConnection>
-                            connections =
-                            filterConnections(RetryOpenTimerTask.INACTIVE_CONNECTION_FILTER::test);
-                    LOG.info("{} Open connections [X/O/All=\"{}/{}/{}\"]", node, connections.size(), connectionsOnSize,
+                    List<SxpConnection> connections = filterConnections(INACTIVE_CONNECTION_FILTER::test);
+                    LOG.info("{} Opening connections [X/O/All=\"{}/{}/{}\"]", node, connections.size(), connectionsOnSize,
                             connectionsAllSize);
-                    connections.forEach(this::openConnection);
+                    for (SxpConnection connection : connections) {
+                        connection.openConnection();
+                    }
                 }, ThreadsWorker.WorkerType.DEFAULT);
             }
             return listenableFuture;
         });
-    }
-
-    /**
-     * Connect specified connection to remote peer
-     *
-     * @param connection Connection containing necessary information for connecting to peer
-     */
-    public void openConnection(final SxpConnection connection) {
-        if (isEnabled() && !Preconditions.checkNotNull(connection).isStateOn()) {
-            if (!connection.isModeBoth()) {
-                connection.closeChannelHandlerContextComplements(null);
-            }
-            if (!connection.isModeBoth() || !connection.hasChannelHandlerContext(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT)) {
-                ConnectFacade.createClient(this, connection, handlerFactoryClient);
-            }
-        }
     }
 
     /**
@@ -1197,44 +1192,16 @@ public class SxpNode {
         this.nodeBuilder.setSecurity(securityBuilder.build());
     }
 
-    /**
-     * Sets SxpNode specific Timer
-     *
-     * @param timerType Type of Timer that will be set
-     * @param period    Time period to wait till execution in Seconds
-     * @return ListenableScheduledFuture callback
-     * @throws UnknownTimerTypeException If current TimerType isn't supported
-     */
-    public ListenableScheduledFuture<?> setTimer(TimerType timerType, int period) {
-        synchronized (timers) {
-            SxpTimerTask timer;
-            if (timerType == TimerType.RetryOpenTimer) {
-                timer = new RetryOpenTimerTask(this, period);
-            } else {
-                throw new UnknownTimerTypeException(timerType);
-            }
-            ListenableScheduledFuture<?> formerTimer = getTimer(timerType);
-            if (period > 0 && (formerTimer == null || !formerTimer.isCancelled())) {
-                return this.setTimer(timerType, getWorker().scheduleTask(timer, period, TimeUnit.SECONDS));
-            } else {
-                return this.setTimer(timerType, null);
+    public void setRetryOpenTimerPeriod(int retryOpenTimerPeriod) {
+        nodeBuilder.setTimers(new TimersBuilder(nodeBuilder.getTimers()).setRetryOpenTime(retryOpenTimerPeriod).build());
+        for (SxpDomain domain : sxpDomains.values()) {
+            for (SxpConnection con : domain.getConnections()) {
+                con.stopRetryOpenTimer();
+                if (con.isStateOff()) {
+                    con.scheduleRetryOpen();
+                }
             }
         }
-    }
-
-    /**
-     * Sets SxpNode specific Timer
-     *
-     * @param timerType Type of Timer that will be set
-     * @param timer     Timer logic
-     * @return ListenableScheduledFuture callback
-     */
-    private ListenableScheduledFuture<?> setTimer(TimerType timerType, ListenableScheduledFuture<?> timer) {
-        ListenableScheduledFuture<?> t = this.timers.put(timerType, timer);
-        if (t != null && !t.isDone()) {
-            t.cancel(false);
-        }
-        return timer;
     }
 
     /**
@@ -1276,19 +1243,19 @@ public class SxpNode {
     /**
      * Administratively shutdown.
      */
-    public ListenableFuture shutdown() {
-        final SxpNode node = this;
+    public ListenableFuture<Boolean> shutdown() {
+        SxpNode node = this;
         return bindServerFuture.updateAndGet(listenableFuture -> {
             if (isEnabled() && (Objects.nonNull(listenableFuture))) {
                 if (!listenableFuture.isDone()) {
-                    getWorker().addListener(listenableFuture, node::shutdown);
+                    return Futures.transformAsync(listenableFuture, input -> node.shutdown(), worker.getDefaultExecutorService());
                 } else {
-                    return getWorker().executeTask(() -> {
+                    return worker.executeTask(() -> {
                         if (Objects.nonNull(serverChannel)) {
                             serverChannel.close().awaitUninterruptibly();
                             LOG.info("{} Server stopped", node);
                         }
-                        setTimer(TimerType.RetryOpenTimer, 0);
+                        setRetryOpenTimerPeriod(0);
                         shutdownConnections();
                         return isEnabled();
                     }, ThreadsWorker.WorkerType.DEFAULT);
@@ -1312,7 +1279,6 @@ public class SxpNode {
                     if (success) {
                         serverChannel = channelFuture.channel();
                         LOG.info("{} Server created [{}:{}]", this, getSourceIp().getHostAddress(), getServerPort());
-                        setTimer(TimerType.RetryOpenTimer, getRetryOpenTime());
                     } else {
                         LOG.warn("{} Server [{}:{}] Could not be created", this, getSourceIp().getHostAddress(),
                                 getServerPort(), channelFuture.cause());
@@ -1386,6 +1352,7 @@ public class SxpNode {
                     }
                     serverChannel = ConnectFacade.createServer(this, handlerFactoryServer, keyMapping)
                             .awaitUninterruptibly().channel();
+                    LOG.info("{} Server created", this);
                 }
             }
             return listenableFuture;

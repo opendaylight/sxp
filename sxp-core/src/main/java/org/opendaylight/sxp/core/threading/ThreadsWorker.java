@@ -37,13 +37,14 @@ import org.slf4j.LoggerFactory;
  */
 public class ThreadsWorker implements AutoCloseable {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ThreadsWorker.class);
+
     /**
      * WorkerType enum is used for running task on specific executor
      */
     public enum WorkerType {
         INBOUND, OUTBOUND, DEFAULT
     }
-
 
     private static final class QueueKey {
 
@@ -78,11 +79,8 @@ public class ThreadsWorker implements AutoCloseable {
         }
     }
 
-
-    private static final Logger LOG = LoggerFactory.getLogger(ThreadsWorker.class.getName());
-
     private final ListeningScheduledExecutorService scheduledExecutorService;
-    private final ListeningExecutorService executorService;
+    private final ListeningExecutorService defaultExecutorService;
     private final ListeningExecutorService executorServiceOutbound;
     private final ListeningExecutorService executorServiceInbound;
     private final Map<QueueKey, Deque<SettableListenableFuture>> dequeMap = new HashMap<>(WorkerType.values().length);
@@ -91,18 +89,18 @@ public class ThreadsWorker implements AutoCloseable {
      * Custom ThreadsWorker constructor
      *
      * @param scheduledExecutorService ScheduledExecutorService which will be used for scheduling tasks like SXP timers
-     * @param executorService          ExecutorService which will be used for executing tasks
+     * @param defaultExecutorService          ExecutorService which will be used for executing tasks
      * @param executorServiceInbound   ExecutorService which will be used for executing inbound messaging behaviour
      * @param executorServiceOutbound  ExecutorService which will be used for executing outbound messaging behaviour
      */
-    public ThreadsWorker(ScheduledExecutorService scheduledExecutorService, ExecutorService executorService,
+    public ThreadsWorker(ScheduledExecutorService scheduledExecutorService, ExecutorService defaultExecutorService,
             ExecutorService executorServiceInbound, ExecutorService executorServiceOutbound) {
         for (WorkerType workerType : WorkerType.values()) {
             dequeMap.put(new QueueKey(workerType), new ArrayDeque<>());
         }
         this.scheduledExecutorService =
                 MoreExecutors.listeningDecorator(Preconditions.checkNotNull(scheduledExecutorService));
-        this.executorService = MoreExecutors.listeningDecorator(Preconditions.checkNotNull(executorService));
+        this.defaultExecutorService = MoreExecutors.listeningDecorator(Preconditions.checkNotNull(defaultExecutorService));
         this.executorServiceInbound =
                 MoreExecutors.listeningDecorator(Preconditions.checkNotNull(executorServiceInbound));
         this.executorServiceOutbound =
@@ -144,7 +142,7 @@ public class ThreadsWorker implements AutoCloseable {
             case OUTBOUND:
                 return executorServiceOutbound;
             default:
-                return executorService;
+                return defaultExecutorService;
         }
     }
 
@@ -158,7 +156,7 @@ public class ThreadsWorker implements AutoCloseable {
      * @throws NullPointerException If task is null
      */
     public <T> ListenableScheduledFuture<T> scheduleTask(Callable<T> task, int period, TimeUnit unit) {
-        LOG.debug("Scheduled task {} wit period {} {}", Objects.requireNonNull(task).getClass(), period, unit);
+        LOG.debug("Scheduling task {} with period {} {}", Objects.requireNonNull(task).getClass(), period, unit);
         return scheduledExecutorService.schedule(task, period, unit);
     }
 
@@ -246,7 +244,7 @@ public class ThreadsWorker implements AutoCloseable {
      * @throws NullPointerException If task or listener is null
      */
     public void addListener(ListenableFuture task, Runnable listener) {
-        Preconditions.checkNotNull(task).addListener(Objects.requireNonNull(listener), executorService);
+        Preconditions.checkNotNull(task).addListener(Objects.requireNonNull(listener), defaultExecutorService);
     }
 
     /**
@@ -374,10 +372,14 @@ public class ThreadsWorker implements AutoCloseable {
         };
     }
 
+    public ListeningExecutorService getDefaultExecutorService() {
+        return defaultExecutorService;
+    }
+
     @Override
     public void close() {
         scheduledExecutorService.shutdown();
-        executorService.shutdown();
+        defaultExecutorService.shutdown();
         executorServiceInbound.shutdown();
         executorServiceOutbound.shutdown();
     }

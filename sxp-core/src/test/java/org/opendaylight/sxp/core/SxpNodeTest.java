@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.core;
 
 import static org.junit.Assert.assertEquals;
@@ -48,7 +47,6 @@ import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.node.DomainNotFoundException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -74,7 +72,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.Connections;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
@@ -272,9 +269,11 @@ public class SxpNodeTest {
         assertEquals("default", node.getPassword());
         assertEquals(64999, node.getServerPort());
 
-        SxpNode
-                node =
-                SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), mock(SxpNodeIdentity.class),
+
+        SxpNodeIdentity mockIdentity = mock(SxpNodeIdentity.class);
+        when(mockIdentity.getSourceIp()).thenReturn(new IpAddress("127.1.1.1".toCharArray()));
+
+        SxpNode node = SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), mockIdentity,
                         databaseProvider, sxpDatabaseProvider, worker);
 
         assertEquals(Version.Version4, node.getVersion());
@@ -327,18 +326,6 @@ public class SxpNodeTest {
         PowerMockito.mockStatic(ConnectFacade.class);
         argument.getValue().run();
         PowerMockito.verifyStatic();
-    }
-
-    @Test
-    public void testSetTimer() throws Exception {
-        node.setTimer(TimerType.RetryOpenTimer, 0);
-        assertNull(node.getTimer(TimerType.RetryOpenTimer));
-
-        node.setTimer(TimerType.RetryOpenTimer, 50);
-        assertNotNull(node.getTimer(TimerType.RetryOpenTimer));
-
-        exception.expect(UnknownTimerTypeException.class);
-        node.setTimer(TimerType.ReconciliationTimer, 50);
     }
 
     @Test
@@ -430,6 +417,7 @@ public class SxpNodeTest {
     @Test
     public void testAddConnection() throws Exception {
         PowerMockito.mockStatic(ConnectFacade.class);
+        when(ConnectFacade.createClient(any(), any(), any())).thenReturn(mock(ChannelFuture.class));
         assertEquals(0, node.getAllConnections().size());
 
         List<SxpPeer> sxpPeers = new ArrayList<>();
@@ -448,6 +436,7 @@ public class SxpNodeTest {
     @Test
     public void testAddConnections() throws Exception {
         PowerMockito.mockStatic(ConnectFacade.class);
+        when(ConnectFacade.createClient(any(), any(), any())).thenReturn(mock(ChannelFuture.class));
         List<Connection> connection = new ArrayList<>();
 
         node.addConnections(null);
