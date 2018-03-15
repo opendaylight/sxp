@@ -73,7 +73,7 @@ public final class SxpLegacy extends AbstractStrategy {
             connectionMode = connection.getMode();
         }
         ByteBuf message = LegacyMessageFactory.createOpen(connection.getVersion(), connectionMode);
-        LOG.info("{} Sent OPEN {}", connection, MessageFactory.toString(message));
+        LOG.info("{} Sending OPEN {}", connection, MessageFactory.toString(message));
         ctx.writeAndFlush(message);
         if (connection.isStateDeleteHoldDown()) {
             connection.setReconciliationTimer();

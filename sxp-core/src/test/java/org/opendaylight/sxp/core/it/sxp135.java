@@ -34,7 +34,6 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.MessageBufferingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomainsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
@@ -107,8 +106,8 @@ public class sxp135 {
         LOG.info("Sleeping to allow connections to establish");
         Thread.sleep(4_000);
         LOG.info("Enough sleeping, turning off retry timers");
-        node1.setTimer(TimerType.RetryOpenTimer, 0);
-        node2.setTimer(TimerType.RetryOpenTimer, 0);
+        node1.setRetryOpenTimerPeriod(0);
+        node2.setRetryOpenTimerPeriod(0);
         LOG.info("Removing bindings from the listener (node1)");
         node1.getDomain(DEFAULT_DOMAIN).getSxpDatabase().deleteBindings(new NodeId(new Ipv4Address("127.0.0.2")));
         assertTrue("Bindings not deleted in node1 sxpDatabase", node1.getBindingSxpDatabase(DEFAULT_DOMAIN).getBindings().isEmpty());
@@ -119,7 +118,7 @@ public class sxp135 {
         LOG.info("Written the OpenMSG, sleeping because why not");
         Thread.sleep(1000);
         LOG.info("Enough sleeping, starting Retry timer on the speaker");
-        node2.setTimer(TimerType.RetryOpenTimer, 1);
+        node2.setRetryOpenTimerPeriod(1);
         Thread.sleep(4000);
         LOG.info("Slept enough, checking if bindings have been propagated to switched listener");
         assertFalse("No bindings present in the node1 sxpDatabase", node1.getBindingSxpDatabase(DEFAULT_DOMAIN).getBindings().isEmpty());
@@ -137,8 +136,8 @@ public class sxp135 {
         LOG.info("Sleeping to allow connections to establish");
         Thread.sleep(4_000);
         LOG.info("Enough sleeping, turning off retry timers");
-        node1.setTimer(TimerType.RetryOpenTimer, 0);
-        node2.setTimer(TimerType.RetryOpenTimer, 0);
+        node1.setRetryOpenTimerPeriod(0);
+        node2.setRetryOpenTimerPeriod(0);
         LOG.info("Removing bindings from the listener (node1)");
         node1.getDomain(DEFAULT_DOMAIN).getSxpDatabase().deleteBindings(new NodeId(new Ipv4Address("127.0.0.2")));
         assertTrue("Bindings not deleted in node1 sxpDatabase", node1.getBindingSxpDatabase(DEFAULT_DOMAIN).getBindings().isEmpty());
@@ -149,7 +148,7 @@ public class sxp135 {
         LOG.info("Written the OpenMSG, sleeping because why not");
         Thread.sleep(1000);
         LOG.info("Enough sleeping, starting Retry timer on the Speaker");
-        node2.setTimer(TimerType.RetryOpenTimer, 1);
+        node2.setRetryOpenTimerPeriod(1);
         Thread.sleep(4000);
         LOG.info("Slept enough, checking if bindings have been propagated to listener");
         assertFalse("No bindings present in the node1 sxpDatabase", node1.getBindingSxpDatabase(DEFAULT_DOMAIN).getBindings().isEmpty());
@@ -163,14 +162,14 @@ public class sxp135 {
         node2Con = SxpConnection.create(node2, connection2, DEFAULT_DOMAIN);
         node1.addConnection(node1Con);
         node2.addConnection(node2Con);
-        node1.setTimer(TimerType.RetryOpenTimer, 1);
-        node2.setTimer(TimerType.RetryOpenTimer, 1);
+        node1.setRetryOpenTimerPeriod(1);
+        node2.setRetryOpenTimerPeriod(1);
 
         LOG.info("Sleeping to allow connections to establish");
         Thread.sleep(3_000);
         LOG.info("Enough sleeping, turning off retry timers");
-        node1.setTimer(TimerType.RetryOpenTimer, 0);
-        node2.setTimer(TimerType.RetryOpenTimer, 0);
+        node1.setRetryOpenTimerPeriod(0);
+        node2.setRetryOpenTimerPeriod(0);
         LOG.info("Removing bindings from node1");
         node1.getDomain(DEFAULT_DOMAIN).getSxpDatabase().deleteBindings(new NodeId(new Ipv4Address("127.0.0.2")));
         assertTrue("Bindings not deleted in node1 sxpDatabase", node1.getBindingSxpDatabase(DEFAULT_DOMAIN).getBindings().isEmpty());
@@ -181,8 +180,8 @@ public class sxp135 {
         LOG.info("Written the OpenMSG, sleeping because why not");
         Thread.sleep(1000);
         LOG.info("Enough sleeping, starting Retry timer on the nodes 1 and 2");
-        node1.setTimer(TimerType.RetryOpenTimer, 1);
-        node2.setTimer(TimerType.RetryOpenTimer, 1);
+        node1.setRetryOpenTimerPeriod(1);
+        node2.setRetryOpenTimerPeriod(1);
         Thread.sleep(4000);
         LOG.info("Slept enough, checking if bindings have been propagated to node 1");
         assertFalse("No bindings present in the node1 sxpDatabase", node1.getBindingSxpDatabase(DEFAULT_DOMAIN).getBindings().isEmpty());
@@ -190,8 +189,8 @@ public class sxp135 {
 
     @After
     public void shutdownNodes() throws InterruptedException, ExecutionException {
-        ListenableFuture shutdown1 = node1.shutdown();
-        ListenableFuture shutdown2 = node2.shutdown();
+        ListenableFuture<Boolean> shutdown1 = node1.shutdown();
+        ListenableFuture<Boolean> shutdown2 = node2.shutdown();
         shutdown1.get();
         shutdown2.get();
     }
