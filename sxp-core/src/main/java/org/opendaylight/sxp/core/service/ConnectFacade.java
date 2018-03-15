@@ -135,7 +135,7 @@ public class ConnectFacade {//NOSONAR
         if (!Epoll.isAvailable()) {
             throw new UnsupportedOperationException(Epoll.unavailabilityCause().getCause());
         }
-        LOG.trace("Scheduling server creation for node {} with registered passwords {}", node, keyMapping);
+        LOG.trace("{} Scheduling server creation with registered passwords {}", node, keyMapping);
         Optional<SslContext> serverSslContext = node.getSslContextFactory().getServerContext();
         keyMapping.remove(node.getSourceIp());
         ServerBootstrap bootstrap = new ServerBootstrap();
@@ -152,7 +152,7 @@ public class ConnectFacade {//NOSONAR
             protected void initChannel(SocketChannel ch) throws Exception {
                 SxpConnection connection = node.getConnection(ch.remoteAddress());
                 if (connection == null) {
-                    LOG.error("Could not find a connection on node: {} for the peer: {}, closing channel: {}",
+                    LOG.error("{} Could not find a connection for the peer: {}, closing channel: {}",
                             node, ch.remoteAddress(), ch);
                     throw new IllegalStateException("Could not find a connection for the peer " + ch.remoteAddress());
                 }

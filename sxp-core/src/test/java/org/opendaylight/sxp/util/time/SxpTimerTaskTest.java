@@ -31,7 +31,7 @@ import org.opendaylight.sxp.util.time.connection.DeleteHoldDownTimerTask;
 import org.opendaylight.sxp.util.time.connection.HoldTimerTask;
 import org.opendaylight.sxp.util.time.connection.KeepAliveTimerTask;
 import org.opendaylight.sxp.util.time.connection.ReconcilationTimerTask;
-import org.opendaylight.sxp.util.time.node.RetryOpenTimerTask;
+import org.opendaylight.sxp.util.time.connection.RetryOpenTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
@@ -62,12 +62,9 @@ public class SxpTimerTaskTest {
     @Test
     public void testRetryOpenTimerTask() throws Exception {
         PowerMockito.when(sxpNode.isEnabled()).thenReturn(true).thenReturn(false);
-        RetryOpenTimerTask timerTask = new RetryOpenTimerTask(sxpNode, 0);
+        RetryOpenTimerTask timerTask = new RetryOpenTimerTask(sxpConnection);
         timerTask.call();
-        verify(sxpNode).openConnections();
-        verify(sxpNode).setTimer(TimerType.RetryOpenTimer, timerTask.getPeriod());
-        timerTask.call();
-        verify(sxpNode, times(1)).openConnections();
+        verify(sxpConnection).openConnection();
     }
 
     @Test
