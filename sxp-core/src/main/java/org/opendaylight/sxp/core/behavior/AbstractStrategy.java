@@ -36,6 +36,7 @@ public abstract class AbstractStrategy implements Strategy {
             }
         }
         connection.setStateOff(ctx);
+        connection.scheduleRetryOpen(); //FIXME: This cannot happen when just switching SXP versions
     }
 
     /**
