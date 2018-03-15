@@ -8,6 +8,7 @@
 package org.opendaylight.sxp.core.handler;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
@@ -190,18 +191,21 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> {//NOSO
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws SocketAddressNotRecognizedException {
-        final SxpConnection connection = owner.getConnection(ctx.channel().remoteAddress());
+        LOG.info("Context {}", ctx);
+        Channel channel = ctx.channel();
+        SocketAddress remoteAddr = channel.remoteAddress();
+        SxpConnection connection = owner.getConnection(remoteAddr);
         if (connection == null) {
             LOG.warn(getLogMessage(owner, ctx, "Channel activation"));
             ctx.close();
             return;
         }
         if (profile.equals(Profile.SERVER)) {
-            connection.setInetSocketAddresses(ctx.channel().localAddress());
+            connection.setInetSocketAddresses(channel.localAddress());
             connection.addChannelHandlerContext(ctx);
             return;
         }
-        connection.setInetSocketAddresses(ctx.channel().localAddress());
+        connection.setInetSocketAddresses(channel.localAddress());
         connection.addChannelHandlerContext(ctx);
         connection.getContext().executeChannelActivationStrategy(ctx, connection);
     }
