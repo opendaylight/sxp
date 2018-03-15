@@ -37,13 +37,14 @@ import org.slf4j.LoggerFactory;
  */
 public class ThreadsWorker implements AutoCloseable {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ThreadsWorker.class);
+
     /**
      * WorkerType enum is used for running task on specific executor
      */
     public enum WorkerType {
         INBOUND, OUTBOUND, DEFAULT
     }
-
 
     private static final class QueueKey {
 
@@ -77,9 +78,6 @@ public class ThreadsWorker implements AutoCloseable {
             return Objects.hash(workerType, connection);
         }
     }
-
-
-    private static final Logger LOG = LoggerFactory.getLogger(ThreadsWorker.class.getName());
 
     private final ListeningScheduledExecutorService scheduledExecutorService;
     private final ListeningExecutorService executorService;
@@ -158,7 +156,7 @@ public class ThreadsWorker implements AutoCloseable {
      * @throws NullPointerException If task is null
      */
     public <T> ListenableScheduledFuture<T> scheduleTask(Callable<T> task, int period, TimeUnit unit) {
-        LOG.debug("Scheduled task {} wit period {} {}", Objects.requireNonNull(task).getClass(), period, unit);
+        LOG.debug("Scheduling task {} with period {} {}", Objects.requireNonNull(task).getClass(), period, unit);
         return scheduledExecutorService.schedule(task, period, unit);
     }
 
