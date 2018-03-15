@@ -330,6 +330,7 @@ public final class Sxpv4 extends AbstractStrategy {
         if (InetAddressComparator.greaterThan(connection.getDestination().getAddress(),
                 connection.getLocalAddress().getAddress())) {
             // Close the dual channel.
+            LOG.trace("{} Remote peer has a higher IP adress, closing init contexts", connection);
             connection.closeChannelHandlerContextComplements(ctx);
         }
         if (connection.isStateDeleteHoldDown()) {

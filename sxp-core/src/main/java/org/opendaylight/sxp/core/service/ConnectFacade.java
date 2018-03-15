@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * Hardwired to use netty epoll.
  * Able to use TLS when certificates are provided.
  */
-public class ConnectFacade {//NOSONAR
+public final class ConnectFacade {//NOSONAR
 
     private static final Logger LOG = LoggerFactory.getLogger(ConnectFacade.class);
 
@@ -56,19 +56,15 @@ public class ConnectFacade {//NOSONAR
     private static final EventLoopGroup EVENT_LOOP_GROUP = new EpollEventLoopGroup();
 
     /**
-     * A test if given connection has an MD5 password
-     */
-    private static final Predicate<SxpConnection>
-            CONNECTION_ENTRY_WITH_MD5_PASSWORD =
-            input -> Objects.nonNull(input) && (input.getSecurityType() == SecurityType.Default) && Objects.nonNull(
-                    input.getPassword()) && !input.getPassword().isEmpty();
-    /**
      * A test if given connection template has an MD5 password
      */
     private static final Predicate<SxpConnectionTemplateFields>
             TEMPLATE_ENTRY_WITH_MD5_PASSWORD =
             input -> Objects.nonNull(input) && (input.getTemplateSecurityType() == SecurityType.Default)
                     && Objects.nonNull(input.getTemplatePassword()) && !input.getTemplatePassword().isEmpty();
+
+    private ConnectFacade() {
+    }
 
     /**
      * Create new Connection to Peer.
@@ -91,9 +87,7 @@ public class ConnectFacade {//NOSONAR
 
         RecvByteBufAllocator recvByteBufAllocator = new FixedRecvByteBufAllocator(Constants.MESSAGE_LENGTH_MAX);
         Bootstrap bootstrap = new Bootstrap();
-        if ((connectionSecurityType == SecurityType.Default)
-                && connection.getPassword() != null
-                && !connection.getPassword().isEmpty()) {
+        if (connection.hasNonEmptyPassword()) {
             bootstrap.option(EpollChannelOption.TCP_MD5SIG,
                     Collections.singletonMap(connection.getDestination().getAddress(),
                             connection.getPassword().getBytes(StandardCharsets.US_ASCII)));
@@ -135,7 +129,7 @@ public class ConnectFacade {//NOSONAR
         if (!Epoll.isAvailable()) {
             throw new UnsupportedOperationException(Epoll.unavailabilityCause().getCause());
         }
-        LOG.trace("Scheduling server creation for node {} with registered passwords {}", node, keyMapping);
+        LOG.trace("{} Scheduling server creation with registered passwords {}", node, keyMapping);
         Optional<SslContext> serverSslContext = node.getSslContextFactory().getServerContext();
         keyMapping.remove(node.getSourceIp());
         ServerBootstrap bootstrap = new ServerBootstrap();
@@ -152,7 +146,7 @@ public class ConnectFacade {//NOSONAR
             protected void initChannel(SocketChannel ch) throws Exception {
                 SxpConnection connection = node.getConnection(ch.remoteAddress());
                 if (connection == null) {
-                    LOG.error("Could not find a connection on node: {} for the peer: {}, closing channel: {}",
+                    LOG.error("{} Could not find a connection for the peer: {}, closing channel: {}",
                             node, ch.remoteAddress(), ch);
                     throw new IllegalStateException("Could not find a connection for the peer " + ch.remoteAddress());
                 }
@@ -190,7 +184,7 @@ public class ConnectFacade {//NOSONAR
                         }));
         node.getAllConnections()
                 .stream()
-                .filter(CONNECTION_ENTRY_WITH_MD5_PASSWORD)
+                .filter(SxpConnection::hasNonEmptyPassword)
                 .forEach(connection -> keyMapping.put(connection.getDestination().getAddress(),
                         connection.getPassword().getBytes(StandardCharsets.US_ASCII)));
         return keyMapping;
