@@ -9,7 +9,15 @@ package org.opendaylight.sxp.core;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
+import com.google.common.util.concurrent.MoreExecutors;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -22,10 +30,13 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.opendaylight.sxp.core.behavior.Context;
+import org.opendaylight.sxp.core.handler.HandlerFactory;
+import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.core.messaging.AttributeList;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
+import org.opendaylight.sxp.core.service.ConnectFacade;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.SxpDatabase;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
@@ -46,6 +57,7 @@ import org.opendaylight.sxp.util.time.connection.DeleteHoldDownTimerTask;
 import org.opendaylight.sxp.util.time.connection.HoldTimerTask;
 import org.opendaylight.sxp.util.time.connection.KeepAliveTimerTask;
 import org.opendaylight.sxp.util.time.connection.ReconcilationTimerTask;
+import org.opendaylight.sxp.util.time.connection.RetryOpenTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
@@ -81,28 +93,13 @@ import org.slf4j.LoggerFactory;
  */
 public class SxpConnection {
 
+    private static final Logger LOG = LoggerFactory.getLogger(SxpConnection.class);
+
     /**
      * ChannelHandlerContextType enum specifies role of ChannelHandlerContext
      */
     public enum ChannelHandlerContextType {
         LISTENER_CNTXT, NONE_CNTXT, SPEAKER_CNTXT
-    }
-
-    protected static final Logger LOG = LoggerFactory.getLogger(SxpConnection.class.getName());
-
-    /**
-     * Creates SxpConnection using provided values
-     *
-     * @param owner      SxpNode to be set as owner
-     * @param connection Connection that contains settings
-     * @param domain     Sxp Domain where Connections contains
-     * @return SxpConnection created by specified values
-     * @throws UnknownVersionException If version in provided values isn't supported
-     */
-    public static SxpConnection create(SxpNode owner, Connection connection, String domain) {
-        SxpConnection sxpConnection = new SxpConnection(owner, connection, domain);
-        sxpConnection.setCapabilities(Configuration.getCapabilities(sxpConnection.getVersion()));
-        return sxpConnection;
     }
 
     protected ConnectionBuilder connectionBuilder;
@@ -120,9 +117,80 @@ public class SxpConnection {
     private final NodeId connectionId;
 
     protected final Map<TimerType, ListenableScheduledFuture<?>> timers = new EnumMap(TimerType.class);
+    private ListenableScheduledFuture<Future<Void>> scheduledRetryOpen;
     private final Map<FilterType, Map<FilterSpecific, SxpBindingFilter<?, ? extends SxpFilterFields>>>
             bindingFilterMap =
             new EnumMap(FilterType.class);
+    private final HandlerFactory handlerFactoryClient;
+
+    /**
+     * Default constructor that creates SxpConnection using provided values
+     *
+     * @param owner      SxpNode to be set as owner
+     * @param connection Connection that contains settings
+     * @throws UnknownVersionException If version in provided values isn't supported
+     */
+    protected SxpConnection(SxpNode owner, Connection connection, String domain) {
+        this.owner = Preconditions.checkNotNull(owner);
+        this.domain = Preconditions.checkNotNull(domain);
+        this.connectionBuilder = new ConnectionBuilder(Preconditions.checkNotNull(connection));
+        if (Objects.isNull(connectionBuilder.getState())) {
+            this.connectionBuilder.setState(ConnectionState.Off);
+        }
+        if (Objects.isNull(connectionBuilder.getSecurityType())) {
+            connectionBuilder.setSecurityType(SecurityType.Default);
+        }
+        this.remoteAddress =
+                new InetSocketAddress(Search.getAddress(connectionBuilder.getPeerAddress()),
+                        connectionBuilder.getTcpPort() != null ? connectionBuilder.getTcpPort()
+                                .getValue() : Constants.SXP_DEFAULT_PORT);
+        this.connectionId = new NodeId(connectionBuilder.getPeerAddress().getIpv4Address());
+        for (FilterType filterType : FilterType.values()) {
+            bindingFilterMap.put(filterType, new HashMap<>());
+        }
+        if (!Objects.nonNull(connectionBuilder.getVersion())) {
+            connectionBuilder.setVersion(owner.getVersion());
+        }
+        this.context = new Context(owner, connectionBuilder.getVersion());
+        this.handlerFactoryClient = HandlerFactory.instanceAddDecoder(MessageDecoder.createClientProfile(owner),
+                HandlerFactory.Position.END);
+    }
+
+    /**
+     * Creates SxpConnection using provided values
+     *
+     * @param owner      SxpNode to be set as owner
+     * @param connection Connection that contains settings
+     * @param domain     Sxp Domain where Connections contains
+     * @return SxpConnection created by specified values
+     * @throws UnknownVersionException If version in provided values isn't supported
+     */
+    public static SxpConnection create(SxpNode owner, Connection connection, String domain) {
+        SxpConnection sxpConnection = new SxpConnection(owner, connection, domain);
+        sxpConnection.setCapabilities(Configuration.getCapabilities(sxpConnection.getVersion()));
+        return sxpConnection;
+    }
+
+    /**
+     * Establish a connection to the remote peer.
+     *
+     * @return a channel future representing a TCP connection binding,
+     *         or a cancelled future if either the node or the connection is
+     *         disabled
+     */
+    public synchronized Future<Void> openConnection() {
+        if (owner.isEnabled() && !isStateOn()) {
+            if (!isModeBoth()) {
+                closeChannelHandlerContextComplements(null);
+            }
+            if (!isModeBoth() || !hasChannelHandlerContext(ChannelHandlerContextType.LISTENER_CNTXT)) {
+                return ConnectFacade.createClient(owner, this, handlerFactoryClient);
+            }
+        }
+        Future<Void> cancelledFuture = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
+        cancelledFuture.cancel(true);
+        return cancelledFuture;
+    }
 
     /**
      * @param filterType Type of SxpBindingFilter to look for
@@ -250,37 +318,6 @@ public class SxpConnection {
             }
         }
         return filters;
-    }
-
-    /**
-     * Default constructor that creates SxpConnection using provided values
-     *
-     * @param owner      SxpNode to be set as owner
-     * @param connection Connection that contains settings
-     * @throws UnknownVersionException If version in provided values isn't supported
-     */
-    protected SxpConnection(SxpNode owner, Connection connection, String domain) {
-        this.owner = Preconditions.checkNotNull(owner);
-        this.domain = Preconditions.checkNotNull(domain);
-        this.connectionBuilder = new ConnectionBuilder(Preconditions.checkNotNull(connection));
-        if (Objects.isNull(connectionBuilder.getState())) {
-            this.connectionBuilder.setState(ConnectionState.Off);
-        }
-        if (Objects.isNull(connectionBuilder.getSecurityType())) {
-            connectionBuilder.setSecurityType(SecurityType.Default);
-        }
-        this.remoteAddress =
-                new InetSocketAddress(Search.getAddress(connectionBuilder.getPeerAddress()),
-                        connectionBuilder.getTcpPort() != null ? connectionBuilder.getTcpPort()
-                                .getValue() : Constants.SXP_DEFAULT_PORT);
-        this.connectionId = new NodeId(connectionBuilder.getPeerAddress().getIpv4Address());
-        for (FilterType filterType : FilterType.values()) {
-            bindingFilterMap.put(filterType, new HashMap<>());
-        }
-        if (!Objects.nonNull(connectionBuilder.getVersion())) {
-            connectionBuilder.setVersion(owner.getVersion());
-        }
-        this.context = new Context(owner, connectionBuilder.getVersion());
     }
 
     /**
@@ -1196,7 +1233,7 @@ public class SxpConnection {
      * Set State to Off resets all flags, stop timers,
      * clear Handling of messages and close ChannelHandlerContexts
      */
-    public void setStateOff() {
+    public synchronized void setStateOff() {
         stopTimers();
         setState(ConnectionState.Off);
         getOwner().getWorker().cancelTasksInSequence(true, ThreadsWorker.WorkerType.INBOUND, this);
@@ -1259,6 +1296,9 @@ public class SxpConnection {
         setTimer(TimerType.ReconciliationTimer, 0);
         setTimer(TimerType.HoldTimer, 0);
         setTimer(TimerType.KeepAliveTimer, 0);
+        if (scheduledRetryOpen != null) {
+            scheduledRetryOpen.cancel(true);
+        }
     }
 
     /**
@@ -1333,6 +1373,39 @@ public class SxpConnection {
             t.cancel(false);
         }
         return timer;
+    }
+
+    /**
+     * Schedule a reconnect in retryOpenTime seconds specified in the parent SxpNode.
+     */
+    public synchronized void scheduleRetryOpen() {
+        scheduledRetryOpen = doScheduleRetryOpen();
+        scheduledRetryOpen.addListener(() -> {// when a timer has expired
+            try {
+                if (scheduledRetryOpen.isCancelled()) {
+                    LOG.debug("{} Connection reopen was cancelled", this);
+                    return;
+                }
+                Future<Void> connectFuture = scheduledRetryOpen.get();
+                // either when connection established, failed, or got cancelled
+                connectFuture.addListener((FutureListener<Void>) future -> {
+                    if (future.isCancelled()) {
+                        LOG.debug("{} Connection reopen was cancelled.", this);
+                        return;
+                    }
+                    if (!future.isSuccess()) {
+                        LOG.warn("{} Failed to connect to remote peer, scheduling retry", this);
+                        scheduledRetryOpen = doScheduleRetryOpen();
+                    }
+                });
+            } catch (InterruptedException | ExecutionException ex) {
+                LOG.warn("{} Failed trying to reconnect", this, ex);
+            }
+        }, MoreExecutors.directExecutor());
+    }
+
+    private ListenableScheduledFuture<Future<Void>> doScheduleRetryOpen() {
+        return owner.getWorker().scheduleTask(new RetryOpenTimerTask(this), owner.getRetryOpenTime(), TimeUnit.SECONDS);
     }
 
     /**

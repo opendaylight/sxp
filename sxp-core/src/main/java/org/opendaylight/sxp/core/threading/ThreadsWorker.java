@@ -158,7 +158,7 @@ public class ThreadsWorker implements AutoCloseable {
      * @throws NullPointerException If task is null
      */
     public <T> ListenableScheduledFuture<T> scheduleTask(Callable<T> task, int period, TimeUnit unit) {
-        LOG.debug("Scheduled task {} wit period {} {}", Objects.requireNonNull(task).getClass(), period, unit);
+        LOG.debug("Scheduled task {} with period {} {}", Objects.requireNonNull(task).getClass(), period, unit);
         return scheduledExecutorService.schedule(task, period, unit);
     }
 
