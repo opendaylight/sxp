@@ -135,7 +135,7 @@ public class ConnectFacade {//NOSONAR
         if (!Epoll.isAvailable()) {
             throw new UnsupportedOperationException(Epoll.unavailabilityCause().getCause());
         }
-        LOG.trace("Scheduling server creation for node {} with registered passwords {}", node, keyMapping);
+        LOG.trace("{} Scheduling server creation with registered passwords {}", node, keyMapping);
         Optional<SslContext> serverSslContext = node.getSslContextFactory().getServerContext();
         keyMapping.remove(node.getSourceIp());
         ServerBootstrap bootstrap = new ServerBootstrap();
