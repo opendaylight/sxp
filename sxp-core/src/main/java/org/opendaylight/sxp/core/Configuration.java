@@ -24,9 +24,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
 @SuppressWarnings("all")
 public final class Configuration {
 
-    private static final String FALSE = "false";
-    private static final String TRUE = "true";
-
     public static final int DEFAULT_PREFIX_GROUP = 0;
 
     public static final int NETTY_CONNECT_TIMEOUT_MILLIS = 15000;
@@ -38,25 +35,6 @@ public final class Configuration {
     public static final boolean SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS = true;
 
     public static final String TOPOLOGY_NAME = "sxp";
-
-    static {
-        initializeLogger();
-    }
-
-    /**
-     * Initialize Logger services
-     */
-    private static void initializeLogger() {
-        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
-        System.setProperty("org.slf4j.simpleLogger.showDateTime", TRUE);
-        System.setProperty("org.slf4j.simpleLogger.dateTimeFormat",
-                new SimpleDateFormat("yyMMdd HH:mm:ss").toPattern());
-        System.setProperty("org.slf4j.simpleLogger.showThreadName", FALSE);
-        System.setProperty("org.slf4j.simpleLogger.showLogName", FALSE);
-        System.setProperty("org.slf4j.simpleLogger.showShortLogName", FALSE);
-        System.setProperty("org.slf4j.simpleLogger.logFile", "System.out");
-        System.setProperty("org.slf4j.simpleLogger.levelInBrackets", FALSE);
-    }
 
     /**
      * @param version Version according which Capabilities are generated
