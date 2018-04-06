@@ -22,10 +22,21 @@
         <module>sxp-cluster-route</module>
         <module>sxp-robot</module>
         <module>features</module>
-        <module>sxp-karaf</module>
         <module>sxp-system-tests</module>
-
     </modules>
+
+    <profiles>
+        <profile>
+            <id>karaf</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
+            <modules>
+                <module>sxp-karaf</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
