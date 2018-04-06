@@ -24,9 +24,20 @@
         <!-- Karaf -->
         <module>sxp-config</module>
         <module>features</module>
-        <module>sxp-karaf</module>
-
     </modules>
+
+    <profiles>
+        <profile>
+            <id>karaf</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
+            <modules>
+                <module>sxp-karaf</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <properties>
         <!-- Optional TODO: Rename your configfile to taste -->
