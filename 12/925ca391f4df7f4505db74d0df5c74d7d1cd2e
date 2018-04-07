@@ -1,0 +1,7 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Martin Dindoffer <martin.dindoffer@pantheon.tech>
+Submitted-by: Martin Dindoffer <martin.dindoffer@pantheon.tech>
+Submitted-at: Sat, 07 Apr 2018 07:31:58 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/70608
+Project: sxp
+Branch: refs/heads/stable/nitrogen
