@@ -7,6 +7,7 @@
  */
 package org.opendaylight.sxp.util.database;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import java.util.function.Function;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
@@ -37,7 +39,8 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
      * @return List of bindings that can be added to MasterDatabase
      */
     protected static <T extends SxpBindingFields> Map<IpPrefix, MasterDatabaseBinding> filterIncomingBindings(
-            List<T> bindings, Function<IpPrefix, MasterDatabaseBinding> get, Function<IpPrefix, Boolean> remove) {
+            List<T> bindings, Function<IpPrefix, MasterDatabaseBinding> get, Function<IpPrefix, Boolean> remove,
+            OriginType bindingType) {
         Map<IpPrefix, MasterDatabaseBinding> prefixMap = new HashMap<>();
         if (get == null || remove == null || bindings == null || bindings.isEmpty()) {
             return prefixMap;
@@ -53,7 +56,9 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
             if (binding == null || getPeerSequenceLength(b) < getPeerSequenceLength(binding) || (
                     getPeerSequenceLength(b) == getPeerSequenceLength(binding)
                             && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
-                prefixMap.put(b.getIpPrefix(), new MasterDatabaseBindingBuilder(b).build());
+                prefixMap.put(b.getIpPrefix(), new MasterDatabaseBindingBuilder(b)
+                        .setOrigin(bindingType)
+                        .build());
                 remove.apply(b.getIpPrefix());
             }
         });
@@ -76,7 +81,7 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
      * @return If binding will be ignored
      */
     @SuppressWarnings("all")
-    private static <T extends SxpBindingFields> boolean ignoreBinding(T binding) {
+    protected static <T extends SxpBindingFields> boolean ignoreBinding(T binding) {
         if (binding == null) {
             return true;
         }
@@ -88,7 +93,7 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder(this.getClass().getSimpleName() + "\n");
-        List<MasterDatabaseBinding> databaseBindings = getBindings();
+        Collection<MasterDatabaseBinding> databaseBindings = getBindings();
         if (!databaseBindings.isEmpty()) {
             databaseBindings.forEach(b -> builder.append("\t")
                     .append(b.getSecurityGroupTag().getValue())
