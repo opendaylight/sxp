@@ -1,15 +1,15 @@
 /*
- * Copyright (c) 2015 Cisco Systems, Inc. and others.  All rights reserved.
+ * Copyright (c) 2014 Cisco Systems, Inc. and others.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
-package org.opendaylight.sxp.util.database;
+package org.opendaylight.sxp.core.it;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -19,12 +19,17 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
-import static org.mockito.Matchers.any;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.util.database.HazelcastBackedSxpDB;
+import org.opendaylight.sxp.util.database.SxpDatabase;
+import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.filtering.PrefixListFilter;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -32,11 +37,11 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv6Prefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.BindingDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.PrefixListFilterEntriesBuilder;
@@ -47,24 +52,38 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+
+/**
+ * Copy-paste from {@link org.opendaylight.sxp.util.database.SxpDatabaseImplTest}
+ *
+ */
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({SxpNode.class})
-public class SxpDatabaseImplTest {
+@PowerMockIgnore("javax.management.*")
+public class HazelcastBackedSxpDBIT {
 
-    private static SxpDatabaseImpl database;
+    private static HazelcastBackedSxpDB database;
     private static SxpNode node;
     private static List<SxpConnection> sxpConnections = new ArrayList<>();
+    @Rule
+    public Timeout globalTimeout = new Timeout(90_000);
 
     @Before
     public void init() {
-        database = new SxpDatabaseImpl();
+        database = new HazelcastBackedSxpDB("ACTIVE_BINDINGS", "TENTATIVE_BINDINGS");
         node = PowerMockito.mock(SxpNode.class);
         PowerMockito.when(node.getBindingSxpDatabase()).thenReturn(database);
         PowerMockito.when(node.getAllConnections()).thenReturn(sxpConnections);
         PowerMockito.when(node.getAllConnections(any())).thenReturn(sxpConnections);
+    }
+
+    @After
+    public void shutdown() {
+        database.close();
     }
 
     private SxpConnection mockConnection(String remoteId) {
@@ -75,7 +94,7 @@ public class SxpDatabaseImplTest {
     }
 
     private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, String... peers) {
-        MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
+        SxpDatabaseBindingBuilder bindingBuilder = new SxpDatabaseBindingBuilder();
         bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         PeerSequenceBuilder sequenceBuilder = new PeerSequenceBuilder();
@@ -93,7 +112,7 @@ public class SxpDatabaseImplTest {
     }
 
     private <T extends SxpBindingFields, R extends SxpBindingFields> void assertBindings(List<T> bindings1,
-            List<R> bindings2) {
+                                                                                         List<R> bindings2) {
         bindings1.stream()
                 .forEach(b -> assertTrue(bindings2.stream()
                         .anyMatch(r -> r.getSecurityGroupTag().getValue().equals(b.getSecurityGroupTag().getValue())
@@ -358,26 +377,13 @@ public class SxpDatabaseImplTest {
     }
 
     @Test
-    public void testToString() throws Exception {
-        assertEquals("SxpDatabaseImpl\n", database.toString());
-
-        database.addBinding(NodeId.getDefaultInstance("10.10.10.10"),
-                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("1.1.1.1/32", 10, "10.10.10.10"),
-                        getBinding("1.1.1.1/32", 100, "10.10.10.10")));
-
-        database.addBinding(NodeId.getDefaultInstance("20.20.20.20"),
-                mergeBindings(getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
-                        getBinding("2.2.2.2/32", 200, "20.20.20.20")));
-        assertEquals("SxpDatabaseImpl\n" + "\t10 1.1.1.1/32\n" + "\t100 1.1.1.1/32\n" + "\t20 2.2.2.2/32\n"
-                + "\t200 2.2.2.2/32\n", database.toString());
-    }
-
-    @Test
     public void testPutBindings() {
         NodeId nodeId = new NodeId("127.0.0.1");
-        boolean resultOfPut = database.putBindings(nodeId, BindingDatabase.BindingType.ActiveBindings, Collections.EMPTY_LIST);
+        boolean resultOfPut = database.putBindings(nodeId, BindingDatabase.BindingType.ActiveBindings, mergeBindings(getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
+                getBinding("2.2.2.2/32", 200, "20.20.20.20")));
         assertTrue(resultOfPut);
         boolean resultOfPut2 = database.putBindings(nodeId, BindingDatabase.BindingType.ActiveBindings, Collections.EMPTY_LIST);
         assertTrue(!resultOfPut2);
     }
 }
+

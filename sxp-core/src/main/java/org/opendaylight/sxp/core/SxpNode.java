@@ -60,7 +60,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.pe
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SecurityType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
@@ -124,8 +123,9 @@ public class SxpNode {
      * @return New instance of SxpNode
      */
     public static SxpNode createInstance(NodeId nodeId, SxpNodeIdentity node) {
-        return createInstance(nodeId, node, new MasterDatabaseImpl(), new SxpDatabaseImpl(), new ThreadsWorker());
+        return createInstance(nodeId, node, new MasterDatabaseImpl(), new SxpDatabaseImpl());
     }
+
 
     /**
      * Create new instance of SxpNode containing provided database data
@@ -162,7 +162,7 @@ public class SxpNode {
         Preconditions.checkNotNull(masterDatabase);
         SxpNode sxpNode = new SxpNode(nodeId, node, worker);
         if (node.getSxpDomains() != null && node.getSxpDomains().getSxpDomain() != null) {
-            node.getSxpDomains().getSxpDomain().forEach(sxpNode::addDomain);
+            node.getSxpDomains().getSxpDomain().forEach(sxpDomain -> sxpNode.addDomain(sxpDomain, masterDatabase, sxpDatabase));
         }
         if (!sxpNode.sxpDomains.containsKey(DEFAULT_DOMAIN)) {
             sxpNode.sxpDomains.put(DEFAULT_DOMAIN,
@@ -508,7 +508,8 @@ public class SxpNode {
     }
 
     /**
-     * Adds Domain into SxpNode if there is no other domain with omitting name
+     * Add a domain to the SxpNode if there is not a domain with the same name already present.
+     * Uses default, in-memory implementation of databases.
      *
      * @param domain SXpDomain initializer
      * @return If Domain was added
@@ -520,6 +521,30 @@ public class SxpNode {
         synchronized (sxpDomains) {
             if (!sxpDomains.containsKey(domain.getDomainName())) {
                 sxpDomains.put(domain.getDomainName(), SxpDomain.createInstance(this, domain));
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Add a domain to the SxpNode if there is not a domain with the same name already present.
+     *
+     * @param domain SXPDomain configuration
+     * @param masterDB Master database to use
+     * @param sxpDB SXP database to use
+     * @return If Domain was added
+     */
+    public boolean addDomain(
+            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain domain,
+            MasterDatabaseInf masterDB,
+            SxpDatabaseInf sxpDB) {
+        Preconditions.checkNotNull(domain);
+        Preconditions.checkNotNull(domain.getDomainName());
+        synchronized (sxpDomains) {
+            if (!sxpDomains.containsKey(domain.getDomainName())) {
+                sxpDomains.put(domain.getDomainName(), SxpDomain.createInstance(this, domain, masterDB, sxpDB));
             } else {
                 return false;
             }

@@ -10,6 +10,7 @@ package org.opendaylight.sxp.util.database;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,20 +41,20 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
      * @return Bindings that were added
      */
     protected abstract boolean putBindings(NodeId nodeId, BindingDatabase.BindingType bindingType,
-            List<SxpDatabaseBinding> bindings);
+            Collection<SxpDatabaseBinding> bindings);
 
     /**
      * @param bindingType Type of Bindings
      * @return Bindings of specified type
      */
-    protected abstract List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType);
+    protected abstract Collection<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType);
 
     /**
      * @param bindingType Type of Bindings
      * @param nodeId      NodeId associated with Bindings
      * @return Bindings of specified type from specific source
      */
-    protected abstract List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType, NodeId nodeId);
+    protected abstract Collection<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType, NodeId nodeId);
 
     /**
      * @param nodeId      NodeId associated with Bindings
@@ -79,9 +80,9 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
         List<SxpDatabaseBinding>
                 bindings =
                 new ArrayList<>(getBindings(BindingDatabase.BindingType.ActiveBindings, nodeId));
-        bindings.addAll(getBindings(BindingDatabase.BindingType.ReconciledBindings, nodeId));
+        bindings.addAll(getBindings(BindingDatabase.BindingType.TentativeBindings, nodeId));
         deleteBindings(nodeId, BindingDatabase.BindingType.ActiveBindings);
-        deleteBindings(nodeId, BindingDatabase.BindingType.ReconciledBindings);
+        deleteBindings(nodeId, BindingDatabase.BindingType.TentativeBindings);
         return bindings;
     }
 
@@ -95,14 +96,14 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
         List<SxpDatabaseBinding>
                 databaseBindings =
                 new ArrayList<>(deleteBindings(nodeId, ipPrefices, BindingDatabase.BindingType.ActiveBindings));
-        databaseBindings.addAll(deleteBindings(nodeId, ipPrefices, BindingDatabase.BindingType.ReconciledBindings));
+        databaseBindings.addAll(deleteBindings(nodeId, ipPrefices, BindingDatabase.BindingType.TentativeBindings));
         return databaseBindings;
     }
 
     @Override
     public synchronized List<SxpDatabaseBinding> getBindings() {
         List<SxpDatabaseBinding> bindings = new ArrayList<>(getBindings(BindingDatabase.BindingType.ActiveBindings));
-        bindings.addAll(getBindings(BindingDatabase.BindingType.ReconciledBindings));
+        bindings.addAll(getBindings(BindingDatabase.BindingType.TentativeBindings));
         return bindings;
     }
 
@@ -110,7 +111,7 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
     public synchronized List<SxpDatabaseBinding> getBindings(NodeId nodeId) {
         List<SxpDatabaseBinding> bindings = new ArrayList<>();
         if (nodeId != null) {
-            bindings.addAll(getBindings(BindingDatabase.BindingType.ReconciledBindings, nodeId));
+            bindings.addAll(getBindings(BindingDatabase.BindingType.TentativeBindings, nodeId));
             bindings.addAll(getBindings(BindingDatabase.BindingType.ActiveBindings, nodeId));
         }
         return bindings;
@@ -128,24 +129,24 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
                 .forEach(t -> databaseBindings.add(new SxpDatabaseBindingBuilder(t).build()));
         putBindings(nodeId, BindingDatabase.BindingType.ActiveBindings, databaseBindings);
         deleteBindings(nodeId, bindings.stream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet()),
-                BindingDatabase.BindingType.ReconciledBindings);
+                BindingDatabase.BindingType.TentativeBindings);
         return databaseBindings;
     }
 
     @Override
     public synchronized void setReconciliation(NodeId nodeId) {
         if (nodeId != null) {
-            putBindings(nodeId, BindingDatabase.BindingType.ReconciledBindings,
+            putBindings(nodeId, BindingDatabase.BindingType.TentativeBindings,
                     getBindings(BindingDatabase.BindingType.ActiveBindings, nodeId));
             deleteBindings(nodeId, BindingDatabase.BindingType.ActiveBindings);
         }
     }
 
     @Override
-    public synchronized List<SxpDatabaseBinding> reconcileBindings(NodeId nodeId) {
+    public synchronized Collection<SxpDatabaseBinding> reconcileBindings(NodeId nodeId) {
         if (nodeId != null) {
-            List<SxpDatabaseBinding> bindings = getBindings(BindingDatabase.BindingType.ReconciledBindings, nodeId);
-            deleteBindings(nodeId, BindingDatabase.BindingType.ReconciledBindings);
+            Collection<SxpDatabaseBinding> bindings = getBindings(BindingDatabase.BindingType.TentativeBindings, nodeId);
+            deleteBindings(nodeId, BindingDatabase.BindingType.TentativeBindings);
             return bindings;
         }
         return new ArrayList<>();
