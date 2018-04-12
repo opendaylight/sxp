@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.util.database.spi;
 
+import java.util.Collection;
 import java.util.List;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
@@ -15,7 +16,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.mast
 /**
  * MasterDatabaseInf interface representing supported operation on MasterDatabase
  */
-public interface MasterDatabaseInf {
+public interface MasterDatabaseInf extends AutoCloseable {
 
     /**
      * @return All bindings stored in MasterDatabase
@@ -25,7 +26,7 @@ public interface MasterDatabaseInf {
     /**
      * @return Local bindings stored in MasterDatabase
      */
-    List<MasterDatabaseBinding> getLocalBindings();
+    Collection<MasterDatabaseBinding> getLocalBindings();
 
     /**
      * Adds bindings into MasterDatabase as local bindings
