@@ -70,7 +70,7 @@ public class SxpDomain implements AutoCloseable {
      * @param sxpDatabase    SxpDatabase that will be use to store incoming Bindings
      * @param masterDatabase MasterDatabase that will be used to store filtered Bindings
      */
-    protected SxpDomain(SxpNode owner, String name, SxpDatabaseInf sxpDatabase, MasterDatabaseInf masterDatabase) {
+    private SxpDomain(SxpNode owner, String name, SxpDatabaseInf sxpDatabase, MasterDatabaseInf masterDatabase) {
         for (FilterSpecific filterSpecific : FilterSpecific.values()) {
             filters.put(filterSpecific, new HashMap<>());
         }
@@ -98,11 +98,10 @@ public class SxpDomain implements AutoCloseable {
      * @return Domain consisting of provided values
      */
     public static SxpDomain createInstance(SxpNode owner,
-            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain domain) {
-        SxpDomain
-                sxpDomain =
-                createInstance(owner, Preconditions.checkNotNull(domain).getDomainName(), new SxpDatabaseImpl(),
-                        new MasterDatabaseImpl());
+                                           org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain domain,
+                                           MasterDatabaseInf masterDB,
+                                           SxpDatabaseInf sxpDB) {
+        SxpDomain sxpDomain = createInstance(owner, Preconditions.checkNotNull(domain).getDomainName(), sxpDB, masterDB);
         if (domain.getMasterDatabase() != null) {
             sxpDomain.getMasterDatabase().addBindings(domain.getMasterDatabase().getMasterDatabaseBinding());
         }
@@ -119,6 +118,18 @@ public class SxpDomain implements AutoCloseable {
             }
         }
         return sxpDomain;
+    }
+
+    /**
+     * Create a domain with default in-memory databases.
+     *
+     * @param owner  SxpNode to which Domain belongs
+     * @param domain SxpDomain initializer
+     * @return Domain consisting of provided values
+     */
+    public static SxpDomain createInstance(SxpNode owner,
+            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain domain) {
+        return createInstance(owner, domain, new MasterDatabaseImpl(), new SxpDatabaseImpl());
     }
 
     /**
@@ -648,5 +659,15 @@ public class SxpDomain implements AutoCloseable {
     @Override
     public void close() {
         getConnections().forEach(SxpConnection::shutdown);
+        try {
+            sxpDatabase.close();
+        } catch (Exception e) {
+            LOG.error("{} Failed to properly close the SXP DB", this);
+        }
+        try {
+            masterDatabase.close();
+        } catch (Exception e) {
+            LOG.error("{} Failed to properly close the Master DB", this);
+        }
     }
 }

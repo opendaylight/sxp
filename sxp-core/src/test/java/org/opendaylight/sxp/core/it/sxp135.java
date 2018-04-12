@@ -9,6 +9,8 @@ package org.opendaylight.sxp.core.it;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertTrue;
+import static org.opendaylight.sxp.test.utils.ConfigurationFactory.createConnection;
+import static org.opendaylight.sxp.test.utils.ConfigurationFactory.createIdentity;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import io.netty.buffer.ByteBuf;
@@ -24,27 +26,15 @@ import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.rules.Timeout;
 import org.junit.runner.Description;
-import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.Constants;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.test.utils.templates.BindingUtils;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.MessageBufferingBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomainsBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimersBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.SecurityBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.TimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
@@ -199,34 +189,4 @@ public class sxp135 {
         shutdown2.get();
     }
 
-    private Connection createConnection(String peerIpAddress, int peerPort, ConnectionMode mode, ConnectionState state,
-                                        Version version) {
-        return new ConnectionBuilder().setPeerAddress(new IpAddress(new Ipv4Address(peerIpAddress)))
-                .setTcpPort(new PortNumber(peerPort))
-                .setMode(mode)
-                .setState(state)
-                .setVersion(version)
-                .setConnectionTimers(new ConnectionTimersBuilder()
-                        .setDeleteHoldDownTime(DELETE_HOLD_DOWN_TIMER)
-                        .setReconciliationTime(1).build())
-                .build();
-    }
-
-    private SxpNodeIdentity createIdentity(String ip, int port, Version version, int deleteHoldDownTimer, int retryOpenTime) {
-        SxpNodeIdentityBuilder builder = new SxpNodeIdentityBuilder();
-        builder.setCapabilities(Configuration.getCapabilities(Version.Version4));
-        builder.setSecurity(new SecurityBuilder().build());
-        builder.setEnabled(true);
-        builder.setSxpDomains(new SxpDomainsBuilder().setSxpDomain(Collections.singletonList(
-                new SxpDomainBuilder().setConnections(new ConnectionsBuilder().build())
-                        .setDomainName(DEFAULT_DOMAIN)
-                        .build())).build());
-        builder.setVersion(version);
-        builder.setTcpPort(new PortNumber(port));
-        builder.setSourceIp(new IpAddress(ip.toCharArray()));
-        builder.setTimers(new TimersBuilder().setDeleteHoldDownTime(deleteHoldDownTimer).setRetryOpenTime(retryOpenTime).build());
-        builder.setMessageBuffering(
-                new MessageBufferingBuilder().setInBuffer(50).setOutBuffer(150).build());
-        return builder.build();
-    }
 }
