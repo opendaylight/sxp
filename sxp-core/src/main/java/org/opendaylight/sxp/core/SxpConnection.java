@@ -60,7 +60,7 @@ import org.opendaylight.sxp.util.time.connection.KeepAliveTimerTask;
 import org.opendaylight.sxp.util.time.connection.ReconcilationTimerTask;
 import org.opendaylight.sxp.util.time.connection.RetryOpenTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterUpdatePolicy;

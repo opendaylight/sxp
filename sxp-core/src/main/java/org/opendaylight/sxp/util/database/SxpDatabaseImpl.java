@@ -8,14 +8,13 @@
 package org.opendaylight.sxp.util.database;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.BindingDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 
 /**
@@ -24,41 +23,27 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Node
  */
 public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatabase {
 
-    /**
-     * A map of bindings.
-     * Bindings are mapped firstly via their type
-     * and then via corresponding NodeIds
-     */
-    private final Map<BindingDatabase.BindingType, Map<NodeId, List<SxpDatabaseBinding>>> bindings =
-            new EnumMap(BindingDatabase.BindingType.class);
-
-    /**
-     * Default constructor that sets empty Database.
-     */
-    public SxpDatabaseImpl() {
-        bindings.put(BindingDatabase.BindingType.ActiveBindings, new HashMap<>());
-        bindings.put(BindingDatabase.BindingType.ReconciledBindings, new HashMap<>());
-    }
+    private final Map<NodeId, List<SxpDatabaseBinding>> bindingMap = new HashMap<>();
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected boolean putBindings(NodeId nodeId, BindingDatabase.BindingType bindingType,
-            List<SxpDatabaseBinding> bindings) {
-        if (this.bindings.get(bindingType).get(nodeId) == null) {
-            return this.bindings.get(bindingType).put(nodeId, bindings) == null;
+    protected boolean putBindings(NodeId nodeId, SxpDatabaseBinding.BindingType bindingType,
+                                  List<SxpDatabaseBinding> bindings) {
+        if (!bindingMap.containsKey(nodeId)) {
+            bindingMap.put(nodeId, new ArrayList<>());
         }
-        return this.bindings.get(bindingType).get(nodeId).addAll(bindings);
+        return bindingMap.get(nodeId).addAll(bindings);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType) {
+    protected List<SxpDatabaseBinding> getBindings(SxpDatabaseBinding.BindingType bindingType) {
         List<SxpDatabaseBinding> bindingsList = new ArrayList<>();
-        this.bindings.get(bindingType).values().forEach(bindingsList::addAll);
+        bindingMap.values().forEach(bindingsList::addAll);
         return bindingsList;
     }
 
@@ -66,17 +51,28 @@ public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatab
      * {@inheritDoc}
      */
     @Override
-    protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType, NodeId nodeId) {
-        return this.bindings.get(bindingType).get(nodeId) == null ? new ArrayList<>() : this.bindings.get(bindingType)
-                .get(nodeId);
+    protected List<SxpDatabaseBinding> getBindings(SxpDatabaseBinding.BindingType bindingType, NodeId nodeId) {
+        List<SxpDatabaseBinding> list = new ArrayList<>();
+        if (bindingMap.containsKey(nodeId)) {
+            for (SxpDatabaseBinding b : bindingMap.get(nodeId)) {
+                if (b.getBindingType() == bindingType) {
+                    list.add(b);
+                }
+            }
+        }
+        return list;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected boolean deleteBindings(NodeId nodeId, BindingDatabase.BindingType bindingType) {
-        return this.bindings.get(bindingType).remove(nodeId) != null;
+    protected boolean deleteBindings(NodeId nodeId, SxpDatabaseBinding.BindingType bindingType) {
+        if (bindingMap.containsKey(nodeId)) {
+            return bindingMap.get(nodeId).removeIf(b -> b.getBindingType() == bindingType);
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -84,17 +80,26 @@ public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatab
      */
     @Override
     protected List<SxpDatabaseBinding> deleteBindings(NodeId nodeId, Set<IpPrefix> prefixes,
-            BindingDatabase.BindingType bindingType) {
-        List<SxpDatabaseBinding> removed = new ArrayList<>();
-        if (this.bindings.get(bindingType).get(nodeId) != null) {
-            this.bindings.get(bindingType).get(nodeId).removeIf(b -> {
-                boolean result = prefixes.contains(b.getIpPrefix());
-                if (result) {
-                    removed.add(b);
+                                                      SxpDatabaseBinding.BindingType bindingType) {
+        List<SxpDatabaseBinding> removedBindings = new ArrayList<>();
+        if (bindingMap.containsKey(nodeId)) {
+            List<SxpDatabaseBinding> nodeBindings = bindingMap.get(nodeId);
+            Iterator<SxpDatabaseBinding> bindingListIterator = nodeBindings.iterator();
+            while (bindingListIterator.hasNext()) {
+                SxpDatabaseBinding binding = bindingListIterator.next();
+                if ((binding.getBindingType() == bindingType) && prefixes.contains(binding.getIpPrefix())) {
+                    removedBindings.add(binding);
+                    bindingListIterator.remove();
                 }
-                return result;
-            });
+            }
         }
-        return removed;
+        return removedBindings;
+    }
+
+    @Override
+    public String toString() {
+        return "SxpDatabaseImpl{" +
+                "bindingMap=" + bindingMap +
+                '}';
     }
 }
