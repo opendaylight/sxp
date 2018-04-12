@@ -120,5 +120,12 @@
             <artifactId>powermock-api-mockito</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast</artifactId>
+            <version>3.9.3</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>
