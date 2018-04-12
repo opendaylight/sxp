@@ -14,8 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.BindingDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 
 /**
@@ -29,22 +28,22 @@ public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatab
      * Bindings are mapped firstly via their type
      * and then via corresponding NodeIds
      */
-    private final Map<BindingDatabase.BindingType, Map<NodeId, List<SxpDatabaseBinding>>> bindings =
-            new EnumMap(BindingDatabase.BindingType.class);
+    private final Map<SxpDatabaseBinding.BindingType, Map<NodeId, List<SxpDatabaseBinding>>> bindings =
+            new EnumMap(SxpDatabaseBinding.BindingType.class);
 
     /**
      * Default constructor that sets empty Database.
      */
     public SxpDatabaseImpl() {
-        bindings.put(BindingDatabase.BindingType.ActiveBindings, new HashMap<>());
-        bindings.put(BindingDatabase.BindingType.ReconciledBindings, new HashMap<>());
+        bindings.put(SxpDatabaseBinding.BindingType.ActiveBindings, new HashMap<>());
+        bindings.put(SxpDatabaseBinding.BindingType.ReconciledBindings, new HashMap<>());
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected boolean putBindings(NodeId nodeId, BindingDatabase.BindingType bindingType,
+    protected boolean putBindings(NodeId nodeId, SxpDatabaseBinding.BindingType bindingType,
             List<SxpDatabaseBinding> bindings) {
         if (this.bindings.get(bindingType).get(nodeId) == null) {
             return this.bindings.get(bindingType).put(nodeId, bindings) == null;
@@ -56,7 +55,7 @@ public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatab
      * {@inheritDoc}
      */
     @Override
-    protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType) {
+    protected List<SxpDatabaseBinding> getBindings(SxpDatabaseBinding.BindingType bindingType) {
         List<SxpDatabaseBinding> bindingsList = new ArrayList<>();
         this.bindings.get(bindingType).values().forEach(bindingsList::addAll);
         return bindingsList;
@@ -66,7 +65,7 @@ public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatab
      * {@inheritDoc}
      */
     @Override
-    protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType, NodeId nodeId) {
+    protected List<SxpDatabaseBinding> getBindings(SxpDatabaseBinding.BindingType bindingType, NodeId nodeId) {
         return this.bindings.get(bindingType).get(nodeId) == null ? new ArrayList<>() : this.bindings.get(bindingType)
                 .get(nodeId);
     }
@@ -75,7 +74,7 @@ public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatab
      * {@inheritDoc}
      */
     @Override
-    protected boolean deleteBindings(NodeId nodeId, BindingDatabase.BindingType bindingType) {
+    protected boolean deleteBindings(NodeId nodeId, SxpDatabaseBinding.BindingType bindingType) {
         return this.bindings.get(bindingType).remove(nodeId) != null;
     }
 
@@ -84,7 +83,7 @@ public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatab
      */
     @Override
     protected List<SxpDatabaseBinding> deleteBindings(NodeId nodeId, Set<IpPrefix> prefixes,
-            BindingDatabase.BindingType bindingType) {
+                                                      SxpDatabaseBinding.BindingType bindingType) {
         List<SxpDatabaseBinding> removed = new ArrayList<>();
         if (this.bindings.get(bindingType).get(nodeId) != null) {
             this.bindings.get(bindingType).get(nodeId).removeIf(b -> {
