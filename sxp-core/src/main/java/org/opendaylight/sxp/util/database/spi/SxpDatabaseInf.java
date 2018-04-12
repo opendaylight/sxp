@@ -8,6 +8,7 @@
 
 package org.opendaylight.sxp.util.database.spi;
 
+import java.util.Collection;
 import java.util.List;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
@@ -65,7 +66,7 @@ public interface SxpDatabaseInf {
      * @param nodeId Specifying peer on which operation will be held
      * @return List of bindings that were actually removed
      */
-    List<SxpDatabaseBinding> reconcileBindings(NodeId nodeId);
+    Collection<SxpDatabaseBinding> reconcileBindings(NodeId nodeId);
 
     /**
      * Sets all bindings from specified peer marked as reconciled,

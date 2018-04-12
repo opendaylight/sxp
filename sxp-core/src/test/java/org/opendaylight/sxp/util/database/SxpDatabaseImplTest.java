@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -198,7 +199,7 @@ public class SxpDatabaseImplTest {
     @Test
     public void testReconcileBindingsOnNullNode() {
         NodeId nodeId = null;
-        List<SxpDatabaseBinding> reconciled = database.reconcileBindings(nodeId);
+        Collection<SxpDatabaseBinding> reconciled = database.reconcileBindings(nodeId);
         assertTrue(reconciled.isEmpty());
     }
 
