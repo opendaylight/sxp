@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,19 +29,26 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({SxpNode.class})
-public class MasterDatabaseImplTest {
+@PowerMockIgnore("javax.management.*")
+public class HazelcastBackedMasterDBTest {
 
-    private static MasterDatabaseImpl database;
+    private HazelcastBackedMasterDB database;
     private static long time = System.currentTimeMillis();
 
     @Before
     public void init() {
-        database = new MasterDatabaseImpl();
+        database = new HazelcastBackedMasterDB("MASTER_DB");
+    }
+
+    @After
+    public void shutdown() {
+        database.close();
     }
 
     private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, String... peers) {
@@ -63,7 +71,7 @@ public class MasterDatabaseImplTest {
     }
 
     private <T extends SxpBindingFields, R extends SxpBindingFields> void assertBindings(List<T> bindings1,
-            List<R> bindings2) {
+                                                                                         List<R> bindings2) {
         bindings1.stream()
                 .forEach(b -> assertTrue(bindings2.stream()
                         .anyMatch(r -> r.getSecurityGroupTag().getValue().equals(b.getSecurityGroupTag().getValue())
@@ -184,21 +192,6 @@ public class MasterDatabaseImplTest {
                 mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
                         getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
         assertEquals(0, database.getBindings().size());
-    }
-
-    @Test
-    public void testToString() throws Exception {
-        assertEquals("MasterDatabaseImpl\n", database.toString());
-
-        database.addBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("0:0:0:0:0:0:0:A/32", 15, "0.10.10.10"),
-                getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
-
-        StringBuilder value = new StringBuilder();
-        Arrays.asList(database.toString().split("\n")).stream().sorted().forEach(l -> value.append(l).append("\n"));
-
-        assertEquals("\t100 1.1.1.1/32\n" + "\t15 0:0:0:0:0:0:0:A/32\n" + "\t2000 2.2.2.2/32\n" + "\t2000 2.2.2.20/32\n"
-                + "MasterDatabaseImpl\n", value.toString());
     }
 
     @Test
