@@ -67,24 +67,21 @@ module sxp-database {
     }
 
     grouping sxp-database-fields {
-        list binding-database {
-            key "binding-type";
-            leaf binding-type {
-                type enumeration {
-                    enum active-bindings;
-                    enum reconciled-bindings;
+        container binding-sources {
+            list binding-source {
+                key "source-id";
+                leaf source-id {
+                    type sxppt:node-id;
                 }
-            }
-            container binding-sources {
-                list binding-source {
-                    key "source-id";
-                    leaf source-id {
-                        type sxppt:node-id;
-                    }
-                    container sxp-database-bindings {
-                        list sxp-database-binding {
-                            key "ip-prefix security-group-tag";
-                            uses sxp-binding-fields;
+                container sxp-database-bindings {
+                    list sxp-database-binding {
+                        key "ip-prefix security-group-tag";
+                        uses sxp-binding-fields;
+                        leaf binding-type {
+                            type enumeration {
+                                enum active-bindings;
+                                enum reconciled-bindings;
+                            }
                         }
                     }
                 }
