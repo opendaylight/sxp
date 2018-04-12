@@ -10,6 +10,8 @@ package org.opendaylight.sxp.controller.util.database;
 
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -54,7 +56,7 @@ public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.S
         databases.add(new BindingDatabaseBuilder().setBindingType(BindingDatabase.BindingType.ActiveBindings)
                 .setBindingSources(new BindingSourcesBuilder().setBindingSource(new ArrayList<>()).build())
                 .build());
-        databases.add(new BindingDatabaseBuilder().setBindingType(BindingDatabase.BindingType.ReconciledBindings)
+        databases.add(new BindingDatabaseBuilder().setBindingType(BindingDatabase.BindingType.TentativeBindings)
                 .setBindingSources(new BindingSourcesBuilder().setBindingSource(new ArrayList<>()).build())
                 .build());
         if (!datastoreAccess.mergeSynchronous(getIdentifierBuilder().build(),
@@ -107,11 +109,11 @@ public final class SxpDatastoreImpl extends org.opendaylight.sxp.util.database.S
 
     @Override
     protected boolean putBindings(NodeId nodeId, BindingDatabase.BindingType bindingType,
-            List<SxpDatabaseBinding> bindings) {
+            Collection<SxpDatabaseBinding> bindings) {
         return !datastoreAccess.merge(getIdentifierBuilder(bindingType, nodeId).build(),
                 new BindingSourceBuilder().setSourceId(nodeId)
                         .setSxpDatabaseBindings(
-                                new SxpDatabaseBindingsBuilder().setSxpDatabaseBinding(bindings).build())
+                                new SxpDatabaseBindingsBuilder().setSxpDatabaseBinding(new ArrayList<>(bindings)).build())
                         .build(), LogicalDatastoreType.OPERATIONAL).isCancelled();
     }
 
