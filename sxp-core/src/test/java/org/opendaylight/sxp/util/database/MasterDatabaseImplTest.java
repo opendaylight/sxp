@@ -203,7 +203,7 @@ public class MasterDatabaseImplTest {
 
     @Test
     public void testFilterIncomingBindingsWithNullInputs() throws Exception {
-        Map<IpPrefix, MasterDatabaseBinding> response = MasterDatabase.filterIncomingBindings(null, null, null);
+        Map<IpPrefix, MasterDatabaseBinding> response = MasterDatabase.filterIncomingBindings(null, null, null, null);
         assertTrue(response.isEmpty());
     }
 }
