@@ -113,6 +113,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Up
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingBuilder;
@@ -426,6 +427,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                             .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
                             .setSecurityGroupTag(input.getSgt())
                             .setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build())
+                            .setOrigin(OriginType.LOCAL)
                             .build();
             output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
                             .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
@@ -977,6 +979,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                                 .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
                                 .setSecurityGroupTag(input.getNewBinding().getSgt())
                                 .setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build())
+                                .setOrigin(OriginType.LOCAL)
                                 .build();
 
                 output.setResult(datastoreAccess.checkAndDelete(getIdentifier(nodeId).child(SxpDomains.class)
