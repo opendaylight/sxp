@@ -29,6 +29,13 @@ module sxp-database {
         description "Source group tag";
     }
 
+    typedef origin-type {
+        type enumeration {
+            enum LOCAL;
+            enum NETWORK;
+        }
+    }
+
     // ***********************
     // SXP Databases Groupings
     // ***********************
@@ -72,7 +79,7 @@ module sxp-database {
             leaf binding-type {
                 type enumeration {
                     enum active-bindings;
-                    enum reconciled-bindings;
+                    enum tentative-bindings;
                 }
             }
             container binding-sources {
@@ -99,6 +106,10 @@ module sxp-database {
         list master-database-binding {
             key "ip-prefix";
             uses sxp-binding-fields;
+            leaf origin {
+                type origin-type;
+                mandatory true;
+            }
         }
     }
 
