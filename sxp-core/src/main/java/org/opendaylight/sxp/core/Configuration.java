@@ -8,7 +8,6 @@
 package org.opendaylight.sxp.core;
 
 import com.google.common.base.Preconditions;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
