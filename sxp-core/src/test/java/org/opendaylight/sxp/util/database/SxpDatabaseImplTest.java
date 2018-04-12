@@ -10,6 +10,7 @@ package org.opendaylight.sxp.util.database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -21,7 +22,6 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import static org.mockito.Matchers.any;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.filtering.PrefixListFilter;
@@ -34,8 +34,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpB
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.BindingDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.PrefixListFilterEntriesBuilder;
@@ -374,9 +373,9 @@ public class SxpDatabaseImplTest {
     @Test
     public void testPutBindings() {
         NodeId nodeId = new NodeId("127.0.0.1");
-        boolean resultOfPut = database.putBindings(nodeId, BindingDatabase.BindingType.ActiveBindings, Collections.EMPTY_LIST);
+        boolean resultOfPut = database.putBindings(nodeId, SxpDatabaseBinding.BindingType.ActiveBindings, Collections.EMPTY_LIST);
         assertTrue(resultOfPut);
-        boolean resultOfPut2 = database.putBindings(nodeId, BindingDatabase.BindingType.ActiveBindings, Collections.EMPTY_LIST);
+        boolean resultOfPut2 = database.putBindings(nodeId, SxpDatabaseBinding.BindingType.ActiveBindings, Collections.EMPTY_LIST);
         assertTrue(!resultOfPut2);
     }
 }

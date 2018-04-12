@@ -32,7 +32,7 @@ import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.SxpDomainFilterFields;
@@ -70,7 +70,7 @@ public class SxpDomain implements AutoCloseable {
      * @param sxpDatabase    SxpDatabase that will be use to store incoming Bindings
      * @param masterDatabase MasterDatabase that will be used to store filtered Bindings
      */
-    protected SxpDomain(SxpNode owner, String name, SxpDatabaseInf sxpDatabase, MasterDatabaseInf masterDatabase) {
+    private SxpDomain(SxpNode owner, String name, SxpDatabaseInf sxpDatabase, MasterDatabaseInf masterDatabase) {
         for (FilterSpecific filterSpecific : FilterSpecific.values()) {
             filters.put(filterSpecific, new HashMap<>());
         }
@@ -98,11 +98,10 @@ public class SxpDomain implements AutoCloseable {
      * @return Domain consisting of provided values
      */
     public static SxpDomain createInstance(SxpNode owner,
-            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain domain) {
-        SxpDomain
-                sxpDomain =
-                createInstance(owner, Preconditions.checkNotNull(domain).getDomainName(), new SxpDatabaseImpl(),
-                        new MasterDatabaseImpl());
+                                           org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain domain,
+                                           MasterDatabaseInf masterDB,
+                                           SxpDatabaseInf sxpDB) {
+        SxpDomain sxpDomain = createInstance(owner, Preconditions.checkNotNull(domain).getDomainName(), sxpDB, masterDB);
         if (domain.getMasterDatabase() != null) {
             sxpDomain.getMasterDatabase().addBindings(domain.getMasterDatabase().getMasterDatabaseBinding());
         }
@@ -119,6 +118,16 @@ public class SxpDomain implements AutoCloseable {
             }
         }
         return sxpDomain;
+    }
+
+    /**
+     * @param owner  SxpNode to which Domain belongs
+     * @param domain SxpDomain initializer
+     * @return Domain consisting of provided values
+     */
+    public static SxpDomain createInstance(SxpNode owner,
+            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain domain) {
+        return createInstance(owner, domain, new MasterDatabaseImpl(), new SxpDatabaseImpl());
     }
 
     /**
