@@ -25,6 +25,7 @@ import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
@@ -135,6 +136,7 @@ public class DeviceTestLibrary extends AbstractLibrary {
         bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setIpPrefix(new IpPrefix(Objects.requireNonNull(prefix).toCharArray()));
+        bindingBuilder.setOrigin(OriginType.LOCAL);
         return bindingBuilder.build();
     }
 

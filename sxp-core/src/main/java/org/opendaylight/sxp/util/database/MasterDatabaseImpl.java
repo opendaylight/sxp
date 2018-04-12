@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 
@@ -55,14 +56,14 @@ public class MasterDatabaseImpl extends MasterDatabase {
      * Add given bindings.
      */
     private <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings,
-            Map<IpPrefix, MasterDatabaseBinding> map) {
+            Map<IpPrefix, MasterDatabaseBinding> map, OriginType bindingType) {
         List<MasterDatabaseBinding> added = new ArrayList<>();
         if (map == null || bindings == null || bindings.isEmpty()) {
             return added;
         }
         Map<IpPrefix, MasterDatabaseBinding>
                 prefixMap =
-                filterIncomingBindings(bindings, map::get, p -> map.remove(p) != null);
+                filterIncomingBindings(bindings, map::get, p -> map.remove(p) != null, bindingType);
         if (!prefixMap.isEmpty()) {
             map.putAll(prefixMap);
             added.addAll(prefixMap.values());
@@ -100,7 +101,7 @@ public class MasterDatabaseImpl extends MasterDatabase {
      */
     @Override
     public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> addLocalBindings(List<T> bindings) {
-        return addBindings(bindings, localBindingMap);
+        return addBindings(bindings, localBindingMap, OriginType.LOCAL);
     }
 
     /**
@@ -116,7 +117,7 @@ public class MasterDatabaseImpl extends MasterDatabase {
      */
     @Override
     public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings) {
-        return addBindings(bindings, bindingMap);
+        return addBindings(bindings, bindingMap, OriginType.NETWORK);
     }
 
     /**
