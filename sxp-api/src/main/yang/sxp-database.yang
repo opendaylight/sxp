@@ -72,7 +72,7 @@ module sxp-database {
             leaf binding-type {
                 type enumeration {
                     enum active-bindings;
-                    enum reconciled-bindings;
+                    enum tentative-bindings;
                 }
             }
             container binding-sources {
