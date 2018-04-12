@@ -8,6 +8,7 @@
 package org.opendaylight.sxp.util.database;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +30,7 @@ public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatab
      * Bindings are mapped firstly via their type
      * and then via corresponding NodeIds
      */
-    private final Map<BindingDatabase.BindingType, Map<NodeId, List<SxpDatabaseBinding>>> bindings =
+    private final Map<BindingDatabase.BindingType, Map<NodeId, Collection<SxpDatabaseBinding>>> bindings =
             new EnumMap(BindingDatabase.BindingType.class);
 
     /**
@@ -37,7 +38,7 @@ public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatab
      */
     public SxpDatabaseImpl() {
         bindings.put(BindingDatabase.BindingType.ActiveBindings, new HashMap<>());
-        bindings.put(BindingDatabase.BindingType.ReconciledBindings, new HashMap<>());
+        bindings.put(BindingDatabase.BindingType.TentativeBindings, new HashMap<>());
     }
 
     /**
@@ -45,7 +46,7 @@ public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatab
      */
     @Override
     protected boolean putBindings(NodeId nodeId, BindingDatabase.BindingType bindingType,
-            List<SxpDatabaseBinding> bindings) {
+            Collection<SxpDatabaseBinding> bindings) {
         if (this.bindings.get(bindingType).get(nodeId) == null) {
             return this.bindings.get(bindingType).put(nodeId, bindings) == null;
         }
@@ -66,7 +67,7 @@ public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatab
      * {@inheritDoc}
      */
     @Override
-    protected List<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType, NodeId nodeId) {
+    protected Collection<SxpDatabaseBinding> getBindings(BindingDatabase.BindingType bindingType, NodeId nodeId) {
         return this.bindings.get(bindingType).get(nodeId) == null ? new ArrayList<>() : this.bindings.get(bindingType)
                 .get(nodeId);
     }
@@ -96,5 +97,10 @@ public class SxpDatabaseImpl extends org.opendaylight.sxp.util.database.SxpDatab
             });
         }
         return removed;
+    }
+
+    @Override
+    public void close() throws Exception {
+        //NOOP
     }
 }

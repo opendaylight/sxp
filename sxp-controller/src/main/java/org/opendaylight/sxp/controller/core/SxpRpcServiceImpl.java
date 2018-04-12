@@ -16,6 +16,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -110,6 +111,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Up
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.NewBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
@@ -778,7 +780,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
             final MasterDatabaseInf masterDatabase = getMasterDatabase(nodeId, input.getDomainName());
 
             if (masterDatabase != null) {
-                final List<MasterDatabaseBinding> bindings;
+                final Collection<MasterDatabaseBinding> bindings;
                 if (GetNodeBindingsInput.BindingsRange.Local.equals(input.getBindingsRange())) {
                     bindings = masterDatabase.getLocalBindings();
                 } else {
