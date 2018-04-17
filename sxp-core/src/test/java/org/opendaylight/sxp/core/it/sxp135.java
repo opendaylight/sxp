@@ -7,7 +7,7 @@
  */
 package org.opendaylight.sxp.core.it;
 
-import static org.junit.Assert.assertFalse;
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -53,8 +53,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * IT tests for the VSS Switchover (bug SXP-135). These tests rely heavily on Thread.sleep()-ing, because the current
- * state of the codebase is **** and does not allow for consumers to listen to important events.
+ * IT tests for the VSS Switchover (bug SXP-135). These tests rely on Awaitility and Thread.sleep()-ing, because the
+ * current state of the codebase is **** and does not allow for consumers to listen to important events.
+ * So, TODO: remove polling and sleeping when a proper observer is available
  * <p>
  * Here two switches say A and B share the same IP address and so only on can connect. Let's say A is connected. The
  * problem is when they switch from A to B - when B tries to connect the code rejects the connection because it sees
@@ -77,11 +78,8 @@ public class sxp135 {
     @Rule
     public Timeout globalTimeout = new Timeout(15_000);
 
-
     private SxpNode node1;
     private SxpNode node2;
-    private SxpConnection node1Con;
-    private SxpConnection node2Con;
 
     @Before
     public void init() throws InterruptedException, ExecutionException {
@@ -96,21 +94,23 @@ public class sxp135 {
         LOG.debug("Started node 1");
         start2.get();
         LOG.debug("Started node 2");
+        LOG.debug("Putting a dummy binding into node nr. 2");
         node2.putLocalBindingsMasterDatabase(Collections.singletonList(dummyBinding), DEFAULT_DOMAIN);
     }
 
     @Test
     public void testListenerSwitchover() throws Exception {
         Connection connection1 = createConnection("127.0.0.2", Constants.SXP_DEFAULT_PORT, ConnectionMode.Listener, ConnectionState.Off, Version.Version4);
-        node1Con = SxpConnection.create(node1, connection1, DEFAULT_DOMAIN);
+        SxpConnection node1Con = SxpConnection.create(node1, connection1, DEFAULT_DOMAIN);
         Connection connection2 = createConnection("127.0.0.1", Constants.SXP_DEFAULT_PORT, ConnectionMode.Speaker, ConnectionState.Off, Version.Version4);
-        node2Con = SxpConnection.create(node2, connection2, DEFAULT_DOMAIN);
+        SxpConnection node2Con = SxpConnection.create(node2, connection2, DEFAULT_DOMAIN);
         node1.addConnection(node1Con);
         node2.addConnection(node2Con);
 
-        LOG.info("Sleeping to allow connections to establish");
-        Thread.sleep(4_000);
-        LOG.info("Enough sleeping, turning off retry timers");
+        LOG.info("Waiting for connections to establish");
+        await().atMost(4, TimeUnit.SECONDS).until(node1Con::isStateOn);
+        await().atMost(1, TimeUnit.SECONDS).until(node2Con::isStateOn);
+        LOG.info("Connections are up, turning off retry timers");
         node1.setRetryOpenTimerPeriod(0);
         node2.setRetryOpenTimerPeriod(0);
         LOG.info("Removing bindings from the listener (node1)");
@@ -124,23 +124,23 @@ public class sxp135 {
         Thread.sleep(1000);
         LOG.info("Enough sleeping, starting Retry timer on the speaker");
         node2.setRetryOpenTimerPeriod(1);
-        Thread.sleep(4000);
-        LOG.info("Slept enough, checking if bindings have been propagated to switched listener");
-        assertFalse("No bindings present in the node1 sxpDatabase", node1.getBindingSxpDatabase(DEFAULT_DOMAIN).getBindings().isEmpty());
+        LOG.info("Waiting for propagation of bindings to the switched listener.");
+        await().atMost(4, TimeUnit.SECONDS).until(()-> !node1.getBindingSxpDatabase(DEFAULT_DOMAIN).getBindings().isEmpty());
     }
 
     @Test
     public void testSpeakerSwitchover() throws Exception {
         Connection connection1 = createConnection("127.0.0.2", Constants.SXP_DEFAULT_PORT, ConnectionMode.Listener, ConnectionState.Off, Version.Version4);
-        node1Con = SxpConnection.create(node1, connection1, DEFAULT_DOMAIN);
+        SxpConnection node1Con = SxpConnection.create(node1, connection1, DEFAULT_DOMAIN);
         Connection connection2 = createConnection("127.0.0.1", Constants.SXP_DEFAULT_PORT, ConnectionMode.Speaker, ConnectionState.Off, Version.Version4);
-        node2Con = SxpConnection.create(node2, connection2, DEFAULT_DOMAIN);
+        SxpConnection node2Con = SxpConnection.create(node2, connection2, DEFAULT_DOMAIN);
         node1.addConnection(node1Con);
         node2.addConnection(node2Con);
 
-        LOG.info("Sleeping to allow connections to establish");
-        Thread.sleep(4_000);
-        LOG.info("Enough sleeping, turning off retry timers");
+        LOG.info("Waiting for connections to establish");
+        await().atMost(4, TimeUnit.SECONDS).until(node1Con::isStateOn);
+        await().atMost(1, TimeUnit.SECONDS).until(node2Con::isStateOn);
+        LOG.info("Connections are up, turning off retry timers");
         node1.setRetryOpenTimerPeriod(0);
         node2.setRetryOpenTimerPeriod(0);
         LOG.info("Removing bindings from the listener (node1)");
@@ -154,25 +154,25 @@ public class sxp135 {
         Thread.sleep(1000);
         LOG.info("Enough sleeping, starting Retry timer on the Speaker");
         node2.setRetryOpenTimerPeriod(1);
-        Thread.sleep(4000);
-        LOG.info("Slept enough, checking if bindings have been propagated to listener");
-        assertFalse("No bindings present in the node1 sxpDatabase", node1.getBindingSxpDatabase(DEFAULT_DOMAIN).getBindings().isEmpty());
+        LOG.info("Waiting for propagation of bindings to the listener.");
+        await().atMost(4, TimeUnit.SECONDS).until(()-> !node1.getBindingSxpDatabase(DEFAULT_DOMAIN).getBindings().isEmpty());
     }
 
     @Test
     public void testDuplexSwitchover() throws Exception {
         Connection connection1 = createConnection("127.0.0.2", Constants.SXP_DEFAULT_PORT, ConnectionMode.Both, ConnectionState.Off, Version.Version4);
-        node1Con = SxpConnection.create(node1, connection1, DEFAULT_DOMAIN);
+        SxpConnection node1Con = SxpConnection.create(node1, connection1, DEFAULT_DOMAIN);
         Connection connection2 = createConnection("127.0.0.1", Constants.SXP_DEFAULT_PORT, ConnectionMode.Both, ConnectionState.Off, Version.Version4);
-        node2Con = SxpConnection.create(node2, connection2, DEFAULT_DOMAIN);
+        SxpConnection node2Con = SxpConnection.create(node2, connection2, DEFAULT_DOMAIN);
         node1.addConnection(node1Con);
         node2.addConnection(node2Con);
         node1.setRetryOpenTimerPeriod(1);
         node2.setRetryOpenTimerPeriod(1);
 
-        LOG.info("Sleeping to allow connections to establish");
-        Thread.sleep(3_000);
-        LOG.info("Enough sleeping, turning off retry timers");
+        LOG.info("Waiting for connections to establish");
+        await().atMost(4, TimeUnit.SECONDS).until(node1Con::isStateOn);
+        await().atMost(1, TimeUnit.SECONDS).until(node2Con::isStateOn);
+        LOG.info("Connections are up, turning off retry timers");
         node1.setRetryOpenTimerPeriod(0);
         node2.setRetryOpenTimerPeriod(0);
         LOG.info("Removing bindings from node1");
@@ -187,9 +187,8 @@ public class sxp135 {
         LOG.info("Enough sleeping, starting Retry timer on the nodes 1 and 2");
         node1.setRetryOpenTimerPeriod(1);
         node2.setRetryOpenTimerPeriod(1);
-        Thread.sleep(4000);
-        LOG.info("Slept enough, checking if bindings have been propagated to node 1");
-        assertFalse("No bindings present in the node1 sxpDatabase", node1.getBindingSxpDatabase(DEFAULT_DOMAIN).getBindings().isEmpty());
+        LOG.info("Waiting for propagation of bindings to node 1");
+        await().atMost(4, TimeUnit.SECONDS).until(()-> !node1.getBindingSxpDatabase(DEFAULT_DOMAIN).getBindings().isEmpty());
     }
 
     @After
