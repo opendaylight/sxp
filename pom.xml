@@ -10,7 +10,7 @@
 
     <groupId>org.opendaylight.sxp</groupId>
     <artifactId>sxp-parent</artifactId>
-    <version>1.5.3-SNAPSHOT</version>
+    <version>1.5.3</version>
     <name>sxp</name> <!-- Used by Sonar to set project name -->
     <packaging>pom</packaging>
 
@@ -56,19 +56,19 @@
         <java.version.source>1.8</java.version.source>
         <java.version.target>1.8</java.version.target>
 
-        <yangtools.version>1.2.3-SNAPSHOT</yangtools.version>
-        <yangtools.feature.version>1.2.3-SNAPSHOT</yangtools.feature.version>
-        <mdsal.version>1.6.3-SNAPSHOT</mdsal.version>
-        <mdsal.singleton.version>2.3.3-SNAPSHOT</mdsal.singleton.version>
-        <mdsal.model.version>0.11.3-SNAPSHOT</mdsal.model.version>
-        <config.version>0.7.3-SNAPSHOT</config.version>
-        <restconf.version>1.6.3-SNAPSHOT</restconf.version>
+        <yangtools.version>1.2.3</yangtools.version>
+        <yangtools.feature.version>1.2.3</yangtools.feature.version>
+        <mdsal.version>1.6.3</mdsal.version>
+        <mdsal.singleton.version>2.3.3</mdsal.singleton.version>
+        <mdsal.model.version>0.11.3</mdsal.model.version>
+        <config.version>0.7.3</config.version>
+        <restconf.version>1.6.3</restconf.version>
 
         <!-- Yang Module Versions -->
-        <ietf-yang-types.version>2013.07.15.11.3-SNAPSHOT</ietf-yang-types.version>
-        <ietf-inet-types.version>1.3.3-SNAPSHOT</ietf-inet-types.version>
-        <yang-ext.version>2013.09.07.11.3-SNAPSHOT</yang-ext.version>
-        <yang-nt.version>2013.10.21.11.3-SNAPSHOT</yang-nt.version>
+        <ietf-yang-types.version>2013.07.15.11.3</ietf-yang-types.version>
+        <ietf-inet-types.version>1.3.3</ietf-inet-types.version>
+        <yang-ext.version>2013.09.07.11.3</yang-ext.version>
+        <yang-nt.version>2013.10.21.11.3</yang-nt.version>
 
         <!-- EPOLL artifacts -->
         <os.detected.classifier>linux-x86_64</os.detected.classifier>

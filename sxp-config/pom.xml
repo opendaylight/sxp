@@ -12,7 +12,7 @@
   <parent>
     <artifactId>sxp-parent</artifactId>
     <groupId>org.opendaylight.sxp</groupId>
-    <version>1.5.3-SNAPSHOT</version>
+    <version>1.5.3</version>
   </parent>
 
   <artifactId>sxp-config</artifactId>
