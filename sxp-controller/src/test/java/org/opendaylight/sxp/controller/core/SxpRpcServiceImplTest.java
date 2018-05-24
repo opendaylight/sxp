@@ -198,7 +198,7 @@ public class SxpRpcServiceImplTest {
         bindingBuilder.setSgt(Sgt.getDefaultInstance(sgt));
         List<IpPrefix> ipPrefixes = new ArrayList<>();
         bindingBuilder.setIpPrefix(ipPrefixes);
-        bindingBuilder.setKey(
+        bindingBuilder.withKey((
                 new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingKey(
                         bindingBuilder.getSgt()));
         if (prefix.contains(":")) {

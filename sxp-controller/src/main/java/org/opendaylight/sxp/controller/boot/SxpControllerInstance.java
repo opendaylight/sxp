@@ -70,7 +70,7 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
                 InstanceIdentifier.builder(NetworkTopology.class).build();
         datastoreAccess.merge(networkTopologyIndentifier, new NetworkTopologyBuilder().build(), datastoreType);
         datastoreAccess.merge(NodeIdentityListener.SUBSCRIBED_PATH,
-                new TopologyBuilder().setKey(new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME))).build(),
+                new TopologyBuilder().withKey((new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME))).build(),
                 datastoreType);
     }
 
