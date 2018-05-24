@@ -129,7 +129,7 @@ public class BindingHandlerTest {
     private Peer getPeer(String id, int key) {
         PeerBuilder peerBuilder = new PeerBuilder();
         peerBuilder.setNodeId(new NodeId(id));
-        peerBuilder.setKey(new PeerKey(key));
+        peerBuilder.withKey(new PeerKey(key));
         return peerBuilder.build();
     }
 
