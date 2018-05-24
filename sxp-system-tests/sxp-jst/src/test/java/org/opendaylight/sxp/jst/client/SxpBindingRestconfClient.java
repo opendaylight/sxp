@@ -137,7 +137,7 @@ public class SxpBindingRestconfClient {
         Map.Entry<InstanceIdentifier<?>, DataObject> sxpNode = jsonDeserializer.unmarshallNormalizedNode(
                 sxpNodeOpt.get(),
                 YangIdentifiers.SXP_NODE_LIST);
-        SxpNodeIdentity sxpNodeIdentity = ((Node) sxpNode.getValue()).getAugmentation(SxpNodeIdentity.class);
+        SxpNodeIdentity sxpNodeIdentity = ((Node) sxpNode.getValue()).augmentation(SxpNodeIdentity.class);
         LOG.info("Sxp node: {}", sxpNodeIdentity);
         return sxpNodeIdentity;
     }
