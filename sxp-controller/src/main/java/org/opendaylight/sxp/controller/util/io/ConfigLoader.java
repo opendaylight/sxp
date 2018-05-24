@@ -52,7 +52,7 @@ public final class ConfigLoader implements AutoCloseable {
                 NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class, new NodeKey(
                         new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
                                 nodeName)));
-        return datastoreAccess.checkAndPut(nodeIdentifier, new NodeBuilder().setKey(new NodeKey(
+        return datastoreAccess.checkAndPut(nodeIdentifier, new NodeBuilder().withKey((new NodeKey(
                 new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
                         nodeName))).build(), logicalDatastoreType, false);
     }

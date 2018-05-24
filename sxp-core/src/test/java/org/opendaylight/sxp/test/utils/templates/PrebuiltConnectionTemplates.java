@@ -27,7 +27,7 @@ public final class PrebuiltConnectionTemplates {
     }
 
     public static final ConnectionTemplate DEFAULT_CT = new ConnectionTemplateBuilder()
-            .setKey(new ConnectionTemplateKey(IpPrefixBuilder.getDefaultInstance("127.0.0.0/24")))
+            .withKey((new ConnectionTemplateKey(IpPrefixBuilder.getDefaultInstance("127.0.0.0/24")))
             .setTemplateMode(ConnectionMode.Listener)
             .setTemplatePassword("templatepassword")
             .setTemplatePrefix(IpPrefixBuilder.getDefaultInstance("127.0.0.0/24"))
