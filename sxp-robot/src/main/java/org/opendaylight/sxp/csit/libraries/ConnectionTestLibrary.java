@@ -76,7 +76,7 @@ public class ConnectionTestLibrary extends AbstractLibrary {
     @ArgumentNames({})
     public synchronized double getConnectTime() {
         long time = connectingTimeEnd.get();
-        return time == 0 ? 0 : (time - connectingTimeBegin) / 1000f;
+        return time == 0 ? 0 : (time - connectingTimeBegin) / 1000d;
     }
 
     /**

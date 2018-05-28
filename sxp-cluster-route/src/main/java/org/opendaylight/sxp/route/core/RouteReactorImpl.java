@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -266,11 +267,14 @@ public class RouteReactorImpl implements RouteReactor {
     @VisibleForTesting
     void fillDefinitionsSafely(final @Nullable SxpClusterRoute route,
             final Map<IpAddress, RoutingDefinition> definitions) {
-        Optional.ofNullable(route)
+        final Optional<Stream<RoutingDefinition>> routingDefinition = Optional.ofNullable(route)
                 .map(SxpClusterRoute::getRoutingDefinition)
-                .map((routingDefs) -> routingDefs.stream()
-                        .map((routingDef) -> definitions.put(routingDef.getIpAddress(), routingDef))
-                        .count());
+                .map(Collection::stream);
+
+        routingDefinition.ifPresent(routingDefinitions ->
+                routingDefinitions.forEach(definition ->
+                        definitions.put(definition.getIpAddress(), definition)
+                ));
     }
 
     @Override
