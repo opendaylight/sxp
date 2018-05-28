@@ -74,7 +74,7 @@ public class ExportTestLibrary extends AbstractLibrary {
     @ArgumentNames({})
     public synchronized double getExportTime() {
         long time = exportTimeEnd.get();
-        return time == 0 ? 1 : (time - exportTimeBegin) / 1000f;
+        return time == 0 ? 1 : (time - exportTimeBegin) / 1000d;
     }
 
     /**

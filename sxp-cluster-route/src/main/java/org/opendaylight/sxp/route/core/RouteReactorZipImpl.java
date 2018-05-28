@@ -108,6 +108,7 @@ public class RouteReactorZipImpl implements RouteReactor {
                 futureResult.get(60, TimeUnit.SECONDS);
                 LOG.debug("Route update was finished");
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 LOG.warn("failed to get lock upon compression queue: {}", e.getMessage());
             } catch (ExecutionException | TimeoutException e) {
                 LOG.warn("failed to propagate route update: {}", e.getMessage());
