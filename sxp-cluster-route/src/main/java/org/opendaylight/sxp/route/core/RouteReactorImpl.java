@@ -268,9 +268,11 @@ public class RouteReactorImpl implements RouteReactor {
             final Map<IpAddress, RoutingDefinition> definitions) {
         Optional.ofNullable(route)
                 .map(SxpClusterRoute::getRoutingDefinition)
-                .map((routingDefs) -> routingDefs.stream()
-                        .map((routingDef) -> definitions.put(routingDef.getIpAddress(), routingDef))
-                        .count());
+                .map(Collection::stream)
+                .ifPresent(routingDefinitions ->
+                        routingDefinitions.forEach(routingDefinition ->
+                                definitions.put(routingDefinition.getIpAddress(), routingDefinition)
+                ));
     }
 
     @Override
