@@ -16,7 +16,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
@@ -102,7 +101,7 @@ public class DistributedBindingsIT {
     }
 
     @Test
-    public void testPropagationOfBindingsWithExternalMapOutput() {
+    public void testPropagationOfBindingsWithExternalMapIO() {
         Connection connection1 = createConnection("127.0.0.2", Constants.SXP_DEFAULT_PORT, ConnectionMode.Listener, ConnectionState.Off, Version.Version4);
         SxpConnection node1Con = SxpConnection.create(node1, connection1, DEFAULT_DOMAIN);
         Connection connection2 = createConnection("127.0.0.1", Constants.SXP_DEFAULT_PORT, ConnectionMode.Speaker, ConnectionState.Off, Version.Version4);
@@ -112,11 +111,11 @@ public class DistributedBindingsIT {
 
         LOG.info("Waiting for connections to establish");
         await().atMost(4, TimeUnit.SECONDS).until(node1Con::isStateOn);
-        await().atMost(1, TimeUnit.SECONDS).until(node2Con::isStateOn);
+        await().atMost(2, TimeUnit.SECONDS).until(node2Con::isStateOn);
         LOG.info("Connections established");
         IMap<IpPrefix, MasterDatabaseBinding> node1MasterMap = testingHCInstance.getMap("NODE1-MASTER");
         LOG.info("Adding a dummy binding to node2 master map");
-        node2.putLocalBindingsMasterDatabase(Collections.singletonList(dummyBinding), DEFAULT_DOMAIN);
+        node1MasterMap.set(dummyBinding.getIpPrefix(), dummyBinding);
         LOG.info("Waiting for propagation of bindings to node1 map of testing HC instance ");
         await().atMost(5, TimeUnit.SECONDS).until(() -> node1MasterMap.containsKey(dummyBinding.getIpPrefix()));
     }
