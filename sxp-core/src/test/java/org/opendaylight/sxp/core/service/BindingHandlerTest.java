@@ -121,8 +121,9 @@ public class BindingHandlerTest {
         masterDatabaseInf = new MasterDatabaseImpl();
         PowerMockito.when(sxpNode.getBindingSxpDatabase(anyString())).thenReturn(sxpDatabaseInf);
         PowerMockito.when(sxpNode.getBindingMasterDatabase(anyString())).thenReturn(masterDatabaseInf);
+        SxpDomain myDomain = SxpDomain.createInstance(sxpNode, "default", sxpDatabaseInf, masterDatabaseInf);
         PowerMockito.when(sxpNode.getDomain(anyString()))
-                .thenReturn(SxpDomain.createInstance(sxpNode, "default", sxpDatabaseInf, masterDatabaseInf));
+                .thenReturn(myDomain);
         handler = new BindingHandler(sxpNode, PowerMockito.mock(BindingDispatcher.class));
     }
 
