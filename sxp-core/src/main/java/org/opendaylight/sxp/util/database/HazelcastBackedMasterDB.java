@@ -18,9 +18,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.hazelcast.MasterDBBindingSerializer;
+import org.opendaylight.sxp.core.hazelcast.MasterHCDBPropagatingListener;
 import org.opendaylight.sxp.core.hazelcast.PeerSequenceSerializer;
 import org.opendaylight.sxp.core.hazelcast.PeerSerializer;
+import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
@@ -33,6 +36,7 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
     private final boolean hcInstanceInjected;
     private final IMap<IpPrefix, MasterDatabaseBinding> bindingMap;
     private final String mapName;
+    private MasterHCDBPropagatingListener dbListener;
 
     /**
      * Create a new Master DB backed by a new Hazelcast instance with a default config.
@@ -73,6 +77,12 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
         this.mapName = hcMapName;
         this.bindingMap = hcInstance.getMap(mapName);
         this.hcInstanceInjected = true;
+    }
+
+    @Override
+    public void initDBPropagatingListener(BindingDispatcher dispatcher, SxpDomain domain) {
+        this.dbListener = new MasterHCDBPropagatingListener(dispatcher, domain);
+        bindingMap.addEntryListener(dbListener, true);
     }
 
     @Override
@@ -133,6 +143,7 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
         }
         return new ArrayList<>(addedBindings.values());
     }
+
 
     @Override
     public void close() {

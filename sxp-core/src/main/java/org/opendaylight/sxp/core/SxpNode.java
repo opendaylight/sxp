@@ -126,7 +126,6 @@ public class SxpNode {
         return createInstance(nodeId, node, new MasterDatabaseImpl(), new SxpDatabaseImpl());
     }
 
-
     /**
      * Create new instance of SxpNode containing provided database data
      * and default ThreadWorkers
@@ -1140,7 +1139,6 @@ public class SxpNode {
         List<MasterDatabaseBinding> addedBindings;
         synchronized (sxpDomain) {
             addedBindings = sxpDomain.getMasterDatabase().addLocalBindings(bindings);
-            svcBindingDispatcher.propagateUpdate(null, addedBindings, getAllOnSpeakerConnections(domainName));
             sxpDomain.pushToSharedMasterDatabases(Collections.emptyList(), bindings);
         }
         return addedBindings;
@@ -1163,10 +1161,8 @@ public class SxpNode {
         List<MasterDatabaseBinding> deletedBindings;
         synchronized (sxpDomain) {
             deletedBindings = sxpDomain.getMasterDatabase().deleteBindingsLocal(bindings);
-            svcBindingDispatcher.propagateUpdate(deletedBindings, sxpDomain.getMasterDatabase()
-                            .addBindings(
-                                    SxpDatabase.getReplaceForBindings(deletedBindings, sxpDomain.getSxpDatabase(), filterMap)),
-                    getAllOnSpeakerConnections(domainName));
+            sxpDomain.getMasterDatabase().addBindings(
+                            SxpDatabase.getReplaceForBindings(deletedBindings, sxpDomain.getSxpDatabase(), filterMap));
             sxpDomain.pushToSharedMasterDatabases(bindings, Collections.emptyList());
         }
         return deletedBindings;
