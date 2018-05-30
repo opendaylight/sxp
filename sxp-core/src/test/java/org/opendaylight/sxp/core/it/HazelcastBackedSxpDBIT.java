@@ -70,7 +70,7 @@ public class HazelcastBackedSxpDBIT {
     private static SxpNode node;
     private static List<SxpConnection> sxpConnections = new ArrayList<>();
     @Rule
-    public Timeout globalTimeout = new Timeout(90_000);
+    public Timeout globalTimeout = new Timeout(120_000);
 
     @Before
     public void init() {

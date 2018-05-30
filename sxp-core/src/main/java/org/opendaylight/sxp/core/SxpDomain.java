@@ -55,8 +55,8 @@ public class SxpDomain implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(SxpDomain.class.getName());
 
-    private final MasterDatabaseInf masterDatabase;
-    private final SxpDatabaseInf sxpDatabase;
+    private MasterDatabaseInf masterDatabase;
+    private SxpDatabaseInf sxpDatabase;
     private final String name;
     private final SxpNode node;
     private final Map<FilterSpecific, Map<String, SxpBindingFilter<?, ? extends SxpDomainFilterFields>>>
@@ -89,7 +89,9 @@ public class SxpDomain implements AutoCloseable {
      */
     public static SxpDomain createInstance(SxpNode owner, String name, SxpDatabaseInf sxpDatabase,
             MasterDatabaseInf masterDatabase) {
-        return new SxpDomain(owner, name, sxpDatabase, masterDatabase);
+        SxpDomain instance = new SxpDomain(owner, name, sxpDatabase, masterDatabase);
+        masterDatabase.initDBPropagatingListener(owner.getSvcBindingDispatcher(), instance);
+        return instance;
     }
 
     /**
@@ -407,13 +409,6 @@ public class SxpDomain implements AutoCloseable {
                 replace.addAll(domain.getMasterDatabase().getLocalBindings());
             }
             added.addAll(domain.getMasterDatabase().addBindings(replace));
-            if (!added.isEmpty() || !deleted.isEmpty()) {
-                node.getSvcBindingDispatcher()
-                        .propagateUpdate(deleted, added, domain.getConnections()
-                                .stream()
-                                .filter(c -> c.isModeSpeaker() && c.isStateOn())
-                                .collect(Collectors.toList()));
-            }
         }
     }
 
