@@ -16,7 +16,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
@@ -60,6 +59,8 @@ public class DistributedBindingsIT {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedBindingsIT.class);
     private static final String DEFAULT_DOMAIN = "defaultDomain";
     private static final int DELETE_HOLD_DOWN_TIMER = 20;
+    private static final String NODE1_MASTER_DB_NAME = "NODE1-MASTER";
+    private static final String NODE2_MASTER_DB_NAME = "NODE2-MASTER";
     private final MasterDatabaseBinding dummyBinding = TestDataFactory.createMasterDBBinding("0.0.0.5/32", 123);
     @Rule
     public TestRule watcher = new TestWatcher() {
@@ -77,9 +78,9 @@ public class DistributedBindingsIT {
     @Before
     public void init() throws InterruptedException, ExecutionException {
         SxpDatabaseInf node1HCBackedSxpDB = new HazelcastBackedSxpDB("NODE1-ACTIVE", "NODE1-TENTATIVE");
-        MasterDatabaseInf node1HCBackedMasterDB = new HazelcastBackedMasterDB("NODE1-MASTER");
+        MasterDatabaseInf node1HCBackedMasterDB = new HazelcastBackedMasterDB(NODE1_MASTER_DB_NAME);
         SxpDatabaseInf node2HCBackedSxpDB = new HazelcastBackedSxpDB("NODE2-ACTIVE", "NODE2-TENTATIVE");
-        MasterDatabaseInf node2HCBackedMasterDB = new HazelcastBackedMasterDB("NODE2-MASTER");
+        MasterDatabaseInf node2HCBackedMasterDB = new HazelcastBackedMasterDB(NODE2_MASTER_DB_NAME);
 
         SxpNodeIdentity nodeIdentity1 = createIdentity("127.0.0.1", Constants.SXP_DEFAULT_PORT, Version.Version4, DELETE_HOLD_DOWN_TIMER, 3); //Listener
         this.node1 = SxpNode.createInstance(new NodeId("1.1.1.1"), nodeIdentity1, node1HCBackedMasterDB, node1HCBackedSxpDB);
@@ -102,7 +103,7 @@ public class DistributedBindingsIT {
     }
 
     @Test
-    public void testPropagationOfBindingsWithExternalMapOutput() {
+    public void testPropagationOfBindingsWithExternalMapIO() {
         Connection connection1 = createConnection("127.0.0.2", Constants.SXP_DEFAULT_PORT, ConnectionMode.Listener, ConnectionState.Off, Version.Version4);
         SxpConnection node1Con = SxpConnection.create(node1, connection1, DEFAULT_DOMAIN);
         Connection connection2 = createConnection("127.0.0.1", Constants.SXP_DEFAULT_PORT, ConnectionMode.Speaker, ConnectionState.Off, Version.Version4);
@@ -112,11 +113,12 @@ public class DistributedBindingsIT {
 
         LOG.info("Waiting for connections to establish");
         await().atMost(4, TimeUnit.SECONDS).until(node1Con::isStateOn);
-        await().atMost(1, TimeUnit.SECONDS).until(node2Con::isStateOn);
+        await().atMost(2, TimeUnit.SECONDS).until(node2Con::isStateOn);
         LOG.info("Connections established");
-        IMap<IpPrefix, MasterDatabaseBinding> node1MasterMap = testingHCInstance.getMap("NODE1-MASTER");
+        IMap<IpPrefix, MasterDatabaseBinding> node1MasterMap = testingHCInstance.getMap(NODE1_MASTER_DB_NAME);
+        IMap<IpPrefix, MasterDatabaseBinding> node2MasterMap = testingHCInstance.getMap(NODE2_MASTER_DB_NAME);
         LOG.info("Adding a dummy binding to node2 master map");
-        node2.putLocalBindingsMasterDatabase(Collections.singletonList(dummyBinding), DEFAULT_DOMAIN);
+        node2MasterMap.set(dummyBinding.getIpPrefix(), dummyBinding);
         LOG.info("Waiting for propagation of bindings to node1 map of testing HC instance ");
         await().atMost(5, TimeUnit.SECONDS).until(() -> node1MasterMap.containsKey(dummyBinding.getIpPrefix()));
     }
