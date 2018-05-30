@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.opendaylight.sxp.core.SxpDomain;
+import org.opendaylight.sxp.core.hazelcast.MasterDBListener;
+import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
@@ -26,6 +29,12 @@ public class MasterDatabaseImpl extends MasterDatabase {
 
     private final Map<IpPrefix, MasterDatabaseBinding> bindingMap = new HashMap<>();
     private final Map<IpPrefix, MasterDatabaseBinding> localBindingMap = new HashMap<>();
+    private MasterDBListener dbListener;
+
+    @Override
+    public void initDBListener(BindingDispatcher dispatcher, SxpDomain domain) {
+        this.dbListener = new MasterDBListener(dispatcher, domain);
+    }
 
     /**
      * {@inheritDoc}
@@ -68,6 +77,9 @@ public class MasterDatabaseImpl extends MasterDatabase {
             map.putAll(prefixMap);
             added.addAll(prefixMap.values());
         }
+        if (map == localBindingMap) {
+            dbListener.onBindingsAdded(added);
+        }
         return added;
     }
 
@@ -93,6 +105,9 @@ public class MasterDatabaseImpl extends MasterDatabase {
                 removed.add(map.remove(b.getIpPrefix()));
             }
         });
+        if (map == localBindingMap) {
+            dbListener.onBindingsRemoved(removed);
+        }
         return removed;
     }
 

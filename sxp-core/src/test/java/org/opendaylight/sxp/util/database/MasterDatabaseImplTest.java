@@ -10,6 +10,7 @@ package org.opendaylight.sxp.util.database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,7 +19,10 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
@@ -32,15 +36,20 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class})
+@PrepareForTest({SxpNode.class, BindingDispatcher.class})
 public class MasterDatabaseImplTest {
 
     private static MasterDatabaseImpl database;
     private static long time = System.currentTimeMillis();
+    @Mock private BindingDispatcher dispatcherMock;
+    @Mock private SxpDomain domainMock;
+    @Mock private SxpNode nodeMock;
 
     @Before
     public void init() {
         database = new MasterDatabaseImpl();
+        database.initDBListener(dispatcherMock, domainMock);
+        when(dispatcherMock.getOwner()).thenReturn(nodeMock);
     }
 
     private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, String... peers) {
