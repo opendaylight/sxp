@@ -18,9 +18,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.hazelcast.MasterDBBindingSerializer;
+import org.opendaylight.sxp.core.hazelcast.MasterHCDBListener;
 import org.opendaylight.sxp.core.hazelcast.PeerSequenceSerializer;
 import org.opendaylight.sxp.core.hazelcast.PeerSerializer;
+import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
@@ -32,6 +35,7 @@ public class HazelcastBackedMasterDB extends MasterDatabase implements AutoClose
     private final HazelcastInstance hcInstance;
     private final IMap<IpPrefix, MasterDatabaseBinding> bindingMap;
     private final String mapName;
+    private final MasterHCDBListener dbListener;
 
     /**
      * Create a new Master DB backed by Hazelcast with a default config.
@@ -39,8 +43,8 @@ public class HazelcastBackedMasterDB extends MasterDatabase implements AutoClose
      *
      * @param hcMapName unique name of the map used to store the bindings
      */
-    public HazelcastBackedMasterDB(String hcMapName) {
-        this(hcMapName, new Config());
+    public HazelcastBackedMasterDB(String hcMapName, BindingDispatcher bindingDispatcher, SxpDomain domain) {
+        this(hcMapName, bindingDispatcher, domain, new Config());
     }
 
     /**
@@ -50,7 +54,7 @@ public class HazelcastBackedMasterDB extends MasterDatabase implements AutoClose
      * @param hcMapName unique name of the map used to store the bindings
      * @param hcConfig  Hazelcast config to use
      */
-    public HazelcastBackedMasterDB(String hcMapName, Config hcConfig) {
+    public HazelcastBackedMasterDB(String hcMapName, BindingDispatcher dispatcher, SxpDomain domain, Config hcConfig) {
         hcConfig.getSerializationConfig()
                 .addSerializerConfig(MasterDBBindingSerializer.getSerializerConfig())
                 .addSerializerConfig(PeerSequenceSerializer.getSerializerConfig())
@@ -58,6 +62,8 @@ public class HazelcastBackedMasterDB extends MasterDatabase implements AutoClose
         this.hcInstance = Hazelcast.newHazelcastInstance(hcConfig);
         this.mapName = hcMapName;
         this.bindingMap = hcInstance.getMap(mapName);
+        this.dbListener = new MasterHCDBListener(dispatcher, domain);
+        bindingMap.addEntryListener(dbListener, true);
     }
 
     @Override
