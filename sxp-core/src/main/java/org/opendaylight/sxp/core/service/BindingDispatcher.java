@@ -155,7 +155,7 @@ public final class BindingDispatcher {
      * @param connections SxpConnections on which the export will be performed
      */
     public <T extends SxpBindingFields> void propagateUpdate(List<T> deleteBindings, List<T> addBindings,
-            List<SxpConnection> connections) {
+                                                             List<SxpConnection> connections) {
         if ((deleteBindings == null || deleteBindings.isEmpty()) && (addBindings == null || addBindings.isEmpty()) || (
                 connections == null || connections.isEmpty())) {
             return;
@@ -217,5 +217,9 @@ public final class BindingDispatcher {
             return false;
         }
 
+    }
+
+    public SxpNode getOwner() {
+        return owner;
     }
 }

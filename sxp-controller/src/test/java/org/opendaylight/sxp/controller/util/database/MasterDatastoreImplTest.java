@@ -11,6 +11,7 @@ package org.opendaylight.sxp.controller.util.database;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
@@ -22,9 +23,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
+import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
@@ -43,13 +47,16 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, DatastoreAccess.class})
+@PrepareForTest({SxpNode.class, DatastoreAccess.class, BindingDispatcher.class})
 public class MasterDatastoreImplTest {
 
     private static MasterDatastoreImpl database;
     private static long time = System.currentTimeMillis();
     private static DatastoreAccess access;
     private static Map<IpPrefix, MasterDatabaseBinding> databaseBindings_Op = new HashMap<>();
+    @Mock private BindingDispatcher dispatcherMock;
+    @Mock private SxpDomain domainMock;
+    @Mock private SxpNode nodeMock;
 
     @BeforeClass
     public static void initClass() {
@@ -89,7 +96,9 @@ public class MasterDatastoreImplTest {
     @Before
     public void init() {
         databaseBindings_Op.clear();
+        when(dispatcherMock.getOwner()).thenReturn(nodeMock);
         database = new MasterDatastoreImpl(access, "0.0.0.0", "DOMAIN");
+        database.initDBListener(dispatcherMock, domainMock);
     }
 
     private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, String... peers) {
