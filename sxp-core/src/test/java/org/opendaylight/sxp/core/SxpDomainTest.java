@@ -248,7 +248,8 @@ public class SxpDomainTest {
         assertTrue(domain.addFilter(getFilter(FilterSpecific.PeerSequence, "domain1")));
         assertFalse(domain.addFilter(getFilter(FilterSpecific.AccessOrPrefixList, "domain1")));
         assertFalse(domain.addFilter(getFilter(FilterSpecific.AccessOrPrefixList, "domain5", "domain1")));
-        verify(dispatcher, atLeast(1)).propagateUpdate(anyList(), anyList(), anyList());
+        MasterDatabaseInf masterDB = domain.getMasterDatabase();
+        verify(masterDB, times(2)).addBindings(anyList());
     }
 
     @Test
@@ -287,7 +288,9 @@ public class SxpDomainTest {
 
         domain.pushToSharedMasterDatabases(Collections.singletonList(mock(MasterDatabaseBinding.class)),
                 Collections.singletonList(mock(MasterDatabaseBinding.class)));
-        verify(dispatcher).propagateUpdate(anyList(), anyList(), anyList());
+        MasterDatabaseInf masterDB = domain.getMasterDatabase();
+        verify(masterDB, times(3)).addBindings(anyList());
+        verify(masterDB, times(3)).deleteBindings(anyList());
     }
 
     @Test
@@ -318,7 +321,9 @@ public class SxpDomainTest {
         domain.pushToSharedSxpDatabases(new NodeId("127.0.0.5"), filter,
                 Collections.singletonList(mock(SxpDatabaseBinding.class)),
                 Collections.singletonList(mock(SxpDatabaseBinding.class)));
-        verify(dispatcher).propagateUpdate(anyList(), anyList(), anyList());
+        MasterDatabaseInf masterDB = domain.getMasterDatabase();
+        verify(masterDB, times(3)).addBindings(anyList());
+        verify(masterDB, times(3)).deleteBindings(anyList());
     }
 
     private DomainFilter getDomainFilter(String id, String domain, FilterEntryType entryType, Integer... sgts) {
