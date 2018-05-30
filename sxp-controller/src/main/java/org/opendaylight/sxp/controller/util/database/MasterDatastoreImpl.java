@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.hazelcast.MasterDBPropagatingListener;
+import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.util.database.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.OriginType;
@@ -46,6 +48,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
 
     private final DatastoreAccess datastoreAccess;
     private final String nodeId, domain;
+    private MasterDBPropagatingListener dbListener;
 
     public MasterDatastoreImpl(DatastoreAccess datastoreAccess, String nodeId, String domain) {
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
@@ -57,6 +60,11 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         datastoreAccess.checkAndPut(getIdentifierBuilder().build(),
                 new MasterDatabaseBuilder().setMasterDatabaseBinding(new ArrayList<>()).build(),
                 LogicalDatastoreType.CONFIGURATION, false);
+    }
+
+    @Override
+    public void initDBPropagatingListener(BindingDispatcher dispatcher, org.opendaylight.sxp.core.SxpDomain domain) {
+        this.dbListener = new MasterDBPropagatingListener(dispatcher, domain);
     }
 
     /**
@@ -167,6 +175,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
             datastoreAccess.merge(getIdentifierBuilder().build(),
                     new MasterDatabaseBuilder().setMasterDatabaseBinding(added).build(), datastoreType);
         }
+        dbListener.onBindingsAdded(added);
         return added;
     }
 
@@ -199,6 +208,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         if (databaseBindings.removeIf(bindingIsToBeDeleted(mapBindingsToDelete))) {
             datastoreAccess.put(getIdentifierBuilder().build(), database, datastoreType);
             removedBindings.removeAll(databaseBindings);
+            dbListener.onBindingsRemoved(removedBindings);
             return removedBindings;
         }
 
