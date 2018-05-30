@@ -316,8 +316,8 @@ public final class BindingHandler {
                 List<SxpDatabaseBinding> removed = sxpDomain.getSxpDatabase().deleteBindings(connection.getId()),
                         replace =
                                 SxpDatabase.getReplaceForBindings(removed, sxpDomain.getSxpDatabase(), filterMap);
-                connection.propagateUpdate(sxpDomain.getMasterDatabase().deleteBindings(removed),
-                        sxpDomain.getMasterDatabase().addBindings(replace), sxpDomain.getConnections());
+                sxpDomain.getMasterDatabase().deleteBindings(removed);
+                sxpDomain.getMasterDatabase().addBindings(replace);
                 sxpDomain.pushToSharedSxpDatabases(connection.getId(), filter, removed, replace);
             }
             return null;
@@ -417,7 +417,6 @@ public final class BindingHandler {
             List<MasterDatabaseBinding> deletedMaster = masterDatabase.deleteBindings(removed),
                     addedMaster =
                             masterDatabase.addBindings(added);
-            dispatcher.propagateUpdate(deletedMaster, addedMaster, sxpConnections);
             domain.pushToSharedSxpDatabases(connection.getId(), filter, removed, added);
             if (!removed.isEmpty() || !added.isEmpty()) {
                 LOG.info("[{}] [Deleted/Added] bindings [{}/{}]", connection.getOwnerId().getValue(),

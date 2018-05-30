@@ -119,11 +119,15 @@ public class BindingHandlerTest {
         when(connection.getDestination()).thenReturn(new InetSocketAddress(InetAddress.getByName("1.1.1.1"), 5));
         sxpDatabaseInf = new SxpDatabaseImpl();
         masterDatabaseInf = new MasterDatabaseImpl();
+        BindingDispatcher dispatcherMock = PowerMockito.mock(BindingDispatcher.class);
+        when(dispatcherMock.getOwner()).thenReturn(sxpNode);
+        when(sxpNode.getSvcBindingDispatcher()).thenReturn(dispatcherMock);
         PowerMockito.when(sxpNode.getBindingSxpDatabase(anyString())).thenReturn(sxpDatabaseInf);
         PowerMockito.when(sxpNode.getBindingMasterDatabase(anyString())).thenReturn(masterDatabaseInf);
+        SxpDomain myDomain = SxpDomain.createInstance(sxpNode, "default", sxpDatabaseInf, masterDatabaseInf);
         PowerMockito.when(sxpNode.getDomain(anyString()))
-                .thenReturn(SxpDomain.createInstance(sxpNode, "default", sxpDatabaseInf, masterDatabaseInf));
-        handler = new BindingHandler(sxpNode, PowerMockito.mock(BindingDispatcher.class));
+                .thenReturn(myDomain);
+        handler = new BindingHandler(sxpNode, dispatcherMock);
     }
 
     private Peer getPeer(String id, int key) {
