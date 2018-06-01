@@ -132,11 +132,13 @@ public class SxpRpcServiceImplTest {
     private static SxpRpcServiceImpl service;
     private static DatastoreAccess datastoreAccess;
     private MasterDatabaseInf masterDatabase;
+    private org.opendaylight.sxp.core.SxpDomain domain;
 
     @Before
-    public void init() throws ExecutionException, InterruptedException {
+    public void init() throws Exception {
         node = PowerMockito.mock(SxpNode.class);
         datastoreAccess = mock(DatastoreAccess.class);
+        domain = mock(org.opendaylight.sxp.core.SxpDomain.class);
         when(datastoreAccess.checkAndDelete(any(InstanceIdentifier.class), any(LogicalDatastoreType.class))).thenReturn(
                 true);
         when(datastoreAccess.checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
@@ -168,6 +170,8 @@ public class SxpRpcServiceImplTest {
                 any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class)))
                 .thenReturn(
                         mock(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class));
+        when(node.getDomain(anyString())).thenReturn(domain);
+        when(domain.getMasterDatabase()).thenReturn(masterDatabase);
         Configuration.register(node);
         service = new SxpRpcServiceImpl(mock(DataBroker.class));
         masterDatabase = mock(MasterDatastoreImpl.class);
@@ -466,6 +470,7 @@ public class SxpRpcServiceImplTest {
         RpcResult<GetNodeBindingsOutput>
                 result =
                 service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setBindingsRange(GetNodeBindingsInput.BindingsRange.All)
                         .build()).get();
         assertNotNull(result);
@@ -475,6 +480,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setBindingsRange(GetNodeBindingsInput.BindingsRange.All)
                         .build()).get();
         assertNotNull(result);
@@ -484,6 +490,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setBindingsRange(GetNodeBindingsInput.BindingsRange.Local)
                         .build()).get();
         assertNotNull(result);
@@ -493,6 +500,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setBindingsRange(GetNodeBindingsInput.BindingsRange.Local)
                         .build()).get();
         assertNotNull(result);
