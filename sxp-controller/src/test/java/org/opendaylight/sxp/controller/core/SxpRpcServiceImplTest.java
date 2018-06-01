@@ -15,8 +15,10 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,7 +27,6 @@ import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifie
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -132,11 +133,17 @@ public class SxpRpcServiceImplTest {
     private static SxpRpcServiceImpl service;
     private static DatastoreAccess datastoreAccess;
     private MasterDatabaseInf masterDatabase;
+    private MasterDatabaseBinding databaseBinding;
+    private MasterDatabaseBinding localDatabaseBinding;
+    private org.opendaylight.sxp.core.SxpDomain domain;
 
+    @SuppressWarnings("unchecked")
     @Before
-    public void init() throws ExecutionException, InterruptedException {
+    public void init() {
         node = PowerMockito.mock(SxpNode.class);
         datastoreAccess = mock(DatastoreAccess.class);
+        domain = mock(org.opendaylight.sxp.core.SxpDomain.class);
+        masterDatabase = mock(MasterDatastoreImpl.class);
         when(datastoreAccess.checkAndDelete(any(InstanceIdentifier.class), any(LogicalDatastoreType.class))).thenReturn(
                 true);
         when(datastoreAccess.checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
@@ -168,10 +175,34 @@ public class SxpRpcServiceImplTest {
                 any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class)))
                 .thenReturn(
                         mock(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class));
+        when(node.getDomain(anyString())).thenReturn(domain);
+        when(domain.getMasterDatabase()).thenReturn(masterDatabase);
         Configuration.register(node);
         service = new SxpRpcServiceImpl(mock(DataBroker.class));
-        masterDatabase = mock(MasterDatastoreImpl.class);
         when(node.getBindingMasterDatabase()).thenReturn(masterDatabase);
+
+        databaseBinding = getBinding("10.0.0.1/24", 1);
+        localDatabaseBinding = getBinding("10.0.0.2/24", 1);
+
+        when(masterDatabase.getBindings()).thenReturn(Collections.singletonList(databaseBinding));
+        when(masterDatabase.getLocalBindings()).thenReturn(Collections.singletonList(localDatabaseBinding));
+        when(masterDatabase.addBindings(anyListOf(MasterDatabaseBinding.class))).thenAnswer(invocation -> {
+            final List<MasterDatabaseBinding> input = (List<MasterDatabaseBinding>) invocation.getArguments()[0];
+            if (input.isEmpty()) {
+                return Collections.emptyList();
+            } else {
+                return Collections.singletonList(mock(MasterDatabaseBinding.class));
+            }
+        });
+
+        when(masterDatabase.deleteBindings(anyListOf(MasterDatabaseBinding.class))).thenAnswer(invocation -> {
+            final List<MasterDatabaseBinding> input = (List<MasterDatabaseBinding>) invocation.getArguments()[0];
+            if (input.isEmpty()) {
+                return Collections.emptyList();
+            } else {
+                return Collections.singletonList(mock(MasterDatabaseBinding.class));
+            }
+        });
     }
 
     private MasterDatabaseBinding getBinding(String prefix, int sgt, String... peers) {
@@ -462,43 +493,63 @@ public class SxpRpcServiceImplTest {
     }
 
     @Test
-    public void testGetNodeBindings() throws Exception {
-        RpcResult<GetNodeBindingsOutput>
+    public void testGetEmptyNodeBindings() throws Exception {
+        final RpcResult<GetNodeBindingsOutput>
                 result =
                 service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setBindingsRange(GetNodeBindingsInput.BindingsRange.All)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertNotNull(result.getResult().getBinding());
+        assertTrue(result.getResult().getBinding().isEmpty());
+    }
 
-        result =
+    @Test
+    public void testGetNodeBindings() throws Exception {
+        final RpcResult<GetNodeBindingsOutput>
+                result =
                 service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setBindingsRange(GetNodeBindingsInput.BindingsRange.All)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertNotNull(result.getResult().getBinding());
+        assertFalse(result.getResult().getBinding().isEmpty());
+    }
 
-        result =
+    @Test
+    public void testGetEmptyLocalNodeBindings() throws Exception {
+        final RpcResult<GetNodeBindingsOutput>
+                result =
                 service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setBindingsRange(GetNodeBindingsInput.BindingsRange.Local)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertNotNull(result.getResult().getBinding());
+        assertTrue(result.getResult().getBinding().isEmpty());
+    }
 
-        result =
+    @Test
+    public void testGetLocalNodeBindings() throws Exception {
+        final RpcResult<GetNodeBindingsOutput>
+                result =
                 service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setBindingsRange(GetNodeBindingsInput.BindingsRange.Local)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertNotNull(result.getResult().getBinding());
+        assertFalse(result.getResult().getBinding().isEmpty());
     }
 
     @Test
@@ -626,10 +677,8 @@ public class SxpRpcServiceImplTest {
     }
 
     @Test
-    public void testDeleteBindings() throws Exception {
-        when(node.removeLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(
-                Collections.singletonList(mock(MasterDatabaseBinding.class)));
-        RpcResult<DeleteBindingsOutput>
+    public void testDeleteNotSetBindings() throws Exception {
+        final RpcResult<DeleteBindingsOutput>
                 result =
                 service.deleteBindings(new DeleteBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.1"))
@@ -638,8 +687,12 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
+    }
 
-        result =
+    @Test
+    public void testDeleteNullBindings() throws Exception {
+        final RpcResult<DeleteBindingsOutput>
+                result =
                 service.deleteBindings(new DeleteBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(null)
@@ -648,8 +701,12 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
+    }
 
-        result =
+    @Test
+    public void testDeleteEmptyBindings() throws Exception {
+        final RpcResult<DeleteBindingsOutput>
+                result =
                 service.deleteBindings(new DeleteBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(new ArrayList<>())
@@ -658,8 +715,12 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
+    }
 
-        result =
+    @Test
+    public void testDeleteBindings() throws Exception {
+        final RpcResult<DeleteBindingsOutput>
+                result =
                 service.deleteBindings(new DeleteBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(Collections.singletonList(new BindingBuilder().setSgt(new Sgt(112))
@@ -731,46 +792,58 @@ public class SxpRpcServiceImplTest {
     }
 
     @Test
-    public void testAddBindings() throws Exception {
-        when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(
-                Collections.singletonList(mock(MasterDatabaseBinding.class)));
-        RpcResult<AddBindingsOutput>
-                result =
-                service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
-                        .setNodeId(new NodeId("0.0.0.1"))
+    public void testAddNotSetBindings() throws Exception {
+        final RpcResult<AddBindingsOutput> result =
+                service.addBindings(new AddBindingsInputBuilder()
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setNodeId(new NodeId("0.0.0.0"))
                         .build()).get();
+
         assertNotNull(result);
         assertTrue(result.isSuccessful());
+
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
+    }
 
-        result =
+    @Test
+    public void testAddNullBindings() throws Exception {
+        final RpcResult<AddBindingsOutput> result =
                 service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(null)
                         .build()).get();
+
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
+    }
 
-        result =
+    @Test
+    public void testAddEmptyBindings() throws Exception {
+        final RpcResult<AddBindingsOutput> result =
                 service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(new ArrayList<>())
                         .build()).get();
+
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
+    }
 
-        result =
+    @Test
+    public void testAddBindings() throws Exception {
+        final RpcResult<AddBindingsOutput> result =
                 service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(Collections.singletonList(new BindingBuilder().setSgt(new Sgt(112))
                                 .setIpPrefix(Collections.singletonList(new IpPrefix("1.1.1.1/32".toCharArray())))
                                 .build()))
                         .build()).get();
+
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
