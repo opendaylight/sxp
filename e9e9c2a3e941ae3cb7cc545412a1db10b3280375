@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "df194fff_bb7336f8",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 8
+      },
+      "lineNbr": 929,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-05T14:05:39Z",
+      "side": 1,
+      "message": "This RPC seems to add Local bindings originally. Configuration datastore seems to be used for Local ones and Operational for normal bindings...",
+      "range": {
+        "startLine": 929,
+        "startChar": 66,
+        "endLine": 929,
+        "endChar": 112
+      },
+      "revId": "e9e9c2a3e941ae3cb7cc545412a1db10b3280375",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
