@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "72a573bf_dc730536",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 553,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-05T11:49:32Z",
+      "side": 1,
+      "message": "Name this just as a normal overload - transformBindings and use plural form of the argument name",
+      "range": {
+        "startLine": 553,
+        "startChar": 40,
+        "endLine": 553,
+        "endChar": 97
+      },
+      "revId": "c764b695988447f3b297ff1cd7736f800342c6bd",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
