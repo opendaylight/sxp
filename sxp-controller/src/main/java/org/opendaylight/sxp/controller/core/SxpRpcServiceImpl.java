@@ -17,11 +17,10 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
@@ -113,12 +112,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Up
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.NewBinding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequence;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
@@ -152,7 +152,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.DomainFilters;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.DomainFiltersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilter;
@@ -282,6 +281,15 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         return transformBindings(bindings, null, null);
     }
 
+    private MasterDatabaseBinding createMasterDatabaseBinding(final IpPrefix ipPrefix, final Sgt sgt) {
+        return new MasterDatabaseBindingBuilder()
+                .setIpPrefix(ipPrefix)
+                .setSecurityGroupTag(sgt)
+                .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
+                .setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build())
+                .build();
+    }
+
     /**
      * @param persistence Config Persistence to be checked
      * @return DataStore type corresponding to config persistence
@@ -403,7 +411,6 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     @Override
     public ListenableFuture<RpcResult<AddEntryOutput>> addEntry(final AddEntryInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
-        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId, input.getDomainName());
         final AddEntryOutputBuilder output = new AddEntryOutputBuilder().setResult(false);
 
         return getResponse(nodeId, output.build(), () -> {
@@ -420,19 +427,18 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                 LOG.warn("RpcAddEntry exception | Parameter 'domain-name' not defined");
                 return RpcResultBuilder.success(output.build()).build();
             }
-            final MasterDatabaseBinding
-                    binding =
-                    new MasterDatabaseBindingBuilder().setIpPrefix(input.getIpPrefix())
-                            .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
-                            .setSecurityGroupTag(input.getSgt())
-                            .setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build())
-                            .build();
-            output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
-                            .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
-                            .child(MasterDatabase.class)
-                            .child(MasterDatabaseBinding.class, new MasterDatabaseBindingKey(binding.getIpPrefix())), binding,
-                    getDatastoreType(input.getConfigPersistence()), false));
 
+            final MasterDatabaseInf masterDatabase = getMasterDatabase(nodeId, input.getDomainName());
+            if (masterDatabase != null) {
+                final MasterDatabaseBinding binding = createMasterDatabaseBinding(input.getIpPrefix(), input.getSgt());
+                final List<MasterDatabaseBinding> addedBindings;
+                if (LogicalDatastoreType.OPERATIONAL == getDatastoreType(input.getConfigPersistence())) {
+                    addedBindings = masterDatabase.addBindings(Collections.singletonList(binding));
+                } else {
+                    addedBindings = masterDatabase.addLocalBindings(Collections.singletonList(binding));
+                }
+                output.setResult(addedBindings.size() == 1);
+            }
             return RpcResultBuilder.success(output.build()).build();
         });
     }
@@ -586,7 +592,6 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     public ListenableFuture<RpcResult<DeleteEntryOutput>> deleteEntry(final DeleteEntryInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DeleteEntryOutputBuilder output = new DeleteEntryOutputBuilder().setResult(false);
-        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId, input.getDomainName());
 
         return getResponse(nodeId, output.build(), () -> {
             LOG.info("RpcDeleteEntry event | {}", input.toString());
@@ -598,19 +603,19 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                 LOG.warn("RpcDeleteEntry exception | Parameter 'domain-name' not defined");
                 return RpcResultBuilder.success(output.build()).build();
             }
-            final MasterDatabase
-                    database =
-                    datastoreAccess.readSynchronous(getIdentifier(nodeId).child(SxpDomains.class)
-                            .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
-                            .child(MasterDatabase.class), LogicalDatastoreType.CONFIGURATION);
-            if (input.getIpPrefix() != null && database != null && database.getMasterDatabaseBinding() != null) {
-                final Set<IpPrefix> prefixes = new HashSet<>(input.getIpPrefix());
-                output.setResult(database.getMasterDatabaseBinding()
-                        .removeIf(b -> input.getSgt().equals(b.getSecurityGroupTag()) && prefixes.contains(
-                                b.getIpPrefix())) && datastoreAccess.checkAndPut(
-                        getIdentifier(nodeId).child(SxpDomains.class)
-                                .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
-                                .child(MasterDatabase.class), database, LogicalDatastoreType.CONFIGURATION, true));
+
+            final MasterDatabaseInf masterDatabase = getMasterDatabase(nodeId, input.getDomainName());
+            if (masterDatabase != null) {
+                final List<MasterDatabaseBinding> bindings = new ArrayList<>();
+                final Optional<List<IpPrefix>> ipPrefixes = Optional.ofNullable(input.getIpPrefix());
+                ipPrefixes.ifPresent(prefixes -> prefixes.forEach(prefix ->
+                        bindings.add(new MasterDatabaseBindingBuilder()
+                                .setIpPrefix(prefix)
+                                .setSecurityGroupTag(input.getSgt())
+                                .build())));
+
+                final List<MasterDatabaseBinding> deleted = masterDatabase.deleteBindingsLocal(bindings);
+                output.setResult(!deleted.isEmpty());
             }
             return RpcResultBuilder.success(output.build()).build();
         });
@@ -937,17 +942,26 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     @Override
     public ListenableFuture<RpcResult<UpdateEntryOutput>> updateEntry(final UpdateEntryInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
-        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId, input.getDomainName());
         final UpdateEntryOutputBuilder output = new UpdateEntryOutputBuilder().setResult(false);
 
         return getResponse(nodeId, output.build(), () -> {
             LOG.info("RpcUpdateEntry event | {}", input.toString());
-            final IpPrefix originalIpPrefix = input.getOriginalBinding().getIpPrefix();
+            final OriginalBinding originalBinding = input.getOriginalBinding();
+            if (originalBinding == null) {
+                LOG.warn("RpcUpdateEntry exception | Parameters in 'original-binding' not defined");
+                return RpcResultBuilder.success(output.build()).build();
+            }
+            final NewBinding newBinding = input.getNewBinding();
+            if (newBinding == null) {
+                LOG.warn("RpcUpdateEntry exception | Parameters in 'new-binding' not defined");
+                return RpcResultBuilder.success(output.build()).build();
+            }
+            final IpPrefix originalIpPrefix = originalBinding.getIpPrefix();
             if (originalIpPrefix == null) {
                 LOG.warn("RpcUpdateEntry exception | Parameter 'original-binding/ip-prefix' not defined");
                 return RpcResultBuilder.success(output.build()).build();
             }
-            final Sgt originalSgt = input.getOriginalBinding().getSgt();
+            final Sgt originalSgt = originalBinding.getSgt();
             if (originalSgt == null) {
                 LOG.warn("RpcUpdateEntry exception | Parameter 'original-binding/sgt' not defined");
                 return RpcResultBuilder.success(output.build()).build();
@@ -956,41 +970,42 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                 LOG.warn("RpcUpdateEntry exception | Parameter 'domain-name' not defined");
                 return RpcResultBuilder.success(output.build()).build();
             }
-            if (input.getNewBinding().getIpPrefix() == null) {
+            final IpPrefix newIpPrefix = newBinding.getIpPrefix();
+            if (newIpPrefix == null) {
                 LOG.warn("RpcUpdateEntry exception | Parameter 'new-binding/ip-prefix' not defined");
                 return RpcResultBuilder.success(output.build()).build();
             }
-            if (input.getNewBinding().getSgt() == null) {
+            final Sgt newSgt = newBinding.getSgt();
+            if (newSgt == null) {
                 LOG.warn("RpcUpdateEntry exception | Parameter 'new-binding/sgt' not defined");
                 return RpcResultBuilder.success(output.build()).build();
             }
-            MasterDatabaseBinding
-                    binding =
-                    datastoreAccess.readSynchronous(getIdentifier(nodeId).child(SxpDomains.class)
-                                    .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
-                                    .child(MasterDatabase.class)
-                                    .child(MasterDatabaseBinding.class, new MasterDatabaseBindingKey(originalIpPrefix)),
-                            getDatastoreType(input.getConfigPersistence()));
-            if (binding != null && originalSgt.getValue().equals(binding.getSecurityGroupTag().getValue())) {
-                binding =
-                        new MasterDatabaseBindingBuilder().setIpPrefix(input.getNewBinding().getIpPrefix())
-                                .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
-                                .setSecurityGroupTag(input.getNewBinding().getSgt())
-                                .setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build())
-                                .build();
 
-                output.setResult(datastoreAccess.checkAndDelete(getIdentifier(nodeId).child(SxpDomains.class)
-                                .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
-                                .child(MasterDatabase.class)
-                                .child(MasterDatabaseBinding.class, new MasterDatabaseBindingKey(originalIpPrefix)),
-                        getDatastoreType(input.getConfigPersistence())) && datastoreAccess.checkAndPut(
-                        getIdentifier(nodeId).child(SxpDomains.class)
-                                .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
-                                .child(MasterDatabase.class)
-                                .child(MasterDatabaseBinding.class,
-                                        new MasterDatabaseBindingKey(binding.getIpPrefix())), binding,
-                        getDatastoreType(input.getConfigPersistence()), false));
+            final MasterDatabaseInf masterDatabase = getMasterDatabase(nodeId, input.getDomainName());
+            if (masterDatabase != null) {
+                final MasterDatabaseBinding originalDbBinding = new MasterDatabaseBindingBuilder()
+                        .setIpPrefix(originalIpPrefix)
+                        .setSecurityGroupTag(originalSgt)
+                        .build();
+                final MasterDatabaseBinding newDbBinding = createMasterDatabaseBinding(newIpPrefix, newSgt);
+
+                List<MasterDatabaseBinding> updated = null;
+                if (LogicalDatastoreType.OPERATIONAL == getDatastoreType(input.getConfigPersistence())) {
+                    final List<MasterDatabaseBinding> deleted = masterDatabase
+                            .deleteBindings(Collections.singletonList(originalDbBinding));
+                    if (deleted.size() == 1) {
+                        updated = masterDatabase.addBindings(Collections.singletonList(newDbBinding));
+                    }
+                } else {
+                    final List<MasterDatabaseBinding> deleted = masterDatabase
+                            .deleteBindingsLocal(Collections.singletonList(originalDbBinding));
+                    if (deleted.size() == 1) {
+                        updated = masterDatabase.addLocalBindings(Collections.singletonList(newDbBinding));
+                    }
+                }
+                output.setResult(updated != null && updated.size() == 1);
             }
+
             return RpcResultBuilder.success(output.build()).build();
         });
     }
