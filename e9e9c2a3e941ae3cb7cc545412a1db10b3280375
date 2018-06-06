@@ -22,6 +22,30 @@
       "revId": "e9e9c2a3e941ae3cb7cc545412a1db10b3280375",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f9e9efed_298e3a8b",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 8
+      },
+      "lineNbr": 929,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-06-06T06:20:45Z",
+      "side": 1,
+      "message": "changed to addLocalBindings()..\nI have changed also deleteBindings() where now I call deleteBindingsLocal().\n\nBut I have little concerns because deleteBindingsLocal() deletes bindings from both CONFIGURATION and OPERATIONAL and original RPC looks to be removing CONFIGURATION only.",
+      "parentUuid": "df194fff_bb7336f8",
+      "range": {
+        "startLine": 929,
+        "startChar": 66,
+        "endLine": 929,
+        "endChar": 112
+      },
+      "revId": "e9e9c2a3e941ae3cb7cc545412a1db10b3280375",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
     }
   ]
 }
