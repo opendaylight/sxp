@@ -244,42 +244,45 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testAddEntry() throws Exception {
-        when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(
-                Collections.singletonList(mock(MasterDatabaseBinding.class)));
-        AddEntryInputBuilder input = new AddEntryInputBuilder();
+        final AddEntryInputBuilder input = new AddEntryInputBuilder();
         input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
         input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-
         input.setSgt(new Sgt(20));
         input.setIpPrefix(new IpPrefix(Ipv4Prefix.getDefaultInstance("2.2.2.2/32")));
+
         assertTrue(service.addEntry(input.build()).get().getResult().isResult());
+    }
 
+    @Test
+    public void testAddEntryNullSgt() throws Exception {
+        final AddEntryInputBuilder input = new AddEntryInputBuilder();
+        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
         input.setSgt(null);
-        assertFalse(service.addEntry(input.build()).get().getResult().isResult());
 
+        assertFalse(service.addEntry(input.build()).get().getResult().isResult());
+    }
+
+    @Test
+    public void testAddEntryNullIpPrefix() throws Exception {
+        final AddEntryInputBuilder input = new AddEntryInputBuilder();
+        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
         input.setSgt(new Sgt(20));
         input.setIpPrefix(null);
+
         assertFalse(service.addEntry(input.build()).get().getResult().isResult());
     }
 
     @Test
     public void testDeleteEntry() throws Exception {
-        List<MasterDatabaseBinding> deletedBindings = new ArrayList<>();
-        deletedBindings.add(getBinding("0.0.0.5/32", 20));
-
-        DeleteEntryInputBuilder input = new DeleteEntryInputBuilder();
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
+        final DeleteEntryInputBuilder input = new DeleteEntryInputBuilder();
         input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-
+        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
         input.setSgt(new Sgt(20));
-        assertFalse(service.deleteEntry(input.build()).get().getResult().isResult());
+        input.setIpPrefix(Collections.singletonList(new IpPrefix(Ipv4Prefix.getDefaultInstance("0.0.0.5/32"))));
 
-        List<IpPrefix> ipPrefixes = new ArrayList<>();
-        input.setIpPrefix(ipPrefixes);
-        ipPrefixes.add(new IpPrefix(Ipv4Prefix.getDefaultInstance("0.0.0.5/32")));
-        when(node.removeLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(deletedBindings);
-        input.setSgt(null);
-        assertFalse(service.deleteEntry(input.build()).get().getResult().isResult());
+        assertTrue(service.deleteEntry(input.build()).get().getResult().isResult());
     }
 
     private OriginalBinding getOriginalBinding(String s, Integer i) {
@@ -605,36 +608,59 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testUpdateEntry() throws Exception {
-        List<MasterDatabaseBinding> bindings = new ArrayList<>();
+        final List<MasterDatabaseBinding> bindings = new ArrayList<>();
         bindings.add(getBinding("0.0.0.5/32", 20));
 
-        UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
+        final UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
         input.setDomainName(SxpNode.DEFAULT_DOMAIN);
         input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-
         input.setNewBinding(getNewBinding("1.1.10.1/32", 50));
         input.setOriginalBinding(getOriginalBinding("1.1.1.1/32", 450));
 
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
-        when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(new ArrayList<>());
+        assertTrue(service.updateEntry(input.build()).get().getResult().isResult());
+    }
 
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
-        when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(bindings);
-
+    @Test
+    public void testUpdateEntryNullNewSqt() throws Exception {
+        final UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
+        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
+        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
         input.setNewBinding(getNewBinding("1.1.10.1/32", null));
         input.setOriginalBinding(getOriginalBinding("1.1.1.1/32", 450));
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
 
+        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
+    }
+
+    @Test
+    public void testUpdateEntryNullNewIpPrefix() throws Exception {
+        final UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
+        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
+        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
         input.setNewBinding(getNewBinding(null, 50));
         input.setOriginalBinding(getOriginalBinding("1.1.1.1/32", 450));
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
 
+        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
+    }
+
+    @Test
+    public void testUpdateEntryNullOriginalSqt() throws Exception {
+        final UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
+        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
+        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
         input.setNewBinding(getNewBinding("1.1.10.1/32", 50));
         input.setOriginalBinding(getOriginalBinding("1.1.1.1/32", null));
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
 
+        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
+    }
+
+    @Test
+    public void testUpdateEntryNullOriginalIpPrefix() throws Exception {
+        final UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
+        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
+        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
         input.setNewBinding(getNewBinding("1.1.10.1/32", 50));
         input.setOriginalBinding(getOriginalBinding(null, 450));
+
         assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
     }
 
