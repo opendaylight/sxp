@@ -244,21 +244,33 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testAddEntry() throws Exception {
-        when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(
-                Collections.singletonList(mock(MasterDatabaseBinding.class)));
-        AddEntryInputBuilder input = new AddEntryInputBuilder();
+        final AddEntryInputBuilder input = new AddEntryInputBuilder();
         input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
         input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-
         input.setSgt(new Sgt(20));
         input.setIpPrefix(new IpPrefix(Ipv4Prefix.getDefaultInstance("2.2.2.2/32")));
+
         assertTrue(service.addEntry(input.build()).get().getResult().isResult());
+    }
 
+    @Test
+    public void testAddEntryNullSgt() throws Exception {
+        final AddEntryInputBuilder input = new AddEntryInputBuilder();
+        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
         input.setSgt(null);
-        assertFalse(service.addEntry(input.build()).get().getResult().isResult());
 
+        assertFalse(service.addEntry(input.build()).get().getResult().isResult());
+    }
+
+    @Test
+    public void testAddEntryNullIpPrefix() throws Exception {
+        final AddEntryInputBuilder input = new AddEntryInputBuilder();
+        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
+        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
         input.setSgt(new Sgt(20));
         input.setIpPrefix(null);
+
         assertFalse(service.addEntry(input.build()).get().getResult().isResult());
     }
 

@@ -427,11 +427,15 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                             .setSecurityGroupTag(input.getSgt())
                             .setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build())
                             .build();
-            output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
-                            .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
-                            .child(MasterDatabase.class)
-                            .child(MasterDatabaseBinding.class, new MasterDatabaseBindingKey(binding.getIpPrefix())), binding,
-                    getDatastoreType(input.getConfigPersistence()), false));
+
+            final MasterDatabaseInf masterDatabase = getMasterDatabase(nodeId, input.getDomainName());
+            final List<MasterDatabaseBinding> addedBindings;
+            if (LogicalDatastoreType.OPERATIONAL == getDatastoreType(input.getConfigPersistence())) {
+                addedBindings = masterDatabase.addBindings(Collections.singletonList(binding));
+            } else {
+                addedBindings = masterDatabase.addLocalBindings(Collections.singletonList(binding));
+            }
+            output.setResult(addedBindings.size() == 1);
 
             return RpcResultBuilder.success(output.build()).build();
         });
