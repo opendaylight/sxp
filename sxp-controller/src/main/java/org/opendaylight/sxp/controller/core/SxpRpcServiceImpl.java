@@ -541,7 +541,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
             }
 
             final MasterDatabaseInf masterDatabase = getMasterDatabase(nodeId, input.getDomainName());
-            if (input.getBinding() != null && !input.getBinding().isEmpty() && masterDatabase != null) {
+            if (input.getBinding() != null && !input.getBinding().isEmpty()
+                    && masterDatabase != null && masterDatabase.getBindings() != null) {
                 final List<MasterDatabaseBinding> bindingsToBeRemoved = transformBindings(input.getBinding());
                 if (!bindingsToBeRemoved.isEmpty()) {
                     final List<MasterDatabaseBinding> deleted = masterDatabase.deleteBindingsLocal(bindingsToBeRemoved);

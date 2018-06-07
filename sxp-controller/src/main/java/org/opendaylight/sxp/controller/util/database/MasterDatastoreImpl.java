@@ -8,13 +8,16 @@
 
 package org.opendaylight.sxp.controller.util.database;
 
+import com.google.common.base.Functions;
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
@@ -75,6 +78,18 @@ public final class MasterDatastoreImpl extends MasterDatabase {
     private InstanceIdentifier.InstanceIdentifierBuilder<MasterDatabaseBinding> getIdentifierBuilder(
             IpPrefix ipPrefix) {
         return getIdentifierBuilder().child(MasterDatabaseBinding.class, new MasterDatabaseBindingKey(ipPrefix));
+    }
+
+    /**
+     * Decide if binding is to be removed according to its match in deletion map with key {@link IpPrefix}.
+     */
+    private <T extends SxpBindingFields> Predicate<MasterDatabaseBinding> bindingIsToBeDeleted(
+            final Map<IpPrefix, T> bindingsToDelete) {
+        return dbBinding -> {
+            final IpPrefix ipPrefix = dbBinding.getIpPrefix();
+            return bindingsToDelete.containsKey(ipPrefix)
+                    && Objects.equals(bindingsToDelete.get(ipPrefix).getSecurityGroupTag(), dbBinding.getSecurityGroupTag());
+        };
     }
 
     /**
@@ -160,32 +175,31 @@ public final class MasterDatastoreImpl extends MasterDatabase {
      */
     private <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings,
             LogicalDatastoreType datastoreType) {
-        List<MasterDatabaseBinding> removed = new ArrayList<>();
         if (bindings == null || bindings.isEmpty() || datastoreType == null) {
-            return removed;
+            return Collections.emptyList();
         }
         org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase
                 database =
                 datastoreAccess.readSynchronous(getIdentifierBuilder().build(), datastoreType);
-        if (database == null || database.getMasterDatabaseBinding() == null || database.getMasterDatabaseBinding()
-                .isEmpty()) {
-            return removed;
+        if (database == null) {
+            return Collections.emptyList();
         }
-        Map<IpPrefix, MasterDatabaseBinding> bindingMap = new HashMap<>();
-        database.getMasterDatabaseBinding().forEach(b -> bindingMap.put(b.getIpPrefix(), b));
-        database.getMasterDatabaseBinding().clear();
+        final List<MasterDatabaseBinding> databaseBindings = database.getMasterDatabaseBinding();
+        if (databaseBindings == null || databaseBindings.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-        bindings.forEach(b -> {
-            if (bindingMap.containsKey(b.getIpPrefix()) && bindingMap.get(b.getIpPrefix())
-                    .getSecurityGroupTag()
-                    .getValue()
-                    .equals(b.getSecurityGroupTag().getValue())) {
-                removed.add(bindingMap.remove(b.getIpPrefix()));
-            }
-        });
-        database.getMasterDatabaseBinding().addAll(bindingMap.values());
-        datastoreAccess.put(getIdentifierBuilder().build(), database, datastoreType);
-        return removed;
+        final List<MasterDatabaseBinding> removedBindings = new ArrayList<>(databaseBindings);
+        final Map<IpPrefix, T> mapBindingsToDelete = bindings.stream()
+                .collect(Collectors.toMap(SxpBindingFields::getIpPrefix, Functions.identity()));
+
+        if (databaseBindings.removeIf(bindingIsToBeDeleted(mapBindingsToDelete))) {
+            datastoreAccess.put(getIdentifierBuilder().build(), database, datastoreType);
+            removedBindings.removeAll(databaseBindings);
+            return removedBindings;
+        }
+
+        return Collections.emptyList();
     }
 
     @Override
