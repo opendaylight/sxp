@@ -1,0 +1,8 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+1: Ivan Hrasko <ivan.hrasko@pantheon.tech>
+Code-Review+2: Martin Dindoffer <martin.dindoffer@pantheon.tech>
+Submitted-by: Martin Dindoffer <martin.dindoffer@pantheon.tech>
+Submitted-at: Thu, 07 Jun 2018 15:56:29 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/72753
+Project: sxp
+Branch: refs/heads/master
