@@ -419,7 +419,6 @@ module sxp-controller {
             }
             uses sxpnd:sxp-node-identity-fields;
             uses sxpnd:sxp-node-buffering-fields;
-            uses sxpdb:master-database-configuration;
         }
         output {
             leaf result {
