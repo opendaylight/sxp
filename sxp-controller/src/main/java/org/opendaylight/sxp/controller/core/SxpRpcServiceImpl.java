@@ -11,6 +11,7 @@ package org.opendaylight.sxp.controller.core;
 import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
 
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -19,14 +20,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
-import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
+import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
@@ -115,6 +115,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Up
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.NewBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
@@ -227,20 +228,6 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         return datastoreAccess;
     }
 
-    /**
-     * @param nodeId     SxpNode identifier
-     * @param domainName Domain identifier
-     * @return DatastoreAccess associated with SxpNode or default if nothing found
-     */
-    private DatastoreAccess getDatastoreAccess(final String nodeId, final String domainName) {
-        final SxpNode node = Configuration.getRegisteredNode(nodeId);
-        if (node instanceof SxpDatastoreNode && Objects.nonNull(node.getDomain(domainName)) && node.getDomain(
-                domainName).getMasterDatabase() instanceof MasterDatastoreImpl) {
-            return ((MasterDatastoreImpl) node.getDomain(domainName).getMasterDatabase()).getDatastoreAccess();
-        }
-        return datastoreAccess;
-    }
-
     private MasterDatabaseInf getMasterDatabase(final String nodeId, final String domain) {
         return Configuration.getRegisteredNode(nodeId)
                 .getDomain(domain)
@@ -288,6 +275,36 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                 .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
                 .setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build())
                 .build();
+    }
+
+    private boolean containsBindings(final MasterDatabase masterDatabase) {
+        return masterDatabase != null
+                && masterDatabase.getBinding() != null && !masterDatabase.getBinding().isEmpty();
+    }
+
+    private boolean mergeDatabaseBindingsToDs(final String nodeId, final String domain,
+            final MasterDatabase masterDatabase, final LogicalDatastoreType datastoreType) {
+        // nothing to process, return success
+        if (!containsBindings(masterDatabase)) {
+            return true;
+        }
+
+        // merge bindings to data-store
+        final MasterDatabaseInf database = getMasterDatabase(nodeId, domain);
+        if (database != null) {
+            final List<MasterDatabaseBinding> bindings = transformBindings(
+                    masterDatabase.getBinding(),
+                    new PeerSequenceBuilder().setPeer(new ArrayList<>()).build(),
+                    TimeConv.toDt(System.currentTimeMillis()));
+            final List<MasterDatabaseBinding> addedBindings;
+            if (LogicalDatastoreType.OPERATIONAL == datastoreType) {
+                addedBindings = database.addBindings(bindings);
+            } else {
+                addedBindings = database.addLocalBindings(bindings);
+            }
+            return !addedBindings.isEmpty();
+        }
+        return false;
     }
 
     /**
@@ -833,82 +850,159 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     @Override
     public ListenableFuture<RpcResult<AddNodeOutput>> addNode(final AddNodeInput input) {
         final AddNodeOutputBuilder output = new AddNodeOutputBuilder().setResult(false);
+
         return executor.submit(() -> {
             if (input.getNodeId() != null) {
                 LOG.info("RpcAddNode event | {}", input.toString());
+
                 final String nodeId = getNodeId(input.getNodeId());
-                final SxpNodeIdentityBuilder identityBuilder = new SxpNodeIdentityBuilder(input);
-                if (identityBuilder.getTcpPort() == null)
-                    identityBuilder.setTcpPort(new PortNumber(64999));
-                if (identityBuilder.getVersion() == null)
-                    identityBuilder.setVersion(Version.Version4);
-                if (identityBuilder.getMappingExpanded() == null)
-                    identityBuilder.setMappingExpanded(0);
-                if (identityBuilder.getSxpDomains() == null || identityBuilder.getSxpDomains().getSxpDomain() == null)
-                    identityBuilder.setSxpDomains(new SxpDomainsBuilder().setSxpDomain(new ArrayList<>()).build());
-                if (identityBuilder.getSxpDomains().getSxpDomain().isEmpty() || identityBuilder.getSxpDomains()
-                        .getSxpDomain()
-                        .stream()
-                        .noneMatch(d -> SxpNode.DEFAULT_DOMAIN.equals(d.getDomainName()))) {
-                    identityBuilder.getSxpDomains()
-                            .getSxpDomain()
-                            .add(new SxpDomainBuilder().setConnections(
-                                    new ConnectionsBuilder().setConnection(new ArrayList<>()).build())
-                                    .setDomainName(org.opendaylight.sxp.core.SxpNode.DEFAULT_DOMAIN)
-                                    .setMasterDatabase(ConfigLoader.parseMasterDatabase(input.getMasterDatabase()))
-                                    .setDomainFilters(
-                                            new DomainFiltersBuilder().setDomainFilter(new ArrayList<>()).build())
-                                    .setConnectionTemplates(
-                                            new ConnectionTemplatesBuilder().setConnectionTemplate(new ArrayList<>())
-                                                    .build())
-                                    .build());
-                }
-                if (identityBuilder.getSxpPeerGroups() == null)
-                    identityBuilder.setSxpPeerGroups(new SxpPeerGroupsBuilder().build());
-                if (identityBuilder.getSecurity() == null)
-                    identityBuilder.setSecurity(new SecurityBuilder().build());
-                if (identityBuilder.getTimers() == null)
-                    identityBuilder.setTimers(new TimersBuilder().build());
-                if (identityBuilder.getMessageBuffering() == null)
-                    identityBuilder.setMessageBuffering(new MessageBufferingBuilder().setInBuffer(input.getInBuffer())
-                            .setOutBuffer(input.getOutBuffer())
-                            .build());
+                final LogicalDatastoreType datastoreType = getDatastoreType(input.getConfigPersistence());
                 ConfigLoader.initTopologyNode(nodeId, getDatastoreType(input.getConfigPersistence()), datastoreAccess);
-                output.setResult(datastoreAccess.checkAndPut(NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class,
-                        new NodeKey(
-                                new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
-                                        nodeId))).augmentation(SxpNodeIdentity.class), identityBuilder.build(),
-                        getDatastoreType(input.getConfigPersistence()), false));
-                if (output.isResult())
-                    for (int i = 0; Configuration.getRegisteredNode(nodeId) != null && i < 10; i++)
-                        Thread.sleep(100);
+
+                // merge node itself
+                try {
+                    mergeSxpNodeToDs(nodeId, buildSxpNode(input), datastoreType)
+                            .get(1000, TimeUnit.MILLISECONDS);
+                } catch (final Exception e) {
+                    LOG.warn("Failed to merge SXP node to data store | {}", e);
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+
+                // merge node's bindings
+                if (containsBindings(input.getMasterDatabase())) {
+                    // wait until node is present in configuration
+                    for (int i = 0; Configuration.getRegisteredNode(nodeId) == null && i < 10; i++) {
+                        try {
+                            Thread.sleep(100);
+                        } catch (final InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            LOG.warn("Failed to wait for SXP node to appear in configuration | {}", e);
+                            return RpcResultBuilder.success(output.build()).build();
+                        }
+                    }
+                    if (Configuration.getRegisteredNode(nodeId) == null) {
+                        return RpcResultBuilder.success(output.build()).build();
+                    }
+
+                    // merge bindings
+                    final boolean mergeBindingsToDs = mergeDatabaseBindingsToDs(nodeId,
+                            org.opendaylight.sxp.core.SxpNode.DEFAULT_DOMAIN, input.getMasterDatabase(),
+                            datastoreType);
+                    output.setResult(mergeBindingsToDs);
+                } else {
+                    output.setResult(true);
+                }
             }
             return RpcResultBuilder.success(output.build()).build();
         });
     }
 
+    private SxpNodeIdentity buildSxpNode(final AddNodeInput input) {
+        final SxpNodeIdentityBuilder nodeBuilder = new SxpNodeIdentityBuilder(input);
+        if (nodeBuilder.getTcpPort() == null)
+            nodeBuilder.setTcpPort(new PortNumber(64999));
+        if (nodeBuilder.getVersion() == null)
+            nodeBuilder.setVersion(Version.Version4);
+        if (nodeBuilder.getMappingExpanded() == null)
+            nodeBuilder.setMappingExpanded(0);
+        if (nodeBuilder.getSxpDomains() == null || nodeBuilder.getSxpDomains().getSxpDomain() == null)
+            nodeBuilder.setSxpDomains(new SxpDomainsBuilder().setSxpDomain(new ArrayList<>()).build());
+        if (nodeBuilder.getSxpDomains().getSxpDomain().isEmpty() || nodeBuilder.getSxpDomains()
+                .getSxpDomain()
+                .stream()
+                .noneMatch(d -> SxpNode.DEFAULT_DOMAIN.equals(d.getDomainName()))) {
+            nodeBuilder.getSxpDomains()
+                    .getSxpDomain()
+                    .add(new SxpDomainBuilder().setConnections(
+                            new ConnectionsBuilder().setConnection(new ArrayList<>()).build())
+                            .setDomainName(org.opendaylight.sxp.core.SxpNode.DEFAULT_DOMAIN)
+                            .setDomainFilters(
+                                    new DomainFiltersBuilder().setDomainFilter(new ArrayList<>()).build())
+                            .setConnectionTemplates(
+                                    new ConnectionTemplatesBuilder().setConnectionTemplate(new ArrayList<>())
+                                            .build())
+                            .build());
+        }
+        if (nodeBuilder.getSxpPeerGroups() == null)
+            nodeBuilder.setSxpPeerGroups(new SxpPeerGroupsBuilder().build());
+        if (nodeBuilder.getSecurity() == null)
+            nodeBuilder.setSecurity(new SecurityBuilder().build());
+        if (nodeBuilder.getTimers() == null)
+            nodeBuilder.setTimers(new TimersBuilder().build());
+        if (nodeBuilder.getMessageBuffering() == null)
+            nodeBuilder.setMessageBuffering(new MessageBufferingBuilder().setInBuffer(input.getInBuffer())
+                    .setOutBuffer(input.getOutBuffer())
+                    .build());
+
+        return nodeBuilder.build();
+    }
+
+    private CheckedFuture<Void, TransactionCommitFailedException> mergeSxpNodeToDs(final String nodeId,
+            final SxpNodeIdentity node, final LogicalDatastoreType datastoreType) {
+        return datastoreAccess.merge(getIdentifier(nodeId), node, datastoreType);
+    }
+
     @Override
     public ListenableFuture<RpcResult<AddDomainOutput>> addDomain(final AddDomainInput input) {
         final String nodeId = getNodeId(input.getNodeId());
-        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final AddDomainOutputBuilder output = new AddDomainOutputBuilder().setResult(false);
 
         return getResponse(nodeId, output.build(), () -> {
             LOG.info("RpcDomain event | {}", input.toString());
+
             if (input.getDomainName() != null) {
-                final SxpDomainBuilder builder = new SxpDomainBuilder();
-                builder.setDomainName(input.getDomainName());
-                builder.setMasterDatabase(ConfigLoader.parseMasterDatabase(input.getMasterDatabase()));
-                builder.setConnections(ConfigLoader.parseConnections(input.getConnections()));
-                builder.setDomainFilters(new DomainFiltersBuilder().setDomainFilter(new ArrayList<>()).build());
-                builder.setConnectionTemplates(
+                final SxpDomainBuilder domainBuilder = new SxpDomainBuilder();
+                domainBuilder.setDomainName(input.getDomainName());
+                domainBuilder.setConnections(ConfigLoader.parseConnections(input.getConnections()));
+                domainBuilder.setDomainFilters(new DomainFiltersBuilder().setDomainFilter(new ArrayList<>()).build());
+                domainBuilder.setConnectionTemplates(
                         new ConnectionTemplatesBuilder().setConnectionTemplate(new ArrayList<>()).build());
-                output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
-                                .child(SxpDomain.class, new SxpDomainKey(input.getDomainName())), builder.build(),
-                        getDatastoreType(input.getConfigPersistence()), false));
+                final LogicalDatastoreType datastoreType = getDatastoreType(input.getConfigPersistence());
+
+                // merge domain itself
+                try {
+                    mergeSxpDomainToDs(nodeId, input.getDomainName(), domainBuilder.build(), datastoreType)
+                            .get(1000, TimeUnit.MILLISECONDS);
+                } catch (final Exception e) {
+                    LOG.warn("Failed to merge SXP domain to data store | {}", e);
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+
+                // merge domain's bindings
+                if (containsBindings(input.getMasterDatabase())) {
+                    // wait until domain is present in configuration
+                    final SxpNode registeredNode = Configuration.getRegisteredNode(nodeId);
+                    for (int i = 0;
+                            (registeredNode == null || registeredNode.getDomain(input.getDomainName()) == null) && i < 10;
+                            i++) {
+                        try {
+                            Thread.sleep(100);
+                        } catch (final InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            LOG.warn("Failed to wait for SXP domain to appear in configuration | {}", e);
+                            return RpcResultBuilder.success(output.build()).build();
+                        }
+                    }
+                    if (registeredNode == null || registeredNode.getDomain(input.getDomainName()) == null) {
+                        return RpcResultBuilder.success(output.build()).build();
+                    }
+
+                    // merge bindings
+                    final boolean mergeBindingsToDs = mergeDatabaseBindingsToDs(nodeId, input.getDomainName(),
+                            input.getMasterDatabase(), datastoreType);
+                    output.setResult(mergeBindingsToDs);
+                } else {
+                    output.setResult(true);
+                }
             }
             return RpcResultBuilder.success(output.build()).build();
         });
+    }
+
+    private CheckedFuture<Void, TransactionCommitFailedException> mergeSxpDomainToDs(final String nodeId,
+            final String domain, final SxpDomain sxpNode, final LogicalDatastoreType datastoreType) {
+       return getDatastoreAccess(nodeId).merge(getIdentifier(nodeId).child(SxpDomains.class).child(SxpDomain.class,
+               new SxpDomainKey(domain)), sxpNode, datastoreType);
     }
 
     @Override
