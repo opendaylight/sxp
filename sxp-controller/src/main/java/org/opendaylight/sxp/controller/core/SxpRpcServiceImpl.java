@@ -115,6 +115,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Up
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.NewBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.Binding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
@@ -855,7 +856,6 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                             .add(new SxpDomainBuilder().setConnections(
                                     new ConnectionsBuilder().setConnection(new ArrayList<>()).build())
                                     .setDomainName(org.opendaylight.sxp.core.SxpNode.DEFAULT_DOMAIN)
-                                    .setMasterDatabase(ConfigLoader.parseMasterDatabase(input.getMasterDatabase()))
                                     .setDomainFilters(
                                             new DomainFiltersBuilder().setDomainFilter(new ArrayList<>()).build())
                                     .setConnectionTemplates(
@@ -874,11 +874,16 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                             .setOutBuffer(input.getOutBuffer())
                             .build());
                 ConfigLoader.initTopologyNode(nodeId, getDatastoreType(input.getConfigPersistence()), datastoreAccess);
-                output.setResult(datastoreAccess.checkAndPut(NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class,
-                        new NodeKey(
-                                new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
-                                        nodeId))).augmentation(SxpNodeIdentity.class), identityBuilder.build(),
-                        getDatastoreType(input.getConfigPersistence()), false));
+
+                final LogicalDatastoreType datastoreType = getDatastoreType(input.getConfigPersistence());
+
+                final boolean putNodeToDs = putNodeToDs(nodeId, identityBuilder.build(), datastoreType);
+                final MasterDatabase masterDatabase = input.getMasterDatabase();
+                // FIXME which domain?
+                final boolean putBindingsToDs = putDatabaseBindingsToDs(nodeId, org.opendaylight.sxp.core.SxpNode.DEFAULT_DOMAIN,
+                        masterDatabase.getBinding(), datastoreType);
+
+                output.setResult(putNodeToDs && putBindingsToDs);
                 if (output.isResult())
                     for (int i = 0; Configuration.getRegisteredNode(nodeId) != null && i < 10; i++)
                         Thread.sleep(100);
@@ -887,28 +892,67 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
+    private boolean putNodeToDs(final String nodeId, final SxpNodeIdentity node, final LogicalDatastoreType datastoreType) {
+        return datastoreAccess.checkAndPut(NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class,
+                new NodeKey(
+                        new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
+                                nodeId))).augmentation(SxpNodeIdentity.class), node,
+                datastoreType, false);
+    }
+
     @Override
     public ListenableFuture<RpcResult<AddDomainOutput>> addDomain(final AddDomainInput input) {
         final String nodeId = getNodeId(input.getNodeId());
-        final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
         final AddDomainOutputBuilder output = new AddDomainOutputBuilder().setResult(false);
 
         return getResponse(nodeId, output.build(), () -> {
             LOG.info("RpcDomain event | {}", input.toString());
             if (input.getDomainName() != null) {
-                final SxpDomainBuilder builder = new SxpDomainBuilder();
-                builder.setDomainName(input.getDomainName());
-                builder.setMasterDatabase(ConfigLoader.parseMasterDatabase(input.getMasterDatabase()));
-                builder.setConnections(ConfigLoader.parseConnections(input.getConnections()));
-                builder.setDomainFilters(new DomainFiltersBuilder().setDomainFilter(new ArrayList<>()).build());
-                builder.setConnectionTemplates(
+                final SxpDomainBuilder domainBuilder = new SxpDomainBuilder();
+                domainBuilder.setDomainName(input.getDomainName());
+                domainBuilder.setConnections(ConfigLoader.parseConnections(input.getConnections()));
+                domainBuilder.setDomainFilters(new DomainFiltersBuilder().setDomainFilter(new ArrayList<>()).build());
+                domainBuilder.setConnectionTemplates(
                         new ConnectionTemplatesBuilder().setConnectionTemplate(new ArrayList<>()).build());
-                output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
-                                .child(SxpDomain.class, new SxpDomainKey(input.getDomainName())), builder.build(),
-                        getDatastoreType(input.getConfigPersistence()), false));
+
+                final LogicalDatastoreType datastoreType = getDatastoreType(input.getConfigPersistence());
+                final boolean domainToDs = putSxpDomainToDs(
+                        nodeId, input.getDomainName(), domainBuilder.build(), datastoreType);
+
+                final MasterDatabase masterDatabase = input.getMasterDatabase();
+                final boolean bindingsToDs = putDatabaseBindingsToDs(nodeId, input.getDomainName(),
+                        masterDatabase.getBinding(), datastoreType);
+
+                output.setResult(domainToDs && bindingsToDs);
             }
             return RpcResultBuilder.success(output.build()).build();
         });
+    }
+
+    private boolean putSxpDomainToDs(final String nodeId, final String domain,
+            final SxpDomain sxpNode, final LogicalDatastoreType datastoreType) {
+       return getDatastoreAccess(nodeId).checkAndPut(
+               getIdentifier(nodeId).child(SxpDomains.class).child(SxpDomain.class, new SxpDomainKey(domain)),
+               sxpNode, datastoreType, false);
+    }
+
+    private boolean putDatabaseBindingsToDs(final String nodeId, final String domain, final List<Binding> binding,
+            final LogicalDatastoreType datastoreType) {
+        final MasterDatabaseInf masterDatabase = getMasterDatabase(nodeId, domain);
+        if (masterDatabase != null) {
+            final List<MasterDatabaseBinding> bindings = transformBindings(
+                    binding,
+                    new PeerSequenceBuilder().setPeer(new ArrayList<>()).build(),
+                    TimeConv.toDt(System.currentTimeMillis()));
+            final List<MasterDatabaseBinding> addedBindings;
+            if (LogicalDatastoreType.OPERATIONAL == datastoreType) {
+                addedBindings = masterDatabase.addBindings(bindings);
+            } else {
+                addedBindings = masterDatabase.addLocalBindings(bindings);
+            }
+            return !addedBindings.isEmpty();
+        }
+        return false;
     }
 
     @Override
