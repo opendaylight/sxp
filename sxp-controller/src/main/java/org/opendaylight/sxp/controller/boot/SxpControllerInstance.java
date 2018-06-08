@@ -27,7 +27,6 @@ import org.opendaylight.sxp.controller.listeners.sublisteners.ConnectionsListene
 import org.opendaylight.sxp.controller.listeners.sublisteners.DomainFilterListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.DomainListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.FilterListener;
-import org.opendaylight.sxp.controller.listeners.sublisteners.MasterDatabaseListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.PeerGroupListener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
@@ -81,7 +80,7 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         NodeIdentityListener datastoreListener = new NodeIdentityListener(datastoreAccess);
         //noinspection unchecked
         datastoreListener.addSubListener(
-                new DomainListener(datastoreAccess).addSubListener(new MasterDatabaseListener(datastoreAccess))
+                new DomainListener(datastoreAccess)
                         .addSubListener(new DomainFilterListener(datastoreAccess))
                         .addSubListener(new ConnectionsListener(datastoreAccess))
                         .addSubListener(new ConnectionTemplateListener(datastoreAccess)));
