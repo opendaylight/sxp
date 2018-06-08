@@ -5,7 +5,6 @@
 
     <reference id="dataBroker" interface="org.opendaylight.controller.md.sal.binding.api.DataBroker"
                odl:type="pingpong"/>
-    <reference id="broker" interface="org.opendaylight.controller.sal.binding.api.BindingAwareBroker"/>
     <reference id="clusterSingletonServiceProvider"
                interface="org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvider"/>
 
@@ -13,10 +12,6 @@
                interface="org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService"/>
 
     <!-- Modules /-->
-    <bean id="sxpRouteInstance" class="org.opendaylight.sxp.route.SxpRouteInstance">
-        <argument ref="broker"/>
-        <argument ref="sxpClusterRouteManager"/>
-    </bean>
 
     <bean id="routingServiceFactory" class="org.opendaylight.sxp.route.core.RoutingServiceFactory"/>
 
@@ -29,7 +24,7 @@
         <argument ref="routeReactor"/>
     </bean>
 
-    <bean id="sxpClusterRouteManager" destroy-method="close"
+    <bean id="sxpClusterRouteManager" init-method="init" destroy-method="close"
           class="org.opendaylight.sxp.route.core.SxpClusterRouteManager">
         <argument ref="dataBroker"/>
         <argument ref="clusterSingletonServiceProvider"/>
