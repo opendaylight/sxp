@@ -10,17 +10,10 @@ package org.opendaylight.sxp.controller.util.io;
 
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
-import java.util.List;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
-import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
@@ -55,27 +48,6 @@ public final class ConfigLoader implements AutoCloseable {
         return datastoreAccess.checkAndPut(nodeIdentifier, new NodeBuilder().withKey(new NodeKey(
                 new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
                         nodeName))).build(), logicalDatastoreType, false);
-    }
-
-    /**
-     * @param database MasterDatabase containing bindings
-     * @return MasterDatabase data wrapper
-     */
-    public static MasterDatabase parseMasterDatabase(
-            org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.MasterDatabase database) {
-        List<MasterDatabaseBinding> bindings = new ArrayList<>();
-        MasterDatabaseBuilder databaseBuilder = new MasterDatabaseBuilder();
-        databaseBuilder.setMasterDatabaseBinding(bindings);
-        MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
-        bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
-        bindingBuilder.setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
-        if (database != null && database.getBinding() != null) {
-            database.getBinding().forEach(b -> {
-                bindingBuilder.setSecurityGroupTag(b.getSgt());
-                b.getIpPrefix().forEach(p -> bindings.add(bindingBuilder.setIpPrefix(p).build()));
-            });
-        }
-        return databaseBuilder.build();
     }
 
     /**
