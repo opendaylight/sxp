@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
 
+import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -150,6 +151,15 @@ public class SxpRpcServiceImplTest {
                 new MasterDatabaseBuilder().setMasterDatabaseBinding(new ArrayList<>()).build());
         when(datastoreAccess.readSynchronous(eq(getIdentifier("0.0.0.0")), any(LogicalDatastoreType.class))).thenReturn(
                 mock(SxpNodeIdentity.class));
+        when(datastoreAccess.merge(any(InstanceIdentifier.class), any(DataObject.class),
+                any(LogicalDatastoreType.class))).thenReturn(Futures.immediateCheckedFuture(null));
+        when(datastoreAccess.putSynchronous(eq(getIdentifier("0.0.0.1")), any(SxpNodeIdentity.class),
+                eq(LogicalDatastoreType.CONFIGURATION))).thenAnswer(invocation -> {
+            final SxpNode sxpNode = mock(SxpNode.class);
+            when(sxpNode.getNodeId()).thenReturn(NodeId.getDefaultInstance("0.0.0.1"));
+            Configuration.register(sxpNode);
+            return true;
+        });
         PowerMockito.mockStatic(DatastoreAccess.class);
         PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
         when(node.getNodeId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
@@ -614,17 +624,22 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testAddNode() throws Exception {
-        RpcResult<AddNodeOutput> result = service.addNode(new AddNodeInputBuilder().build()).get();
-        assertNotNull(result);
-        assertTrue(result.isSuccessful());
-        assertNotNull(result.getResult());
-        assertFalse(result.getResult().isResult());
-
-        result = service.addNode(new AddNodeInputBuilder().setNodeId(node.getNodeId()).build()).get();
+        final RpcResult<AddNodeOutput> result = service.addNode(
+                new AddNodeInputBuilder().setNodeId(NodeId.getDefaultInstance("0.0.0.1")).build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertTrue(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddNodeNullNodeId() throws Exception {
+        final RpcResult<AddNodeOutput> result = service.addNode(
+                new AddNodeInputBuilder().build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
     }
 
     @Test
@@ -829,30 +844,39 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testAddDomain() throws Exception {
-        RpcResult<AddDomainOutput>
-                result =
-                service.addDomain(new AddDomainInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
-        assertNotNull(result);
-        assertTrue(result.isSuccessful());
-        assertNotNull(result.getResult());
-        assertFalse(result.getResult().isResult());
-
-        result =
-                service.addDomain(
-                        new AddDomainInputBuilder().setNodeId(new NodeId("0.0.0.0")).setDomainName(null).build()).get();
-        assertNotNull(result);
-        assertTrue(result.isSuccessful());
-        assertNotNull(result.getResult());
-        assertFalse(result.getResult().isResult());
-
-        result =
-                service.addDomain(new AddDomainInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+        final RpcResult<AddDomainOutput> result = service
+                .addDomain(new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.0"))
                         .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertTrue(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddDomainNullDomainName() throws Exception {
+        final RpcResult<AddDomainOutput> result = service.addDomain(
+                new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddDomainToNonExistingNode() throws Exception {
+        final RpcResult<AddDomainOutput> result = service.addDomain(
+                new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.1"))
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
     }
 
     @Test
