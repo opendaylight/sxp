@@ -1,0 +1,90 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b3db7055_87b0d3ee",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 9
+      },
+      "lineNbr": 278,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-11T13:32:29Z",
+      "side": 1,
+      "message": "contain\u0027s\u0027",
+      "range": {
+        "startLine": 278,
+        "startChar": 20,
+        "endLine": 278,
+        "endChar": 35
+      },
+      "revId": "693b5aa21b561aed64d79c02087989175fd032c3",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "65a8cf23_a3f1a82e",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 9
+      },
+      "lineNbr": 866,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-11T13:32:29Z",
+      "side": 1,
+      "message": "If not present then what? Set a failure state. Also, handle an interrupt.",
+      "range": {
+        "startLine": 864,
+        "startChar": 0,
+        "endLine": 866,
+        "endChar": 25
+      },
+      "revId": "693b5aa21b561aed64d79c02087989175fd032c3",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ddd27cf9_427ddf1c",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 9
+      },
+      "lineNbr": 870,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-11T13:32:29Z",
+      "side": 1,
+      "message": "Why default? Use the provided domain from the RPC.",
+      "range": {
+        "startLine": 870,
+        "startChar": 66,
+        "endLine": 870,
+        "endChar": 80
+      },
+      "revId": "693b5aa21b561aed64d79c02087989175fd032c3",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0ed36f70_4c3a1bd3",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 9
+      },
+      "lineNbr": 955,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-11T13:32:29Z",
+      "side": 1,
+      "message": "Handle failure and interrupts",
+      "revId": "693b5aa21b561aed64d79c02087989175fd032c3",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
