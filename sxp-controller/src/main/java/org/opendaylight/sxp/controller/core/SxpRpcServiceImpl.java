@@ -25,7 +25,6 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
 import org.opendaylight.sxp.core.Configuration;
@@ -925,11 +924,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     }
 
     private boolean putNodeToDs(final String nodeId, final SxpNodeIdentity node, final LogicalDatastoreType datastoreType) {
-        return datastoreAccess.checkAndPut(NodeIdentityListener.SUBSCRIBED_PATH.child(Node.class,
-                new NodeKey(
-                        new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
-                                nodeId))).augmentation(SxpNodeIdentity.class), node,
-                datastoreType, false);
+        return datastoreAccess.checkAndPut(getIdentifier(nodeId), node, datastoreType, false);
     }
 
     @Override
