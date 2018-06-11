@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d85bf9ba_2e342960",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpDatastoreNode.java",
+        "patchSetId": 4
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-11T13:35:56Z",
+      "side": 1,
+      "message": "Don\u0027t import this as this creates another package circular dependency. Node should not know of any mdsal listeners. Duplicate the code if needed, or move it to a more appropriate place.",
+      "revId": "93513e5e2e0622de59f8fe9d89155df6fccdf74f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
