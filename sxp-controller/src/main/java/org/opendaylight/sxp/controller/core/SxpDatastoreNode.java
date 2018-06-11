@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.controller.core;
 
+import static org.opendaylight.sxp.controller.listeners.NodeIdentityListener.SUBSCRIBED_PATH;
+
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.Collections;
@@ -17,7 +19,6 @@ import java.util.Objects;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
-import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.handler.ConnectionDecoder;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
@@ -35,10 +36,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyKey;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -53,13 +50,11 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
      * @return InstanceIdentifier pointing to specific node
      */
     public static InstanceIdentifier<SxpNodeIdentity> getIdentifier(final String nodeId) {
-        return InstanceIdentifier.builder(NetworkTopology.class)
-                .child(Topology.class, new TopologyKey(new TopologyId(Configuration.TOPOLOGY_NAME)))
+        return SUBSCRIBED_PATH
                 .child(Node.class, new NodeKey(
                         new org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId(
                                 Preconditions.checkNotNull(nodeId))))
-                .augmentation(SxpNodeIdentity.class)
-                .build();
+                .augmentation(SxpNodeIdentity.class);
     }
 
     /**
