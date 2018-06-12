@@ -7,6 +7,7 @@ module sxp-database {
     import ietf-inet-types { prefix inet; revision-date "2013-07-15"; }
     import ietf-yang-types { prefix ietf-yang; revision-date "2013-07-15"; }
     import sxp-protocol { prefix sxppt; revision-date "2014-10-02"; }
+    import sxp-config { prefix sxpcfg; revision-date "2018-06-11"; }
 
     organization "Cisco Systems, Inc.";
 
@@ -29,13 +30,6 @@ module sxp-database {
         description "Source group tag";
     }
 
-    typedef origin-type {
-        type enumeration {
-            enum LOCAL;
-            enum NETWORK;
-        }
-    }
-
     // ***********************
     // SXP Databases Groupings
     // ***********************
@@ -53,6 +47,12 @@ module sxp-database {
             type ietf-yang:date-and-time;
             description "Time when a node received a binding to trace most recently received
                                     bindings";
+        }
+        leaf origin {
+            mandatory true;
+            type leafref {
+                path "/sxpcfg:binding-origin/sxpcfg:origin";
+            }
         }
         uses peer-sequence-fields;
     }
@@ -106,10 +106,6 @@ module sxp-database {
         list master-database-binding {
             key "ip-prefix";
             uses sxp-binding-fields;
-            leaf origin {
-                type origin-type;
-                mandatory true;
-            }
         }
     }
 

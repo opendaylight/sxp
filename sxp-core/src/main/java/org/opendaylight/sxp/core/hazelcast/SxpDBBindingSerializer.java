@@ -14,6 +14,7 @@ import com.hazelcast.nio.serialization.StreamSerializer;
 import java.io.IOException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.DateAndTime;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequence;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
@@ -26,6 +27,7 @@ public class SxpDBBindingSerializer implements StreamSerializer<SxpDatabaseBindi
     @Override
     public void write(ObjectDataOutput out, SxpDatabaseBinding object) throws IOException {
         out.writeObject(object.getIpPrefix());
+        out.writeObject(object.getOrigin());
         out.writeObject(object.key());
         out.writeObject(object.getPeerSequence());
         out.writeObject(object.getSecurityGroupTag());
@@ -35,13 +37,15 @@ public class SxpDBBindingSerializer implements StreamSerializer<SxpDatabaseBindi
     @Override
     public SxpDatabaseBinding read(ObjectDataInput in) throws IOException {
         IpPrefix ipPrefix = in.readObject();
+        OriginType originType = in.readObject();
         SxpDatabaseBindingKey key = in.readObject();
         PeerSequence ps = in.readObject();
         Sgt binding = in.readObject();
         DateAndTime date = in.readObject();
         return new SxpDatabaseBindingBuilder()
-                .setIpPrefix(ipPrefix)
                 .withKey(key)
+                .setIpPrefix(ipPrefix)
+                .setOrigin(originType)
                 .setPeerSequence(ps)
                 .setSecurityGroupTag(binding)
                 .setTimestamp(date)
