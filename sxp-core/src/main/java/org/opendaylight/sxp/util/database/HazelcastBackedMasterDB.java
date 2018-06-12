@@ -7,6 +7,9 @@
  */
 package org.opendaylight.sxp.util.database;
 
+import static org.opendaylight.sxp.core.Configuration.LOCAL_ORIGIN;
+import static org.opendaylight.sxp.core.Configuration.NETWORK_ORIGIN;
+
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -25,7 +28,7 @@ import org.opendaylight.sxp.core.hazelcast.PeerSequenceSerializer;
 import org.opendaylight.sxp.core.hazelcast.PeerSerializer;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.OriginType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
@@ -92,18 +95,19 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
 
     @Override
     public Collection<MasterDatabaseBinding> getLocalBindings() {
-        PredicateBuilder predicate = new PredicateBuilder().getEntryObject().get("_origin").equal(OriginType.LOCAL);
+        PredicateBuilder predicate = new PredicateBuilder().getEntryObject().get("_origin").get("_value")
+                .equal(LOCAL_ORIGIN.getValue());
         return bindingMap.values(predicate);
     }
 
     @Override
     public <T extends SxpBindingFields> List<MasterDatabaseBinding> addLocalBindings(List<T> bindings) {
-        return doAddBindings(bindings, OriginType.LOCAL);
+        return doAddBindings(bindings, LOCAL_ORIGIN);
     }
 
     @Override
     public <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings) {
-        return doAddBindings(bindings, OriginType.NETWORK);
+        return doAddBindings(bindings, NETWORK_ORIGIN);
     }
 
     @Override
