@@ -13,11 +13,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.hazelcast.MasterDBPropagatingListener;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.OriginType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 
@@ -112,7 +113,7 @@ public class MasterDatabaseImpl extends MasterDatabase {
      */
     @Override
     public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> addLocalBindings(List<T> bindings) {
-        return addBindings(bindings, localBindingMap, OriginType.LOCAL);
+        return addBindings(bindings, localBindingMap, Configuration.LOCAL_ORIGIN);
     }
 
     /**
@@ -128,7 +129,7 @@ public class MasterDatabaseImpl extends MasterDatabase {
      */
     @Override
     public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings) {
-        return addBindings(bindings, bindingMap, OriginType.NETWORK);
+        return addBindings(bindings, bindingMap, Configuration.NETWORK_ORIGIN);
     }
 
     /**
