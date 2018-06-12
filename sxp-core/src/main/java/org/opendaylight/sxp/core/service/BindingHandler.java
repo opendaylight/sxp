@@ -148,7 +148,8 @@ public final class BindingHandler {
         SxpDatabaseBindingBuilder
                 bindingBuilder =
                 new SxpDatabaseBindingBuilder().setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
-                        .setPeerSequence(new PeerSequenceBuilder().setPeer(peers).build());
+                        .setPeerSequence(new PeerSequenceBuilder().setPeer(peers).build())
+                        .setOrigin(Configuration.NETWORK_ORIGIN);
 
         for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord mappingRecord : message
                 .getMappingRecord()) {
@@ -219,6 +220,7 @@ public final class BindingHandler {
                     bindings.add(binding);
                 }
             });
+            bindingBuilder.setOrigin(Configuration.NETWORK_ORIGIN);
             prefixes.clear();
         }
         return bindings;
@@ -236,6 +238,7 @@ public final class BindingHandler {
                 bindingsBuilder =
                 new SxpDatabaseBindingBuilder().setSecurityGroupTag(new Sgt(Configuration.DEFAULT_PREFIX_GROUP))
                         .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
+                        .setOrigin(Configuration.NETWORK_ORIGIN)
                         .setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
 
         for (Attribute attribute : message.getAttribute()) {
@@ -281,6 +284,7 @@ public final class BindingHandler {
                 bindingsBuilder =
                 new SxpDatabaseBindingBuilder().setSecurityGroupTag(new Sgt(Configuration.DEFAULT_PREFIX_GROUP))
                         .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
+                        .setOrigin(Configuration.NETWORK_ORIGIN)
                         .setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
 
         for (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord mappingRecord : message
