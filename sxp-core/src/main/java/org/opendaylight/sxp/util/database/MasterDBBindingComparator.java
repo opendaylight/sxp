@@ -7,11 +7,12 @@
  */
 package org.opendaylight.sxp.util.database;
 
+import static org.opendaylight.sxp.core.Configuration.LOCAL_ORIGIN;
+import static org.opendaylight.sxp.core.Configuration.NETWORK_ORIGIN;
 import static org.opendaylight.sxp.util.database.MasterDatabase.getPeerSequenceLength;
 
 import java.util.Comparator;
 import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 
 public enum MasterDBBindingComparator implements Comparator<MasterDatabaseBinding> {
@@ -20,10 +21,10 @@ public enum MasterDBBindingComparator implements Comparator<MasterDatabaseBindin
 
     @Override
     public int compare(MasterDatabaseBinding mdb1, MasterDatabaseBinding mdb2) {
-        if ((mdb1.getOrigin() == OriginType.LOCAL) && (mdb2.getOrigin() == OriginType.NETWORK)) {
+        if ((mdb1.getOrigin() == LOCAL_ORIGIN) && (mdb2.getOrigin() == NETWORK_ORIGIN)) {
             return -1;
         }
-        if ((mdb1.getOrigin() == OriginType.NETWORK) && (mdb2.getOrigin() == OriginType.LOCAL)) {
+        if ((mdb1.getOrigin() == NETWORK_ORIGIN) && (mdb2.getOrigin() == LOCAL_ORIGIN)) {
             return 1;
         }
         int o1PSLength = getPeerSequenceLength(mdb1);

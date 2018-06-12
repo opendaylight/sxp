@@ -1,0 +1,39 @@
+module sxp-config {
+    yang-version 1;
+
+    namespace "urn:opendaylight:sxp:config";
+    prefix "sxpcfg";
+
+    organization "Cisco Systems, Inc.";
+
+    contact "Martin Dindoffer <mdindoff@cisco.com>";
+
+    description
+        "This module defines the general configuration of the SXP plugin";
+
+    revision "2018-06-11" {
+        description
+                "Initial version of the config";
+    }
+
+    typedef origin-type {
+        type string;
+        description "Name of the origin type";
+    }
+
+    container binding-origins {
+        list binding-origin {
+            key "origin";
+            unique "priority";
+            leaf origin {
+                type origin-type;
+                mandatory true;
+            }
+            leaf priority {
+                type uint8;
+                mandatory true;
+                description "Priority of the type (lower number -> higher priority)";
+            }
+        }
+    }
+}
