@@ -26,7 +26,7 @@ import org.opendaylight.sxp.core.hazelcast.MasterDBPropagatingListener;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.util.database.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.OriginType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingKey;
@@ -166,7 +166,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         } else {
             databaseMaster = new HashMap<>();
         }
-        OriginType bindingType = (datastoreType == LogicalDatastoreType.CONFIGURATION) ? OriginType.LOCAL : OriginType.NETWORK;
+        OriginType bindingType = (datastoreType == LogicalDatastoreType.CONFIGURATION) ? Configuration.LOCAL_ORIGIN : Configuration.NETWORK_ORIGIN;
         added.addAll(filterIncomingBindings(bindings, databaseMaster::get,
                 p -> datastoreAccess.checkAndDelete(getIdentifierBuilder(p).build(),
                         LogicalDatastoreType.OPERATIONAL), bindingType).values()
