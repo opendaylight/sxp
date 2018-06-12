@@ -24,7 +24,6 @@ import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
@@ -155,7 +154,7 @@ public class ExportTestLibrary extends AbstractLibrary {
                         .setIpPrefix(new IpPrefix(Preconditions.checkNotNull(prefix).toCharArray()))
                         .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
                         .setSecurityGroupTag(new Sgt(Integer.parseInt(Preconditions.checkNotNull(sgt))))
-                        .setOrigin(OriginType.LOCAL)
+                        .setOrigin(Configuration.LOCAL_ORIGIN)
                         .build(), Integer.MAX_VALUE);
         totalOfBindings =
                 totalOfBindings == 0 ?
