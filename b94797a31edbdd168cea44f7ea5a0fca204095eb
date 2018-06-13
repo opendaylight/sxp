@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "52d900af_0cb9c372",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 15
+      },
+      "lineNbr": 867,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-13T09:32:58Z",
+      "side": 1,
+      "message": "Why a warn? This should be an error. Same at @967",
+      "range": {
+        "startLine": 867,
+        "startChar": 24,
+        "endLine": 867,
+        "endChar": 28
+      },
+      "revId": "b94797a31edbdd168cea44f7ea5a0fca204095eb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
