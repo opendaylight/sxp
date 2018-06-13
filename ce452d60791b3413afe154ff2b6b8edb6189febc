@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "64b964af_9abc59c6",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 13
+      },
+      "lineNbr": 934,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-06-13T07:59:00Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "5f383393_5d193c6e",
+      "range": {
+        "startLine": 934,
+        "startChar": 82,
+        "endLine": 934,
+        "endChar": 93
+      },
+      "revId": "ce452d60791b3413afe154ff2b6b8edb6189febc",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "1e05041e_4c842cc7",
         "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
         "patchSetId": 13
@@ -36,6 +60,30 @@
       "writtenOn": "2018-06-12T11:18:27Z",
       "side": 1,
       "message": "Same thing, wait for results.",
+      "range": {
+        "startLine": 993,
+        "startChar": 39,
+        "endLine": 993,
+        "endChar": 50
+      },
+      "revId": "ce452d60791b3413afe154ff2b6b8edb6189febc",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "957c6b47_bb653eb9",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 13
+      },
+      "lineNbr": 993,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-06-13T07:59:00Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "1e05041e_4c842cc7",
       "range": {
         "startLine": 993,
         "startChar": 39,
