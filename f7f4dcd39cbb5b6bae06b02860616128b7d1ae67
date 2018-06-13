@@ -1,0 +1,96 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c562fe33_a7a67237",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 14
+      },
+      "lineNbr": 866,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-13T08:55:24Z",
+      "side": 1,
+      "message": "Log this",
+      "range": {
+        "startLine": 866,
+        "startChar": 31,
+        "endLine": 866,
+        "endChar": 40
+      },
+      "revId": "f7f4dcd39cbb5b6bae06b02860616128b7d1ae67",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1578c20a_80a5429b",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 14
+      },
+      "lineNbr": 876,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-13T08:55:24Z",
+      "side": 1,
+      "message": "Log this as well",
+      "range": {
+        "startLine": 876,
+        "startChar": 39,
+        "endLine": 876,
+        "endChar": 59
+      },
+      "revId": "f7f4dcd39cbb5b6bae06b02860616128b7d1ae67",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "894b2dbd_56586512",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 14
+      },
+      "lineNbr": 964,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-13T08:55:24Z",
+      "side": 1,
+      "message": "Log this",
+      "range": {
+        "startLine": 964,
+        "startChar": 31,
+        "endLine": 964,
+        "endChar": 40
+      },
+      "revId": "f7f4dcd39cbb5b6bae06b02860616128b7d1ae67",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "27e4557e_4bbfdc37",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 14
+      },
+      "lineNbr": 977,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-13T08:55:24Z",
+      "side": 1,
+      "message": "Log",
+      "range": {
+        "startLine": 977,
+        "startChar": 39,
+        "endLine": 977,
+        "endChar": 59
+      },
+      "revId": "f7f4dcd39cbb5b6bae06b02860616128b7d1ae67",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
