@@ -32,6 +32,7 @@ import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.hazelcast.MasterDBBindingSerializer;
 import org.opendaylight.sxp.core.hazelcast.PeerSequenceSerializer;
 import org.opendaylight.sxp.core.hazelcast.PeerSerializer;
+import org.opendaylight.sxp.core.hazelcast.SxpDBBindingSerializer;
 import org.opendaylight.sxp.test.utils.TestDataFactory;
 import org.opendaylight.sxp.util.database.HazelcastBackedMasterDB;
 import org.opendaylight.sxp.util.database.HazelcastBackedSxpDB;
@@ -74,17 +75,27 @@ public class DistributedBindingsIT {
     private SxpNode node1;
     private SxpNode node2;
     private HazelcastInstance testingHCInstance;
+    private HazelcastInstance node1HcInstance;
+    private HazelcastInstance node2HcInstance;
 
     @Before
     public void init() throws InterruptedException, ExecutionException {
-        SxpDatabaseInf node1HCBackedSxpDB = new HazelcastBackedSxpDB("NODE1-ACTIVE", "NODE1-TENTATIVE");
-        MasterDatabaseInf node1HCBackedMasterDB = new HazelcastBackedMasterDB(NODE1_MASTER_DB_NAME);
-        SxpDatabaseInf node2HCBackedSxpDB = new HazelcastBackedSxpDB("NODE2-ACTIVE", "NODE2-TENTATIVE");
-        MasterDatabaseInf node2HCBackedMasterDB = new HazelcastBackedMasterDB(NODE2_MASTER_DB_NAME);
+        Config hcConfig = new Config();
+        hcConfig.getSerializationConfig()
+                .addSerializerConfig(SxpDBBindingSerializer.getSerializerConfig())
+                .addSerializerConfig(MasterDBBindingSerializer.getSerializerConfig())
+                .addSerializerConfig(PeerSequenceSerializer.getSerializerConfig())
+                .addSerializerConfig(PeerSerializer.getSerializerConfig());
+        node1HcInstance = Hazelcast.newHazelcastInstance(hcConfig);
+        node2HcInstance = Hazelcast.newHazelcastInstance(hcConfig);
+        SxpDatabaseInf node1HCBackedSxpDB = new HazelcastBackedSxpDB("NODE1-ACTIVE", "NODE1-TENTATIVE", node1HcInstance);
+        MasterDatabaseInf node1HCBackedMasterDB = new HazelcastBackedMasterDB(NODE1_MASTER_DB_NAME, node1HcInstance);
+        SxpDatabaseInf node2HCBackedSxpDB = new HazelcastBackedSxpDB("NODE2-ACTIVE", "NODE2-TENTATIVE", node2HcInstance);
+        MasterDatabaseInf node2HCBackedMasterDB = new HazelcastBackedMasterDB(NODE2_MASTER_DB_NAME, node2HcInstance);
 
-        SxpNodeIdentity nodeIdentity1 = createIdentity("127.0.0.1", Constants.SXP_DEFAULT_PORT, Version.Version4, DELETE_HOLD_DOWN_TIMER, 3); //Listener
+        SxpNodeIdentity nodeIdentity1 = createIdentity("127.0.0.1", Constants.SXP_DEFAULT_PORT, Version.Version4, DELETE_HOLD_DOWN_TIMER, 999); //Listener
         this.node1 = SxpNode.createInstance(new NodeId("1.1.1.1"), nodeIdentity1, node1HCBackedMasterDB, node1HCBackedSxpDB);
-        SxpNodeIdentity nodeIdentity2 = createIdentity("127.0.0.2", Constants.SXP_DEFAULT_PORT, Version.Version4, DELETE_HOLD_DOWN_TIMER, 999); //Speaker
+        SxpNodeIdentity nodeIdentity2 = createIdentity("127.0.0.2", Constants.SXP_DEFAULT_PORT, Version.Version4, DELETE_HOLD_DOWN_TIMER, 2); //Speaker
         this.node2 = SxpNode.createInstance(new NodeId("2.2.2.2"), nodeIdentity2, node2HCBackedMasterDB, node2HCBackedSxpDB);
 
         ListenableFuture<Boolean> start1 = node1.start();
@@ -94,11 +105,6 @@ public class DistributedBindingsIT {
         start2.get();
         LOG.debug("Started node 2");
         LOG.info("Hazelcast instances running: {}", Hazelcast.getAllHazelcastInstances().size());
-        Config hcConfig = new Config();
-        hcConfig.getSerializationConfig()
-                .addSerializerConfig(MasterDBBindingSerializer.getSerializerConfig())
-                .addSerializerConfig(PeerSequenceSerializer.getSerializerConfig())
-                .addSerializerConfig(PeerSerializer.getSerializerConfig());
         this.testingHCInstance = Hazelcast.newHazelcastInstance(hcConfig);
     }
 
@@ -130,6 +136,8 @@ public class DistributedBindingsIT {
         shutdown1.get();
         shutdown2.get();
         testingHCInstance.shutdown();
+        node1HcInstance.shutdown();
+        node2HcInstance.shutdown();
     }
 
 }
