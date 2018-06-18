@@ -34,17 +34,19 @@ public enum BindingOriginsConfig {
         DEFAULT_ORIGIN_PRIORITIES = Collections.unmodifiableMap(defaultPrios);
     }
 
-    public static final String MISSING_REQUIRED_DEFAULTS = "Provided origins do not contain the required defaults.";
-    public static final String DUPLICATE_ORIGIN_DEFINITIONS = "Provided origins have duplicate origin type definitions.";
-    public static final String DUPLICATE_PRIORITY_DEFINITIONS = "Provided origins have duplicate priority definitions.";
-
     private final Map<OriginType, Integer> bindingOrigins = new ConcurrentHashMap<>();
 
-    public boolean addBindingOrigin(OriginType origin, Integer priority) {
+    public Map<OriginType, Integer> getBindingOrigins() {
+        return Collections.unmodifiableMap(bindingOrigins);
+    }
+
+    public synchronized boolean addBindingOrigin(OriginType origin, Integer priority) {
         if (bindingOrigins.containsKey(origin)) {
+            LOG.warn("Binding origin: {} already exist.", origin.getValue());
             return false;
         }
         if (bindingOrigins.containsValue(priority)) {
+            LOG.warn("Priority wanted to be used: {} is already used.", priority);
             return false;
         }
 
@@ -52,9 +54,37 @@ public enum BindingOriginsConfig {
         return true;
     }
 
-    public void addBindingOrigins(List<BindingOrigin> origins) {
+    public synchronized void addBindingOrigins(List<BindingOrigin> origins) {
         origins.forEach(bindingOrigin -> addBindingOrigin(bindingOrigin.getOrigin(),
                 bindingOrigin.getPriority().intValue()));
+    }
+
+    public synchronized boolean updateBindingOrigin(OriginType origin, Integer priority) {
+        if (!bindingOrigins.containsKey(origin)) {
+            LOG.warn("Binding origin to be updated: {} not found.", origin.getValue());
+            return false;
+        }
+        if (bindingOrigins.containsValue(priority)) {
+            LOG.warn("Priority wanted to be used: {} is already used.", priority);
+            return false;
+        }
+
+        bindingOrigins.put(origin, priority);
+        return true;
+    }
+
+    public synchronized boolean deleteBindingOrigin(OriginType origin) {
+        if (LOCAL_ORIGIN.equals(origin) || NETWORK_ORIGIN.equals(origin)) {
+            LOG.warn("Binding origin default value: {} cannot be deleted.", origin.getValue());
+            return false;
+        }
+        if (!bindingOrigins.containsKey(origin)) {
+            LOG.warn("Binding origin to be deleted: {} not found.", origin.getValue());
+            return false;
+        }
+
+        bindingOrigins.remove(origin);
+        return true;
     }
 
     /**
@@ -76,20 +106,22 @@ public enum BindingOriginsConfig {
         LOG.debug("Validating binding origins: {}", origins);
         final Set<OriginType> types = origins.stream().map(BindingOrigin::getOrigin).collect(Collectors.toSet());
         if (!types.contains(LOCAL_ORIGIN) || !types.contains(NETWORK_ORIGIN)) {
-            LOG.error(MISSING_REQUIRED_DEFAULTS);
-            throw new IllegalArgumentException(MISSING_REQUIRED_DEFAULTS);
+            LOG.error("Provided origins do not contain the required defaults.");
+            throw new IllegalArgumentException("Provided origins do not contain the required defaults.");
         }
         // check for duplicate origin type definitions
         if (types.size() != origins.size()) {
-            LOG.error(DUPLICATE_ORIGIN_DEFINITIONS);
-            throw new IllegalArgumentException(DUPLICATE_ORIGIN_DEFINITIONS);
+            final String msg = "Provided origins have duplicate origin type definitions.";
+            LOG.error(msg);
+            throw new IllegalArgumentException(msg);
         }
         // check for duplicate priority definitions
         final Set<Integer> priorities = origins.stream().map(bindingOrigin -> bindingOrigin.getPriority().intValue())
                 .collect(Collectors.toSet());
         if (priorities.size() != origins.size()) {
-            LOG.error(DUPLICATE_PRIORITY_DEFINITIONS);
-            throw new IllegalArgumentException(DUPLICATE_PRIORITY_DEFINITIONS);
+            final String msg = "Provided origins have duplicate priority definitions.";
+            LOG.error(msg);
+            throw new IllegalArgumentException(msg);
         }
     }
 }
