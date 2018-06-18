@@ -289,6 +289,27 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Create node in data-store only if it has NOT previously exist.
+     * <p>
+     * This method does not check for existence of parent nodes. It is
+     * responsibility of its caller to create all parent nodes.
+     *
+     * @param identifier Path to node to be created
+     * @param data Node data to be created
+     * @param datastoreType data-store type
+     * @return {@code true} if node was successfully created, {@code false} otherwise
+     */
+    public synchronized <T extends DataObject> boolean putIfNotExists(InstanceIdentifier<T> identifier, T data,
+            LogicalDatastoreType datastoreType) {
+        if (readSynchronous(identifier, datastoreType) != null) {
+            LOG.warn("SXP Post: Node to be created {} has already exist", identifier);
+            return false;
+        }
+
+        return putSynchronous(identifier, data, datastoreType);
+    }
+
+    /**
      * Recreate transaction chain if error occurred and decrement allowed error rate counter
      */
     public synchronized void reinitializeChain() {
