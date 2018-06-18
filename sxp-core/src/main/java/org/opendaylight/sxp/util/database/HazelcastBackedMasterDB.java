@@ -7,9 +7,6 @@
  */
 package org.opendaylight.sxp.util.database;
 
-import static org.opendaylight.sxp.core.BindingOriginsConfig.LOCAL_ORIGIN;
-import static org.opendaylight.sxp.core.BindingOriginsConfig.NETWORK_ORIGIN;
-
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -48,7 +45,7 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
      * @param hcMapName unique name of the map used to store the bindings
      */
     public HazelcastBackedMasterDB(String hcMapName) {
-        this(hcMapName, new Config());
+        this(hcMapName, new Config(), DEFAULT_ORIGIN_PRIORITIES);
     }
 
     /**
@@ -58,7 +55,8 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
      * @param hcMapName unique name of the map used to store the bindings
      * @param hcConfig  Hazelcast config to use
      */
-    public HazelcastBackedMasterDB(String hcMapName, Config hcConfig) {
+    public HazelcastBackedMasterDB(String hcMapName, Config hcConfig, Map<OriginType, Integer> originPriorities) {
+        super(originPriorities);
         hcConfig.getSerializationConfig()
                 .addSerializerConfig(MasterDBBindingSerializer.getSerializerConfig())
                 .addSerializerConfig(PeerSequenceSerializer.getSerializerConfig())
@@ -75,7 +73,8 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
      * @param hcMapName  unique name of the map used to store the bindings
      * @param hcInstance Hazelcast instance to use
      */
-    public HazelcastBackedMasterDB(String hcMapName, HazelcastInstance hcInstance) {
+    public HazelcastBackedMasterDB(String hcMapName, HazelcastInstance hcInstance, Map<OriginType, Integer> originPriorities) {
+        super(originPriorities);
         this.hcInstance = hcInstance;
         this.mapName = hcMapName;
         this.bindingMap = hcInstance.getMap(mapName);

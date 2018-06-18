@@ -8,7 +8,9 @@
 package org.opendaylight.sxp.util.database;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -27,7 +29,36 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class MasterDatabase implements MasterDatabaseInf {
 
-    protected static final Logger LOG = LoggerFactory.getLogger(MasterDatabase.class.getName());
+    public static final Map<OriginType, Integer> DEFAULT_ORIGIN_PRIORITIES = initDefaultPrioritiesMap();
+    private static Map<OriginType, Integer> initDefaultPrioritiesMap(){
+        Map<OriginType, Integer> defaultPrios = new HashMap<>();
+        defaultPrios.put(LOCAL_ORIGIN, 1);
+        defaultPrios.put(NETWORK_ORIGIN, 2);
+        return Collections.unmodifiableMap(defaultPrios);
+    }
+
+    private static final Logger LOG = LoggerFactory.getLogger(MasterDatabase.class.getName());
+    private static final Map<OriginType, Integer> originPriorities = new HashMap<>();
+
+    public static Map<OriginType, Integer> getOriginPriorities() {
+        return originPriorities;
+    }
+
+    public static Integer putOriginType(final OriginType originType, final Integer priority) {
+        // todo checks and validation?
+        return MasterDatabase.originPriorities.put(originType, priority);
+    }
+
+    public MasterDatabase(Map<OriginType, Integer> originPriorities) {
+        if (!originPriorities.containsKey(NETWORK_ORIGIN) || !originPriorities.containsKey(LOCAL_ORIGIN)) {
+            throw new IllegalArgumentException("Provided origin types do not contain the required defaults.");
+        }
+        Collection<Integer> uniquePriorities = new HashSet<>(originPriorities.values());
+        if (uniquePriorities.size() != originPriorities.size()) {
+            throw new IllegalArgumentException("Provided origin types have conflicting priorities.");
+        }
+        MasterDatabase.originPriorities.putAll(originPriorities);
+    }
 
     /**
      * Pre filter bindings before adding to MasterDatabase
