@@ -7,9 +7,6 @@
  */
 package org.opendaylight.sxp.util.database;
 
-import static org.opendaylight.sxp.core.BindingOriginsConfig.LOCAL_ORIGIN;
-import static org.opendaylight.sxp.core.BindingOriginsConfig.NETWORK_ORIGIN;
-
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
