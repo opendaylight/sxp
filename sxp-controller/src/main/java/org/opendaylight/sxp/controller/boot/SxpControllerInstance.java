@@ -11,7 +11,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -28,7 +30,14 @@ import org.opendaylight.sxp.controller.listeners.sublisteners.DomainFilterListen
 import org.opendaylight.sxp.controller.listeners.sublisteners.DomainListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.FilterListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.PeerGroupListener;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.BindingOrigins;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.BindingOriginsBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.binding.origins.BindingOrigin;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.binding.origins.BindingOriginBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.binding.origins.BindingOriginKey;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopologyBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
@@ -45,6 +54,8 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
 
     public static final ServiceGroupIdentifier IDENTIFIER =
             ServiceGroupIdentifier.create(SxpControllerInstance.class.getName());
+    private static final InstanceIdentifier<BindingOrigins> BINDING_ORIGINS = InstanceIdentifier
+            .builder(BindingOrigins.class).build();
 
     private DataBroker dataBroker;
     private ClusterSingletonServiceProvider clusteringServiceProvider;
@@ -62,6 +73,36 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         LOG.info("Clustering session initiated for {}", this.getClass().getSimpleName());
     }
 
+    /**
+     * Put binding origins (key + value) defaults into list of origin bindings if default keys are not already present
+     * in data-store preventing overriding user customized priority values from previous Karaf runs.
+     */
+    private void initBindingOriginsInDS(DatastoreAccess datastoreAccess, Map<OriginType, Integer> defaultOriginPriorities) {
+        // ensure empty container binding origins exists, but do not override it
+        final BindingOrigins origins = new BindingOriginsBuilder()
+                .setBindingOrigin(Collections.emptyList())
+                .build();
+        datastoreAccess.putIfNotExists(BINDING_ORIGINS, origins, LogicalDatastoreType.CONFIGURATION);
+
+        // ensure default binding origin list entry exists, but do not override it
+        defaultOriginPriorities.forEach(this::initBindingOrigin);
+    }
+
+    private void initBindingOrigin(OriginType originType, Integer priority) {
+        final InstanceIdentifier<BindingOrigin> listPath = InstanceIdentifier.builder(BindingOrigins.class)
+                .child(BindingOrigin.class,
+                        new BindingOriginKey(
+                                new OriginType(
+                                        new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType(originType))))
+                .build();
+
+        final BindingOriginBuilder origin = new BindingOriginBuilder();
+        origin.setOrigin(originType);
+        origin.setPriority(priority.shortValue());
+
+        datastoreAccess.putIfNotExists(listPath, origin.build(), LogicalDatastoreType.CONFIGURATION);
+    }
+
     static synchronized void initTopology(final DatastoreAccess datastoreAccess,
             final LogicalDatastoreType datastoreType) {
         InstanceIdentifier<NetworkTopology>
@@ -77,6 +118,12 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
     public synchronized void instantiateServiceInstance() {
         LOG.warn("Instantiating {}", this.getClass().getSimpleName());
         this.datastoreAccess = DatastoreAccess.getInstance(dataBroker);
+
+        // init binding origins with default values in data-store
+        initBindingOriginsInDS(datastoreAccess, BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES);
+        // validate and init binding origins in internal map
+        initBindingOriginsInternal(datastoreAccess);
+
         NodeIdentityListener datastoreListener = new NodeIdentityListener(datastoreAccess);
         //noinspection unchecked
         datastoreListener.addSubListener(
@@ -88,10 +135,25 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         datastoreListener.addSubListener(
                 new PeerGroupListener(datastoreAccess).addSubListener(new FilterListener(datastoreAccess)));
 
+
+        // init sxp topology
         initTopology(datastoreAccess, LogicalDatastoreType.CONFIGURATION);
         initTopology(datastoreAccess, LogicalDatastoreType.OPERATIONAL);
+
         dataChangeListenerRegistrations.add(datastoreListener.register(dataBroker, LogicalDatastoreType.CONFIGURATION));
         dataChangeListenerRegistrations.add(datastoreListener.register(dataBroker, LogicalDatastoreType.OPERATIONAL));
+    }
+
+    private void initBindingOriginsInternal(DatastoreAccess datastoreAccess) {
+        // read data-store container to internal map
+        final BindingOrigins bindingOrigins = Preconditions.checkNotNull(datastoreAccess.readSynchronous(
+                BINDING_ORIGINS, LogicalDatastoreType.CONFIGURATION));
+        final List<BindingOrigin> originList = Preconditions.checkNotNull(bindingOrigins.getBindingOrigin());
+
+        // validate origin bindings
+        BindingOriginsConfig.INSTANCE.validateBindingOrigins(originList);
+        // load origin bindings to internal map
+        BindingOriginsConfig.INSTANCE.addBindingOrigins(originList);
     }
 
     @Override
