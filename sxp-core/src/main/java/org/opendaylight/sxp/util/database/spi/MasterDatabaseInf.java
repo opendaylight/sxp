@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.List;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 
@@ -19,6 +20,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.mast
  * MasterDatabaseInf interface representing supported operation on MasterDatabase
  */
 public interface MasterDatabaseInf extends AutoCloseable {
+
+    OriginType NETWORK_ORIGIN = OriginType.getDefaultInstance("NETWORK");
+    OriginType LOCAL_ORIGIN = OriginType.getDefaultInstance("LOCAL");
 
     /**
      * Initialize a listener of DB events that propagates the changes via Update msgs.
