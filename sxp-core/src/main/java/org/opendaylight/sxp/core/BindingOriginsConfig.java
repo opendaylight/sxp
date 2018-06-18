@@ -34,17 +34,25 @@ public enum BindingOriginsConfig {
         DEFAULT_ORIGIN_PRIORITIES = Collections.unmodifiableMap(defaultPrios);
     }
 
+    public static final String BINDING_ORIGIN_ALREADY_EXIST = "Binding origin: {} already exist.";
+    public static final String PRIORITY_IS_ALREADY_USED = "Priority wanted to be used: {} is already used.";
+    public static final String BINDING_ORIGIN_UPDATE_NOT_FOUND = "Binding origin to be updated: {} not found.";
+    public static final String DEFAULT_VALUE_CANNOT_BE_DELETED = "Binding origin default value: {} cannot be deleted.";
+    public static final String BINDING_ORIGIN_DELETE_NOT_FOUND = "Binding origin to be deleted: {} not found.";
     public static final String MISSING_REQUIRED_DEFAULTS = "Provided origins do not contain the required defaults.";
     public static final String DUPLICATE_ORIGIN_DEFINITIONS = "Provided origins have duplicate origin type definitions.";
     public static final String DUPLICATE_PRIORITY_DEFINITIONS = "Provided origins have duplicate priority definitions.";
+    public static final String VALIDATING_BINDING_ORIGINS = "Validating binding origins: {}";
 
     private final Map<OriginType, Integer> bindingOrigins = new ConcurrentHashMap<>();
 
     public boolean addBindingOrigin(OriginType origin, Integer priority) {
         if (bindingOrigins.containsKey(origin)) {
+            LOG.warn(BINDING_ORIGIN_ALREADY_EXIST, origin.getValue());
             return false;
         }
         if (bindingOrigins.containsValue(priority)) {
+            LOG.warn(PRIORITY_IS_ALREADY_USED, priority);
             return false;
         }
 
@@ -55,6 +63,34 @@ public enum BindingOriginsConfig {
     public void addBindingOrigins(List<BindingOrigin> origins) {
         origins.forEach(bindingOrigin -> addBindingOrigin(bindingOrigin.getOrigin(),
                 bindingOrigin.getPriority().intValue()));
+    }
+
+    public boolean updateBindingOrigin(OriginType origin, Integer priority) {
+        if (!bindingOrigins.containsKey(origin)) {
+            LOG.warn(BINDING_ORIGIN_UPDATE_NOT_FOUND, origin.getValue());
+            return false;
+        }
+        if (bindingOrigins.containsValue(priority)) {
+            LOG.warn(PRIORITY_IS_ALREADY_USED, priority);
+            return false;
+        }
+
+        bindingOrigins.put(origin, priority);
+        return true;
+    }
+
+    public boolean deleteBindingOrigin(OriginType origin) {
+        if (LOCAL_ORIGIN.equals(origin) || NETWORK_ORIGIN.equals(origin)) {
+            LOG.warn(DEFAULT_VALUE_CANNOT_BE_DELETED, origin.getValue());
+            return false;
+        }
+        if (!bindingOrigins.containsKey(origin)) {
+            LOG.warn(BINDING_ORIGIN_DELETE_NOT_FOUND, origin.getValue());
+            return false;
+        }
+
+        bindingOrigins.remove(origin);
+        return true;
     }
 
     /**
@@ -73,7 +109,7 @@ public enum BindingOriginsConfig {
      * @param origins List of binding origins to be validated
      */
     public static void validateBindingOrigins(List<BindingOrigin> origins) {
-        LOG.debug("Validating binding origins: {}", origins);
+        LOG.debug(VALIDATING_BINDING_ORIGINS, origins);
         final Set<OriginType> types = origins.stream().map(BindingOrigin::getOrigin).collect(Collectors.toSet());
         if (!types.contains(LOCAL_ORIGIN) || !types.contains(NETWORK_ORIGIN)) {
             LOG.error(MISSING_REQUIRED_DEFAULTS);
