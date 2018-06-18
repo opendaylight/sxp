@@ -51,6 +51,12 @@ public final class MasterDatastoreImpl extends MasterDatabase {
     private MasterDBPropagatingListener dbListener;
 
     public MasterDatastoreImpl(DatastoreAccess datastoreAccess, String nodeId, String domain) {
+        this(datastoreAccess, nodeId, domain, DEFAULT_ORIGIN_PRIORITIES);
+    }
+
+    public MasterDatastoreImpl(DatastoreAccess datastoreAccess, String nodeId, String domain,
+                               Map<OriginType, Integer> originPriorities) {
+        super(originPriorities);
         this.datastoreAccess = Preconditions.checkNotNull(datastoreAccess);
         this.nodeId = Preconditions.checkNotNull(nodeId);
         this.domain = Preconditions.checkNotNull(domain);
@@ -166,7 +172,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         } else {
             databaseMaster = new HashMap<>();
         }
-        OriginType bindingType = (datastoreType == LogicalDatastoreType.CONFIGURATION) ? Configuration.LOCAL_ORIGIN : Configuration.NETWORK_ORIGIN;
+        OriginType bindingType = (datastoreType == LogicalDatastoreType.CONFIGURATION) ? LOCAL_ORIGIN : NETWORK_ORIGIN;
         added.addAll(filterIncomingBindings(bindings, databaseMaster::get,
                 p -> datastoreAccess.checkAndDelete(getIdentifierBuilder(p).build(),
                         LogicalDatastoreType.OPERATIONAL), bindingType).values()
