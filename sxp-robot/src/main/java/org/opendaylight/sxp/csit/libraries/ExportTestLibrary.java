@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.csit.libraries;
 
+import static org.opendaylight.sxp.util.database.spi.MasterDatabaseInf.LOCAL_ORIGIN;
+
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -154,7 +156,7 @@ public class ExportTestLibrary extends AbstractLibrary {
                         .setIpPrefix(new IpPrefix(Preconditions.checkNotNull(prefix).toCharArray()))
                         .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
                         .setSecurityGroupTag(new Sgt(Integer.parseInt(Preconditions.checkNotNull(sgt))))
-                        .setOrigin(Configuration.LOCAL_ORIGIN)
+                        .setOrigin(LOCAL_ORIGIN)
                         .build(), Integer.MAX_VALUE);
         totalOfBindings =
                 totalOfBindings == 0 ?
