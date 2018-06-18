@@ -13,6 +13,10 @@
           destroy-method="close">
         <argument ref="dataBrokerRef"/>
     </bean>
+    <bean id="sxpConfigRpcService" class="org.opendaylight.sxp.controller.core.SxpConfigRpcServiceImpl"
+          destroy-method="close">
+        <argument ref="dataBrokerRef"/>
+    </bean>
     <bean id="sxpControllerInstance"
           class="org.opendaylight.sxp.controller.boot.SxpControllerInstance"
           init-method="init"
@@ -23,8 +27,11 @@
     <!-- Services -->
     <service ref="sxpRpcService"
              interface="org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.SxpControllerService"/>
+    <service ref="sxpConfigRpcService"
+             interface="org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.controller.rev180629.SxpConfigControllerService"/>
     <service ref="sxpControllerInstance"
              interface="org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService"/>
     <!-- RPC implementations -->
     <odl:rpc-implementation ref="sxpRpcService"/>
+    <odl:rpc-implementation ref="sxpConfigRpcService"/>
 </blueprint>
