@@ -13,7 +13,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import java.util.ArrayList;
 import java.util.List;
 import org.opendaylight.controller.md.sal.binding.api.BindingTransactionChain;
@@ -92,10 +91,11 @@ public final class DatastoreAccess implements AutoCloseable {
      * @param <T>                  Any type extending DataObject
      * @return ListenableFuture callback of operation
      */
-    public synchronized <T extends DataObject> ListenableFuture<Void> delete(InstanceIdentifier<T> path,
-            LogicalDatastoreType logicalDatastoreType) {
+    public synchronized <T extends DataObject> CheckedFuture<Void, TransactionCommitFailedException> delete(
+            InstanceIdentifier<T> path, LogicalDatastoreType logicalDatastoreType) {
         if (!checkParams(path, logicalDatastoreType)) {
-            return Futures.immediateCancelledFuture();
+            return Futures.makeChecked(Futures.immediateCancelledFuture(), input ->
+                    new TransactionCommitFailedException("Datastore was closed"));
         }
         if (LOG.isDebugEnabled()) {
             LOG.debug("Delete {} {}", logicalDatastoreType, path.getTargetType());
@@ -199,6 +199,17 @@ public final class DatastoreAccess implements AutoCloseable {
             put(path, data, logicalDatastoreType).checkedGet();
         } catch (TransactionCommitFailedException e) {
             LOG.error("Failed to put {} to {}", path, logicalDatastoreType);
+            return false;
+        }
+        return true;
+    }
+
+    public synchronized <T extends DataObject> boolean deleteSynchronous(InstanceIdentifier<T> path,
+            LogicalDatastoreType logicalDatastoreType) {
+        try {
+            delete(path, logicalDatastoreType).checkedGet();
+        } catch (TransactionCommitFailedException e) {
+            LOG.error("Failed to delete {} from {}", path, logicalDatastoreType);
             return false;
         }
         return true;
