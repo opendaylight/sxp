@@ -16,6 +16,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,7 +29,12 @@ import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvid
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceRegistration;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.BindingOrigins;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.BindingOriginsBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.binding.origins.BindingOrigin;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.binding.origins.BindingOriginBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.DataObject;
@@ -40,6 +46,9 @@ import org.powermock.modules.junit4.PowerMockRunner;
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({DatastoreAccess.class})
 public class SxpControllerInstanceTest {
+
+    private static final InstanceIdentifier<BindingOrigins> BINDING_ORIGINS = InstanceIdentifier
+            .builder(BindingOrigins.class).build();
 
     private DatastoreAccess datastoreAccess;
     private SxpControllerInstance controllerInstance;
@@ -53,6 +62,19 @@ public class SxpControllerInstanceTest {
         PowerMockito.mockStatic(DatastoreAccess.class);
         datastoreAccess = mock(DatastoreAccess.class);
         PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
+        BindingOrigin local = new BindingOriginBuilder()
+                .setOrigin(BindingOriginsConfig.LOCAL_ORIGIN)
+                .setPriority((short) 1)
+                .build();
+        BindingOrigin network = new BindingOriginBuilder()
+                .setOrigin(BindingOriginsConfig.NETWORK_ORIGIN)
+                .setPriority((short) 2)
+                .build();
+        BindingOrigins origins = new BindingOriginsBuilder()
+                .setBindingOrigin(Lists.newArrayList(local, network))
+                .build();
+        when(datastoreAccess.readSynchronous(eq(BINDING_ORIGINS), eq(LogicalDatastoreType.CONFIGURATION)))
+                .thenReturn(origins);
         serviceRegistration = mock(ClusterSingletonServiceRegistration.class);
         ClusterSingletonServiceProvider serviceProvider = mock(ClusterSingletonServiceProvider.class);
         when(serviceProvider.registerClusterSingletonService(any(ClusterSingletonService.class))).thenReturn(
@@ -87,6 +109,8 @@ public class SxpControllerInstanceTest {
     @Test
     public void instantiateServiceInstance() throws Exception {
         controllerInstance.instantiateServiceInstance();
+        verify(datastoreAccess, times(3)).putIfNotExists(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.CONFIGURATION));
         verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.CONFIGURATION));
         verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
