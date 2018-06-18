@@ -1,0 +1,59 @@
+module sxp-config-controller {
+    yang-version 1;
+
+    namespace "urn:opendaylight:sxp:config:controller";
+    prefix "sxpcfgctrl";
+
+    import sxp-config { prefix sxpcfg; revision-date "2018-06-11"; }
+
+    organization "Cisco Systems, Inc.";
+
+    contact "Ivan Hrasko <ihrasko@cisco.com>";
+
+    description
+        "This module defines the general RPCs for configuration of the SXP plugin";
+
+    revision "2018-06-29" {
+        description
+                "Initial version of the config controller model";
+    }
+
+    rpc add-binding-origin {
+        description "Create a new binding origin type";
+        input {
+            uses sxpcfg:binding-origin-grouping;
+        }
+        output {
+            leaf result {
+                type boolean;
+            }
+        }
+    }
+
+    rpc update-binding-origin {
+        description "Update a binding origin type";
+        input {
+            uses sxpcfg:binding-origin-grouping;
+        }
+        output {
+            leaf result {
+                type boolean;
+            }
+        }
+    }
+
+    rpc delete-binding-origin {
+        description "Remove a binding origin type";
+        input {
+            leaf origin {
+                type sxpcfg:origin-type;
+                mandatory true;
+            }
+        }
+        output {
+            leaf result {
+                type boolean;
+            }
+        }
+    }
+}

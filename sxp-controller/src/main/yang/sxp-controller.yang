@@ -612,7 +612,6 @@ module sxp-controller {
         }
     }
 
-
     rpc delete-connection-template {
         description "Delete a domain from node";
         input {

@@ -1121,5 +1121,4 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
             return RpcResultBuilder.success(output.build()).build();
         });
     }
-
 }

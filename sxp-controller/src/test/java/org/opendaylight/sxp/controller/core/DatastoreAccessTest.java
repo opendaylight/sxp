@@ -313,6 +313,18 @@ public class DatastoreAccessTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    public void testDeleteSynchronous() throws Exception {
+        WriteTransaction transaction = mock(WriteTransaction.class);
+        when(transaction.submit()).thenReturn(mock(CheckedFuture.class));
+        when(transactionChain.newWriteOnlyTransaction()).thenReturn(transaction);
+        InstanceIdentifier identifier = mock(InstanceIdentifier.class);
+
+        assertTrue(access.deleteSynchronous(identifier, LogicalDatastoreType.CONFIGURATION));
+        verify(transaction).delete(LogicalDatastoreType.CONFIGURATION, identifier);
+    }
+
+    @Test
     public void testClose() throws Exception {
         access.close();
         verify(transactionChain).close();

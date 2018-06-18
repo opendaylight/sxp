@@ -21,19 +21,23 @@ module sxp-config {
         description "Name of the origin type";
     }
 
+    grouping binding-origin-grouping {
+        leaf origin {
+            type origin-type;
+            mandatory true;
+        }
+        leaf priority {
+            type uint8;
+            mandatory true;
+            description "Priority of the type (lower number -> higher priority)";
+        }
+    }
+
     container binding-origins {
         list binding-origin {
             key "origin";
             unique "priority";
-            leaf origin {
-                type origin-type;
-                mandatory true;
-            }
-            leaf priority {
-                type uint8;
-                mandatory true;
-                description "Priority of the type (lower number -> higher priority)";
-            }
+            uses binding-origin-grouping;
         }
     }
 }
