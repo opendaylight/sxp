@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.Matchers;
 import org.opendaylight.controller.md.sal.binding.api.BindingTransactionChain;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
@@ -281,6 +282,34 @@ public class DatastoreAccessTest {
         when(future.isCancelled()).thenReturn(true);
         when(writeTransaction.submit()).thenReturn(future);
         assertFalse(access.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testPutIfNotExists() throws Exception {
+        WriteTransaction writeTransaction = mock(WriteTransaction.class);
+        ReadOnlyTransaction readOnlyTransaction = mock(ReadOnlyTransaction.class);
+        when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
+        when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
+
+        // data did not exist before
+        CheckedFuture future = mock(CheckedFuture.class);
+        Optional optional = mock(Optional.class);
+        when(future.checkedGet()).thenReturn(optional);
+        when(readOnlyTransaction.read(Matchers.eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class)))
+                .thenReturn(future);
+        when(writeTransaction.submit()).thenReturn(mock(CheckedFuture.class));
+
+        InstanceIdentifier identifier = InstanceIdentifier.create(DataObject.class);
+
+        when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
+        assertTrue(access.putIfNotExists(identifier, mock(DataObject.class), LogicalDatastoreType.CONFIGURATION));
+
+        // data already exist
+        when(optional.isPresent()).thenReturn(true);
+        when(optional.get()).thenReturn(mock(DataObject.class));
+
+        assertFalse(access.putIfNotExists(identifier, mock(DataObject.class), LogicalDatastoreType.CONFIGURATION));
     }
 
     @Test
