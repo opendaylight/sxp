@@ -8,6 +8,8 @@
 
 package org.opendaylight.sxp.csit.libraries;
 
+import static org.opendaylight.sxp.util.database.spi.MasterDatabaseInf.LOCAL_ORIGIN;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -135,7 +137,7 @@ public class DeviceTestLibrary extends AbstractLibrary {
         bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setIpPrefix(new IpPrefix(Objects.requireNonNull(prefix).toCharArray()));
-        bindingBuilder.setOrigin(Configuration.LOCAL_ORIGIN);
+        bindingBuilder.setOrigin(LOCAL_ORIGIN);
         return bindingBuilder.build();
     }
 
