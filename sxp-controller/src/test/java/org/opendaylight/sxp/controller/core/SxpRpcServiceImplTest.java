@@ -44,6 +44,10 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv6Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingOriginInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingOriginInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingOriginOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionInputBuilder;
@@ -61,6 +65,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ad
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddNodeOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddPeerGroupInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddPeerGroupOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingOriginInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingOriginInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingOriginOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteConnectionInputBuilder;
@@ -87,6 +94,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ge
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateBindingOriginInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateBindingOriginInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateBindingOriginOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateEntryInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutput;
@@ -145,6 +155,10 @@ public class SxpRpcServiceImplTest {
                 any(LogicalDatastoreType.class), anyBoolean())).thenReturn(true);
         when(datastoreAccess.putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
                 any(LogicalDatastoreType.class))).thenReturn(true);
+        when(datastoreAccess.putIfNotExists(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.CONFIGURATION))).thenReturn(true);
+        when(datastoreAccess.deleteSynchronous(any(InstanceIdentifier.class), eq(LogicalDatastoreType.CONFIGURATION)))
+                .thenReturn(true);
         when(datastoreAccess.readSynchronous(eq(getIdentifier("0.0.0.0").child(SxpDomains.class)
                 .child(SxpDomain.class, new SxpDomainKey(SxpNode.DEFAULT_DOMAIN))
                 .child(MasterDatabase.class)), any(LogicalDatastoreType.class))).thenReturn(
@@ -1148,5 +1162,48 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertTrue(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddBindingOrigin() throws Exception {
+        assertTrue(addBindingOrigin("LOCAL", (short) 0).getResult().isResult());
+    }
+
+    @Test
+    public void testUpdateBindingOrigin() throws Exception {
+        // add binding origin
+        assertTrue(addBindingOrigin("NETWORK", (short) 1).getResult().isResult());
+
+        // update it
+        final UpdateBindingOriginInput input = new UpdateBindingOriginInputBuilder()
+                .setOrigin(new OriginType("NETWORK"))
+                .setPriority((short) 2)
+                .build();
+
+        final RpcResult<UpdateBindingOriginOutput> result = service.updateBindingOrigin(input).get();
+        assertTrue(result.getResult().isResult());
+    }
+
+    @Test
+    public void testDeleteBindingOrigin() throws Exception {
+        // add binding origin
+        assertTrue(addBindingOrigin("CLUSTER", (short) 3).getResult().isResult());
+
+        // delete it
+        final DeleteBindingOriginInput input = new DeleteBindingOriginInputBuilder()
+                .setOrigin(new OriginType("CLUSTER"))
+                .build();
+
+        final RpcResult<DeleteBindingOriginOutput> result = service.deleteBindingOrigin(input).get();
+        assertTrue(result.getResult().isResult());
+    }
+
+    private RpcResult<AddBindingOriginOutput> addBindingOrigin(String origin, short priority) throws Exception {
+        final AddBindingOriginInput addInput = new AddBindingOriginInputBuilder()
+                .setOrigin(new OriginType(origin))
+                .setPriority(priority)
+                .build();
+
+        return service.addBindingOrigin(addInput).get();
     }
 }
