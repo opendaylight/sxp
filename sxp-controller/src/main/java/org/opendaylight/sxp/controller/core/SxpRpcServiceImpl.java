@@ -39,6 +39,14 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.DateAndTime;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.BindingOrigins;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.binding.origins.BindingOrigin;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.binding.origins.BindingOriginBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.binding.origins.BindingOriginKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingOriginInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingOriginOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingOriginOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsOutputBuilder;
@@ -1122,4 +1130,41 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
+    @Override
+    public ListenableFuture<RpcResult<AddBindingOriginOutput>> addBindingOrigin(final AddBindingOriginInput input) {
+        final AddBindingOriginOutputBuilder output = new AddBindingOriginOutputBuilder().setResult(false);
+
+        return executor.submit(() -> {
+            LOG.info("RpcAddBindingOrigin event | {}", input.toString());
+
+            final OriginType origin = input.getOrigin();
+            if (origin == null) {
+                LOG.info("RpcAddBindingOrigin exception | Parameter 'origin' not defined", input.toString());
+                return RpcResultBuilder.success(output.build()).build();
+            }
+            final Short priority = input.getPriority();
+            if (priority == null) {
+                LOG.info("RpcAddBindingOrigin exception | Parameter 'priority' not defined", input.toString());
+                return RpcResultBuilder.success(output.build()).build();
+            }
+
+            // Todo: put to map
+
+            // put to data-store
+            final BindingOrigin bindingOrigin = new BindingOriginBuilder()
+                    .setOrigin(origin)
+                    .setPriority(priority)
+                    .build();
+
+            final boolean putConfig = datastoreAccess.putSynchronous(InstanceIdentifier.builder(BindingOrigins.class)
+                            .child(BindingOrigin.class, new BindingOriginKey(new OriginType(origin))).build(),
+                    bindingOrigin, LogicalDatastoreType.CONFIGURATION);
+            final boolean putOperational = datastoreAccess.putSynchronous(InstanceIdentifier.builder(BindingOrigins.class)
+                            .child(BindingOrigin.class, new BindingOriginKey(new OriginType(origin))).build(),
+                    bindingOrigin, LogicalDatastoreType.OPERATIONAL);
+
+            output.setResult(putConfig && putOperational);
+            return RpcResultBuilder.success(output.build()).build();
+        });
+    }
 }
