@@ -16,6 +16,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import org.opendaylight.controller.md.sal.binding.api.BindingTransactionChain;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
@@ -87,6 +88,8 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Delete data at specified path.
+     *
      * @param path                 InstanceIdentifier path specifying data
      * @param logicalDatastoreType Type of datastore where operation will be held
      * @param <T>                  Any type extending DataObject
@@ -187,6 +190,8 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Put data at specified path and wait till operation ends.
+     *
      * @param path                 InstanceIdentifier path specifying data
      * @param data                 Data that will be used in operation
      * @param logicalDatastoreType Type of datastore where operation will be held
@@ -199,6 +204,28 @@ public final class DatastoreAccess implements AutoCloseable {
             put(path, data, logicalDatastoreType).checkedGet();
         } catch (TransactionCommitFailedException e) {
             LOG.error("Failed to put {} to {}", path, logicalDatastoreType);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Delete data at specified path and wait till operation ends.
+     *
+     * @param path Path to node to be deleted
+     * @param logicalDatastoreType data-store type
+     * @return {@code true} if data node was successfully deleted, {@code false} otherwise
+     */
+    public synchronized <T extends DataObject> boolean deleteSynchronous(InstanceIdentifier<T> path,
+            LogicalDatastoreType logicalDatastoreType) {
+        try {
+            delete(path, logicalDatastoreType).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOG.error("Failed to delete {} from {}, exception: {}", path, logicalDatastoreType, e);
+            return false;
+        } catch (ExecutionException e) {
+            LOG.error("Failed to delete {} from {}, exception: {}", path, logicalDatastoreType, e);
             return false;
         }
         return true;
@@ -290,7 +317,7 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
-     * Create node in data-store only if it has NOT previously exist.
+     * Create node synchronously in data-store only if it has NOT previously exist.
      * <p>
      * This method does not check for existence of parent nodes. It is
      * responsibility of its caller to create all parent nodes.
