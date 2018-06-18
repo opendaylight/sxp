@@ -36,11 +36,17 @@ public enum BindingOriginsConfig {
 
     private final Map<OriginType, Integer> bindingOrigins = new ConcurrentHashMap<>();
 
-    public boolean addBindingOrigin(OriginType origin, Integer priority) {
+    public Map<OriginType, Integer> getBindingOrigins() {
+        return Collections.unmodifiableMap(bindingOrigins);
+    }
+
+    public synchronized boolean addBindingOrigin(OriginType origin, Integer priority) {
         if (bindingOrigins.containsKey(origin)) {
+            LOG.warn("Binding origin: {} already exist.", origin.getValue());
             return false;
         }
         if (bindingOrigins.containsValue(priority)) {
+            LOG.warn("Priority wanted to be used: {} is already used.", priority);
             return false;
         }
 
@@ -48,9 +54,37 @@ public enum BindingOriginsConfig {
         return true;
     }
 
-    public void addBindingOrigins(List<BindingOrigin> origins) {
+    public synchronized void addBindingOrigins(List<BindingOrigin> origins) {
         origins.forEach(bindingOrigin -> addBindingOrigin(bindingOrigin.getOrigin(),
                 bindingOrigin.getPriority().intValue()));
+    }
+
+    public synchronized boolean updateBindingOrigin(OriginType origin, Integer priority) {
+        if (!bindingOrigins.containsKey(origin)) {
+            LOG.warn("Binding origin to be updated: {} not found.", origin.getValue());
+            return false;
+        }
+        if (bindingOrigins.containsValue(priority)) {
+            LOG.warn("Priority wanted to be used: {} is already used.", priority);
+            return false;
+        }
+
+        bindingOrigins.put(origin, priority);
+        return true;
+    }
+
+    public synchronized boolean deleteBindingOrigin(OriginType origin) {
+        if (LOCAL_ORIGIN.equals(origin) || NETWORK_ORIGIN.equals(origin)) {
+            LOG.warn("Binding origin default value: {} cannot be deleted.", origin.getValue());
+            return false;
+        }
+        if (!bindingOrigins.containsKey(origin)) {
+            LOG.warn("Binding origin to be deleted: {} not found.", origin.getValue());
+            return false;
+        }
+
+        bindingOrigins.remove(origin);
+        return true;
     }
 
     /**
