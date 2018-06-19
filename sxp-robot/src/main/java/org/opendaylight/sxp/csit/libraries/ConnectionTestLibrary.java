@@ -11,7 +11,6 @@ package org.opendaylight.sxp.csit.libraries;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicLong;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
@@ -41,9 +40,12 @@ import org.robotframework.remoteserver.RemoteServer;
 public class ConnectionTestLibrary extends AbstractLibrary {
 
     private final Random retryTimeGen = new Random();
-    private final AtomicLong connectedPeers = new AtomicLong(0), connectingTimeEnd = new AtomicLong(0);
     private final ThreadsWorker worker = new ThreadsWorker(10, 10, 10, 4);
-    private long connectingTimeBegin, totalPeers;
+
+    private long connectedPeers;
+    private long connectingTimeEnd;
+    private long connectingTimeBegin;
+    private long totalPeers;
 
     /**
      * @param libraryServer Server where Library will be added
@@ -58,15 +60,15 @@ public class ConnectionTestLibrary extends AbstractLibrary {
     @RobotKeyword("Get Connected Peers")
     @ArgumentNames({})
     public synchronized long getConnectedPeers() {
-        connectedPeers.set(LibraryServer.getNodes()
+        connectedPeers = LibraryServer.getNodes()
                 .stream()
                 .flatMap(sxpNode -> sxpNode.getAllConnections().stream())
                 .filter(SxpConnection::isStateOn)
-                .count());
-        if (connectedPeers.get() >= totalPeers) {
-            connectingTimeEnd.set(System.currentTimeMillis());
+                .count();
+        if (connectedPeers >= totalPeers) {
+            connectingTimeEnd = (System.currentTimeMillis());
         }
-        return connectedPeers.get();
+        return connectedPeers;
     }
 
     /**
@@ -75,7 +77,7 @@ public class ConnectionTestLibrary extends AbstractLibrary {
     @RobotKeyword("Get Connect Time")
     @ArgumentNames({})
     public synchronized double getConnectTime() {
-        long time = connectingTimeEnd.get();
+        long time = connectingTimeEnd;
         return time == 0 ? 0 : (time - connectingTimeBegin) / 1000d;
     }
 
@@ -114,15 +116,19 @@ public class ConnectionTestLibrary extends AbstractLibrary {
                         .build(), new MasterDatabaseImpl(), new SxpDatabaseImpl() {
 
                     @Override
-                    public synchronized <T extends SxpBindingFields> List<SxpDatabaseBinding> deleteBindings(
+                    public <T extends SxpBindingFields> List<SxpDatabaseBinding> deleteBindings(
                             NodeId nodeId, List<T> bindings) {
-                        return Collections.emptyList();
+                        synchronized (ConnectionTestLibrary.this) {
+                            return Collections.emptyList();
+                        }
                     }
 
                     @Override
-                    public synchronized <T extends SxpBindingFields> List<SxpDatabaseBinding> addBinding(NodeId nodeId,
+                    public <T extends SxpBindingFields> List<SxpDatabaseBinding> addBinding(NodeId nodeId,
                             List<T> bindings) {
-                        return Collections.emptyList();
+                        synchronized (ConnectionTestLibrary.this) {
+                            return Collections.emptyList();
+                        }
                     }
                 }, worker));
         LibraryServer.getNode(nodeId).addDomain(new SxpDomainBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN).build());
@@ -131,8 +137,8 @@ public class ConnectionTestLibrary extends AbstractLibrary {
     @Override
     public synchronized void close() {
         totalPeers = 0;
-        connectedPeers.set(0);
+        connectedPeers = 0;
         connectingTimeBegin = 0;
-        connectingTimeEnd.set(0);
+        connectingTimeEnd = 0;
     }
 }
