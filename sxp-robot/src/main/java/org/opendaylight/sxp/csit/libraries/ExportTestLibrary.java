@@ -12,7 +12,6 @@ import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -47,10 +46,12 @@ import org.robotframework.remoteserver.RemoteServer;
  */
 @RobotKeywords
 public class ExportTestLibrary extends AbstractLibrary {
+    private static final String DESTINATION = "destination";
 
-    public final static String DESTINATION = "destination";
-    private final AtomicLong bindingsReceived = new AtomicLong(0), exportTimeEnd = new AtomicLong(0);
-    private long exportTimeBegin, totalOfBindings;
+    private long bindingsReceived;
+    private long exportTimeEnd;
+    private long exportTimeBegin;
+    private long totalOfBindings;
 
     /**
      * @param libraryServer Server where Library will be added
@@ -65,16 +66,16 @@ public class ExportTestLibrary extends AbstractLibrary {
     @RobotKeyword("Get Bindings Exchange Count")
     @ArgumentNames({})
     public synchronized long getBindingsExchangeCount() {
-        return bindingsReceived.get();
+        return bindingsReceived;
     }
-
+    
     /**
      * @return Time elapsed while exporting all bindings or 0 if exports is still in progress
      */
     @RobotKeyword("Get Export Time")
     @ArgumentNames({})
     public synchronized double getExportTime() {
-        long time = exportTimeEnd.get();
+        long time = exportTimeEnd;
         return time == 0 ? 1 : (time - exportTimeBegin) / 1000d;
     }
 
@@ -84,7 +85,7 @@ public class ExportTestLibrary extends AbstractLibrary {
     @RobotKeyword("All Exported")
     @ArgumentNames({})
     public synchronized boolean allExported() {
-        return totalOfBindings <= bindingsReceived.get();
+        return totalOfBindings <= bindingsReceived;
     }
 
     /**
@@ -120,21 +121,27 @@ public class ExportTestLibrary extends AbstractLibrary {
                         .build(), new MasterDatabaseImpl(), new SxpDatabaseImpl() {
 
                     @Override
-                    public synchronized <T extends SxpBindingFields> List<SxpDatabaseBinding> deleteBindings(
+                    public <T extends SxpBindingFields> List<SxpDatabaseBinding> deleteBindings(
                             NodeId nodeId, List<T> bindings) {
-                        if (bindingsReceived.addAndGet(-bindings.size()) == totalOfBindings) {
-                            exportTimeEnd.set(System.currentTimeMillis());
+                        synchronized (ExportTestLibrary.this) {
+                            bindingsReceived -= bindings.size();
+                            if (bindingsReceived == totalOfBindings) {
+                                exportTimeEnd = System.currentTimeMillis();
+                            }
+                            return Collections.emptyList();
                         }
-                        return Collections.emptyList();
                     }
 
                     @Override
-                    public synchronized <T extends SxpBindingFields> List<SxpDatabaseBinding> addBinding(NodeId nodeId,
+                    public <T extends SxpBindingFields> List<SxpDatabaseBinding> addBinding(NodeId nodeId,
                             List<T> bindings) {
-                        if (bindingsReceived.addAndGet(bindings.size()) == totalOfBindings) {
-                            exportTimeEnd.set(System.currentTimeMillis());
+                        synchronized (ExportTestLibrary.this) {
+                            bindingsReceived += bindings.size();
+                            if (bindingsReceived == totalOfBindings) {
+                                exportTimeEnd = System.currentTimeMillis();
+                            }
+                            return Collections.emptyList();
                         }
-                        return Collections.emptyList();
                     }
                 }));
     }
@@ -157,7 +164,7 @@ public class ExportTestLibrary extends AbstractLibrary {
                         .setSecurityGroupTag(new Sgt(Integer.parseInt(Preconditions.checkNotNull(sgt))))
                         .setOrigin(OriginType.LOCAL)
                         .build(), Integer.MAX_VALUE);
-        totalOfBindings =
+        totalOfBindings = 
                 totalOfBindings == 0 ?
                         getDestinationNodes() * exportBindings.size() : getDestinationNodes() * totalOfBindings;
         exportTimeBegin = System.currentTimeMillis();
@@ -178,7 +185,6 @@ public class ExportTestLibrary extends AbstractLibrary {
         exportTimeBegin = System.currentTimeMillis();
         LibraryServer.getNodes()
                 .stream()
-                .parallel()
                 .filter(node -> node != null && DESTINATION.equals(node.getName()))
                 .forEach(node -> addConnectionToNode(node, Version.Version4, ConnectionMode.Listener, address, "64999",
                         null));
@@ -198,8 +204,8 @@ public class ExportTestLibrary extends AbstractLibrary {
 
     @Override
     public synchronized void close() {
-        bindingsReceived.set(0);
-        exportTimeEnd.set(0);
+        bindingsReceived = 0;
+        exportTimeEnd = 0;
         exportTimeBegin = 0;
         totalOfBindings = 0;
     }
