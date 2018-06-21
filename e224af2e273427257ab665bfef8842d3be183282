@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "18983de7_85ae920c",
+        "filename": "sxp-api/src/main/yang/sxp-configuration.yang",
+        "patchSetId": 4
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-06-21T11:00:04Z",
+      "side": 1,
+      "message": "including 0?, default types have priorities 1 and 2, is that OK?",
+      "revId": "e224af2e273427257ab665bfef8842d3be183282",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
