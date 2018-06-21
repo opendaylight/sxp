@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "628f290e_074e1f39",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/MasterDatabase.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-06-21T12:58:51Z",
+      "side": 1,
+      "message": "unit8 is mapped to Short in Java",
+      "parentUuid": "2b71e486_05d8938f",
+      "revId": "1d2f88323392bca9c379c3bca56764a4dd2055b5",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "c33acab5_f974e8c3",
         "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/MasterDatabase.java",
         "patchSetId": 1
