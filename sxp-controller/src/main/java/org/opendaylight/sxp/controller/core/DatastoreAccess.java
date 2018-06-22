@@ -198,6 +198,7 @@ public final class DatastoreAccess implements AutoCloseable {
         try {
             put(path, data, logicalDatastoreType).checkedGet();
         } catch (TransactionCommitFailedException e) {
+            LOG.error("Failed to put {} to {}", path, logicalDatastoreType);
             return false;
         }
         return true;
@@ -250,7 +251,7 @@ public final class DatastoreAccess implements AutoCloseable {
                 checkParentExist(identifier, datastoreType) && (mustContains ?
                         readSynchronous(identifier, datastoreType) != null :
                         readSynchronous(identifier, datastoreType) == null);
-        return check && !put(identifier, data, datastoreType).isCancelled();
+        return check && !putSynchronous(identifier, data, datastoreType);
     }
 
     /**
@@ -286,6 +287,24 @@ public final class DatastoreAccess implements AutoCloseable {
             return !delete(identifier, datastoreType).isCancelled();
         }
         return false;
+    }
+
+    /**
+     * Create node in data-store only if it has NOT previously exist.
+     * </p>
+     * @param identifier Path to node to be created
+     * @param data Node data to be created
+     * @param datastoreType data-store type
+     * @return {@code true} if node was successfully created, {@code false} otherwise
+     */
+    public synchronized <T extends DataObject> boolean post(InstanceIdentifier<T> identifier, T data,
+            LogicalDatastoreType datastoreType) {
+        if (readSynchronous(identifier, datastoreType) != null) {
+            LOG.warn("SXP Post: Node to be created {} has already exist", identifier);
+            return false;
+        }
+
+        return putSynchronous(identifier, data, datastoreType);
     }
 
     /**

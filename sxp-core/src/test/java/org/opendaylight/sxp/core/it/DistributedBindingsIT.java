@@ -10,6 +10,7 @@ package org.opendaylight.sxp.core.it;
 import static org.awaitility.Awaitility.await;
 import static org.opendaylight.sxp.test.utils.TestDataFactory.createConnection;
 import static org.opendaylight.sxp.test.utils.TestDataFactory.createIdentity;
+import static org.opendaylight.sxp.util.database.MasterDatabase.DEFAULT_ORIGIN_PRIORITIES;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.config.Config;
@@ -89,9 +90,9 @@ public class DistributedBindingsIT {
         node1HcInstance = Hazelcast.newHazelcastInstance(hcConfig);
         node2HcInstance = Hazelcast.newHazelcastInstance(hcConfig);
         SxpDatabaseInf node1HCBackedSxpDB = new HazelcastBackedSxpDB("NODE1-ACTIVE", "NODE1-TENTATIVE", node1HcInstance);
-        MasterDatabaseInf node1HCBackedMasterDB = new HazelcastBackedMasterDB(NODE1_MASTER_DB_NAME, node1HcInstance);
+        MasterDatabaseInf node1HCBackedMasterDB = new HazelcastBackedMasterDB(NODE1_MASTER_DB_NAME, node1HcInstance, DEFAULT_ORIGIN_PRIORITIES);
         SxpDatabaseInf node2HCBackedSxpDB = new HazelcastBackedSxpDB("NODE2-ACTIVE", "NODE2-TENTATIVE", node2HcInstance);
-        MasterDatabaseInf node2HCBackedMasterDB = new HazelcastBackedMasterDB(NODE2_MASTER_DB_NAME, node2HcInstance);
+        MasterDatabaseInf node2HCBackedMasterDB = new HazelcastBackedMasterDB(NODE2_MASTER_DB_NAME, node2HcInstance, DEFAULT_ORIGIN_PRIORITIES);
 
         SxpNodeIdentity nodeIdentity1 = createIdentity("127.0.0.1", Constants.SXP_DEFAULT_PORT, Version.Version4, DELETE_HOLD_DOWN_TIMER, 999); //Listener
         this.node1 = SxpNode.createInstance(new NodeId("1.1.1.1"), nodeIdentity1, node1HCBackedMasterDB, node1HCBackedSxpDB);
