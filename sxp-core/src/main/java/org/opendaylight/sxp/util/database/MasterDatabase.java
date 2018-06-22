@@ -42,6 +42,16 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
 
     private final Map<OriginType, Integer> originPriorities;
 
+    public Map<OriginType, Integer> getOriginPriorities() {
+        return originPriorities;
+    }
+
+    public boolean putOriginType(final OriginType originType, final Integer priority) {
+        // todo checks and validation?
+        this.originPriorities.put(originType, priority);
+        return true;
+    }
+
     public MasterDatabase(Map<OriginType, Integer> originPriorities) {
         if (!originPriorities.containsKey(NETWORK_ORIGIN) || !originPriorities.containsKey(LOCAL_ORIGIN)) {
             throw new IllegalArgumentException("Provided origin types do not contain the required defaults.");

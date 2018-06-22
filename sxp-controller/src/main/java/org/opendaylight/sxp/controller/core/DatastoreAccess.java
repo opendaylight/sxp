@@ -250,7 +250,7 @@ public final class DatastoreAccess implements AutoCloseable {
                 checkParentExist(identifier, datastoreType) && (mustContains ?
                         readSynchronous(identifier, datastoreType) != null :
                         readSynchronous(identifier, datastoreType) == null);
-        return check && !put(identifier, data, datastoreType).isCancelled();
+        return check && !putSynchronous(identifier, data, datastoreType);
     }
 
     /**

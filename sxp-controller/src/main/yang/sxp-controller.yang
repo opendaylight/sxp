@@ -9,6 +9,7 @@ module sxp-controller {
     import sxp-node { prefix sxpnd; revision-date "2016-03-08"; }
     import sxp-filter { prefix sxpfl; revision-date "2015-09-11"; }
     import sxp-protocol { prefix sxppt; revision-date "2014-10-02"; }
+    import sxp-config { prefix sxpcfg; revision-date "2018-06-11"; }
 
     organization "Cisco Systems, Inc.";
 
@@ -629,6 +630,34 @@ module sxp-controller {
                 type inet:ip-prefix;
                 mandatory true;
                 description "Ip prefix of the remote peers";
+            }
+        }
+        output {
+            leaf result {
+                type boolean;
+            }
+        }
+    }
+
+    rpc add-binding-origin {
+        description "Create a new binding origin type";
+        input {
+            leaf node-id {
+                type sxppt:node-id;
+                mandatory true;
+                description "SXP node ID";
+            }
+            leaf domain-name {
+                type string;
+                default "global";
+            }
+            leaf origin {
+                type sxpcfg:origin-type;
+                mandatory true;
+            }
+            leaf priority {
+                type uint8;
+                mandatory true;
             }
         }
         output {
