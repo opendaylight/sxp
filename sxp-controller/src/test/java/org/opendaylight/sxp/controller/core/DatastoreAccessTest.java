@@ -284,6 +284,11 @@ public class DatastoreAccessTest {
     }
 
     @Test
+    public void testPost() throws Exception {
+        // todo
+    }
+
+    @Test
     public void testClose() throws Exception {
         access.close();
         verify(transactionChain).close();

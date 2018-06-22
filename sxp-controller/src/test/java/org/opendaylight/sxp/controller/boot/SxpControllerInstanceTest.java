@@ -87,6 +87,10 @@ public class SxpControllerInstanceTest {
     @Test
     public void instantiateServiceInstance() throws Exception {
         controllerInstance.instantiateServiceInstance();
+        verify(datastoreAccess, times(3)).post(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.CONFIGURATION));
+        verify(datastoreAccess, times(3)).post(any(InstanceIdentifier.class), any(DataObject.class),
+                eq(LogicalDatastoreType.OPERATIONAL));
         verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.CONFIGURATION));
         verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
