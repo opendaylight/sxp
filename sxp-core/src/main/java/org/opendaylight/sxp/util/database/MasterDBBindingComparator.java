@@ -7,8 +7,8 @@
  */
 package org.opendaylight.sxp.util.database;
 
-import static org.opendaylight.sxp.core.Configuration.LOCAL_ORIGIN;
-import static org.opendaylight.sxp.core.Configuration.NETWORK_ORIGIN;
+import static org.opendaylight.sxp.core.BindingOriginsConfig.LOCAL_ORIGIN;
+import static org.opendaylight.sxp.core.BindingOriginsConfig.NETWORK_ORIGIN;
 import static org.opendaylight.sxp.util.database.MasterDatabase.getPeerSequenceLength;
 
 import java.util.Comparator;
