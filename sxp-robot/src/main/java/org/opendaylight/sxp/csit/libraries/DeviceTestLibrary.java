@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.csit.LibraryServer;
@@ -135,7 +136,7 @@ public class DeviceTestLibrary extends AbstractLibrary {
         bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setIpPrefix(new IpPrefix(Objects.requireNonNull(prefix).toCharArray()));
-        bindingBuilder.setOrigin(Configuration.LOCAL_ORIGIN);
+        bindingBuilder.setOrigin(BindingOriginsConfig.LOCAL_ORIGIN);
         return bindingBuilder.build();
     }
 
