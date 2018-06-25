@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.hazelcast.MasterDBPropagatingListener;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -113,7 +113,7 @@ public class MasterDatabaseImpl extends MasterDatabase {
      */
     @Override
     public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> addLocalBindings(List<T> bindings) {
-        return addBindings(bindings, localBindingMap, Configuration.LOCAL_ORIGIN);
+        return addBindings(bindings, localBindingMap, BindingOriginsConfig.LOCAL_ORIGIN);
     }
 
     /**
@@ -129,7 +129,7 @@ public class MasterDatabaseImpl extends MasterDatabase {
      */
     @Override
     public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings) {
-        return addBindings(bindings, bindingMap, Configuration.NETWORK_ORIGIN);
+        return addBindings(bindings, bindingMap, BindingOriginsConfig.NETWORK_ORIGIN);
     }
 
     /**

@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.hazelcast.MasterDBPropagatingListener;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -166,7 +167,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         } else {
             databaseMaster = new HashMap<>();
         }
-        OriginType bindingType = (datastoreType == LogicalDatastoreType.CONFIGURATION) ? Configuration.LOCAL_ORIGIN : Configuration.NETWORK_ORIGIN;
+        OriginType bindingType = (datastoreType == LogicalDatastoreType.CONFIGURATION) ? BindingOriginsConfig.LOCAL_ORIGIN : BindingOriginsConfig.NETWORK_ORIGIN;
         added.addAll(filterIncomingBindings(bindings, databaseMaster::get,
                 p -> datastoreAccess.checkAndDelete(getIdentifierBuilder(p).build(),
                         LogicalDatastoreType.OPERATIONAL), bindingType).values()
