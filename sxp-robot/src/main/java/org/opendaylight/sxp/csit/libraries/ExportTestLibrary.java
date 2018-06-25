@@ -12,6 +12,7 @@ import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -161,7 +162,7 @@ public class ExportTestLibrary extends AbstractLibrary {
                         .setIpPrefix(new IpPrefix(Preconditions.checkNotNull(prefix).toCharArray()))
                         .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
                         .setSecurityGroupTag(new Sgt(Integer.parseInt(Preconditions.checkNotNull(sgt))))
-                        .setOrigin(Configuration.LOCAL_ORIGIN)
+                        .setOrigin(BindingOriginsConfig.LOCAL_ORIGIN)
                         .build(), Integer.MAX_VALUE);
         totalOfBindings = 
                 totalOfBindings == 0 ?
