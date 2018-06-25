@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.CapabilitiesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
@@ -35,9 +34,6 @@ public final class Configuration {
     public static final boolean SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS = true;
 
     public static final String TOPOLOGY_NAME = "sxp";
-
-    public static final OriginType NETWORK_ORIGIN = OriginType.getDefaultInstance("NETWORK");
-    public static final OriginType LOCAL_ORIGIN = OriginType.getDefaultInstance("LOCAL");
 
     /**
      * @param version Version according which Capabilities are generated
