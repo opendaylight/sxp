@@ -76,6 +76,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ad
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddPeerGroupOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddPeerGroupOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.ConfigPersistence;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingOriginInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingOriginOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingOriginOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingsInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteBindingsOutputBuilder;
@@ -116,6 +119,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ge
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.SxpControllerService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateBindingOriginInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateBindingOriginOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateBindingOriginOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateEntryInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateEntryOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateEntryOutputBuilder;
@@ -1159,11 +1165,78 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                         .setPriority(priority)
                         .build();
                 final boolean addToDataStore = datastoreAccess
+                        .putIfNotExists(InstanceIdentifier.builder(BindingOrigins.class)
+                                        .child(BindingOrigin.class, new BindingOriginKey(new OriginType(origin))).build(),
+                                bindingOrigin, LogicalDatastoreType.CONFIGURATION);
+
+                output.setResult(addToDataStore);
+            }
+            return RpcResultBuilder.success(output.build()).build();
+        });
+    }
+
+    @Override
+    public ListenableFuture<RpcResult<UpdateBindingOriginOutput>> updateBindingOrigin(UpdateBindingOriginInput input) {
+        final UpdateBindingOriginOutputBuilder output = new UpdateBindingOriginOutputBuilder().setResult(false);
+
+        return executor.submit(() -> {
+            LOG.info("RpcUpdateBindingOrigin event | {}", input.toString());
+
+            // verify input
+            final OriginType origin = input.getOrigin();
+            if (origin == null) {
+                LOG.info("RpcUpdateBindingOrigin exception | Parameter 'origin' not defined", input.toString());
+                return RpcResultBuilder.success(output.build()).build();
+            }
+            final Short priority = input.getPriority();
+            if (priority == null) {
+                LOG.info("RpcUpdateBindingOrigin exception | Parameter 'priority' not defined", input.toString());
+                return RpcResultBuilder.success(output.build()).build();
+            }
+
+            // update in internal map
+            final boolean updateInInternal = BindingOriginsConfig.INSTANCE.updateBindingOrigin(origin, priority);
+            if (updateInInternal) {
+                // then update in data-store
+                final BindingOrigin bindingOrigin = new BindingOriginBuilder()
+                        .setOrigin(origin)
+                        .setPriority(priority)
+                        .build();
+                final boolean addToDataStore = datastoreAccess
                         .putSynchronous(InstanceIdentifier.builder(BindingOrigins.class)
                                         .child(BindingOrigin.class, new BindingOriginKey(new OriginType(origin))).build(),
                                 bindingOrigin, LogicalDatastoreType.CONFIGURATION);
 
                 output.setResult(addToDataStore);
+            }
+            return RpcResultBuilder.success(output.build()).build();
+        });
+    }
+
+    @Override
+    public ListenableFuture<RpcResult<DeleteBindingOriginOutput>> deleteBindingOrigin(DeleteBindingOriginInput input) {
+        final DeleteBindingOriginOutputBuilder output = new DeleteBindingOriginOutputBuilder().setResult(false);
+
+        return executor.submit(() -> {
+            LOG.info("RpcDeleteBindingOrigin event | {}", input.toString());
+
+            // verify input
+            final OriginType origin = input.getOrigin();
+            if (origin == null) {
+                LOG.info("RpcDeleteBindingOrigin exception | Parameter 'origin' not defined", input.toString());
+                return RpcResultBuilder.success(output.build()).build();
+            }
+
+            // remove from internal map to verify existence
+            final boolean deleteFromInternal = BindingOriginsConfig.INSTANCE.deleteBindingOrigin(origin);
+            if (deleteFromInternal) {
+                // then remove from data-store
+                final boolean deleteFromDataStore = datastoreAccess
+                        .deleteSynchronous(InstanceIdentifier.builder(BindingOrigins.class)
+                                        .child(BindingOrigin.class, new BindingOriginKey(new OriginType(origin))).build(),
+                                LogicalDatastoreType.CONFIGURATION);
+
+                output.setResult(deleteFromDataStore);
             }
             return RpcResultBuilder.success(output.build()).build();
         });
