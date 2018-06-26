@@ -313,6 +313,11 @@ public class DatastoreAccessTest {
     }
 
     @Test
+    public void testDeleteSynchronous() throws Exception {
+        // todo
+    }
+
+    @Test
     public void testClose() throws Exception {
         access.close();
         verify(transactionChain).close();

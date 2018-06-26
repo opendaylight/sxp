@@ -657,4 +657,38 @@ module sxp-controller {
             }
         }
     }
+
+    rpc update-binding-origin {
+        description "Create a new binding origin type";
+        input {
+            leaf origin {
+                type sxpcfg:origin-type;
+                mandatory true;
+            }
+            leaf priority {
+                type uint8;
+                mandatory true;
+            }
+        }
+        output {
+            leaf result {
+                type boolean;
+            }
+        }
+    }
+
+    rpc delete-binding-origin {
+        description "Remove a binding origin type";
+        input {
+            leaf origin {
+                type sxpcfg:origin-type;
+                mandatory true;
+            }
+        }
+        output {
+            leaf result {
+                type boolean;
+            }
+        }
+    }
 }

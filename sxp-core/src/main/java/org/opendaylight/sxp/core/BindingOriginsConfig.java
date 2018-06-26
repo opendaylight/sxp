@@ -68,4 +68,26 @@ public enum BindingOriginsConfig {
             throw new IllegalStateException(msg);
         }
     }
+
+    public boolean deleteBindingOrigin(OriginType origin) {
+        if (bindingOrigins.containsKey(origin)) {
+            bindingOrigins.remove(origin);
+            return true;
+        }
+        LOG.warn("Origin binding to be deleted {} not found", origin.getValue());
+        return false;
+    }
+
+    public boolean updateBindingOrigin(OriginType origin, Short priority) {
+        if (!bindingOrigins.containsKey(origin)) {
+            LOG.warn("Origin binding to be updated {} not found", origin.getValue());
+            return false;
+        }
+        if (bindingOrigins.containsValue(priority)) {
+            LOG.warn("Priority {} for origin binding is already used", priority);
+            return false;
+        }
+        bindingOrigins.put(origin, priority);
+        return true;
+    }
 }
