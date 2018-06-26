@@ -95,6 +95,13 @@
             <artifactId>netty-transport-native-epoll</artifactId>
             <classifier>${os.detected.classifier}</classifier>
         </dependency>
+        <!--FIXME: Geronimo is here with compile scope just as a fix for a mysterious failing sxp-core SFT.
+        Remove when a proper fix is found.-->
+        <dependency>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-jta_1.1_spec</artifactId>
+            <version>1.1.1</version>
+        </dependency>
         <dependency>
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast</artifactId>
