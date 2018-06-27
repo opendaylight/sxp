@@ -1,0 +1,119 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d7f3807b_db9b081a",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/boot/SxpControllerInstance.java",
+        "patchSetId": 17
+      },
+      "lineNbr": 135,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-27T16:19:20Z",
+      "side": 1,
+      "message": "Move this initialization before the node listener init.",
+      "range": {
+        "startLine": 132,
+        "startChar": 0,
+        "endLine": 135,
+        "endChar": 52
+      },
+      "revId": "2fc64e0cc6714105334dcad6d5f59e50e7f1946c",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7d2c8c58_4e7501ec",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/BindingOriginsConfig.java",
+        "patchSetId": 17
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-27T16:19:20Z",
+      "side": 1,
+      "message": "Not needed method call, remove",
+      "range": {
+        "startLine": 24,
+        "startChar": 89,
+        "endLine": 24,
+        "endChar": 96
+      },
+      "revId": "2fc64e0cc6714105334dcad6d5f59e50e7f1946c",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "61da5d80_fd05778d",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/BindingOriginsConfig.java",
+        "patchSetId": 17
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-27T16:19:20Z",
+      "side": 1,
+      "message": "This should be static.",
+      "range": {
+        "startLine": 55,
+        "startChar": 16,
+        "endLine": 55,
+        "endChar": 38
+      },
+      "revId": "2fc64e0cc6714105334dcad6d5f59e50e7f1946c",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eed030a8_4e4eddaf",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/BindingOriginsConfig.java",
+        "patchSetId": 17
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-27T16:19:20Z",
+      "side": 1,
+      "message": "Use IllegalArgumentException",
+      "range": {
+        "startLine": 60,
+        "startChar": 22,
+        "endLine": 60,
+        "endChar": 43
+      },
+      "revId": "2fc64e0cc6714105334dcad6d5f59e50e7f1946c",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "52fcba19_b5deffe1",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/BindingOriginsConfig.java",
+        "patchSetId": 17
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-27T16:19:20Z",
+      "side": 1,
+      "message": "This code doesn\u0027t actually check for duplicate priority values. It checks for duplicate origin type definitions.\nAlthough it\u0027s OK to check for this, please correct the comment and error message as well.\nThen add the real check for duplicate priorities.\nAlso, while at it, it might be a good idea to log the contents of the argument list.",
+      "range": {
+        "startLine": 62,
+        "startChar": 0,
+        "endLine": 67,
+        "endChar": 9
+      },
+      "revId": "2fc64e0cc6714105334dcad6d5f59e50e7f1946c",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
