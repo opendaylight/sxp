@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f622b1ee_426eaa09",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/BindingOriginsConfig.java",
+        "patchSetId": 9
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-27T12:07:32Z",
+      "side": 1,
+      "message": "Please switch to Integer type to avoid performance overhead",
+      "range": {
+        "startLine": 22,
+        "startChar": 24,
+        "endLine": 22,
+        "endChar": 29
+      },
+      "revId": "9553155880e5157a69f1fb0e785d93ff8727a7c8",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
