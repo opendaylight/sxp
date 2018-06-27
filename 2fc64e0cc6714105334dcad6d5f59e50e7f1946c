@@ -71,6 +71,30 @@
     },
     {
       "key": {
+        "uuid": "6b07e403_a7a3f54a",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/BindingOriginsConfig.java",
+        "patchSetId": 17
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-27T16:21:10Z",
+      "side": 1,
+      "message": "Also, please document what it actually checks for since the name is not self-explanatory.",
+      "parentUuid": "61da5d80_fd05778d",
+      "range": {
+        "startLine": 55,
+        "startChar": 16,
+        "endLine": 55,
+        "endChar": 38
+      },
+      "revId": "2fc64e0cc6714105334dcad6d5f59e50e7f1946c",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "eed030a8_4e4eddaf",
         "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/BindingOriginsConfig.java",
         "patchSetId": 17
