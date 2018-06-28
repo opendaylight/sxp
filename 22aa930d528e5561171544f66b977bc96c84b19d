@@ -1,0 +1,205 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "efdeb9dc_5edc1470",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/DatastoreAccess.java",
+        "patchSetId": 15
+      },
+      "lineNbr": 99,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-28T16:21:14Z",
+      "side": 1,
+      "message": "Do not introduce dependencies to deprecated APIs",
+      "range": {
+        "startLine": 94,
+        "startChar": 0,
+        "endLine": 99,
+        "endChar": 9
+      },
+      "revId": "22aa930d528e5561171544f66b977bc96c84b19d",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "58aa875c_c6e7f6a8",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 15
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-28T16:21:14Z",
+      "side": 1,
+      "message": "1. Move these new RPCs to a separate class.\n2. Mutex all the RPCs\u0027 logical operations (add, update, delete..)",
+      "revId": "22aa930d528e5561171544f66b977bc96c84b19d",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d5dd65fd_44833d0c",
+        "filename": "sxp-controller/src/main/yang/sxp-controller.yang",
+        "patchSetId": 15
+      },
+      "lineNbr": 652,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-28T16:21:14Z",
+      "side": 1,
+      "message": "These seem to get duplicated pretty quickly. Consider using a grouping.",
+      "range": {
+        "startLine": 643,
+        "startChar": 0,
+        "endLine": 652,
+        "endChar": 9
+      },
+      "revId": "22aa930d528e5561171544f66b977bc96c84b19d",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "03e1643a_b81e9530",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/BindingOriginsConfig.java",
+        "patchSetId": 15
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-28T16:21:14Z",
+      "side": 1,
+      "message": "Do not use constants for logging literals used only once or twice.",
+      "range": {
+        "startLine": 37,
+        "startChar": 0,
+        "endLine": 45,
+        "endChar": 93
+      },
+      "revId": "22aa930d528e5561171544f66b977bc96c84b19d",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4ea261a3_30c470c4",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/BindingOriginsConfig.java",
+        "patchSetId": 15
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-28T16:21:14Z",
+      "side": 1,
+      "message": "Never expose the internal state. Return an unmodifiable view, or a copy.",
+      "range": {
+        "startLine": 50,
+        "startChar": 15,
+        "endLine": 50,
+        "endChar": 29
+      },
+      "revId": "22aa930d528e5561171544f66b977bc96c84b19d",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "431348e1_34ab3988",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/BindingOriginsConfig.java",
+        "patchSetId": 15
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-28T16:21:14Z",
+      "side": 1,
+      "message": "synchronize",
+      "range": {
+        "startLine": 53,
+        "startChar": 19,
+        "endLine": 53,
+        "endChar": 35
+      },
+      "revId": "22aa930d528e5561171544f66b977bc96c84b19d",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "24e40859_7a57df01",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/BindingOriginsConfig.java",
+        "patchSetId": 15
+      },
+      "lineNbr": 72,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-28T16:21:14Z",
+      "side": 1,
+      "message": "Synchronize",
+      "range": {
+        "startLine": 72,
+        "startChar": 19,
+        "endLine": 72,
+        "endChar": 38
+      },
+      "revId": "22aa930d528e5561171544f66b977bc96c84b19d",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1050c85d_5a4cc34b",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/BindingOriginsConfig.java",
+        "patchSetId": 15
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-28T16:21:14Z",
+      "side": 1,
+      "message": "synchronize",
+      "range": {
+        "startLine": 86,
+        "startChar": 19,
+        "endLine": 86,
+        "endChar": 38
+      },
+      "revId": "22aa930d528e5561171544f66b977bc96c84b19d",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8a8a764d_ba4e5ba9",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/MasterDatabaseImpl.java",
+        "patchSetId": 15
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-28T16:21:14Z",
+      "side": 1,
+      "message": "These look superfluous",
+      "range": {
+        "startLine": 10,
+        "startChar": 0,
+        "endLine": 13,
+        "endChar": 29
+      },
+      "revId": "22aa930d528e5561171544f66b977bc96c84b19d",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
