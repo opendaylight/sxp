@@ -22,6 +22,30 @@
       "revId": "f56149292d4b4367e2cbc5cbcda42285e16d845e",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f8c89a16_2e3e7a85",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/BindingOriginsConfig.java",
+        "patchSetId": 11
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-06-28T06:03:53Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "bec991c5_09ff9693",
+      "range": {
+        "startLine": 28,
+        "startChar": 72,
+        "endLine": 28,
+        "endChar": 87
+      },
+      "revId": "f56149292d4b4367e2cbc5cbcda42285e16d845e",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
     }
   ]
 }
