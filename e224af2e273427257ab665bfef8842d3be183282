@@ -16,6 +16,24 @@
       "revId": "e224af2e273427257ab665bfef8842d3be183282",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "55a8042a_bd671f48",
+        "filename": "sxp-api/src/main/yang/sxp-configuration.yang",
+        "patchSetId": 4
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-06-28T15:20:30Z",
+      "side": 1,
+      "message": "why not? What\u0027s a better approach?",
+      "parentUuid": "18983de7_85ae920c",
+      "revId": "e224af2e273427257ab665bfef8842d3be183282",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
     }
   ]
 }
