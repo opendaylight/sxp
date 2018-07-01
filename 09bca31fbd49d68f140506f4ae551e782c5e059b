@@ -1,0 +1,73 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f657a103_4183f16a",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/DatastoreAccess.java",
+        "patchSetId": 24
+      },
+      "lineNbr": 191,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-07-01T06:42:39Z",
+      "side": 1,
+      "message": "Not really",
+      "range": {
+        "startLine": 191,
+        "startChar": 7,
+        "endLine": 191,
+        "endChar": 13
+      },
+      "revId": "09bca31fbd49d68f140506f4ae551e782c5e059b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9c56e27f_1dacf218",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpConfigRpcServiceImpl.java",
+        "patchSetId": 24
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-07-01T06:42:39Z",
+      "side": 1,
+      "message": "not needed",
+      "range": {
+        "startLine": 43,
+        "startChar": 86,
+        "endLine": 43,
+        "endChar": 93
+      },
+      "revId": "09bca31fbd49d68f140506f4ae551e782c5e059b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "adbf11ba_92b2d661",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpConfigRpcServiceImpl.java",
+        "patchSetId": 24
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-07-01T06:42:39Z",
+      "side": 1,
+      "message": "move constants to the beginning of the class as is the convention",
+      "range": {
+        "startLine": 43,
+        "startChar": 12,
+        "endLine": 43,
+        "endChar": 18
+      },
+      "revId": "09bca31fbd49d68f140506f4ae551e782c5e059b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
