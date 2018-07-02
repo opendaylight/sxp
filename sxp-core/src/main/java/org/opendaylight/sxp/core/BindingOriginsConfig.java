@@ -7,10 +7,11 @@
  */
 package org.opendaylight.sxp.core;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -26,12 +27,14 @@ public enum BindingOriginsConfig {
 
     public static final OriginType LOCAL_ORIGIN = OriginType.getDefaultInstance("LOCAL");
     public static final OriginType NETWORK_ORIGIN = OriginType.getDefaultInstance("NETWORK");
-    public static final Map<OriginType, Integer> DEFAULT_ORIGIN_PRIORITIES;
-    static {
+    public static final Map<OriginType, Integer> DEFAULT_ORIGIN_PRIORITIES =
+            Collections.unmodifiableMap(createDefaultPriorities());
+
+    private static Map<OriginType, Integer> createDefaultPriorities() {
         Map<OriginType, Integer> defaultPrios = new HashMap<>();
         defaultPrios.put(LOCAL_ORIGIN, 1);
         defaultPrios.put(NETWORK_ORIGIN, 2);
-        DEFAULT_ORIGIN_PRIORITIES = Collections.unmodifiableMap(defaultPrios);
+        return defaultPrios;
     }
 
     private final Map<OriginType, Integer> bindingOrigins = new ConcurrentHashMap<>();
@@ -42,7 +45,7 @@ public enum BindingOriginsConfig {
 
     public synchronized boolean addBindingOrigin(OriginType origin, Integer priority) {
         if (bindingOrigins.containsKey(origin)) {
-            LOG.warn("Binding origin: {} already exist.", origin.getValue());
+            LOG.warn("Binding origin: {} already exists.", origin.getValue());
             return false;
         }
         if (bindingOrigins.containsValue(priority)) {
@@ -54,9 +57,15 @@ public enum BindingOriginsConfig {
         return true;
     }
 
-    public synchronized void addBindingOrigins(List<BindingOrigin> origins) {
+    public synchronized void addBindingOrigins(Iterable<BindingOrigin> origins) {
         origins.forEach(bindingOrigin -> addBindingOrigin(bindingOrigin.getOrigin(),
                 bindingOrigin.getPriority().intValue()));
+    }
+
+    public synchronized void addBindingOrigins(Map<OriginType, Integer> originTypes) {
+        for (Entry<OriginType, Integer> origin : originTypes.entrySet()) {
+            addBindingOrigin(origin.getKey(), origin.getValue());
+        }
     }
 
     public synchronized boolean updateBindingOrigin(OriginType origin, Integer priority) {
@@ -88,11 +97,11 @@ public enum BindingOriginsConfig {
     }
 
     /**
-     * Validates provided list of binding origins.
+     * Validates provided collection of binding origins.
      * <p>
-     * A valid list of binding origins:
+     * A valid collection of binding origins:
      * <ul>
-     *     <li>1. must contains default origins {@link BindingOriginsConfig#LOCAL_ORIGIN}
+     *     <li>1. must contain default origins {@link BindingOriginsConfig#LOCAL_ORIGIN}
      *     and {@link BindingOriginsConfig#NETWORK_ORIGIN}</li>
      *     <li>2. must NOT contain any duplicate origin type definition</li>
      *     <li>3. must NOT contain any duplicate priority definition</li>
@@ -102,7 +111,7 @@ public enum BindingOriginsConfig {
      *
      * @param origins List of binding origins to be validated
      */
-    public static void validateBindingOrigins(List<BindingOrigin> origins) {
+    public static void validateBindingOrigins(Collection<BindingOrigin> origins) {
         LOG.debug("Validating binding origins: {}", origins);
         final Set<OriginType> types = origins.stream().map(BindingOrigin::getOrigin).collect(Collectors.toSet());
         if (!types.contains(LOCAL_ORIGIN) || !types.contains(NETWORK_ORIGIN)) {
@@ -123,5 +132,12 @@ public enum BindingOriginsConfig {
             LOG.error(msg);
             throw new IllegalArgumentException(msg);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "BindingOriginsConfig{" +
+                "bindingOrigins=" + bindingOrigins +
+                '}';
     }
 }
