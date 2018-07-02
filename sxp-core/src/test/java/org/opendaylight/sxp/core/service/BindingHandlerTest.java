@@ -26,6 +26,7 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -98,6 +99,11 @@ public class BindingHandlerTest {
     private static MasterDatabaseInf masterDatabaseInf;
     private static BindingHandler handler;
 
+    @BeforeClass
+    public static void initClass() {
+        BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES.forEach(BindingOriginsConfig.INSTANCE::addBindingOrigin);
+    }
+
     @Before
     public void init() throws Exception {
         sxpNode = PowerMockito.mock(SxpNode.class);
@@ -142,6 +148,7 @@ public class BindingHandlerTest {
         bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setPeerSequence(peerSequence);
+        bindingBuilder.setOrigin(BindingOriginsConfig.NETWORK_ORIGIN);
         bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
         bindingBuilder.setOrigin(BindingOriginsConfig.LOCAL_ORIGIN);
         return bindingBuilder.build();
