@@ -17,9 +17,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -45,6 +47,11 @@ public class MasterDatabaseImplTest {
     @Mock private SxpDomain domainMock;
     @Mock private SxpNode nodeMock;
 
+    @BeforeClass
+    public static void initClass() {
+        BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES.forEach(BindingOriginsConfig.INSTANCE::addBindingOrigin);
+    }
+
     @Before
     public void init() {
         database = new MasterDatabaseImpl();
@@ -57,6 +64,8 @@ public class MasterDatabaseImplTest {
         bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setTimestamp(TimeConv.toDt(time += 1000));
+        // fixme - parametrize origin type
+        bindingBuilder.setOrigin(BindingOriginsConfig.LOCAL_ORIGIN);
         PeerSequenceBuilder sequenceBuilder = new PeerSequenceBuilder();
         sequenceBuilder.setPeer(new ArrayList<>());
         for (int i = 0; i < peers.length; i++) {
