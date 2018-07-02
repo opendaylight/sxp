@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -26,8 +27,7 @@ import org.slf4j.LoggerFactory;
  * Abstract implementation of a MasterDatabse
  */
 public abstract class MasterDatabase implements MasterDatabaseInf {
-
-    protected static final Logger LOG = LoggerFactory.getLogger(MasterDatabase.class.getName());
+    protected static final Logger LOG = LoggerFactory.getLogger(MasterDatabase.class);
 
     /**
      * Pre filter bindings before adding to MasterDatabase
@@ -39,30 +39,72 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
      * @return List of bindings that can be added to MasterDatabase
      */
     protected static <T extends SxpBindingFields> Map<IpPrefix, MasterDatabaseBinding> filterIncomingBindings(
-            List<T> bindings, Function<IpPrefix, MasterDatabaseBinding> get, Function<IpPrefix, Boolean> remove,
-            OriginType bindingType) {
+            List<T> bindings, Function<IpPrefix, MasterDatabaseBinding> get, Function<IpPrefix, Boolean> remove) {
         Map<IpPrefix, MasterDatabaseBinding> prefixMap = new HashMap<>();
-        if (get == null || remove == null || bindings == null || bindings.isEmpty()) {
+
+        if (bindings == null || get == null || remove == null) {
             return prefixMap;
         }
-        bindings.forEach(b -> {
-            if (ignoreBinding(b)) {
+
+        bindings.forEach(incoming -> {
+            if (ignoreBinding(incoming)) {
                 return;
             }
-            MasterDatabaseBinding
-                    binding =
-                    !prefixMap.containsKey(b.getIpPrefix()) ? get.apply(b.getIpPrefix()) : prefixMap.get(
-                            b.getIpPrefix());
-            if (binding == null || getPeerSequenceLength(b) < getPeerSequenceLength(binding) || (
-                    getPeerSequenceLength(b) == getPeerSequenceLength(binding)
-                            && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
-                prefixMap.put(b.getIpPrefix(), new MasterDatabaseBindingBuilder(b)
-                        .setOrigin(bindingType)
-                        .build());
-                remove.apply(b.getIpPrefix());
+
+            final MasterDatabaseBinding binding = prefixMap.containsKey(incoming.getIpPrefix())
+                    ? prefixMap.get(incoming.getIpPrefix()) : get.apply(incoming.getIpPrefix());
+
+            if (binding == null || bindingShouldBeReplaced(binding, incoming)) {
+                prefixMap.put(incoming.getIpPrefix(), new MasterDatabaseBindingBuilder(incoming).build());
+                remove.apply(incoming.getIpPrefix());
             }
         });
+
         return prefixMap;
+    }
+
+    /**
+     * Decide if existing (first coming) binding should be replaced by incoming binding.
+     * <p>
+     * The binding with the highest priority is always preferred. If priorities of bindings
+     * are the same then the binding with shorter peer sequence is preferred. If also peer sequences
+     * are the same length then the latest binding according to creation time is preferred.
+     *
+     * @param binding Existing binding
+     * @param incoming Incoming binding
+     * @return {@code true} if existing binding should be replaced, {@code false} otherwise
+     */
+    private static <T extends SxpBindingFields> boolean bindingShouldBeReplaced(
+            MasterDatabaseBinding binding, T incoming) {
+        final Map<OriginType, Integer> bindingOrigins = BindingOriginsConfig.INSTANCE.getBindingOrigins();
+        final Integer incomingPriority = bindingOrigins.get(incoming.getOrigin());
+        // incoming binding has unknown priority
+        if (incomingPriority == null) {
+            throw new IllegalStateException("Cannot find binding priority: " + incoming.getOrigin().getValue());
+        }
+        final Integer priority = bindingOrigins.get(binding.getOrigin());
+        // priority of previous binding was deleted, thus incoming has greater priority
+        if (priority == null) {
+            return true;
+        }
+
+        // first decide to replace binding according to priority
+        // lower number = higher priority
+        if (incomingPriority > priority) {
+            return false;
+        }
+        if (incomingPriority < priority) {
+            return true;
+        }
+
+        // if priorities are the same, decide according to peer sequence length and binding creation time
+        if (getPeerSequenceLength(incoming) < getPeerSequenceLength(binding)
+                || ((getPeerSequenceLength(incoming) == getPeerSequenceLength(binding)
+                && TimeConv.toLong(incoming.getTimestamp()) > TimeConv.toLong(binding.getTimestamp())))) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
