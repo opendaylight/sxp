@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -45,24 +46,55 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
         if (get == null || remove == null || bindings == null || bindings.isEmpty()) {
             return prefixMap;
         }
-        bindings.forEach(b -> {
-            if (ignoreBinding(b)) {
+        bindings.forEach(incoming -> {
+            if (ignoreBinding(incoming)) {
                 return;
             }
-            MasterDatabaseBinding
-                    binding =
-                    !prefixMap.containsKey(b.getIpPrefix()) ? get.apply(b.getIpPrefix()) : prefixMap.get(
-                            b.getIpPrefix());
-            if (binding == null || getPeerSequenceLength(b) < getPeerSequenceLength(binding) || (
-                    getPeerSequenceLength(b) == getPeerSequenceLength(binding)
-                            && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
-                prefixMap.put(b.getIpPrefix(), new MasterDatabaseBindingBuilder(b)
-                        .setOrigin(bindingType)
+
+            final MasterDatabaseBinding binding =
+                    !prefixMap.containsKey(incoming.getIpPrefix()) ? get.apply(incoming.getIpPrefix()) : prefixMap.get(
+                            incoming.getIpPrefix());
+
+            if (binding == null || bindingShouldBeReplaced(incoming, binding)) {
+                prefixMap.put(incoming.getIpPrefix(), new MasterDatabaseBindingBuilder(incoming)
+                        .setOrigin(incoming.getOrigin())
                         .build());
-                remove.apply(b.getIpPrefix());
+                remove.apply(incoming.getIpPrefix());
             }
         });
         return prefixMap;
+    }
+
+    private static <T extends SxpBindingFields> boolean bindingShouldBeReplaced(
+            T incoming, MasterDatabaseBinding binding) {
+        final Map<OriginType, Integer> bindingOrigins = BindingOriginsConfig.INSTANCE.getBindingOrigins();
+        final Integer incomingPriority = bindingOrigins.get(incoming.getOrigin());
+        // incoming binding has unknown priority
+        if (incomingPriority == null) {
+            throw new IllegalStateException("Cannot find binding binding priority");
+        }
+        final Integer priority = bindingOrigins.get(binding.getOrigin());
+        // priority of previous binding was deleted, thus incoming has greater priority
+        if (priority == null) {
+            return true;
+        }
+
+        // first decide to replace binding binding according to priority
+        if (incomingPriority < priority) {
+            return false;
+        }
+        if (incomingPriority > priority) {
+            return true;
+        }
+
+        // if priorities are the same, decide according to peer sequence length and binding creation time
+        if (getPeerSequenceLength(incoming) < getPeerSequenceLength(binding)
+                || ((getPeerSequenceLength(incoming) == getPeerSequenceLength(binding)
+                && TimeConv.toLong(incoming.getTimestamp()) > TimeConv.toLong(binding.getTimestamp())))) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
