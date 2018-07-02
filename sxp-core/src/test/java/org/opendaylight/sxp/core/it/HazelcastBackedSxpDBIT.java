@@ -23,7 +23,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
 import org.junit.rules.Timeout;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
@@ -55,6 +58,8 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -66,24 +71,32 @@ import org.powermock.modules.junit4.PowerMockRunner;
 @PowerMockIgnore("javax.management.*")
 public class HazelcastBackedSxpDBIT {
 
+    private static final Logger LOG = LoggerFactory.getLogger(HazelcastBackedSxpDBIT.class);
+
     private static HazelcastBackedSxpDB database;
     private static SxpNode node;
     private static List<SxpConnection> sxpConnections = new ArrayList<>();
     @Rule
     public Timeout globalTimeout = new Timeout(120_000);
+    @Rule
+    public TestRule watcher = new StartTestWatcher();
 
     @Before
     public void init() {
+        LOG.info("Test init started");
         database = new HazelcastBackedSxpDB("ACTIVE_BINDINGS", "TENTATIVE_BINDINGS");
         node = PowerMockito.mock(SxpNode.class);
         PowerMockito.when(node.getBindingSxpDatabase()).thenReturn(database);
         PowerMockito.when(node.getAllConnections()).thenReturn(sxpConnections);
         PowerMockito.when(node.getAllConnections(any())).thenReturn(sxpConnections);
+        LOG.info("Test init done");
     }
 
     @After
     public void shutdown() {
+        LOG.info("Test finished, shutting down database");
         database.close();
+        LOG.info("Database closed, cleanup finished.");
     }
 
     private SxpConnection mockConnection(String remoteId) {
@@ -384,6 +397,12 @@ public class HazelcastBackedSxpDBIT {
         assertTrue(resultOfPut);
         boolean resultOfPut2 = database.putBindings(nodeId, BindingDatabase.BindingType.ActiveBindings, Collections.EMPTY_LIST);
         assertTrue(!resultOfPut2);
+    }
+
+    private static class StartTestWatcher extends TestWatcher {
+        protected void starting(Description description) {
+            LOG.info("Starting test: {}", description.getMethodName());
+        }
     }
 }
 
