@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
@@ -89,8 +91,9 @@ public class MasterDatastoreImplTest {
                     } else if (((InstanceIdentifier) invocation.getArguments()[0]).getTargetType()
                             == MasterDatabaseBinding.class) {
                         return databaseBindings_Op.get(
-                                ((MasterDatabaseBindingKey) ((InstanceIdentifier) invocation.getArguments()[0]).firstKeyOf(
-                                        MasterDatabaseBinding.class)).getIpPrefix());
+                                ((MasterDatabaseBindingKey) ((InstanceIdentifier) invocation.getArguments()[0])
+                                        .firstKeyOf(
+                                                MasterDatabaseBinding.class)).getIpPrefix());
                     }
                     return null;
                 });
@@ -105,11 +108,19 @@ public class MasterDatastoreImplTest {
     }
 
     private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, String... peers) {
+        return getBinding(prefix, sgt, BindingOriginsConfig.LOCAL_ORIGIN, peers);
+    }
+
+    private <T extends SxpBindingFields> T getNetworkBinding(String prefix, int sgt, String... peers) {
+        return getBinding(prefix, sgt, BindingOriginsConfig.NETWORK_ORIGIN, peers);
+    }
+
+    private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, OriginType origin, String... peers) {
         MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
         bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setTimestamp(TimeConv.toDt(time += 1000));
-        bindingBuilder.setOrigin(BindingOriginsConfig.LOCAL_ORIGIN);
+        bindingBuilder.setOrigin(origin);
         PeerSequenceBuilder sequenceBuilder = new PeerSequenceBuilder();
         sequenceBuilder.setPeer(new ArrayList<>());
         for (int i = 0; i < peers.length; i++) {
@@ -126,10 +137,10 @@ public class MasterDatastoreImplTest {
 
     private <T extends SxpBindingFields, R extends SxpBindingFields> void assertBindings(List<T> bindings1,
             List<R> bindings2) {
-        bindings1.stream()
-                .forEach(b -> assertTrue(bindings2.stream()
-                        .anyMatch(r -> r.getSecurityGroupTag().getValue().equals(b.getSecurityGroupTag().getValue())
-                                && Arrays.equals(r.getIpPrefix().getValue(), b.getIpPrefix().getValue()))));
+        bindings1.forEach(b -> assertTrue(bindings2.stream().anyMatch(
+                r -> r.getSecurityGroupTag().getValue().equals(b.getSecurityGroupTag().getValue())
+                        && Arrays.equals(r.getIpPrefix().getValue(), b.getIpPrefix().getValue())
+                        && r.getOrigin().equals(b.getOrigin()))));
     }
 
     @Test
@@ -168,6 +179,60 @@ public class MasterDatastoreImplTest {
     }
 
     @Test
+    public void testAddLowerPriorityBinding() {
+        final String prefix = "1.1.1.1/32";
+        final int sgt = 20;
+        final String peer = "10.10.10.10";
+
+        // add local binding
+        final SxpBindingFields localBinding = getBinding(prefix, sgt, peer);
+        assertBindings(database.addBindings(Collections.singletonList(localBinding)),
+                Collections.singletonList(localBinding));
+        assertBindings(database.getBindings(), Collections.singletonList(localBinding));
+
+        // add binding of lower priority - lower priority binding is not added
+        final SxpBindingFields networkBinding = getNetworkBinding(prefix, sgt, peer);
+        assertTrue(database.addBindings(Collections.singletonList(networkBinding)).isEmpty());
+
+        // the previous binding is still in database
+        assertBindings(database.getBindings(), Collections.singletonList(localBinding));
+    }
+
+    @Test
+    public void testAddHigherPriorityBinding() {
+        final String prefix = "1.1.1.1/32";
+        final int sgt = 20;
+        final String peer = "10.10.10.10";
+
+        // add network binding
+        final SxpBindingFields networkBinding = getNetworkBinding(prefix, sgt, peer);
+        assertBindings(database.addBindings(Collections.singletonList(networkBinding)),
+                Collections.singletonList(networkBinding));
+        assertBindings(database.getBindings(), Collections.singletonList(networkBinding));
+
+        // add binding of higher priority - previous lower priority binding is replaced
+        final SxpBindingFields localBinding = getBinding(prefix, sgt, peer);
+        assertBindings(database.addBindings(Collections.singletonList(localBinding)),
+                Collections.singletonList(localBinding));
+
+        // the new binding replaced previous one
+        assertBindings(database.getBindings(), Collections.singletonList(localBinding));
+    }
+
+    @Test
+    public void testAddBindingsWithDifferentPriorities() {
+        // add two bindings with different priorities for the same ip prefix at once
+        final String prefix = "1.1.1.1/32";
+        final int sgt = 20;
+        final SxpBindingFields networkBinding = getNetworkBinding(prefix, sgt);
+        final SxpBindingFields localBinding = getBinding(prefix, sgt);
+
+        // only the binding with higher priority should be added
+        assertEquals(1, database.addBindings(mergeBindings(networkBinding, localBinding)).size());
+        assertBindings(database.getBindings(), Collections.singletonList(localBinding));
+    }
+
+    @Test
     public void testDeleteBindings() throws Exception {
         database.addBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
                 getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
@@ -188,6 +253,82 @@ public class MasterDatastoreImplTest {
                 mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
                         getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
         assertEquals(0, database.getBindings().size());
+    }
+
+    @Test
+    public void testDeleteNotEqualPrefix() {
+        final String prefix = "1.1.1.1/32";
+        final int sgt = 20;
+        final String peer = "10.10.10.10";
+
+        // add binding
+        final SxpBindingFields localBinding = getBinding(prefix, sgt, peer);
+        assertBindings(database.addBindings(Collections.singletonList(localBinding)),
+                Collections.singletonList(localBinding));
+        assertBindings(database.getBindings(), Collections.singletonList(localBinding));
+
+        // try to delete binding with non existing ip prefix
+        assertTrue(database.deleteBindings(Collections.singletonList(getBinding("2.2.2.2/32", sgt, peer))).isEmpty());
+
+        // verify binding was not deleted
+        assertBindings(database.getBindings(), Collections.singletonList(localBinding));
+    }
+
+    @Test
+    public void testDeleteNotEqualSgt() {
+        final String prefix = "1.1.1.1/32";
+        final int sgt = 20;
+        final String peer = "10.10.10.10";
+
+        // add binding
+        final SxpBindingFields localBinding = getBinding(prefix, sgt, peer);
+        assertBindings(database.addBindings(Collections.singletonList(localBinding)),
+                Collections.singletonList(localBinding));
+        assertBindings(database.getBindings(), Collections.singletonList(localBinding));
+
+        // try to delete binding with non existing sgt
+        assertTrue(database.deleteBindings(Collections.singletonList(getBinding(prefix, 50, peer))).isEmpty());
+
+        // verify binding was not deleted
+        assertEquals(1, database.getBindings().size());
+        assertBindings(database.getBindings(), Collections.singletonList(localBinding));
+    }
+
+    @Test
+    public void testDeleteNotEqualPriority() {
+        final String prefix = "1.1.1.1/32";
+        final int sgt = 20;
+        final String peer = "10.10.10.10";
+
+        // add binding
+        final SxpBindingFields localBinding = getBinding(prefix, sgt, peer);
+        assertBindings(database.addBindings(Collections.singletonList(localBinding)),
+                Collections.singletonList(localBinding));
+        assertBindings(database.getBindings(), Collections.singletonList(localBinding));
+
+        // try to delete binding with non existing origin priority
+        assertTrue(database.deleteBindings(Collections.singletonList(getNetworkBinding(prefix, sgt, peer))).isEmpty());
+
+        // verify binding was not deleted
+        assertEquals(1, database.getBindings().size());
+        assertBindings(database.getBindings(), Collections.singletonList(localBinding));
+    }
+
+    @Test
+    public void testGetBindings() {
+        final SxpBindingFields localBinding = getBinding("1.1.1.1/32", 10);
+        final SxpBindingFields networkBinding = getNetworkBinding("2.2.2.2/32", 20);
+        assertBindings(database.addBindings(mergeBindings(localBinding, networkBinding)),
+                mergeBindings(localBinding, networkBinding));
+
+        // get all bindings
+        assertBindings(database.getBindings(), mergeBindings(localBinding, networkBinding));
+        // get local bindings
+        assertBindings(database.getBindings(BindingOriginsConfig.LOCAL_ORIGIN),
+                Collections.singletonList(localBinding));
+        // get network bindings
+        assertBindings(database.getBindings(BindingOriginsConfig.NETWORK_ORIGIN),
+                Collections.singletonList(networkBinding));
     }
 
     @Test
