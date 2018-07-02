@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -45,6 +46,11 @@ public class MasterDatabaseImplTest {
     @Mock private BindingDispatcher dispatcherMock;
     @Mock private SxpDomain domainMock;
     @Mock private SxpNode nodeMock;
+
+    @BeforeClass
+    public static void initClass() {
+        BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES.forEach(BindingOriginsConfig.INSTANCE::addBindingOrigin);
+    }
 
     @Before
     public void init() {
