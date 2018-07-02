@@ -126,10 +126,10 @@ public class MasterDatastoreImplTest {
 
     private <T extends SxpBindingFields, R extends SxpBindingFields> void assertBindings(List<T> bindings1,
             List<R> bindings2) {
-        bindings1.stream()
-                .forEach(b -> assertTrue(bindings2.stream()
-                        .anyMatch(r -> r.getSecurityGroupTag().getValue().equals(b.getSecurityGroupTag().getValue())
-                                && Arrays.equals(r.getIpPrefix().getValue(), b.getIpPrefix().getValue()))));
+        bindings1.forEach(b -> assertTrue(bindings2.stream()
+                .anyMatch(r -> r.getSecurityGroupTag().getValue().equals(b.getSecurityGroupTag().getValue())
+                        && Arrays.equals(r.getIpPrefix().getValue(), b.getIpPrefix().getValue())
+                        && r.getOrigin().equals(b.getOrigin()))));
     }
 
     @Test
