@@ -26,6 +26,7 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -97,6 +98,11 @@ public class BindingHandlerTest {
     private static SxpDatabaseInf sxpDatabaseInf;
     private static MasterDatabaseInf masterDatabaseInf;
     private static BindingHandler handler;
+
+    @BeforeClass
+    public static void initClass() {
+        BindingOriginsConfig.INSTANCE.addBindingOrigins(BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES);
+    }
 
     @Before
     public void init() throws Exception {
