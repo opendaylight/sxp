@@ -13,9 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
-import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
@@ -26,8 +24,7 @@ import org.slf4j.LoggerFactory;
  * Abstract implementation of a MasterDatabse
  */
 public abstract class MasterDatabase implements MasterDatabaseInf {
-
-    protected static final Logger LOG = LoggerFactory.getLogger(MasterDatabase.class.getName());
+    protected static final Logger LOG = LoggerFactory.getLogger(MasterDatabase.class);
 
     /**
      * Pre filter bindings before adding to MasterDatabase
@@ -39,29 +36,28 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
      * @return List of bindings that can be added to MasterDatabase
      */
     protected static <T extends SxpBindingFields> Map<IpPrefix, MasterDatabaseBinding> filterIncomingBindings(
-            List<T> bindings, Function<IpPrefix, MasterDatabaseBinding> get, Function<IpPrefix, Boolean> remove,
-            OriginType bindingType) {
+            List<T> bindings, Function<IpPrefix, MasterDatabaseBinding> get, Function<IpPrefix, Boolean> remove) {
         Map<IpPrefix, MasterDatabaseBinding> prefixMap = new HashMap<>();
-        if (get == null || remove == null || bindings == null || bindings.isEmpty()) {
+
+        if (bindings == null || get == null || remove == null) {
             return prefixMap;
         }
-        bindings.forEach(b -> {
-            if (ignoreBinding(b)) {
+
+        bindings.forEach(incoming -> {
+            if (ignoreBinding(incoming)) {
                 return;
             }
-            MasterDatabaseBinding
-                    binding =
-                    !prefixMap.containsKey(b.getIpPrefix()) ? get.apply(b.getIpPrefix()) : prefixMap.get(
-                            b.getIpPrefix());
-            if (binding == null || getPeerSequenceLength(b) < getPeerSequenceLength(binding) || (
-                    getPeerSequenceLength(b) == getPeerSequenceLength(binding)
-                            && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
-                prefixMap.put(b.getIpPrefix(), new MasterDatabaseBindingBuilder(b)
-                        .setOrigin(bindingType)
-                        .build());
-                remove.apply(b.getIpPrefix());
+
+            final MasterDatabaseBinding incomingBinding = new MasterDatabaseBindingBuilder(incoming).build();
+            final MasterDatabaseBinding storedBinding = prefixMap.containsKey(incoming.getIpPrefix())
+                    ? prefixMap.get(incoming.getIpPrefix()) : get.apply(incoming.getIpPrefix());
+
+            if (storedBinding == null || MasterDBBindingComparator.INSTANCE.compare(incomingBinding, storedBinding) < 0) {
+                prefixMap.put(incoming.getIpPrefix(), incomingBinding);
+                remove.apply(incoming.getIpPrefix());
             }
         });
+
         return prefixMap;
     }
 
