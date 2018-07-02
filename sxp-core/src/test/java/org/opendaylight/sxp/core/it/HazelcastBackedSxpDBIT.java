@@ -13,12 +13,14 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hazelcast.config.Config;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -84,7 +86,9 @@ public class HazelcastBackedSxpDBIT {
     @Before
     public void init() {
         LOG.info("Test init started");
-        database = new HazelcastBackedSxpDB("ACTIVE_BINDINGS", "TENTATIVE_BINDINGS");
+        Config hcConfig = new Config();
+        hcConfig.getGroupConfig().setName(UUID.randomUUID().toString());
+        database = new HazelcastBackedSxpDB("ACTIVE_BINDINGS", "TENTATIVE_BINDINGS", hcConfig);
         node = PowerMockito.mock(SxpNode.class);
         PowerMockito.when(node.getBindingSxpDatabase()).thenReturn(database);
         PowerMockito.when(node.getAllConnections()).thenReturn(sxpConnections);
