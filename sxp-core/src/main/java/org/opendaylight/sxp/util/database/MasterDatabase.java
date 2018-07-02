@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -39,30 +40,53 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
      * @return List of bindings that can be added to MasterDatabase
      */
     protected static <T extends SxpBindingFields> Map<IpPrefix, MasterDatabaseBinding> filterIncomingBindings(
-            List<T> bindings, Function<IpPrefix, MasterDatabaseBinding> get, Function<IpPrefix, Boolean> remove,
-            OriginType bindingType) {
+            List<T> bindings, Function<IpPrefix, MasterDatabaseBinding> get, Function<IpPrefix, Boolean> remove) {
         Map<IpPrefix, MasterDatabaseBinding> prefixMap = new HashMap<>();
         if (get == null || remove == null || bindings == null || bindings.isEmpty()) {
             return prefixMap;
         }
-        bindings.forEach(b -> {
-            if (ignoreBinding(b)) {
+        bindings.forEach(incoming -> {
+            if (ignoreBinding(incoming)) {
                 return;
             }
-            MasterDatabaseBinding
+
+            final MasterDatabaseBinding
                     binding =
-                    !prefixMap.containsKey(b.getIpPrefix()) ? get.apply(b.getIpPrefix()) : prefixMap.get(
-                            b.getIpPrefix());
-            if (binding == null || getPeerSequenceLength(b) < getPeerSequenceLength(binding) || (
-                    getPeerSequenceLength(b) == getPeerSequenceLength(binding)
-                            && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
-                prefixMap.put(b.getIpPrefix(), new MasterDatabaseBindingBuilder(b)
-                        .setOrigin(bindingType)
+                    !prefixMap.containsKey(incoming.getIpPrefix()) ? get.apply(incoming.getIpPrefix()) : prefixMap.get(
+                            incoming.getIpPrefix());
+
+            if (binding == null
+                    || getPeerSequenceLength(incoming) < getPeerSequenceLength(binding)
+                    || (getPeerSequenceLength(incoming) == getPeerSequenceLength(binding)
+                            && TimeConv.toLong(incoming.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))
+                    || incomingHasGreaterPriority(binding.getOrigin(), binding.getOrigin())) {
+                prefixMap.put(incoming.getIpPrefix(), new MasterDatabaseBindingBuilder(incoming)
+                        .setOrigin(incoming.getOrigin())
                         .build());
-                remove.apply(b.getIpPrefix());
+                remove.apply(incoming.getIpPrefix());
             }
         });
         return prefixMap;
+    }
+
+    private static boolean incomingHasGreaterPriority(OriginType incomingOrigin, OriginType origin) {
+        final Map<OriginType, Integer> bindingOrigins = BindingOriginsConfig.INSTANCE.getBindingOrigins();
+
+        final Integer incomingPriority = bindingOrigins.get(incomingOrigin);
+        if (incomingPriority == null) {
+            throw new IllegalStateException("Cannot find binding origin priority");
+        }
+
+        final Integer priority = bindingOrigins.get(origin);
+        if (priority == null) {
+            return true;
+        }
+
+        if (incomingPriority > priority) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

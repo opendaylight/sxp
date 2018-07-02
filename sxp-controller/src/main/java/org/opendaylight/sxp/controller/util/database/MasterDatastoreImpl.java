@@ -170,7 +170,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         OriginType bindingType = (datastoreType == LogicalDatastoreType.CONFIGURATION) ? BindingOriginsConfig.LOCAL_ORIGIN : BindingOriginsConfig.NETWORK_ORIGIN;
         added.addAll(filterIncomingBindings(bindings, databaseMaster::get,
                 p -> datastoreAccess.checkAndDelete(getIdentifierBuilder(p).build(),
-                        LogicalDatastoreType.OPERATIONAL), bindingType).values()
+                        LogicalDatastoreType.OPERATIONAL)).values()
                 );
         if (!added.isEmpty()) {
             datastoreAccess.merge(getIdentifierBuilder().build(),
