@@ -8,7 +8,7 @@
 package org.opendaylight.sxp.util.filtering;
 
 import java.util.Comparator;
-import org.opendaylight.sxp.util.database.MasterDatabase;
+import org.opendaylight.sxp.util.database.MasterDBBindingComparator;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntriesFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
@@ -56,7 +56,7 @@ public class PeerSequenceFilter<T extends FilterEntriesFields> extends SxpBindin
             return true;
         }
         //Using First Match Logic
-        int peerSeqLength = MasterDatabase.getPeerSequenceLength(binding);
+        int peerSeqLength = MasterDBBindingComparator.getPeerSequenceLength(binding);
         for (PeerSequenceEntry psEntry : filterEntries.getPeerSequenceEntry()) {
             boolean entryMatch = false;
             switch (psEntry.getPeerSequenceRange()) {

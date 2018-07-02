@@ -226,10 +226,10 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
                     return;
                 }
                 SxpDatabaseBinding binding = prefixMap.get(b.getIpPrefix());
-                if (binding == null || MasterDatabase.getPeerSequenceLength(b) < MasterDatabase.getPeerSequenceLength(
-                        binding) || (
-                        MasterDatabase.getPeerSequenceLength(b) == MasterDatabase.getPeerSequenceLength(binding)
-                                && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
+                if (binding == null
+                        || MasterDBBindingComparator.getPeerSequenceLength(b) < MasterDBBindingComparator.getPeerSequenceLength(binding)
+                        || (MasterDBBindingComparator.getPeerSequenceLength(b) == MasterDBBindingComparator.getPeerSequenceLength(binding)
+                            && TimeConv.toLong(b.getTimestamp()) > TimeConv.toLong(binding.getTimestamp()))) {
                     prefixMap.put(b.getIpPrefix(), b);
                 }
             });
