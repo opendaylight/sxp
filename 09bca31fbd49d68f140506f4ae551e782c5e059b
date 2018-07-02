@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "0f9f2871_eaa36e0a",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/DatastoreAccess.java",
+        "patchSetId": 24
+      },
+      "lineNbr": 191,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-07-02T06:44:11Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "f657a103_4183f16a",
+      "range": {
+        "startLine": 191,
+        "startChar": 7,
+        "endLine": 191,
+        "endChar": 13
+      },
+      "revId": "09bca31fbd49d68f140506f4ae551e782c5e059b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "9c56e27f_1dacf218",
         "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpConfigRpcServiceImpl.java",
         "patchSetId": 24
@@ -64,6 +88,54 @@
         "startChar": 12,
         "endLine": 43,
         "endChar": 18
+      },
+      "revId": "09bca31fbd49d68f140506f4ae551e782c5e059b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "10a8988d_90561571",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpConfigRpcServiceImpl.java",
+        "patchSetId": 24
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-07-02T06:44:11Z",
+      "side": 1,
+      "message": "LOG moved to top.",
+      "parentUuid": "adbf11ba_92b2d661",
+      "range": {
+        "startLine": 43,
+        "startChar": 12,
+        "endLine": 43,
+        "endChar": 18
+      },
+      "revId": "09bca31fbd49d68f140506f4ae551e782c5e059b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4fe6bad2_15b64e93",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpConfigRpcServiceImpl.java",
+        "patchSetId": 24
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-07-02T06:44:11Z",
+      "side": 1,
+      "message": "getName() removed",
+      "parentUuid": "9c56e27f_1dacf218",
+      "range": {
+        "startLine": 43,
+        "startChar": 86,
+        "endLine": 43,
+        "endChar": 93
       },
       "revId": "09bca31fbd49d68f140506f4ae551e782c5e059b",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
