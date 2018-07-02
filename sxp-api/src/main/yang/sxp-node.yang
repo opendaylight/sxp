@@ -216,6 +216,7 @@ module sxp-node {
 
         container master-database {
             uses sxpdb:master-database-fields;
+            config false;
             description "IP-SGT-Master database";
         }
     }
