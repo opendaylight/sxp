@@ -16,12 +16,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
-import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.hazelcast.MasterDBPropagatingListener;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -58,9 +56,6 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         datastoreAccess.checkAndPut(getIdentifierBuilder().build(),
                 new MasterDatabaseBuilder().setMasterDatabaseBinding(new ArrayList<>()).build(),
                 LogicalDatastoreType.OPERATIONAL, false);
-        datastoreAccess.checkAndPut(getIdentifierBuilder().build(),
-                new MasterDatabaseBuilder().setMasterDatabaseBinding(new ArrayList<>()).build(),
-                LogicalDatastoreType.CONFIGURATION, false);
     }
 
     @Override
@@ -96,9 +91,12 @@ public final class MasterDatastoreImpl extends MasterDatabase {
     private <T extends SxpBindingFields> Predicate<MasterDatabaseBinding> bindingIsToBeDeleted(
             final Map<IpPrefix, T> bindingsToDelete) {
         return dbBinding -> {
-            final IpPrefix ipPrefix = dbBinding.getIpPrefix();
-            return bindingsToDelete.containsKey(ipPrefix)
-                    && Objects.equals(bindingsToDelete.get(ipPrefix).getSecurityGroupTag(), dbBinding.getSecurityGroupTag());
+            final T binding = bindingsToDelete.get(dbBinding.getIpPrefix());
+            if (binding == null) {
+                return false;
+            }
+            return Objects.equals(binding.getSecurityGroupTag(), dbBinding.getSecurityGroupTag())
+                    && Objects.equals(binding.getOrigin(), dbBinding.getOrigin());
         };
     }
 
@@ -110,117 +108,83 @@ public final class MasterDatastoreImpl extends MasterDatabase {
     }
 
     @Override
+    public <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings) {
+        List<MasterDatabaseBinding> added = new ArrayList<>();
+        if (bindings == null) {
+            return added;
+        }
+        org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase
+                database = datastoreAccess.readSynchronous(getIdentifierBuilder().build(), LogicalDatastoreType.OPERATIONAL);
+        Map<IpPrefix, MasterDatabaseBinding> databaseMap;
+        if (database != null
+                && database.getMasterDatabaseBinding() != null && !database.getMasterDatabaseBinding().isEmpty()) {
+            databaseMap = database.getMasterDatabaseBinding()
+                    .stream()
+                    .collect(Collectors.toMap(SxpBindingFields::getIpPrefix, b -> b));
+        } else {
+            databaseMap = new HashMap<>();
+        }
+
+        added.addAll(MasterDatabase.filterIncomingBindings(bindings, databaseMap::get,
+                p -> datastoreAccess.checkAndDelete(getIdentifierBuilder(p).build(),
+                        LogicalDatastoreType.OPERATIONAL)).values());
+
+        if (!added.isEmpty()) {
+            datastoreAccess.merge(getIdentifierBuilder().build(),
+                    new MasterDatabaseBuilder().setMasterDatabaseBinding(added).build(),
+                    LogicalDatastoreType.OPERATIONAL);
+        }
+
+        dbListener.onBindingsAdded(added);
+        return added;
+    }
+
+    @Override
     synchronized public List<MasterDatabaseBinding> getBindings() {
         List<MasterDatabaseBinding> bindings = new ArrayList<>();
         org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase
-                database =
-                datastoreAccess.readSynchronous(getIdentifierBuilder().build(), LogicalDatastoreType.OPERATIONAL);
-        if (database != null && database.getMasterDatabaseBinding() != null && !database.getMasterDatabaseBinding()
-                .isEmpty()) {
+                database = datastoreAccess.readSynchronous(
+                        getIdentifierBuilder().build(), LogicalDatastoreType.OPERATIONAL);
+        if (database != null
+                && database.getMasterDatabaseBinding() != null && !database.getMasterDatabaseBinding().isEmpty()) {
             bindings.addAll(database.getMasterDatabaseBinding());
-        }
-        Set<IpPrefix>
-                prefixSet =
-                bindings.parallelStream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
-        database = datastoreAccess.readSynchronous(getIdentifierBuilder().build(), LogicalDatastoreType.CONFIGURATION);
-        if (database != null && database.getMasterDatabaseBinding() != null && !database.getMasterDatabaseBinding()
-                .isEmpty()) {
-            database.getMasterDatabaseBinding().forEach(b -> {
-                if (!prefixSet.contains(b.getIpPrefix()))
-                    bindings.add(b);
-            });
         }
         return bindings;
     }
 
     @Override
     public List<MasterDatabaseBinding> getBindings(OriginType origin) {
-        throw new UnsupportedOperationException("Not supported yet");
+        return getBindings().stream()
+                .filter(binding -> origin.equals(binding.getOrigin()))
+                .collect(Collectors.toList());
     }
 
-    /**
-     * @param bindings      Bindings that will be added
-     * @param datastoreType Defines from where bindings will be added
-     * @param <T>           Any type extending SxpBindingFields
-     * @return List of added Bindings
-     */
-    private <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings,
-            LogicalDatastoreType datastoreType) {
-        List<MasterDatabaseBinding> added = new ArrayList<>();
-        if (bindings == null || bindings.isEmpty() || datastoreType == null) {
-            return added;
-        }
-        final Map<IpPrefix, MasterDatabaseBinding> databaseMaster;
-        org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase
-                database =
-                datastoreAccess.readSynchronous(getIdentifierBuilder().build(), datastoreType);
-        if (Objects.nonNull(database) && Objects.nonNull(database.getMasterDatabaseBinding())
-                && !database.getMasterDatabaseBinding().isEmpty()) {
-            databaseMaster =
-                    database.getMasterDatabaseBinding()
-                            .parallelStream()
-                            .collect(Collectors.toMap(SxpBindingFields::getIpPrefix, b -> b));
-        } else {
-            databaseMaster = new HashMap<>();
-        }
-        // FIXME bindings should have its origin set
-        OriginType bindingType = (datastoreType == LogicalDatastoreType.CONFIGURATION) ? BindingOriginsConfig.LOCAL_ORIGIN : BindingOriginsConfig.NETWORK_ORIGIN;
-        added.addAll(filterIncomingBindings(bindings, databaseMaster::get,
-                p -> datastoreAccess.checkAndDelete(getIdentifierBuilder(p).build(),
-                        LogicalDatastoreType.OPERATIONAL)).values()
-                );
-        if (!added.isEmpty()) {
-            datastoreAccess.merge(getIdentifierBuilder().build(),
-                    new MasterDatabaseBuilder().setMasterDatabaseBinding(added).build(), datastoreType);
-        }
-        dbListener.onBindingsAdded(added);
-        return added;
-    }
-
-    /**
-     * @param bindings      Bindings to be removed
-     * @param datastoreType Defines from where bindings will be removed
-     * @param <T>           Any type extending SxpBindingFields
-     * @return List of removed Bindings
-     */
-    private <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings,
-            LogicalDatastoreType datastoreType) {
-        if (bindings == null || bindings.isEmpty() || datastoreType == null) {
+    @Override
+    public <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings) {
+        if (bindings == null || bindings.isEmpty()) {
             return Collections.emptyList();
         }
         org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase
-                database =
-                datastoreAccess.readSynchronous(getIdentifierBuilder().build(), datastoreType);
+                database = datastoreAccess.readSynchronous(getIdentifierBuilder().build(), LogicalDatastoreType.OPERATIONAL);
         if (database == null) {
             return Collections.emptyList();
         }
-        final List<MasterDatabaseBinding> databaseBindings = database.getMasterDatabaseBinding();
+        List<MasterDatabaseBinding> databaseBindings = database.getMasterDatabaseBinding();
         if (databaseBindings == null || databaseBindings.isEmpty()) {
             return Collections.emptyList();
         }
 
-        final List<MasterDatabaseBinding> removedBindings = new ArrayList<>(databaseBindings);
-        final Map<IpPrefix, T> mapBindingsToDelete = bindings.stream()
+        List<MasterDatabaseBinding> removedBindings = new ArrayList<>(databaseBindings);
+        Map<IpPrefix, T> mapBindingsToDelete = bindings.stream()
                 .collect(Collectors.toMap(SxpBindingFields::getIpPrefix, Functions.identity()));
 
         if (databaseBindings.removeIf(bindingIsToBeDeleted(mapBindingsToDelete))) {
-            datastoreAccess.put(getIdentifierBuilder().build(), database, datastoreType);
+            datastoreAccess.put(getIdentifierBuilder().build(), database, LogicalDatastoreType.OPERATIONAL);
             removedBindings.removeAll(databaseBindings);
             dbListener.onBindingsRemoved(removedBindings);
             return removedBindings;
         }
-
         return Collections.emptyList();
-    }
-
-    @Override
-    synchronized public <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings) {
-        return addBindings(bindings, LogicalDatastoreType.OPERATIONAL);
-    }
-
-    @Override
-    synchronized public <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings) {
-        return deleteBindings(bindings, LogicalDatastoreType.OPERATIONAL);
     }
 
     @Override
