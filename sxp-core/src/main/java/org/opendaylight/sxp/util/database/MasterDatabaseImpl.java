@@ -11,9 +11,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 import java.util.stream.Collectors;
-import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.hazelcast.MasterDBPropagatingListener;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -28,79 +27,51 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.mast
  */
 public class MasterDatabaseImpl extends MasterDatabase {
 
-    private final Map<IpPrefix, MasterDatabaseBinding> bindingMap = new HashMap<>();
-    private final Map<IpPrefix, MasterDatabaseBinding> localBindingMap = new HashMap<>();
     private MasterDBPropagatingListener dbListener;
+    private final Map<IpPrefix, MasterDatabaseBinding> bindingMap = new HashMap<>();
 
     @Override
     public void initDBPropagatingListener(BindingDispatcher dispatcher, SxpDomain domain) {
         this.dbListener = new MasterDBPropagatingListener(dispatcher, domain);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public synchronized List<MasterDatabaseBinding> getBindings() {
-        List<MasterDatabaseBinding> bindings = new ArrayList<>(bindingMap.values());
-        Set<IpPrefix>
-                ipPrefixSet =
-                bindings.parallelStream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
-        localBindingMap.values().forEach(b -> {
-            if (!ipPrefixSet.contains(b.getIpPrefix())) {
-                bindings.add(b);
-            }
-        });
-        return bindings;
-    }
-
-    @Override
-    public List<MasterDatabaseBinding> getBindings(OriginType origin) {
-        return getBindings().stream()
-                .filter(binding -> origin.equals(binding.getOrigin()))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Add given bindings.
-     */
-    private <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings,
-            Map<IpPrefix, MasterDatabaseBinding> map, OriginType bindingType) {
+    public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings) {
         List<MasterDatabaseBinding> added = new ArrayList<>();
-        if (map == null || bindings == null || bindings.isEmpty()) {
+        if (bindings == null) {
             return added;
         }
-        Map<IpPrefix, MasterDatabaseBinding>
-                prefixMap =
-                filterIncomingBindings(bindings, map::get, p -> map.remove(p) != null, bindingType);
+        Map<IpPrefix, MasterDatabaseBinding> prefixMap = MasterDatabase
+                .filterIncomingBindings(bindings, bindingMap::get, p -> bindingMap.remove(p) != null);
         if (!prefixMap.isEmpty()) {
-            map.putAll(prefixMap);
+            bindingMap.putAll(prefixMap);
             added.addAll(prefixMap.values());
         }
         dbListener.onBindingsAdded(added);
         return added;
     }
 
-    /**
-     * Delete given bindings from a given map.
-     *
-     * @param bindings Bindings to be removed
-     * @param map      Map from where bindings will be removed
-     * @param <T>      Any type extending SxpBindingFields
-     * @return Deleted bindings
-     */
-    private <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings,
-            Map<IpPrefix, MasterDatabaseBinding> map) {
+    @Override
+    public synchronized List<MasterDatabaseBinding> getBindings() {
+        return new ArrayList<>(bindingMap.values());
+    }
+
+    @Override
+    public synchronized List<MasterDatabaseBinding> getBindings(OriginType origin) {
+        return bindingMap.values().stream()
+                .filter(binding -> origin.equals(binding.getOrigin()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings) {
         List<MasterDatabaseBinding> removed = new ArrayList<>();
-        if (map == null || bindings == null || bindings.isEmpty()) {
+        if (bindings == null) {
             return removed;
         }
-        bindings.forEach(b -> {
-            if (map.containsKey(b.getIpPrefix()) && map.get(b.getIpPrefix())
-                    .getSecurityGroupTag()
-                    .getValue()
-                    .equals(b.getSecurityGroupTag().getValue())) {
-                removed.add(map.remove(b.getIpPrefix()));
+        bindings.forEach(inputBinding -> {
+            if (isEqualBindingStored(inputBinding)) {
+                removed.add(bindingMap.remove(inputBinding.getIpPrefix()));
             }
         });
         dbListener.onBindingsRemoved(removed);
@@ -108,19 +79,23 @@ public class MasterDatabaseImpl extends MasterDatabase {
     }
 
     /**
-     * {@inheritDoc}
+     * Decide if stored binding is to be deleted according to equality with input binding's:
+     * <ul>
+     *     <li>1. ip prefix</li>
+     *     <li>2. security group tag</li>
+     *     <li>3. origin</li>
+     * </ul>
      */
-    @Override
-    public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings) {
-        return addBindings(bindings, bindingMap, BindingOriginsConfig.NETWORK_ORIGIN);
-    }
+    private <T extends SxpBindingFields> boolean isEqualBindingStored(T inputBinding) {
+        final MasterDatabaseBinding storedBinding = bindingMap.get(inputBinding.getIpPrefix());
+        if (storedBinding == null) {
+            return false;
+        }
+        if (!Objects.equals(storedBinding.getSecurityGroupTag(), inputBinding.getSecurityGroupTag())) {
+            return false;
+        }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings) {
-        return deleteBindings(bindings, bindingMap);
+        return Objects.equals(storedBinding.getOrigin(), inputBinding.getOrigin());
     }
 
     @Override
