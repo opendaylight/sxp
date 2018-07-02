@@ -17,14 +17,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
@@ -45,6 +48,11 @@ public class MasterDatabaseImplTest {
     @Mock private SxpDomain domainMock;
     @Mock private SxpNode nodeMock;
 
+    @BeforeClass
+    public static void initClass() {
+        BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES.forEach(BindingOriginsConfig.INSTANCE::addBindingOrigin);
+    }
+
     @Before
     public void init() {
         database = new MasterDatabaseImpl();
@@ -52,11 +60,13 @@ public class MasterDatabaseImplTest {
         when(dispatcherMock.getOwner()).thenReturn(nodeMock);
     }
 
-    private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, String... peers) {
+    private <T extends SxpBindingFields> T getBinding(String prefix, int sgt,
+            OriginType origin, String... peers) {
         MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
         bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setTimestamp(TimeConv.toDt(time += 1000));
+        bindingBuilder.setOrigin(origin);
         PeerSequenceBuilder sequenceBuilder = new PeerSequenceBuilder();
         sequenceBuilder.setPeer(new ArrayList<>());
         for (int i = 0; i < peers.length; i++) {
@@ -86,54 +96,57 @@ public class MasterDatabaseImplTest {
 
         List<SxpBindingFields>
                 toAdd =
-                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("1.1.1.1/32", 10, "10.10.10.10"),
-                        getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                        getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
-                        getBinding("2.2.2.2/32", 200, "20.20.20.20"));
+                mergeBindings(getBinding("0.0.0.0/0", 5, BindingOriginsConfig.LOCAL_ORIGIN, "10.10.10.10"), getBinding("1.1.1.1/32", 10, BindingOriginsConfig.LOCAL_ORIGIN,
+                        "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 100, BindingOriginsConfig.LOCAL_ORIGIN, "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 20, BindingOriginsConfig.LOCAL_ORIGIN, "20.20.20.20", "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 200, BindingOriginsConfig.LOCAL_ORIGIN, "20.20.20.20"));
 
-        assertBindings(database.addBindings(toAdd), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 200, "20.20.20.20")));
+        assertBindings(database.addBindings(toAdd), mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.LOCAL_ORIGIN, "10.10.10.10"),
+                getBinding("2.2.2.2/32", 200, BindingOriginsConfig.LOCAL_ORIGIN, "20.20.20.20")));
         assertEquals(2, database.getBindings().size());
-        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 200, "20.20.20.20")));
+        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.LOCAL_ORIGIN, "10.10.10.10"),
+                getBinding("2.2.2.2/32", 200, BindingOriginsConfig.LOCAL_ORIGIN, "20.20.20.20")));
 
         assertEquals(0, database.addBindings(toAdd).size());
         assertEquals(2, database.getBindings().size());
-        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 200, "20.20.20.20")));
+        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.LOCAL_ORIGIN, "10.10.10.10"),
+                getBinding("2.2.2.2/32", 200, BindingOriginsConfig.LOCAL_ORIGIN, "20.20.20.20")));
 
         toAdd.clear();
         toAdd =
-                mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                        getBinding("2.2.2.2/32", 2000, "200.200.200.200"));
+                mergeBindings(getBinding("15.15.15.15/24", 15, BindingOriginsConfig.LOCAL_ORIGIN, "0.10.10.10"),
+                        getBinding("2.2.2.2/32", 2000, BindingOriginsConfig.LOCAL_ORIGIN, "200.200.200.200"));
 
         assertEquals(2, database.addBindings(toAdd).size());
         assertEquals(3, database.getBindings().size());
-        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "200.200.200.200")));
+        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.LOCAL_ORIGIN, "10.10.10.10"),
+                getBinding("2.2.2.2/32", 2000, BindingOriginsConfig.LOCAL_ORIGIN, "20.20.20.20"), getBinding("15.15.15.15/24", 15, BindingOriginsConfig.LOCAL_ORIGIN,
+                        "0.10.10.10"),
+                getBinding("2.2.2.2/32", 2000, BindingOriginsConfig.LOCAL_ORIGIN, "200.200.200.200")));
     }
 
     @Test
     public void testDeleteBindingsLocal() throws Exception {
-        database.addBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
+        database.addBindings(mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.LOCAL_ORIGIN, "10.10.10.10"),
+                getBinding("2.2.2.2/32", 2000, BindingOriginsConfig.LOCAL_ORIGIN, "20.20.20.20"), getBinding("15.15.15.15/24", 15, BindingOriginsConfig.LOCAL_ORIGIN,
+                        "0.10.10.10"),
+                getBinding("2.2.2.20/32", 2000, BindingOriginsConfig.LOCAL_ORIGIN, "200.200.200.200")));
 
         assertEquals(0, database.deleteBindings(mergeBindings()).size());
         assertEquals(4, database.getBindings().size());
 
-        assertBindings(database.deleteBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"))),
-                mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                        getBinding("2.2.2.2/32", 2000, "20.20.20.20")));
-        assertBindings(database.getBindings(), mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
+        assertBindings(database.deleteBindings(mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.LOCAL_ORIGIN, "10.10.10.10"),
+                getBinding("2.2.2.2/32", 2000, BindingOriginsConfig.LOCAL_ORIGIN, "20.20.20.20"))),
+                mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.LOCAL_ORIGIN, "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 2000, BindingOriginsConfig.LOCAL_ORIGIN, "20.20.20.20")));
+        assertBindings(database.getBindings(), mergeBindings(getBinding("15.15.15.15/24", 15, BindingOriginsConfig.LOCAL_ORIGIN, "0.10.10.10"),
+                getBinding("2.2.2.20/32", 2000, BindingOriginsConfig.LOCAL_ORIGIN, "200.200.200.200")));
 
-        assertBindings(database.deleteBindings(mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                getBinding("2.2.2.20/32", 2000, "200.200.200.200"))),
-                mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                        getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
+        assertBindings(database.deleteBindings(mergeBindings(getBinding("15.15.15.15/24", 15, BindingOriginsConfig.LOCAL_ORIGIN, "0.10.10.10"),
+                getBinding("2.2.2.20/32", 2000, BindingOriginsConfig.LOCAL_ORIGIN, "200.200.200.200"))),
+                mergeBindings(getBinding("15.15.15.15/24", 15, BindingOriginsConfig.LOCAL_ORIGIN, "0.10.10.10"),
+                        getBinding("2.2.2.20/32", 2000, BindingOriginsConfig.LOCAL_ORIGIN, "200.200.200.200")));
         assertEquals(0, database.getBindings().size());
     }
 
@@ -144,54 +157,57 @@ public class MasterDatabaseImplTest {
 
         List<SxpBindingFields>
                 toAdd =
-                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("1.1.1.1/32", 10, "10.10.10.10"),
-                        getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                        getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
-                        getBinding("2.2.2.2/32", 200, "20.20.20.20"));
+                mergeBindings(getBinding("0.0.0.0/0", 5, BindingOriginsConfig.NETWORK_ORIGIN, "10.10.10.10"), getBinding("1.1.1.1/32", 10, BindingOriginsConfig.NETWORK_ORIGIN,
+                        "10.10.10.10"),
+                        getBinding("1.1.1.1/32", 100, BindingOriginsConfig.NETWORK_ORIGIN, "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 20, BindingOriginsConfig.NETWORK_ORIGIN, "20.20.20.20", "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 200, BindingOriginsConfig.NETWORK_ORIGIN, "20.20.20.20"));
 
-        assertBindings(database.addBindings(toAdd), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 200, "20.20.20.20")));
+        assertBindings(database.addBindings(toAdd), mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.NETWORK_ORIGIN, "10.10.10.10"),
+                getBinding("2.2.2.2/32", 200, BindingOriginsConfig.NETWORK_ORIGIN, "20.20.20.20")));
         assertEquals(2, database.getBindings().size());
-        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 200, "20.20.20.20")));
+        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.NETWORK_ORIGIN, "10.10.10.10"),
+                getBinding("2.2.2.2/32", 200, BindingOriginsConfig.NETWORK_ORIGIN, "20.20.20.20")));
 
         assertEquals(0, database.addBindings(toAdd).size());
         assertEquals(2, database.getBindings().size());
-        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 200, "20.20.20.20")));
+        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.NETWORK_ORIGIN, "10.10.10.10"),
+                getBinding("2.2.2.2/32", 200, BindingOriginsConfig.NETWORK_ORIGIN, "20.20.20.20")));
 
         toAdd.clear();
         toAdd =
-                mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                        getBinding("2.2.2.2/32", 2000, "200.200.200.200"));
+                mergeBindings(getBinding("15.15.15.15/24", 15, BindingOriginsConfig.NETWORK_ORIGIN, "0.10.10.10"),
+                        getBinding("2.2.2.2/32", 2000, BindingOriginsConfig.NETWORK_ORIGIN, "200.200.200.200"));
 
         assertEquals(2, database.addBindings(toAdd).size());
         assertEquals(3, database.getBindings().size());
-        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "200.200.200.200")));
+        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.NETWORK_ORIGIN, "10.10.10.10"),
+                getBinding("2.2.2.2/32", 2000, BindingOriginsConfig.NETWORK_ORIGIN, "20.20.20.20"), getBinding("15.15.15.15/24", 15, BindingOriginsConfig.NETWORK_ORIGIN,
+                        "0.10.10.10"),
+                getBinding("2.2.2.2/32", 2000, BindingOriginsConfig.NETWORK_ORIGIN, "200.200.200.200")));
     }
 
     @Test
     public void testDeleteBindings() throws Exception {
-        database.addBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
+        database.addBindings(mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.NETWORK_ORIGIN, "10.10.10.10"),
+                getBinding("2.2.2.2/32", 2000, BindingOriginsConfig.NETWORK_ORIGIN, "20.20.20.20"), getBinding("15.15.15.15/24", 15, BindingOriginsConfig.NETWORK_ORIGIN,
+                        "0.10.10.10"),
+                getBinding("2.2.2.20/32", 2000, BindingOriginsConfig.NETWORK_ORIGIN, "200.200.200.200")));
 
         assertEquals(0, database.deleteBindings(mergeBindings()).size());
         assertEquals(4, database.getBindings().size());
 
-        assertBindings(database.deleteBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"))),
-                mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                        getBinding("2.2.2.2/32", 2000, "20.20.20.20")));
-        assertBindings(database.getBindings(), mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
+        assertBindings(database.deleteBindings(mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.NETWORK_ORIGIN, "10.10.10.10"),
+                getBinding("2.2.2.2/32", 2000, BindingOriginsConfig.NETWORK_ORIGIN, "20.20.20.20"))),
+                mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.NETWORK_ORIGIN, "10.10.10.10"),
+                        getBinding("2.2.2.2/32", 2000, BindingOriginsConfig.NETWORK_ORIGIN, "20.20.20.20")));
+        assertBindings(database.getBindings(), mergeBindings(getBinding("15.15.15.15/24", 15, BindingOriginsConfig.NETWORK_ORIGIN, "0.10.10.10"),
+                getBinding("2.2.2.20/32", 2000, BindingOriginsConfig.NETWORK_ORIGIN, "200.200.200.200")));
 
-        assertBindings(database.deleteBindings(mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                getBinding("2.2.2.20/32", 2000, "200.200.200.200"))),
-                mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                        getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
+        assertBindings(database.deleteBindings(mergeBindings(getBinding("15.15.15.15/24", 15, BindingOriginsConfig.NETWORK_ORIGIN, "0.10.10.10"),
+                getBinding("2.2.2.20/32", 2000, BindingOriginsConfig.NETWORK_ORIGIN, "200.200.200.200"))),
+                mergeBindings(getBinding("15.15.15.15/24", 15, BindingOriginsConfig.NETWORK_ORIGIN, "0.10.10.10"),
+                        getBinding("2.2.2.20/32", 2000, BindingOriginsConfig.NETWORK_ORIGIN, "200.200.200.200")));
         assertEquals(0, database.getBindings().size());
     }
 
@@ -199,9 +215,10 @@ public class MasterDatabaseImplTest {
     public void testToString() throws Exception {
         assertEquals("MasterDatabaseImpl\n", database.toString());
 
-        database.addBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("0:0:0:0:0:0:0:A/32", 15, "0.10.10.10"),
-                getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
+        database.addBindings(mergeBindings(getBinding("1.1.1.1/32", 100, BindingOriginsConfig.NETWORK_ORIGIN, "10.10.10.10"),
+                getBinding("2.2.2.2/32", 2000, BindingOriginsConfig.NETWORK_ORIGIN, "20.20.20.20"), getBinding("0:0:0:0:0:0:0:A/32", 15, BindingOriginsConfig.NETWORK_ORIGIN,
+                        "0.10.10.10"),
+                getBinding("2.2.2.20/32", 2000, BindingOriginsConfig.NETWORK_ORIGIN, "200.200.200.200")));
 
         StringBuilder value = new StringBuilder();
         Arrays.asList(database.toString().split("\n")).stream().sorted().forEach(l -> value.append(l).append("\n"));

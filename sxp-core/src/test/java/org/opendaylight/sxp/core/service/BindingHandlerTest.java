@@ -26,11 +26,13 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
@@ -42,7 +44,6 @@ import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.message.attribute.SecurityGroupTagValueException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -98,6 +99,11 @@ public class BindingHandlerTest {
     private static MasterDatabaseInf masterDatabaseInf;
     private static BindingHandler handler;
 
+    @BeforeClass
+    public static void initClass() {
+        BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES.forEach(BindingOriginsConfig.INSTANCE::addBindingOrigin);
+    }
+
     @Before
     public void init() throws Exception {
         sxpNode = PowerMockito.mock(SxpNode.class);
@@ -137,11 +143,11 @@ public class BindingHandlerTest {
         return peerBuilder.build();
     }
 
-    private SxpDatabaseBinding getBinding(String prefix, int sgt, PeerSequence peerSequence)
-            throws UnknownPrefixException {
+    private SxpDatabaseBinding getBinding(String prefix, int sgt, PeerSequence peerSequence) {
         SxpDatabaseBindingBuilder bindingBuilder = new SxpDatabaseBindingBuilder();
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setPeerSequence(peerSequence);
+        bindingBuilder.setOrigin(BindingOriginsConfig.NETWORK_ORIGIN);
         bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
         bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
         return bindingBuilder.build();
