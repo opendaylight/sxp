@@ -45,6 +45,7 @@ public interface MasterDatabaseInf extends AutoCloseable {
      * @param <T>      Any type extending SxpBindingsFields
      * @return List of Bindings that were actually added
      */
+    @Deprecated
     <T extends SxpBindingFields> List<MasterDatabaseBinding> addLocalBindings(List<T> bindings);
 
     /**
@@ -63,6 +64,7 @@ public interface MasterDatabaseInf extends AutoCloseable {
      * @param <T>      Any type extending SxpBindingsFields
      * @return List of Bindings that were actually added
      */
+    @Deprecated
     <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings);
 
     /**
@@ -73,5 +75,14 @@ public interface MasterDatabaseInf extends AutoCloseable {
      * @return List of bindings that were actually removed
      */
     <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings);
+
+    /**
+     * Add bindings with specified priority. Each binding in provided binding list has set origin type.
+     *
+     * @param bindings List of bindings that will be added
+     * @param <T>      Any type extending SxpBindingsFields
+     * @return List of Bindings that were actually added
+     */
+    <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindingsWithPriorities(List<T> bindings);
 
 }

@@ -21,13 +21,11 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
-import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.hazelcast.MasterDBPropagatingListener;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.util.database.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingKey;
@@ -167,10 +165,9 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         } else {
             databaseMaster = new HashMap<>();
         }
-        OriginType bindingType = (datastoreType == LogicalDatastoreType.CONFIGURATION) ? BindingOriginsConfig.LOCAL_ORIGIN : BindingOriginsConfig.NETWORK_ORIGIN;
         added.addAll(filterIncomingBindings(bindings, databaseMaster::get,
                 p -> datastoreAccess.checkAndDelete(getIdentifierBuilder(p).build(),
-                        LogicalDatastoreType.OPERATIONAL), bindingType).values()
+                        LogicalDatastoreType.OPERATIONAL)).values()
                 );
         if (!added.isEmpty()) {
             datastoreAccess.merge(getIdentifierBuilder().build(),
@@ -236,6 +233,11 @@ public final class MasterDatastoreImpl extends MasterDatabase {
     @Override
     synchronized public <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings) {
         return deleteBindings(bindings, LogicalDatastoreType.OPERATIONAL);
+    }
+
+    @Override
+    public <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindingsWithPriorities(List<T> bindings) {
+        throw new UnsupportedOperationException("Not supported yet");
     }
 
     @Override

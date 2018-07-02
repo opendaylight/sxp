@@ -127,6 +127,11 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
         return deletedBindings;
     }
 
+    @Override
+    public <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindingsWithPriorities(List<T> bindings) {
+        throw new UnsupportedOperationException("Not supported yet");
+    }
+
     private <T extends SxpBindingFields> List<MasterDatabaseBinding> doAddBindings(Iterable<T> bindings, OriginType bindingType) {
         Map<IpPrefix, MasterDatabaseBinding> addedBindings = new HashMap<>();
         for (T incomingBinding : bindings) {
