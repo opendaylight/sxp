@@ -11,9 +11,11 @@ package org.opendaylight.sxp.core.it;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.hazelcast.config.Config;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -50,7 +52,9 @@ public class HazelcastBackedMasterDBIT {
 
     @Before
     public void init() {
-        database = new HazelcastBackedMasterDB("MASTER_DB");
+        Config hcConfig = new Config();
+        hcConfig.getGroupConfig().setName(UUID.randomUUID().toString());
+        database = new HazelcastBackedMasterDB("MASTER_DB", hcConfig);
     }
 
     @After
