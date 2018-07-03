@@ -17,9 +17,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -45,6 +47,11 @@ public class MasterDatabaseImplTest {
     @Mock private SxpDomain domainMock;
     @Mock private SxpNode nodeMock;
 
+    @BeforeClass
+    public static void initClass() {
+        BindingOriginsConfig.INSTANCE.addBindingOrigins(BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES);
+    }
+
     @Before
     public void init() {
         database = new MasterDatabaseImpl();
@@ -57,6 +64,7 @@ public class MasterDatabaseImplTest {
         bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setTimestamp(TimeConv.toDt(time += 1000));
+        bindingBuilder.setOrigin(BindingOriginsConfig.LOCAL_ORIGIN);
         PeerSequenceBuilder sequenceBuilder = new PeerSequenceBuilder();
         sequenceBuilder.setPeer(new ArrayList<>());
         for (int i = 0; i < peers.length; i++) {
@@ -77,64 +85,6 @@ public class MasterDatabaseImplTest {
                 .forEach(b -> assertTrue(bindings2.stream()
                         .anyMatch(r -> r.getSecurityGroupTag().getValue().equals(b.getSecurityGroupTag().getValue())
                                 && Arrays.equals(r.getIpPrefix().getValue(), b.getIpPrefix().getValue()))));
-    }
-
-    @Test
-    public void testAddLocalBindings() throws Exception {
-        assertEquals(0, database.addLocalBindings(mergeBindings()).size());
-        assertEquals(0, database.getBindings().size());
-
-        List<SxpBindingFields>
-                toAdd =
-                mergeBindings(getBinding("0.0.0.0/0", 5, "10.10.10.10"), getBinding("1.1.1.1/32", 10, "10.10.10.10"),
-                        getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                        getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
-                        getBinding("2.2.2.2/32", 200, "20.20.20.20"));
-
-        assertBindings(database.addLocalBindings(toAdd), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 200, "20.20.20.20")));
-        assertEquals(2, database.getBindings().size());
-        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 200, "20.20.20.20")));
-
-        assertEquals(0, database.addLocalBindings(toAdd).size());
-        assertEquals(2, database.getBindings().size());
-        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 200, "20.20.20.20")));
-
-        toAdd.clear();
-        toAdd =
-                mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                        getBinding("2.2.2.2/32", 2000, "200.200.200.200"));
-
-        assertEquals(2, database.addLocalBindings(toAdd).size());
-        assertEquals(3, database.getBindings().size());
-        assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "200.200.200.200")));
-    }
-
-    @Test
-    public void testDeleteBindingsLocal() throws Exception {
-        database.addLocalBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
-
-        assertEquals(0, database.deleteBindingsLocal(mergeBindings()).size());
-        assertEquals(4, database.getBindings().size());
-
-        assertBindings(database.deleteBindingsLocal(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                getBinding("2.2.2.2/32", 2000, "20.20.20.20"))),
-                mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
-                        getBinding("2.2.2.2/32", 2000, "20.20.20.20")));
-        assertBindings(database.getBindings(), mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
-
-        assertBindings(database.deleteBindingsLocal(mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                getBinding("2.2.2.20/32", 2000, "200.200.200.200"))),
-                mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
-                        getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
-        assertEquals(0, database.getBindings().size());
     }
 
     @Test
