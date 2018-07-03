@@ -366,6 +366,7 @@ public class SxpNodeTest {
     private MasterDatabaseBinding getBinding(String prefix, int sgt) {
         return new MasterDatabaseBindingBuilder().setIpPrefix(new IpPrefix(prefix.toCharArray()))
                 .setSecurityGroupTag(new Sgt(sgt))
+                .setOrigin(BindingOriginsConfig.LOCAL_ORIGIN)
                 .build();
     }
 
@@ -373,10 +374,10 @@ public class SxpNodeTest {
     public void testPutLocalBindingsMasterDatabase() throws Exception {
         assertNotNull(
                 node.putLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "global"));
-        verify(databaseProvider).addLocalBindings(anyList());
+        verify(databaseProvider).addBindings(anyList());
         assertNotNull(
                 node.putLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "global"));
-        verify(databaseProvider, times(2)).addLocalBindings(anyList());
+        verify(databaseProvider, times(2)).addBindings(anyList());
         exception.expect(DomainNotFoundException.class);
         node.putLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "badDomain");
     }
@@ -385,10 +386,10 @@ public class SxpNodeTest {
     public void testRemoveLocalBindingsMasterDatabase() throws Exception {
         assertNotNull(node.removeLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)),
                 "global"));
-        verify(databaseProvider).deleteBindingsLocal(anyList());
+        verify(databaseProvider).deleteBindings(anyList());
         assertNotNull(node.removeLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)),
                 "global"));
-        verify(databaseProvider, times(2)).deleteBindingsLocal(anyList());
+        verify(databaseProvider, times(2)).deleteBindings(anyList());
         exception.expect(DomainNotFoundException.class);
         node.removeLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "badDomain");
     }
