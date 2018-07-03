@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
 
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +33,7 @@ import org.junit.runner.RunWith;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
@@ -44,6 +46,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv6Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionInputBuilder;
@@ -185,12 +188,15 @@ public class SxpRpcServiceImplTest {
         service = new SxpRpcServiceImpl(mock(DataBroker.class));
         when(node.getBindingMasterDatabase()).thenReturn(masterDatabase);
 
-        final MasterDatabaseBinding databaseBinding = getBinding("10.0.0.1/24", 1);
-        when(masterDatabase.getBindings()).thenReturn(Collections.singletonList(databaseBinding));
-        final MasterDatabaseBinding localDatabaseBinding = getBinding("10.0.0.2/24", 1);
-        when(masterDatabase.getLocalBindings()).thenReturn(Collections.singletonList(localDatabaseBinding));
+        final MasterDatabaseBinding localBinding = getBinding(
+                "10.0.0.1/24", 1, BindingOriginsConfig.LOCAL_ORIGIN);
+        final MasterDatabaseBinding networkBinding = getBinding(
+                "10.0.0.2/24", 2, BindingOriginsConfig.NETWORK_ORIGIN);
+        when(masterDatabase.getBindings(eq(BindingOriginsConfig.LOCAL_ORIGIN)))
+                .thenReturn(Lists.newArrayList(localBinding));
+        when(masterDatabase.getBindings()).thenReturn(Lists.newArrayList(localBinding, networkBinding));
 
-        when(masterDatabase.addLocalBindings(anyListOf(MasterDatabaseBinding.class))).thenAnswer(invocation -> {
+        when(masterDatabase.addBindings(anyListOf(MasterDatabaseBinding.class))).thenAnswer(invocation -> {
             final List<MasterDatabaseBinding> input = (List<MasterDatabaseBinding>) invocation.getArguments()[0];
             if (input.isEmpty()) {
                 return Collections.emptyList();
@@ -199,7 +205,7 @@ public class SxpRpcServiceImplTest {
             }
         });
 
-        when(masterDatabase.deleteBindingsLocal(anyListOf(MasterDatabaseBinding.class))).thenAnswer(invocation -> {
+        when(masterDatabase.deleteBindings(anyListOf(MasterDatabaseBinding.class))).thenAnswer(invocation -> {
             final List<MasterDatabaseBinding> input = (List<MasterDatabaseBinding>) invocation.getArguments()[0];
             if (input.isEmpty()) {
                 return Collections.emptyList();
@@ -209,10 +215,11 @@ public class SxpRpcServiceImplTest {
         });
     }
 
-    private MasterDatabaseBinding getBinding(String prefix, int sgt, String... peers) {
+    private MasterDatabaseBinding getBinding(String prefix, int sgt, OriginType origin, String... peers) {
         MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
         bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
+        bindingBuilder.setOrigin(origin);
         bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
         PeerSequenceBuilder sequenceBuilder = new PeerSequenceBuilder();
         sequenceBuilder.setPeer(new ArrayList<>());
@@ -644,9 +651,6 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testUpdateEntry() throws Exception {
-        final List<MasterDatabaseBinding> bindings = new ArrayList<>();
-        bindings.add(getBinding("0.0.0.5/32", 20));
-
         final UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
         input.setDomainName(SxpNode.DEFAULT_DOMAIN);
         input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
