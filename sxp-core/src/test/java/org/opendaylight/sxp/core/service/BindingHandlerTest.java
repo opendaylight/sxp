@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
@@ -42,7 +43,6 @@ import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.message.attribute.SecurityGroupTagValueException;
-import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -137,13 +137,13 @@ public class BindingHandlerTest {
         return peerBuilder.build();
     }
 
-    private SxpDatabaseBinding getBinding(String prefix, int sgt, PeerSequence peerSequence)
-            throws UnknownPrefixException {
+    private SxpDatabaseBinding getBinding(String prefix, int sgt, PeerSequence peerSequence) {
         SxpDatabaseBindingBuilder bindingBuilder = new SxpDatabaseBindingBuilder();
+        bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setPeerSequence(peerSequence);
         bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
-        bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        bindingBuilder.setOrigin(BindingOriginsConfig.NETWORK_ORIGIN);
         return bindingBuilder.build();
     }
 

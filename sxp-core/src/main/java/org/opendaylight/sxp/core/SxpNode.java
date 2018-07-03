@@ -1138,7 +1138,7 @@ public class SxpNode {
         }
         List<MasterDatabaseBinding> addedBindings;
         synchronized (sxpDomain) {
-            addedBindings = sxpDomain.getMasterDatabase().addLocalBindings(bindings);
+            addedBindings = sxpDomain.getMasterDatabase().addBindings(bindings);
             sxpDomain.pushToSharedMasterDatabases(Collections.emptyList(), bindings);
         }
         return addedBindings;
@@ -1160,7 +1160,7 @@ public class SxpNode {
         Map<NodeId, SxpBindingFilter> filterMap = SxpDatabase.getInboundFilters(this, domainName);
         List<MasterDatabaseBinding> deletedBindings;
         synchronized (sxpDomain) {
-            deletedBindings = sxpDomain.getMasterDatabase().deleteBindingsLocal(bindings);
+            deletedBindings = sxpDomain.getMasterDatabase().deleteBindings(bindings);
             sxpDomain.getMasterDatabase().addBindings(
                             SxpDatabase.getReplaceForBindings(deletedBindings, sxpDomain.getSxpDatabase(), filterMap));
             sxpDomain.pushToSharedMasterDatabases(bindings, Collections.emptyList());
