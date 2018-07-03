@@ -792,11 +792,9 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
             final MasterDatabaseInf masterDatabase = getMasterDatabase(nodeId, input.getDomainName());
 
             if (masterDatabase != null) {
-                final Collection<MasterDatabaseBinding> bindings;
+                final Collection<MasterDatabaseBinding> bindings = masterDatabase.getBindings();
                 if (GetNodeBindingsInput.BindingsRange.Local.equals(input.getBindingsRange())) {
-                    bindings = masterDatabase.getLocalBindings();
-                } else {
-                    bindings = masterDatabase.getBindings();
+                    bindings.removeIf(binding -> !BindingOriginsConfig.LOCAL_ORIGIN.equals(binding.getOrigin()));
                 }
 
                 final Map<Sgt, List<IpPrefix>> sgtListMap = bindings.stream()

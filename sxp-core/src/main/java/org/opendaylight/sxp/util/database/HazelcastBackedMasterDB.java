@@ -7,7 +7,6 @@
  */
 package org.opendaylight.sxp.util.database;
 
-import static org.opendaylight.sxp.core.BindingOriginsConfig.LOCAL_ORIGIN;
 import static org.opendaylight.sxp.core.BindingOriginsConfig.NETWORK_ORIGIN;
 
 import com.hazelcast.config.Config;
@@ -15,9 +14,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.AbstractEntryProcessor;
-import com.hazelcast.query.PredicateBuilder;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,13 +88,6 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
     @Override
     public List<MasterDatabaseBinding> getBindings() {
         return new ArrayList<>(bindingMap.values());
-    }
-
-    @Override
-    public Collection<MasterDatabaseBinding> getLocalBindings() {
-        PredicateBuilder predicate = new PredicateBuilder().getEntryObject().get("_origin").get("_value")
-                .equal(LOCAL_ORIGIN.getValue());
-        return bindingMap.values(predicate);
     }
 
     @Override

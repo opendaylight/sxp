@@ -187,8 +187,6 @@ public class SxpRpcServiceImplTest {
 
         final MasterDatabaseBinding databaseBinding = getBinding("10.0.0.1/24", 1);
         when(masterDatabase.getBindings()).thenReturn(Collections.singletonList(databaseBinding));
-        final MasterDatabaseBinding localDatabaseBinding = getBinding("10.0.0.2/24", 1);
-        when(masterDatabase.getLocalBindings()).thenReturn(Collections.singletonList(localDatabaseBinding));
 
         when(masterDatabase.addBindings(anyListOf(MasterDatabaseBinding.class))).thenAnswer(invocation -> {
             final List<MasterDatabaseBinding> input = (List<MasterDatabaseBinding>) invocation.getArguments()[0];
