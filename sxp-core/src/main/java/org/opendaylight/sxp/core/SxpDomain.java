@@ -203,7 +203,7 @@ public class SxpDomain implements AutoCloseable {
                     .anyMatch(f -> f.getName().equals(domain.getName()))) {
                 // push changes to MDb
                 propagateToSharedMasterDatabases(Collections.emptyList(),
-                        getMasterDatabase().getLocalBindings().stream().filter(filter).collect(Collectors.toList()),
+                        getMasterDatabase().getBindings().stream().filter(filter).collect(Collectors.toList()),
                         domain);
                 // push changes to SXPDb
                 getConnections().stream().filter(SxpConnection::isModeListener).forEach(c -> {
@@ -257,7 +257,7 @@ public class SxpDomain implements AutoCloseable {
                         .stream()
                         .anyMatch(f -> f.getName().equals(domain.getName()))) {
                     // push changes to MDb
-                    propagateToSharedMasterDatabases(getMasterDatabase().getLocalBindings()
+                    propagateToSharedMasterDatabases(getMasterDatabase().getBindings()
                             .stream()
                             .filter(bindingFilter)
                             .collect(Collectors.toList()), Collections.emptyList(), domain);
@@ -312,7 +312,7 @@ public class SxpDomain implements AutoCloseable {
                         .stream()
                         .noneMatch(filter_d -> filter_d.getName().equals(d.getName())))
                 .forEach(domain -> {
-                    propagateToSharedMasterDatabases(getMasterDatabase().getLocalBindings()
+                    propagateToSharedMasterDatabases(getMasterDatabase().getBindings()
                             .stream()
                             .filter(oldFilter)
                             .collect(Collectors.toList()), Collections.emptyList(), domain);
@@ -338,10 +338,10 @@ public class SxpDomain implements AutoCloseable {
                         .anyMatch(filter_d -> filter_d.getName().equals(d.getName())))
                 .forEach(domain -> {
                     // push changes to SXPDb
-                    propagateToSharedMasterDatabases(getMasterDatabase().getLocalBindings()
+                    propagateToSharedMasterDatabases(getMasterDatabase().getBindings()
                             .stream()
                             .filter(b -> oldFilter.test(b) && !newFilter.test(b))
-                            .collect(Collectors.toList()), getMasterDatabase().getLocalBindings()
+                            .collect(Collectors.toList()), getMasterDatabase().getBindings()
                             .stream()
                             .filter(b -> !oldFilter.test(b) && newFilter.test(b))
                             .collect(Collectors.toList()), domain);
@@ -369,7 +369,7 @@ public class SxpDomain implements AutoCloseable {
                         .anyMatch(filter_d -> filter_d.getName().equals(d.getName())))
                 .forEach(domain -> {
                     // push changes to MDb
-                    propagateToSharedMasterDatabases(getMasterDatabase().getLocalBindings()
+                    propagateToSharedMasterDatabases(getMasterDatabase().getBindings()
                             .stream()
                             .filter(oldFilter)
                             .collect(Collectors.toList()), Collections.emptyList(), domain);
@@ -406,7 +406,7 @@ public class SxpDomain implements AutoCloseable {
             if (!deleted.isEmpty()) {
                 replace.addAll(SxpDatabase.getReplaceForBindings(deleted, domain.getSxpDatabase(), filterMap));
                 //Fix for specific cases where local bindings are overwritten by shared local bindings
-                replace.addAll(domain.getMasterDatabase().getLocalBindings());
+                replace.addAll(domain.getMasterDatabase().getBindings());
             }
             added.addAll(domain.getMasterDatabase().addBindings(replace));
         }
