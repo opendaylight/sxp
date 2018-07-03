@@ -112,14 +112,6 @@ public class MasterDatabaseImpl extends MasterDatabase {
      * {@inheritDoc}
      */
     @Override
-    public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> addLocalBindings(List<T> bindings) {
-        return addBindings(bindings, localBindingMap, BindingOriginsConfig.LOCAL_ORIGIN);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindingsLocal(List<T> bindings) {
         return deleteBindings(bindings, localBindingMap);
     }

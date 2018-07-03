@@ -101,11 +101,6 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
     }
 
     @Override
-    public <T extends SxpBindingFields> List<MasterDatabaseBinding> addLocalBindings(List<T> bindings) {
-        return doAddBindings(bindings, LOCAL_ORIGIN);
-    }
-
-    @Override
     public <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings) {
         return doAddBindings(bindings, NETWORK_ORIGIN);
     }

@@ -29,6 +29,7 @@ import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
@@ -39,6 +40,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.DateAndTime;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsOutputBuilder;
@@ -241,10 +243,11 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
      * @param bindings {@link List} of {@link Binding}
      * @param peerSequence Peers sequence path
      * @param created Data and time when binding is created
+     * @param origin Origin of binding
      * @return {@link List} of {@link MasterDatabaseBinding}
      */
     private List<MasterDatabaseBinding> transformBindings(final List<Binding> bindings,
-            final PeerSequence peerSequence, final DateAndTime created) {
+            final PeerSequence peerSequence, final DateAndTime created, final OriginType origin) {
         final List<MasterDatabaseBinding> masterDatabaseBindings = new ArrayList<>();
         for (final Binding binding : bindings) {
             final List<IpPrefix> ipPrefixes = binding.getIpPrefix();
@@ -256,6 +259,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                                     .setSecurityGroupTag(binding.getSgt())
                                     .setPeerSequence(peerSequence)
                                     .setTimestamp(created)
+                                    .setOrigin(origin)
                                     .build()
                     );
                 }
@@ -266,13 +270,15 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     }
 
     private List<MasterDatabaseBinding> transformBindings(final List<Binding> bindings) {
-        return transformBindings(bindings, null, null);
+        return transformBindings(bindings, null, null, null);
     }
 
-    private MasterDatabaseBinding createMasterDatabaseBinding(final IpPrefix ipPrefix, final Sgt sgt) {
+    private MasterDatabaseBinding createMasterDatabaseBinding(final IpPrefix ipPrefix, final Sgt sgt,
+            final OriginType origin) {
         return new MasterDatabaseBindingBuilder()
                 .setIpPrefix(ipPrefix)
                 .setSecurityGroupTag(sgt)
+                .setOrigin(origin)
                 .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
                 .setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build())
                 .build();
@@ -293,17 +299,19 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         // merge bindings to data-store
         final MasterDatabaseInf database = getMasterDatabase(nodeId, domain);
         if (database != null) {
+            final OriginType origin;
+
+            if (LogicalDatastoreType.OPERATIONAL == datastoreType) {
+                origin = BindingOriginsConfig.NETWORK_ORIGIN;
+            } else {
+                origin = BindingOriginsConfig.LOCAL_ORIGIN;
+            }
+
             final List<MasterDatabaseBinding> bindings = transformBindings(
                     masterDatabase.getBinding(),
                     new PeerSequenceBuilder().setPeer(new ArrayList<>()).build(),
-                    TimeConv.toDt(System.currentTimeMillis()));
-            final List<MasterDatabaseBinding> addedBindings;
-            if (LogicalDatastoreType.OPERATIONAL == datastoreType) {
-                addedBindings = database.addBindings(bindings);
-            } else {
-                addedBindings = database.addLocalBindings(bindings);
-            }
-            return !addedBindings.isEmpty();
+                    TimeConv.toDt(System.currentTimeMillis()), origin);
+            return !database.addBindings(bindings).isEmpty();
         }
         return false;
     }
@@ -448,13 +456,16 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
             final MasterDatabaseInf masterDatabase = getMasterDatabase(nodeId, input.getDomainName());
             if (masterDatabase != null) {
-                final MasterDatabaseBinding binding = createMasterDatabaseBinding(input.getIpPrefix(), input.getSgt());
-                final List<MasterDatabaseBinding> addedBindings;
+                final MasterDatabaseBinding binding;
                 if (LogicalDatastoreType.OPERATIONAL == getDatastoreType(input.getConfigPersistence())) {
-                    addedBindings = masterDatabase.addBindings(Collections.singletonList(binding));
+                    binding = createMasterDatabaseBinding(input.getIpPrefix(), input.getSgt(),
+                            BindingOriginsConfig.NETWORK_ORIGIN);
                 } else {
-                    addedBindings = masterDatabase.addLocalBindings(Collections.singletonList(binding));
+                    binding = createMasterDatabaseBinding(input.getIpPrefix(), input.getSgt(),
+                            BindingOriginsConfig.LOCAL_ORIGIN);
                 }
+                final List<MasterDatabaseBinding> addedBindings = masterDatabase.addBindings(
+                        Collections.singletonList(binding));
                 output.setResult(addedBindings.size() == 1);
             }
             return RpcResultBuilder.success(output.build()).build();
@@ -1023,8 +1034,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
             if (input.getBinding() != null && !input.getBinding().isEmpty() && masterDatabase != null) {
                 final List<MasterDatabaseBinding> bindingsToBeAdded = transformBindings(
                         input.getBinding(), new PeerSequenceBuilder().setPeer(Collections.emptyList()).build(),
-                        TimeConv.toDt(System.currentTimeMillis()));
-                final List<MasterDatabaseBinding> addedBindings = masterDatabase.addLocalBindings(bindingsToBeAdded);
+                        TimeConv.toDt(System.currentTimeMillis()), BindingOriginsConfig.LOCAL_ORIGIN);
+                final List<MasterDatabaseBinding> addedBindings = masterDatabase.addBindings(bindingsToBeAdded);
                 output.setResult(!addedBindings.isEmpty());
             }
             return RpcResultBuilder.success(output.build()).build();
@@ -1079,25 +1090,23 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                         .setIpPrefix(originalIpPrefix)
                         .setSecurityGroupTag(originalSgt)
                         .build();
-                final MasterDatabaseBinding newDbBinding = createMasterDatabaseBinding(newIpPrefix, newSgt);
 
-                List<MasterDatabaseBinding> updated = null;
-                if (LogicalDatastoreType.OPERATIONAL == getDatastoreType(input.getConfigPersistence())) {
-                    final List<MasterDatabaseBinding> deleted = masterDatabase
-                            .deleteBindings(Collections.singletonList(originalDbBinding));
-                    if (deleted.size() == 1) {
-                        updated = masterDatabase.addBindings(Collections.singletonList(newDbBinding));
+                final List<MasterDatabaseBinding> deleted = masterDatabase
+                        .deleteBindings(Collections.singletonList(originalDbBinding));
+                if (deleted.size() == 1) {
+                    final MasterDatabaseBinding newDbBinding;
+                    if (LogicalDatastoreType.OPERATIONAL == getDatastoreType(input.getConfigPersistence())) {
+                        newDbBinding = createMasterDatabaseBinding(
+                                newIpPrefix, newSgt, BindingOriginsConfig.NETWORK_ORIGIN);
+                    } else {
+                        newDbBinding = createMasterDatabaseBinding(
+                                newIpPrefix, newSgt, BindingOriginsConfig.LOCAL_ORIGIN);
                     }
-                } else {
-                    final List<MasterDatabaseBinding> deleted = masterDatabase
-                            .deleteBindingsLocal(Collections.singletonList(originalDbBinding));
-                    if (deleted.size() == 1) {
-                        updated = masterDatabase.addLocalBindings(Collections.singletonList(newDbBinding));
-                    }
+                    final List<MasterDatabaseBinding> updated = masterDatabase
+                            .addBindings(Collections.singletonList(newDbBinding));
+                    output.setResult(updated.size() == 1);
                 }
-                output.setResult(updated != null && updated.size() == 1);
             }
-
             return RpcResultBuilder.success(output.build()).build();
         });
     }

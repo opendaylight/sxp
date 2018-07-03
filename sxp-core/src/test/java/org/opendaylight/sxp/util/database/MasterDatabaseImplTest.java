@@ -81,7 +81,7 @@ public class MasterDatabaseImplTest {
 
     @Test
     public void testAddLocalBindings() throws Exception {
-        assertEquals(0, database.addLocalBindings(mergeBindings()).size());
+        assertEquals(0, database.addBindings(mergeBindings()).size());
         assertEquals(0, database.getBindings().size());
 
         List<SxpBindingFields>
@@ -91,13 +91,13 @@ public class MasterDatabaseImplTest {
                         getBinding("2.2.2.2/32", 20, "20.20.20.20", "10.10.10.10"),
                         getBinding("2.2.2.2/32", 200, "20.20.20.20"));
 
-        assertBindings(database.addLocalBindings(toAdd), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
+        assertBindings(database.addBindings(toAdd), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
                 getBinding("2.2.2.2/32", 200, "20.20.20.20")));
         assertEquals(2, database.getBindings().size());
         assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
                 getBinding("2.2.2.2/32", 200, "20.20.20.20")));
 
-        assertEquals(0, database.addLocalBindings(toAdd).size());
+        assertEquals(0, database.addBindings(toAdd).size());
         assertEquals(2, database.getBindings().size());
         assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
                 getBinding("2.2.2.2/32", 200, "20.20.20.20")));
@@ -107,7 +107,7 @@ public class MasterDatabaseImplTest {
                 mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
                         getBinding("2.2.2.2/32", 2000, "200.200.200.200"));
 
-        assertEquals(2, database.addLocalBindings(toAdd).size());
+        assertEquals(2, database.addBindings(toAdd).size());
         assertEquals(3, database.getBindings().size());
         assertBindings(database.getBindings(), mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
                 getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
@@ -116,7 +116,7 @@ public class MasterDatabaseImplTest {
 
     @Test
     public void testDeleteBindingsLocal() throws Exception {
-        database.addLocalBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
+        database.addBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
                 getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
                 getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
 

@@ -1138,7 +1138,7 @@ public class SxpNode {
         }
         List<MasterDatabaseBinding> addedBindings;
         synchronized (sxpDomain) {
-            addedBindings = sxpDomain.getMasterDatabase().addLocalBindings(bindings);
+            addedBindings = sxpDomain.getMasterDatabase().addBindings(bindings);
             sxpDomain.pushToSharedMasterDatabases(Collections.emptyList(), bindings);
         }
         return addedBindings;

@@ -373,10 +373,10 @@ public class SxpNodeTest {
     public void testPutLocalBindingsMasterDatabase() throws Exception {
         assertNotNull(
                 node.putLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "global"));
-        verify(databaseProvider).addLocalBindings(anyList());
+        verify(databaseProvider).addBindings(anyList());
         assertNotNull(
                 node.putLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "global"));
-        verify(databaseProvider, times(2)).addLocalBindings(anyList());
+        verify(databaseProvider, times(2)).addBindings(anyList());
         exception.expect(DomainNotFoundException.class);
         node.putLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "badDomain");
     }
