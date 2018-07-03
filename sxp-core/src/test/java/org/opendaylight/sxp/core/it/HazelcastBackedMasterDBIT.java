@@ -130,17 +130,17 @@ public class HazelcastBackedMasterDBIT {
                 getBinding("2.2.2.2/32", 2000, "20.20.20.20"), getBinding("15.15.15.15/24", 15, "0.10.10.10"),
                 getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
 
-        assertEquals(0, database.deleteBindingsLocal(mergeBindings()).size());
+        assertEquals(0, database.deleteBindings(mergeBindings()).size());
         assertEquals(4, database.getBindings().size());
 
-        assertBindings(database.deleteBindingsLocal(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
+        assertBindings(database.deleteBindings(mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
                 getBinding("2.2.2.2/32", 2000, "20.20.20.20"))),
                 mergeBindings(getBinding("1.1.1.1/32", 100, "10.10.10.10"),
                         getBinding("2.2.2.2/32", 2000, "20.20.20.20")));
         assertBindings(database.getBindings(), mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
                 getBinding("2.2.2.20/32", 2000, "200.200.200.200")));
 
-        assertBindings(database.deleteBindingsLocal(mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
+        assertBindings(database.deleteBindings(mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
                 getBinding("2.2.2.20/32", 2000, "200.200.200.200"))),
                 mergeBindings(getBinding("15.15.15.15/24", 15, "0.10.10.10"),
                         getBinding("2.2.2.20/32", 2000, "200.200.200.200")));

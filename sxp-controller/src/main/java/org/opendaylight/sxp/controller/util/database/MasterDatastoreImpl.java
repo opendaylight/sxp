@@ -217,13 +217,6 @@ public final class MasterDatastoreImpl extends MasterDatabase {
     }
 
     @Override
-    synchronized public <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindingsLocal(List<T> bindings) {
-        //Does not wait for config mirroring
-        deleteBindings(bindings, LogicalDatastoreType.OPERATIONAL);
-        return deleteBindings(bindings, LogicalDatastoreType.CONFIGURATION);
-    }
-
-    @Override
     synchronized public <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings) {
         return addBindings(bindings, LogicalDatastoreType.OPERATIONAL);
     }

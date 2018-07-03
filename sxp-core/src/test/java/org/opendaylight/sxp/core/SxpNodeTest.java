@@ -385,10 +385,10 @@ public class SxpNodeTest {
     public void testRemoveLocalBindingsMasterDatabase() throws Exception {
         assertNotNull(node.removeLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)),
                 "global"));
-        verify(databaseProvider).deleteBindingsLocal(anyList());
+        verify(databaseProvider).deleteBindings(anyList());
         assertNotNull(node.removeLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)),
                 "global"));
-        verify(databaseProvider, times(2)).deleteBindingsLocal(anyList());
+        verify(databaseProvider, times(2)).deleteBindings(anyList());
         exception.expect(DomainNotFoundException.class);
         node.removeLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "badDomain");
     }

@@ -580,7 +580,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                     && masterDatabase != null && masterDatabase.getBindings() != null) {
                 final List<MasterDatabaseBinding> bindingsToBeRemoved = transformBindings(input.getBinding());
                 if (!bindingsToBeRemoved.isEmpty()) {
-                    final List<MasterDatabaseBinding> deleted = masterDatabase.deleteBindingsLocal(bindingsToBeRemoved);
+                    final List<MasterDatabaseBinding> deleted = masterDatabase.deleteBindings(bindingsToBeRemoved);
                     output.setResult(!deleted.isEmpty());
                 } else {
                     output.setResult(true);
@@ -643,7 +643,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                                 .setSecurityGroupTag(input.getSgt())
                                 .build())));
 
-                final List<MasterDatabaseBinding> deleted = masterDatabase.deleteBindingsLocal(bindings);
+                final List<MasterDatabaseBinding> deleted = masterDatabase.deleteBindings(bindings);
                 output.setResult(!deleted.isEmpty());
             }
             return RpcResultBuilder.success(output.build()).build();

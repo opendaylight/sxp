@@ -106,11 +106,6 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
     }
 
     @Override
-    public <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindingsLocal(List<T> bindings) {
-        return deleteBindings(bindings);
-    }
-
-    @Override
     public <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindings(List<T> bindings) {
         List<MasterDatabaseBinding> deletedBindings = new ArrayList<>();
         for (T binding : bindings) {

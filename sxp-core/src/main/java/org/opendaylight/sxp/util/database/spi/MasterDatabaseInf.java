@@ -38,15 +38,6 @@ public interface MasterDatabaseInf extends AutoCloseable {
      */
     Collection<MasterDatabaseBinding> getLocalBindings();
     /**
-     * Removes bindings from MasterDatabase that were stored as local
-     *
-     * @param bindings List of bindings that will be removed
-     * @param <T>      Any   type extending SxpBindingsFields
-     * @return List of bindings that were actually removed
-     */
-    <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindingsLocal(List<T> bindings);
-
-    /**
      * Adds bindings into MasterDatabase as learned bindings
      *
      * @param bindings List of bindings that will be added

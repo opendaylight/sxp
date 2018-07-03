@@ -190,7 +190,16 @@ public class SxpRpcServiceImplTest {
         final MasterDatabaseBinding localDatabaseBinding = getBinding("10.0.0.2/24", 1);
         when(masterDatabase.getLocalBindings()).thenReturn(Collections.singletonList(localDatabaseBinding));
 
-        when(masterDatabase.deleteBindingsLocal(anyListOf(MasterDatabaseBinding.class))).thenAnswer(invocation -> {
+        when(masterDatabase.addBindings(anyListOf(MasterDatabaseBinding.class))).thenAnswer(invocation -> {
+            final List<MasterDatabaseBinding> input = (List<MasterDatabaseBinding>) invocation.getArguments()[0];
+            if (input.isEmpty()) {
+                return Collections.emptyList();
+            } else {
+                return Collections.singletonList(mock(MasterDatabaseBinding.class));
+            }
+        });
+
+        when(masterDatabase.deleteBindings(anyListOf(MasterDatabaseBinding.class))).thenAnswer(invocation -> {
             final List<MasterDatabaseBinding> input = (List<MasterDatabaseBinding>) invocation.getArguments()[0];
             if (input.isEmpty()) {
                 return Collections.emptyList();
