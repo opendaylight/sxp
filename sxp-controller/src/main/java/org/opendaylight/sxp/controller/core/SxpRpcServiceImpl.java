@@ -783,7 +783,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
             if (masterDatabase != null) {
                 final Collection<MasterDatabaseBinding> bindings;
                 if (GetNodeBindingsInput.BindingsRange.Local.equals(input.getBindingsRange())) {
-                    bindings = masterDatabase.getLocalBindings();
+                    bindings = masterDatabase.getBindings();
                 } else {
                     bindings = masterDatabase.getBindings();
                 }

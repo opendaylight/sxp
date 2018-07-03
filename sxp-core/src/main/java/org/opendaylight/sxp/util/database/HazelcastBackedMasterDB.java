@@ -94,13 +94,6 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
     }
 
     @Override
-    public Collection<MasterDatabaseBinding> getLocalBindings() {
-        PredicateBuilder predicate = new PredicateBuilder().getEntryObject().get("_origin").get("_value")
-                .equal(LOCAL_ORIGIN.getValue());
-        return bindingMap.values(predicate);
-    }
-
-    @Override
     public <T extends SxpBindingFields> List<MasterDatabaseBinding> addLocalBindings(List<T> bindings) {
         return doAddBindings(bindings, LOCAL_ORIGIN);
     }

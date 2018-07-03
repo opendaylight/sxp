@@ -92,7 +92,7 @@ public class SxpDomainTest {
                 Collections.singletonList(mock(SxpDatabaseBinding.class)));
         when(sxpDatabase.deleteBindings(any(NodeId.class), anyList())).thenReturn(
                 Collections.singletonList(mock(SxpDatabaseBinding.class)));
-        when(masterDatabase.getLocalBindings()).thenReturn(
+        when(masterDatabase.getBindings()).thenReturn(
                 Collections.singletonList(mock(MasterDatabaseBinding.class)));
         when(masterDatabase.addBindings(anyList())).thenReturn(
                 Collections.singletonList(mock(MasterDatabaseBinding.class)));
@@ -356,7 +356,7 @@ public class SxpDomainTest {
         masterDatabaseBindings.add(getMasterDatabaseBinding("4.4.4.4/32", 4));
         masterDatabaseBindings.add(getMasterDatabaseBinding("5.5.5.5/32", 5));
         masterDatabaseBindings.add(getMasterDatabaseBinding("6.6.6.6/32", 6));
-        when(masterDatabase.getLocalBindings()).thenReturn(masterDatabaseBindings);
+        when(masterDatabase.getBindings()).thenReturn(masterDatabaseBindings);
 
         SxpDatabaseInf sxpDatabase = mock(SxpDatabaseImpl.class);
         MasterDatabaseInf masterDatabase = mock(MasterDatabaseImpl.class);
