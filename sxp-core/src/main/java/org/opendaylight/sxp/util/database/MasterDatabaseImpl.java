@@ -46,7 +46,7 @@ public class MasterDatabaseImpl extends MasterDatabase {
         Set<IpPrefix>
                 ipPrefixSet =
                 bindings.parallelStream().map(SxpBindingFields::getIpPrefix).collect(Collectors.toSet());
-        getLocalBindings().forEach(b -> {
+        localBindingMap.values().forEach(b -> {
             if (!ipPrefixSet.contains(b.getIpPrefix())) {
                 bindings.add(b);
             }
@@ -54,12 +54,9 @@ public class MasterDatabaseImpl extends MasterDatabase {
         return bindings;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public synchronized List<MasterDatabaseBinding> getLocalBindings() {
-        return new ArrayList<>(localBindingMap.values());
+    public List<MasterDatabaseBinding> getBindings(OriginType origin) {
+        throw new UnsupportedOperationException("Not supported yet");
     }
 
     /**
@@ -106,22 +103,6 @@ public class MasterDatabaseImpl extends MasterDatabase {
         });
         dbListener.onBindingsRemoved(removed);
         return removed;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> addLocalBindings(List<T> bindings) {
-        return addBindings(bindings, localBindingMap, BindingOriginsConfig.LOCAL_ORIGIN);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public synchronized <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindingsLocal(List<T> bindings) {
-        return deleteBindings(bindings, localBindingMap);
     }
 
     /**
