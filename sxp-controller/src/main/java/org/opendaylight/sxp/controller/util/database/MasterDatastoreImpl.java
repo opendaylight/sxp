@@ -133,15 +133,6 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         return bindings;
     }
 
-    @Override
-    synchronized public List<MasterDatabaseBinding> getLocalBindings() {
-        return getBindings().stream()
-                .filter(b -> b.getPeerSequence() == null || b.getPeerSequence().getPeer() == null || b.getPeerSequence()
-                        .getPeer()
-                        .isEmpty())
-                .collect(Collectors.toList());
-    }
-
     /**
      * @param bindings      Bindings that will be added
      * @param datastoreType Defines from where bindings will be added
@@ -214,18 +205,6 @@ public final class MasterDatastoreImpl extends MasterDatabase {
         }
 
         return Collections.emptyList();
-    }
-
-    @Override
-    synchronized public <T extends SxpBindingFields> List<MasterDatabaseBinding> addLocalBindings(List<T> bindings) {
-        return addBindings(bindings, LogicalDatastoreType.CONFIGURATION);
-    }
-
-    @Override
-    synchronized public <T extends SxpBindingFields> List<MasterDatabaseBinding> deleteBindingsLocal(List<T> bindings) {
-        //Does not wait for config mirroring
-        deleteBindings(bindings, LogicalDatastoreType.OPERATIONAL);
-        return deleteBindings(bindings, LogicalDatastoreType.CONFIGURATION);
     }
 
     @Override
