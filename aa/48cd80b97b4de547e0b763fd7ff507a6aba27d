@@ -1,0 +1,8 @@
+Code-Review+1: Martin Dindoffer <martin.dindoffer@pantheon.tech>
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Ivan Hrasko <ihrasko@cisco.com>
+Submitted-by: Ivan Hrasko <ihrasko@cisco.com>
+Submitted-at: Fri, 06 Jul 2018 14:27:41 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/73402
+Project: sxp
+Branch: refs/heads/master
