@@ -32,6 +32,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.SxpClusterRouteBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinition;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 
 /**
  * Test for {@link SxpClusterRouteManager}.
@@ -52,8 +53,8 @@ public class SxpClusterRouteManagerTest {
     @Before
     public void setUp() throws Exception {
         Mockito.when(routeReactor.updateRouting(Matchers.any(), Matchers.any()))
-                .thenReturn(Futures.immediateFuture(null));
-        Mockito.when(routeReactor.wipeRouting()).thenReturn(Futures.immediateFuture(null));
+                .thenReturn(FluentFutures.immediateNullFluentFuture());
+        Mockito.when(routeReactor.wipeRouting()).thenReturn(FluentFutures.immediateNullFluentFuture());
         manager = new SxpClusterRouteManager(dataBroker, cssProvider, routeReactor);
         Assert.assertEquals(RouteListenerState.STOPPED, manager.getState());
 
