@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
@@ -152,7 +153,7 @@ public class SxpRpcServiceImplTest {
         when(datastoreAccess.readSynchronous(eq(getIdentifier("0.0.0.0")), any(LogicalDatastoreType.class))).thenReturn(
                 mock(SxpNodeIdentity.class));
         when(datastoreAccess.merge(any(InstanceIdentifier.class), any(DataObject.class),
-                any(LogicalDatastoreType.class))).thenReturn(Futures.immediateCheckedFuture(null));
+                any(LogicalDatastoreType.class))).thenReturn(CommitInfo.emptyFluentFuture());
         when(datastoreAccess.putSynchronous(eq(getIdentifier("0.0.0.1")), any(SxpNodeIdentity.class),
                 eq(LogicalDatastoreType.CONFIGURATION))).thenAnswer(invocation -> {
             final SxpNode sxpNode = mock(SxpNode.class);

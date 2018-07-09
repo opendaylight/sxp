@@ -8,8 +8,7 @@
 
 package org.opendaylight.sxp.route.core;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.util.Objects;
@@ -22,10 +21,12 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.route.api.RouteReactor;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.SxpClusterRoute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.SxpClusterRouteBuilder;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ public class RouteReactorZipImpl implements RouteReactor {
 
     private static final Logger LOG = LoggerFactory.getLogger(RouteReactorZipImpl.class);
 
-    private static final ListenableFuture<Void> COMPRESSED_FUTURE_RESULT = Futures.immediateFuture(null);
+    private static final FluentFuture<? extends CommitInfo> COMPRESSED_FUTURE_RESULT = FluentFutures.immediateNullFluentFuture();
 
     private static final SxpClusterRoute WIPE_ROUTING_MARK = new SxpClusterRouteBuilder().build();
 
@@ -48,7 +49,7 @@ public class RouteReactorZipImpl implements RouteReactor {
     private final Semaphore queueGuard;
 
     private final RouteReactor delegate;
-    private final Callable<Void> updateRouteTask;
+    private final Callable<? extends CommitInfo> updateRouteTask;
 
     /**
      * @param delegate service used for delegation
@@ -61,17 +62,17 @@ public class RouteReactorZipImpl implements RouteReactor {
     }
 
     @Override
-    public ListenableFuture<Void> updateRouting(@Nullable final SxpClusterRoute oldRoute,
-            @Nullable final SxpClusterRoute newRoute) {
+    public FluentFuture<? extends CommitInfo> updateRouting(@Nullable final SxpClusterRoute oldRoute,
+                                                            @Nullable final SxpClusterRoute newRoute) {
         // with state compression
-        ListenableFuture<Void> futureResult;
+        FluentFuture<? extends CommitInfo> futureResult;
         try {
             queueGuard.acquire();
 
             if (compressionQueue.isEmpty()) {
                 compressionQueue.add(new MutablePair<>(oldRoute, newRoute));
                 // schedule task
-                futureResult = servicePool.submit(updateRouteTask);
+                futureResult = FluentFuture.from(servicePool.submit(updateRouteTask));
             } else {
                 // compress, expect that task is already scheduled
                 compressionQueue.peek().setRight(newRoute);
@@ -82,7 +83,7 @@ public class RouteReactorZipImpl implements RouteReactor {
             queueGuard.release();
         } catch (Exception e) {
             LOG.warn("failed to get lock upon compression queue: {}", e.getMessage());
-            futureResult = Futures.immediateFailedFuture(e);
+            futureResult = FluentFutures.immediateFailedFluentFuture(e);
         }
         return futureResult;
     }
@@ -90,13 +91,13 @@ public class RouteReactorZipImpl implements RouteReactor {
     /**
      * @return callback containing logic for mapping configuration into system routing
      */
-    private Callable<Void> createUpdateRoutingTask() {
+    private Callable<? extends CommitInfo> createUpdateRoutingTask() {
         return () -> {
             try {
                 queueGuard.acquire();
 
                 final Pair<SxpClusterRoute, SxpClusterRoute> latestPair = compressionQueue.poll();
-                final ListenableFuture<Void> futureResult;
+                final FluentFuture<? extends CommitInfo> futureResult;
                 if (WIPE_ROUTING_MARK == latestPair.getRight()) {
                     futureResult = delegate.wipeRouting();
                 } else {
@@ -119,15 +120,15 @@ public class RouteReactorZipImpl implements RouteReactor {
     }
 
     @Override
-    public ListenableFuture<Void> wipeRouting() {
-        ListenableFuture<Void> futureResult;
+    public FluentFuture<? extends CommitInfo> wipeRouting() {
+        FluentFuture<? extends CommitInfo> futureResult;
         try {
             queueGuard.acquire();
 
             if (compressionQueue.isEmpty()) {
                 compressionQueue.add(new MutablePair<>(null, WIPE_ROUTING_MARK));
                 // schedule task
-                futureResult = servicePool.submit(updateRouteTask);
+                futureResult = FluentFuture.from(servicePool.submit(updateRouteTask));
             } else {
                 // compress, expect that task is already scheduled
                 compressionQueue.peek().setRight(WIPE_ROUTING_MARK);
@@ -138,7 +139,7 @@ public class RouteReactorZipImpl implements RouteReactor {
             queueGuard.release();
         } catch (Exception e) {
             LOG.warn("failed to get lock upon compression queue: {}", e.getMessage());
-            futureResult = Futures.immediateFailedFuture(e);
+            futureResult = FluentFutures.immediateFailedFluentFuture(e);
         }
         return futureResult;
     }

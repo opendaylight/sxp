@@ -11,7 +11,7 @@ package org.opendaylight.sxp.controller.core;
 import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
 
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
@@ -923,8 +923,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         });
     }
 
-    private CheckedFuture<Void, TransactionCommitFailedException> mergeSxpDomainToDs(final String nodeId,
-            final String domain, final SxpDomain sxpNode, final LogicalDatastoreType datastoreType) {
+    private FluentFuture<? extends CommitInfo> mergeSxpDomainToDs(String nodeId, String domain, SxpDomain sxpNode,
+                                                                  LogicalDatastoreType datastoreType) {
        return getDatastoreAccess(nodeId).merge(getIdentifier(nodeId).child(SxpDomains.class).child(SxpDomain.class,
                new SxpDomainKey(domain)), sxpNode, datastoreType);
     }
