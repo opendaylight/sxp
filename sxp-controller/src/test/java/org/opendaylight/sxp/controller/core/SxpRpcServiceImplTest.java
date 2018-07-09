@@ -23,7 +23,6 @@ import static org.mockito.Mockito.when;
 import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
 
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -117,6 +116,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
@@ -152,7 +152,7 @@ public class SxpRpcServiceImplTest {
         when(datastoreAccess.readSynchronous(eq(getIdentifier("0.0.0.0")), any(LogicalDatastoreType.class))).thenReturn(
                 mock(SxpNodeIdentity.class));
         when(datastoreAccess.merge(any(InstanceIdentifier.class), any(DataObject.class),
-                any(LogicalDatastoreType.class))).thenReturn(Futures.immediateCheckedFuture(null));
+                any(LogicalDatastoreType.class))).thenReturn(FluentFutures.immediateNullFluentFuture());
         when(datastoreAccess.putSynchronous(eq(getIdentifier("0.0.0.1")), any(SxpNodeIdentity.class),
                 eq(LogicalDatastoreType.CONFIGURATION))).thenAnswer(invocation -> {
             final SxpNode sxpNode = mock(SxpNode.class);

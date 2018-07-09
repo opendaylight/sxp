@@ -9,25 +9,28 @@
 package org.opendaylight.sxp.route.core;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import java.util.Collection;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
-import org.opendaylight.sxp.controller.boot.SxpControllerInstance;
 import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvider;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceRegistration;
 import org.opendaylight.mdsal.singleton.common.api.ServiceGroupIdentifier;
+import org.opendaylight.sxp.controller.boot.SxpControllerInstance;
 import org.opendaylight.sxp.route.api.RouteReactor;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.SxpClusterRoute;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
@@ -42,10 +45,10 @@ public class SxpClusterRouteManager
         implements ClusteredDataTreeChangeListener<SxpClusterRoute>, ClusterSingletonService, AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(SxpClusterRouteManager.class);
-    private static final FutureCallback<Void> LOGGING_CALLBACK = new FutureCallback<Void>() {
+    private static final FutureCallback<CommitInfo> LOGGING_CALLBACK = new FutureCallback<CommitInfo>() {
 
         @Override
-        public void onSuccess(final Void result) {
+        public void onSuccess(final CommitInfo result) {
             LOG.debug("Finished sxp-cluster-routing update task");
         }
 
@@ -54,10 +57,10 @@ public class SxpClusterRouteManager
             LOG.warn("Finished sxp-cluster-routing update task", t);
         }
     };
-    private static final FutureCallback<Void> LOGGING_CALLBACK_CLOSE = new FutureCallback<Void>() {
+    private static final FutureCallback<CommitInfo> LOGGING_CALLBACK_CLOSE = new FutureCallback<CommitInfo>() {
 
         @Override
-        public void onSuccess(final Void result) {
+        public void onSuccess(final CommitInfo result) {
             LOG.debug("IN_CLOSE: Finished sxp-cluster-routing update task");
         }
 
@@ -125,8 +128,7 @@ public class SxpClusterRouteManager
                 final SxpClusterRoute dataBefore = rootNode.getDataBefore();
                 final SxpClusterRoute dataAfter = rootNode.getDataAfter();
 
-                final ListenableFuture<Void> routingOutcome = routeReactor.updateRouting(dataBefore, dataAfter);
-
+                final FluentFuture<? extends CommitInfo> routingOutcome = routeReactor.updateRouting(dataBefore, dataAfter);
                 Futures.addCallback(routingOutcome, LOGGING_CALLBACK);
             });
 
@@ -153,14 +155,25 @@ public class SxpClusterRouteManager
     @Override
     public ListenableFuture<Void> closeServiceInstance() {
         LOG.info("Clustering provider closed service for {}", this.getClass().getSimpleName());
-        final ListenableFuture<Void> routingOutcome;
+        final FluentFuture<? extends CommitInfo> routingOutcome;
         synchronized (stateLock) {
             state = RouteListenerState.STOPPED;
             routingDefinitionListenerRegistration.close();
             routingOutcome = routeReactor.wipeRouting();
             Futures.addCallback(routingOutcome, LOGGING_CALLBACK);
         }
-        return routingOutcome;
+        final SettableFuture<Void> outputFuture = SettableFuture.create();
+        Futures.addCallback(routingOutcome, new FutureCallback<CommitInfo>() {
+            @Override
+            public void onSuccess(CommitInfo result) {
+                outputFuture.set(null);
+            }
+            @Override
+            public void onFailure(Throwable t) {
+                outputFuture.setException(t);
+            }
+        });
+        return outputFuture;
     }
 
     @Override
@@ -171,7 +184,7 @@ public class SxpClusterRouteManager
         synchronized (stateLock) {
             state = RouteListenerState.STOPPED;
             routingDefinitionListenerRegistration.close();
-            final ListenableFuture<Void> routingOutcome = routeReactor.wipeRouting();
+            final FluentFuture<? extends CommitInfo> routingOutcome = routeReactor.wipeRouting();
             Futures.addCallback(routingOutcome, LOGGING_CALLBACK_CLOSE);
         }
     }

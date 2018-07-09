@@ -11,8 +11,8 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -23,8 +23,9 @@ import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionChainListener;
-import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.sxp.controller.listeners.TransactionChainListenerImpl;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
@@ -104,10 +105,10 @@ public final class DatastoreAccess implements AutoCloseable {
      * @param <T>                  Any type extending DataObject
      * @return Future result of operation
      */
-    public synchronized <T extends DataObject> ListenableFuture<Void> delete(InstanceIdentifier<T> path,
-            LogicalDatastoreType logicalDatastoreType) {
+    public synchronized <T extends DataObject> FluentFuture<? extends CommitInfo> delete(InstanceIdentifier<T> path,
+                                                                                         LogicalDatastoreType logicalDatastoreType) {
         if (!checkParams(path, logicalDatastoreType)) {
-            return Futures.immediateCancelledFuture();
+            return FluentFutures.immediateCancelledFluentFuture();
         }
         if (LOG.isDebugEnabled()) {
             LOG.debug("Delete {} {}", logicalDatastoreType, path.getTargetType());
@@ -115,7 +116,7 @@ public final class DatastoreAccess implements AutoCloseable {
         synchronized (dataBroker) {
             WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
             transaction.delete(logicalDatastoreType, path);
-            return transaction.submit();
+            return transaction.commit();
         }
     }
 
@@ -128,11 +129,10 @@ public final class DatastoreAccess implements AutoCloseable {
      * @param <T>                  Any type extending DataObject
      * @return Future result of operation
      */
-    public synchronized <T extends DataObject> CheckedFuture<Void, TransactionCommitFailedException> merge(
+    public synchronized <T extends DataObject> FluentFuture<? extends CommitInfo> merge(
             InstanceIdentifier<T> path, T data, LogicalDatastoreType logicalDatastoreType) {
         if (!checkParams(path, logicalDatastoreType)) {
-            return Futures.makeChecked(Futures.immediateCancelledFuture(), input ->
-                    new TransactionCommitFailedException("Datastore was closed"));
+            return FluentFutures.immediateCancelledFluentFuture();
         }
         Preconditions.checkNotNull(data);
         if (LOG.isDebugEnabled()) {
@@ -140,7 +140,7 @@ public final class DatastoreAccess implements AutoCloseable {
         }
         WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
         transaction.merge(logicalDatastoreType, path, data);
-        return transaction.submit();
+        return transaction.commit();
     }
 
     /**
@@ -152,11 +152,10 @@ public final class DatastoreAccess implements AutoCloseable {
      * @param <T>                  Any type extending DataObject
      * @return Future result of operation
      */
-    public synchronized <T extends DataObject> CheckedFuture<Void, TransactionCommitFailedException> put(
+    public synchronized <T extends DataObject> FluentFuture<? extends CommitInfo> put(
             InstanceIdentifier<T> path, T data, LogicalDatastoreType logicalDatastoreType) {
         if (!checkParams(path, logicalDatastoreType)) {
-            return Futures.makeChecked(Futures.immediateCancelledFuture(), input ->
-                    new TransactionCommitFailedException("Datastore was closed"));
+            return FluentFutures.immediateCancelledFluentFuture();
         }
         Preconditions.checkNotNull(data);
         if (LOG.isDebugEnabled()) {
@@ -164,7 +163,7 @@ public final class DatastoreAccess implements AutoCloseable {
         }
         WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
         transaction.put(logicalDatastoreType, path, data);
-        return transaction.submit();
+        return transaction.commit();
     }
 
     /**
@@ -198,8 +197,13 @@ public final class DatastoreAccess implements AutoCloseable {
     public synchronized <T extends DataObject> boolean mergeSynchronous(InstanceIdentifier<T> path, T data,
             LogicalDatastoreType logicalDatastoreType) {
         try {
-            merge(path, data, logicalDatastoreType).checkedGet();
-        } catch (TransactionCommitFailedException e) {
+            merge(path, data, logicalDatastoreType).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOG.error("Failed to merge {} to {}", path, logicalDatastoreType, e);
+            return false;
+        } catch (ExecutionException e) {
+            LOG.error("Failed to merge {} to {}", path, logicalDatastoreType, e);
             return false;
         }
         return true;
@@ -217,9 +221,13 @@ public final class DatastoreAccess implements AutoCloseable {
     public synchronized <T extends DataObject> boolean putSynchronous(InstanceIdentifier<T> path, T data,
             LogicalDatastoreType logicalDatastoreType) {
         try {
-            put(path, data, logicalDatastoreType).checkedGet();
-        } catch (TransactionCommitFailedException e) {
-            LOG.error("Failed to put {} to {}", path, logicalDatastoreType);
+            put(path, data, logicalDatastoreType).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOG.error("Failed to put {} to {}", path, logicalDatastoreType, e);
+            return false;
+        } catch (ExecutionException e) {
+            LOG.error("Failed to put {} to {}", path, logicalDatastoreType, e);
             return false;
         }
         return true;
