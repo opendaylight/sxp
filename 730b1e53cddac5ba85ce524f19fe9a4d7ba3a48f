@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "06983e19_386bdd15",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/MasterDBBindingComparator.java",
+        "patchSetId": 29
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-07-09T15:51:27Z",
+      "side": 1,
+      "message": "IllegalArgumentException",
+      "range": {
+        "startLine": 31,
+        "startChar": 22,
+        "endLine": 31,
+        "endChar": 43
+      },
+      "revId": "730b1e53cddac5ba85ce524f19fe9a4d7ba3a48f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
