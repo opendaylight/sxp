@@ -8,8 +8,9 @@
 
 package org.opendaylight.sxp.route.api;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.FluentFuture;
 import javax.annotation.Nullable;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.SxpClusterRoute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinition;
 
@@ -25,12 +26,12 @@ public interface RouteReactor {
      * @param newRoute next value of configured {@link SxpClusterRoute}
      * @return route update async outcome
      */
-    ListenableFuture<Void> updateRouting(@Nullable SxpClusterRoute oldRoute, @Nullable SxpClusterRoute newRoute);
+    FluentFuture<? extends CommitInfo> updateRouting(@Nullable SxpClusterRoute oldRoute, @Nullable SxpClusterRoute newRoute);
 
     /**
      * Remove all managed virtual interfaces
      *
      * @return route update async outcome
      */
-    ListenableFuture<Void> wipeRouting();
+    FluentFuture<? extends CommitInfo> wipeRouting();
 }
