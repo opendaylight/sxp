@@ -14,12 +14,15 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.FluentFuture;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,7 +35,9 @@ import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.sxp.controller.listeners.TransactionChainListenerImpl;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
@@ -62,7 +67,7 @@ public class DatastoreAccessTest {
     @Test
     public void testDelete() throws Exception {
         WriteTransaction transaction = mock(WriteTransaction.class);
-        when(transaction.submit()).thenReturn(mock(CheckedFuture.class));
+        doReturn(CommitInfo.emptyFluentFuture()).when(transaction.commit());
         InstanceIdentifier identifier = mock(InstanceIdentifier.class);
 
         when(transactionChain.newWriteOnlyTransaction()).thenReturn(transaction);
@@ -153,7 +158,7 @@ public class DatastoreAccessTest {
     @Test
     public void testMergeSynchronous() throws Exception {
         WriteTransaction transaction = mock(WriteTransaction.class);
-        when(transaction.submit()).thenReturn(mock(CheckedFuture.class));
+        doReturn(CommitInfo.emptyFluentFuture()).when(transaction).commit();
         InstanceIdentifier identifier = mock(InstanceIdentifier.class);
         DataObject dataObject = mock(DataObject.class);
 
@@ -162,14 +167,14 @@ public class DatastoreAccessTest {
 
         verify(transaction).merge(LogicalDatastoreType.OPERATIONAL, identifier, dataObject);
 
-        when(transaction.submit()).thenThrow(TransactionCommitFailedException.class);
+        when(transaction.commit()).thenThrow(TransactionCommitFailedException.class);
         assertFalse(access.mergeSynchronous(identifier, dataObject, LogicalDatastoreType.OPERATIONAL));
     }
 
     @Test
     public void testPutSynchronous() throws Exception {
         WriteTransaction transaction = mock(WriteTransaction.class);
-        when(transaction.submit()).thenReturn(mock(CheckedFuture.class));
+        doReturn(CommitInfo.emptyFluentFuture()).when(transaction).commit();
         InstanceIdentifier identifier = mock(InstanceIdentifier.class);
         DataObject dataObject = mock(DataObject.class);
 
@@ -178,7 +183,7 @@ public class DatastoreAccessTest {
 
         verify(transaction).put(LogicalDatastoreType.OPERATIONAL, identifier, dataObject);
 
-        when(transaction.submit()).thenThrow(TransactionCommitFailedException.class);
+        when(transaction.commit()).thenThrow(TransactionCommitFailedException.class);
         assertFalse(access.putSynchronous(identifier, dataObject, LogicalDatastoreType.OPERATIONAL));
     }
 
@@ -217,7 +222,7 @@ public class DatastoreAccessTest {
         when(future.checkedGet()).thenReturn(optional);
         when(readOnlyTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(
                 future);
-        when(writeTransaction.submit()).thenReturn(mock(CheckedFuture.class));
+        doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction.commit());
 
         InstanceIdentifier identifier = InstanceIdentifier.create(DataObject.class);
 
@@ -244,7 +249,7 @@ public class DatastoreAccessTest {
         when(future.checkedGet()).thenReturn(optional);
         when(readOnlyTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(
                 future);
-        when(writeTransaction.submit()).thenReturn(mock(CheckedFuture.class));
+        doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction.commit());
 
         InstanceIdentifier identifier = InstanceIdentifier.create(DataObject.class);
 
@@ -267,7 +272,7 @@ public class DatastoreAccessTest {
         when(future.checkedGet()).thenReturn(optional);
         when(readOnlyTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(
                 future);
-        when(writeTransaction.submit()).thenReturn(mock(CheckedFuture.class));
+        doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction.commit());
 
         InstanceIdentifier identifier = InstanceIdentifier.create(DataObject.class);
 
