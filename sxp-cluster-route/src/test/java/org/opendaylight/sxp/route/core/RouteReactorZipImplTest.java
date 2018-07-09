@@ -8,7 +8,7 @@
 
 package org.opendaylight.sxp.route.core;
 
-import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import java.util.Collections;
@@ -24,9 +24,11 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.sxp.route.api.RouteReactor;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.SxpClusterRoute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.SxpClusterRouteBuilder;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 
 /**
  * Test for {@link RouteReactorZipImpl}.
@@ -34,7 +36,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212
 @RunWith(MockitoJUnitRunner.class)
 public class RouteReactorZipImplTest {
 
-    private static final ListenableFuture<Void> SUCCESS = Futures.immediateFuture(null);
     @Mock private RouteReactor delegate;
 
     private SxpClusterRoute route1;
@@ -65,7 +66,7 @@ public class RouteReactorZipImplTest {
 
     @Test
     public void updateRouting_simple() throws Exception {
-        Mockito.when(delegate.updateRouting(route1, route2)).thenReturn(SUCCESS);
+        Mockito.when(delegate.updateRouting(route1, route2)).thenReturn(FluentFutures.immediateNullFluentFuture());
 
         reactor.updateRouting(route1, route2).get(1, TimeUnit.SECONDS);
 
@@ -74,29 +75,22 @@ public class RouteReactorZipImplTest {
 
     @Test
     public void updateRouting_compression() throws Exception {
-        final SettableFuture<Void> updateTask1Outcome = SettableFuture.create();
         final CountDownLatch firstUpdateLatch = new CountDownLatch(1);
-
-        Mockito.when(delegate.updateRouting(Matchers.any(), Matchers.any())).then(new Answer<ListenableFuture<Void>>() {
-
-            @Override
-            public ListenableFuture<Void> answer(final InvocationOnMock invocationOnMock) throws Throwable {
-                firstUpdateLatch.countDown();
-                return updateTask1Outcome;
-            }
-        }).thenReturn(SUCCESS);
+        Mockito.when(delegate.updateRouting(Matchers.any(), Matchers.any()))
+                .then((Answer<FluentFuture<? extends CommitInfo>>) invocationOnMock -> {
+                    firstUpdateLatch.countDown();
+                    return FluentFutures.immediateNullFluentFuture();
+                });
 
         // fire first change and block later tasks by unfinished outcome + countdown the latch
-        final ListenableFuture<Void> outcome1 = reactor.updateRouting(route1, route2);
+        final FluentFuture<? extends CommitInfo> outcome1 = reactor.updateRouting(route1, route2);
         firstUpdateLatch.await(1, TimeUnit.SECONDS);
 
-        final ListenableFuture<Void> outcome2 = reactor.updateRouting(route2, route3);
-        final ListenableFuture<Void> outcome3 = reactor.updateRouting(route3, route4);
+        final FluentFuture<? extends CommitInfo> outcome2 = reactor.updateRouting(route2, route3);
+        final FluentFuture<? extends CommitInfo> outcome3 = reactor.updateRouting(route3, route4);
 
         // expect fast response because only compression got involved
         outcome3.get(1, TimeUnit.SECONDS);
-        // unblock result of the first update task
-        updateTask1Outcome.set(null);
         // expect fast response because it just got unblocked
         outcome1.get(1, TimeUnit.SECONDS);
         // expect slower response - update task started after the unblock of 1
@@ -110,7 +104,7 @@ public class RouteReactorZipImplTest {
 
     @Test
     public void wipeRouting_simple() throws Exception {
-        Mockito.when(delegate.wipeRouting()).thenReturn(SUCCESS);
+        Mockito.when(delegate.wipeRouting()).thenReturn(FluentFutures.immediateNullFluentFuture());
 
         reactor.wipeRouting().get(1, TimeUnit.SECONDS);
 
@@ -130,14 +124,14 @@ public class RouteReactorZipImplTest {
                 return updateTask1Outcome;
             }
         });
-        Mockito.when(delegate.wipeRouting()).thenReturn(SUCCESS);
+        Mockito.when(delegate.wipeRouting()).thenReturn(FluentFutures.immediateNullFluentFuture());
 
         // fire first change and block later tasks by unfinished outcome + countdown the latch
-        final ListenableFuture<Void> outcome1 = reactor.updateRouting(route1, route2);
+        final FluentFuture<? extends CommitInfo> outcome1 = reactor.updateRouting(route1, route2);
         firstUpdateLatch.await(1, TimeUnit.SECONDS);
 
-        final ListenableFuture<Void> outcome2 = reactor.updateRouting(route2, route3);
-        final ListenableFuture<Void> outcome3 = reactor.wipeRouting();
+        final FluentFuture<? extends CommitInfo> outcome2 = reactor.updateRouting(route2, route3);
+        final FluentFuture<? extends CommitInfo> outcome3 = reactor.wipeRouting();
 
         // expect fast response because only compression got involved
         outcome3.get(1, TimeUnit.SECONDS);
