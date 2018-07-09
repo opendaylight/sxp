@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "c00bb96f_12f89e18",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 1096,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-07-09T06:46:15Z",
+      "side": 1,
+      "message": "I am expecting to delete exactly one binding.",
+      "parentUuid": "4e2fe65a_7f911578",
+      "range": {
+        "startLine": 1096,
+        "startChar": 20,
+        "endLine": 1096,
+        "endChar": 39
+      },
+      "revId": "cbb4dbff7e6ed6031f08998c9a58573e9fcc4a31",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "ca807185_6266c784",
         "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/spi/MasterDatabaseInf.java",
         "patchSetId": 6
@@ -36,6 +60,30 @@
       "writtenOn": "2018-07-04T13:24:54Z",
       "side": 1,
       "message": "There\u0027s no point in declaring this as a default method, since \n1. Every child will have it\u0027s own implementation anyway for the sake of performance\n2. Synchronization goes out the window",
+      "range": {
+        "startLine": 43,
+        "startChar": 0,
+        "endLine": 48,
+        "endChar": 5
+      },
+      "revId": "cbb4dbff7e6ed6031f08998c9a58573e9fcc4a31",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e4649fd7_893dd251",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/spi/MasterDatabaseInf.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-07-09T06:46:15Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "ca807185_6266c784",
       "range": {
         "startLine": 43,
         "startChar": 0,
