@@ -12,8 +12,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.FluentFuture;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -27,6 +26,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
@@ -37,6 +37,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.SxpClusterRoute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.SxpClusterRouteBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinition;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,8 +63,8 @@ public class RouteReactorImpl implements RouteReactor {
     }
 
     @Override
-    public ListenableFuture<Void> updateRouting(@Nullable final SxpClusterRoute oldRoute,
-            @Nullable final SxpClusterRoute newRoute) {
+    public FluentFuture<? extends CommitInfo> updateRouting(@Nullable final SxpClusterRoute oldRoute,
+                                                            @Nullable final SxpClusterRoute newRoute) {
         final Map<IpAddress, RoutingDefinition> oldDefinitions = new HashMap<>();
         final Map<IpAddress, RoutingDefinition> newDefinitions = new HashMap<>();
         final List<RoutingDefinition> outcomingRouteDefinitions = new ArrayList<>();
@@ -278,7 +279,7 @@ public class RouteReactorImpl implements RouteReactor {
     }
 
     @Override
-    public ListenableFuture<Void> wipeRouting() {
+    public FluentFuture<? extends CommitInfo> wipeRouting() {
         routingServiceMap.forEach((vIpAddress, routingService) -> {
             findSxpNodesOnVirtualIp(vIpAddress).forEach(SxpNode::shutdown);
             final boolean succeeded = routingService.removeRouteForCurrentService();
@@ -289,7 +290,7 @@ public class RouteReactorImpl implements RouteReactor {
             }
         });
         routingServiceMap.clear();
-        return Futures.immediateFuture(null);
+        return FluentFutures.immediateNullFluentFuture();
     }
 
     /**

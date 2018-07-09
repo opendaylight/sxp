@@ -13,9 +13,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
 
-import com.google.common.util.concurrent.AbstractCheckedFuture;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -24,6 +22,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
@@ -50,7 +49,7 @@ public class ConfigLoaderTest {
         access = PowerMockito.mock(DatastoreAccess.class);
         PowerMockito.when(
                 access.put(any(InstanceIdentifier.class), any(SxpNodeIdentity.class), any(LogicalDatastoreType.class)))
-                .thenReturn(mock(AbstractCheckedFuture.class));
+                .thenReturn(CommitInfo.emptyFluentFuture());
         PowerMockito.when(access.checkAndPut(any(InstanceIdentifier.class), any(SxpNodeIdentity.class),
                 any(LogicalDatastoreType.class), anyBoolean())).thenReturn(true);
         PowerMockito.mockStatic(org.opendaylight.sxp.core.SxpNode.class, RETURNS_MOCKS);
