@@ -12,6 +12,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
@@ -62,8 +64,8 @@ public class RouteReactorImpl implements RouteReactor {
     }
 
     @Override
-    public ListenableFuture<Void> updateRouting(@Nullable final SxpClusterRoute oldRoute,
-            @Nullable final SxpClusterRoute newRoute) {
+    public FluentFuture<? extends CommitInfo> updateRouting(@Nullable final SxpClusterRoute oldRoute,
+                                                            @Nullable final SxpClusterRoute newRoute) {
         final Map<IpAddress, RoutingDefinition> oldDefinitions = new HashMap<>();
         final Map<IpAddress, RoutingDefinition> newDefinitions = new HashMap<>();
         final List<RoutingDefinition> outcomingRouteDefinitions = new ArrayList<>();
