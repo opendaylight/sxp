@@ -90,8 +90,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ge
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.fields.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
@@ -224,17 +224,17 @@ public class SxpRpcServiceImplTest {
         return bindingBuilder.build();
     }
 
-    private org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.Binding getBinding(
+    private org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.fields.Binding getBinding(
             String prefix, String sgt) {
-        org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingBuilder
+        org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.fields.BindingBuilder
                 bindingBuilder =
-                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingBuilder();
+                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.fields.BindingBuilder();
 
         bindingBuilder.setSgt(Sgt.getDefaultInstance(sgt));
         List<IpPrefix> ipPrefixes = new ArrayList<>();
         bindingBuilder.setIpPrefix(ipPrefixes);
         bindingBuilder.withKey(
-                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingKey(
+                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.fields.BindingKey(
                         bindingBuilder.getSgt()));
         if (prefix.contains(":")) {
             ipPrefixes.add(new IpPrefix(Ipv6Prefix.getDefaultInstance(prefix)));
@@ -701,6 +701,41 @@ public class SxpRpcServiceImplTest {
         final RpcResult<AddDomainOutput> result = service.addDomain(
                 new AddDomainInputBuilder()
                         .setNodeId(new NodeId("0.0.0.0"))
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddDomainWithBindings() throws Exception {
+        final RpcResult<AddDomainOutput> result = service
+                .addDomain(new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setMasterDatabase(
+                                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.MasterDatabaseBuilder()
+                                        .setBinding(Collections.singletonList(getBinding("1.1.1.1/32", "10")))
+                                        .build())
+                        .setOrigin(BindingOriginsConfig.LOCAL_ORIGIN)
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertTrue(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddDomainNullBindingsOrigin() throws Exception {
+        final RpcResult<AddDomainOutput> result = service
+                .addDomain(new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setMasterDatabase(
+                                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.MasterDatabaseBuilder()
+                                        .setBinding(Collections.singletonList(getBinding("1.1.1.1/32", "10")))
+                                        .build())
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
