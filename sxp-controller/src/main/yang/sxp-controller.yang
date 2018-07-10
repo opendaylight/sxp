@@ -330,10 +330,6 @@ module sxp-controller {
     rpc add-domain {
         description "Add Domain into node";
         input {
-            leaf config-persistence {
-                type config-persistence;
-                default "pernament";
-            }
             leaf node-id {
                 type sxppt:node-id;
                 mandatory true;
