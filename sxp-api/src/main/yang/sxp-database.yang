@@ -135,5 +135,11 @@ module sxp-database {
         container master-database {
             uses master-database-configuration-fields;
         }
+        leaf origin {
+            mandatory true;
+            type leafref {
+                path "/sxpcfg:binding-origins/sxpcfg:binding-origin/sxpcfg:origin";
+            }
+        }
     }
 }
