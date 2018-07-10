@@ -345,6 +345,7 @@ public final class Sxpv4 extends AbstractStrategy {
             // we close the connection to allow a new one to form
             LOG.info("{} Received an Open message from a live connection, performing administrative shutdown",
                     connection);
+            ctx.close();
             connection.shutdown();
             return;
         }
