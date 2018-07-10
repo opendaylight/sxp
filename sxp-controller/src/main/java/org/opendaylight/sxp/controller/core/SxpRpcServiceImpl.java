@@ -106,9 +106,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Up
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.Binding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.MasterDatabase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.fields.Binding;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.fields.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequence;
@@ -267,7 +267,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     }
 
     private boolean mergeDatabaseBindingsToDs(final String nodeId, final String domain,
-            final MasterDatabase masterDatabase, final LogicalDatastoreType datastoreType) {
+            final MasterDatabase masterDatabase, final OriginType origin) {
         // nothing to process, return success
         if (!containsBindings(masterDatabase)) {
             return true;
@@ -276,13 +276,6 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         // merge bindings to data-store
         final MasterDatabaseInf database = getMasterDatabase(nodeId, domain);
         if (database != null) {
-            final OriginType origin;
-            if (LogicalDatastoreType.OPERATIONAL == datastoreType) {
-                origin = BindingOriginsConfig.NETWORK_ORIGIN;
-            } else {
-                origin = BindingOriginsConfig.LOCAL_ORIGIN;
-            }
-
             final List<MasterDatabaseBinding> bindings = transformBindings(
                     masterDatabase.getBinding(),
                     new PeerSequenceBuilder().setPeer(new ArrayList<>()).build(),
@@ -871,11 +864,10 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                 domainBuilder.setDomainFilters(new DomainFiltersBuilder().setDomainFilter(new ArrayList<>()).build());
                 domainBuilder.setConnectionTemplates(
                         new ConnectionTemplatesBuilder().setConnectionTemplate(new ArrayList<>()).build());
-                final LogicalDatastoreType datastoreType = getDatastoreType(input.getConfigPersistence());
 
                 // merge domain itself
                 try {
-                    mergeSxpDomainToDs(nodeId, domainName, domainBuilder.build(), datastoreType)
+                    mergeSxpDomainToDs(nodeId, domainName, domainBuilder.build(), LogicalDatastoreType.CONFIGURATION)
                             .get(1000, TimeUnit.MILLISECONDS);
                 } catch (final Exception e) {
                     LOG.error("Failed to merge SXP domain " + domainName + " to data store | {}", e);
@@ -884,6 +876,12 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
                 // merge domain's bindings
                 if (containsBindings(input.getMasterDatabase())) {
+                    final OriginType origin = input.getOrigin();
+                    if (origin == null) {
+                        LOG.warn("RpcDomain event exception | Parameter 'origin' not defined");
+                        return RpcResultBuilder.success(output.build()).build();
+                    }
+
                     // wait until domain is present in configuration
                     final SxpNode registeredNode = Configuration.getRegisteredNode(nodeId);
                     for (int i = 0;
@@ -903,7 +901,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
                     // merge bindings
                     final boolean mergeBindingsToDs = mergeDatabaseBindingsToDs(nodeId, domainName,
-                            input.getMasterDatabase(), datastoreType);
+                            input.getMasterDatabase(), origin);
                     output.setResult(mergeBindingsToDs);
                 } else {
                     output.setResult(true);
