@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -56,9 +55,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ad
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainOutputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddEntryInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddEntryOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddEntryOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddFilterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddFilterOutputBuilder;
@@ -84,9 +80,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.De
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainOutputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteEntryInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteEntryOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteEntryOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteFilterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteFilterOutputBuilder;
@@ -109,14 +102,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ge
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.SxpControllerService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateEntryInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateEntryOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateEntryOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.NewBinding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.Binding;
@@ -273,17 +261,6 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         return transformBindings(bindings, null, null, null);
     }
 
-    private MasterDatabaseBinding createMasterDatabaseBinding(final IpPrefix ipPrefix, final Sgt sgt,
-            final OriginType origin) {
-        return new MasterDatabaseBindingBuilder()
-                .setIpPrefix(ipPrefix)
-                .setSecurityGroupTag(sgt)
-                .setOrigin(origin)
-                .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
-                .setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build())
-                .build();
-    }
-
     private boolean containsBindings(final MasterDatabase masterDatabase) {
         return masterDatabase != null
                 && masterDatabase.getBinding() != null && !masterDatabase.getBinding().isEmpty();
@@ -434,44 +411,6 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     }
 
     @Override
-    public ListenableFuture<RpcResult<AddEntryOutput>> addEntry(final AddEntryInput input) {
-        final String nodeId = getNodeId(input.getRequestedNode());
-        final AddEntryOutputBuilder output = new AddEntryOutputBuilder().setResult(false);
-
-        return getResponse(nodeId, output.build(), () -> {
-            LOG.info("RpcAddEntry event | {}", input.toString());
-            if (input.getIpPrefix() == null) {
-                LOG.warn("RpcAddEntry exception | Parameter 'ip-prefix' not defined");
-                return RpcResultBuilder.success(output.build()).build();
-            }
-            if (input.getSgt() == null || input.getSgt().getValue() == null) {
-                LOG.warn("RpcAddEntry exception | Parameter 'sgt' not defined");
-                return RpcResultBuilder.success(output.build()).build();
-            }
-            if (input.getDomainName() == null) {
-                LOG.warn("RpcAddEntry exception | Parameter 'domain-name' not defined");
-                return RpcResultBuilder.success(output.build()).build();
-            }
-
-            final MasterDatabaseInf masterDatabase = getMasterDatabase(nodeId, input.getDomainName());
-            if (masterDatabase != null) {
-                final MasterDatabaseBinding binding;
-                if (LogicalDatastoreType.OPERATIONAL == getDatastoreType(input.getConfigPersistence())) {
-                    binding = createMasterDatabaseBinding(input.getIpPrefix(), input.getSgt(),
-                            BindingOriginsConfig.NETWORK_ORIGIN);
-                } else {
-                    binding = createMasterDatabaseBinding(input.getIpPrefix(), input.getSgt(),
-                            BindingOriginsConfig.LOCAL_ORIGIN);
-                }
-                final List<MasterDatabaseBinding> addedBindings = masterDatabase
-                        .addBindings(Collections.singletonList(binding));
-                output.setResult(addedBindings.size() == 1);
-            }
-            return RpcResultBuilder.success(output.build()).build();
-        });
-    }
-
-    @Override
     public ListenableFuture<RpcResult<AddFilterOutput>> addFilter(final AddFilterInput input) {
         final String nodeId = getNodeId(input.getRequestedNode());
         final DatastoreAccess datastoreAccess = getDatastoreAccess(nodeId);
@@ -612,39 +551,6 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                                     new ConnectionKey(new IpAddress(input.getPeerAddress()), input.getTcpPort()));
             output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
                     || datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
-            return RpcResultBuilder.success(output.build()).build();
-        });
-    }
-
-    @Override
-    public ListenableFuture<RpcResult<DeleteEntryOutput>> deleteEntry(final DeleteEntryInput input) {
-        final String nodeId = getNodeId(input.getRequestedNode());
-        final DeleteEntryOutputBuilder output = new DeleteEntryOutputBuilder().setResult(false);
-
-        return getResponse(nodeId, output.build(), () -> {
-            LOG.info("RpcDeleteEntry event | {}", input.toString());
-            if (input.getSgt() == null || input.getSgt().getValue() == null) {
-                LOG.warn("RpcDeleteEntry exception | Parameter 'sgt' not defined");
-                return RpcResultBuilder.success(output.build()).build();
-            }
-            if (input.getDomainName() == null) {
-                LOG.warn("RpcDeleteEntry exception | Parameter 'domain-name' not defined");
-                return RpcResultBuilder.success(output.build()).build();
-            }
-
-            final MasterDatabaseInf masterDatabase = getMasterDatabase(nodeId, input.getDomainName());
-            if (masterDatabase != null) {
-                final List<MasterDatabaseBinding> bindings = new ArrayList<>();
-                final Optional<List<IpPrefix>> ipPrefixes = Optional.ofNullable(input.getIpPrefix());
-                ipPrefixes.ifPresent(prefixes -> prefixes.forEach(prefix ->
-                        bindings.add(new MasterDatabaseBindingBuilder()
-                                .setIpPrefix(prefix)
-                                .setSecurityGroupTag(input.getSgt())
-                                .build())));
-
-                final List<MasterDatabaseBinding> deleted = masterDatabase.deleteBindings(bindings);
-                output.setResult(!deleted.isEmpty());
-            }
             return RpcResultBuilder.success(output.build()).build();
         });
     }
@@ -1036,75 +942,6 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                         TimeConv.toDt(System.currentTimeMillis()), BindingOriginsConfig.LOCAL_ORIGIN);
                 final List<MasterDatabaseBinding> addedBindings = masterDatabase.addBindings(bindingsToBeAdded);
                 output.setResult(!addedBindings.isEmpty());
-            }
-            return RpcResultBuilder.success(output.build()).build();
-        });
-    }
-
-    @Override
-    public ListenableFuture<RpcResult<UpdateEntryOutput>> updateEntry(final UpdateEntryInput input) {
-        final String nodeId = getNodeId(input.getRequestedNode());
-        final UpdateEntryOutputBuilder output = new UpdateEntryOutputBuilder().setResult(false);
-
-        return getResponse(nodeId, output.build(), () -> {
-            LOG.info("RpcUpdateEntry event | {}", input.toString());
-            final OriginalBinding originalBinding = input.getOriginalBinding();
-            if (originalBinding == null) {
-                LOG.warn("RpcUpdateEntry exception | Parameters in 'original-binding' not defined");
-                return RpcResultBuilder.success(output.build()).build();
-            }
-            final NewBinding newBinding = input.getNewBinding();
-            if (newBinding == null) {
-                LOG.warn("RpcUpdateEntry exception | Parameters in 'new-binding' not defined");
-                return RpcResultBuilder.success(output.build()).build();
-            }
-            final IpPrefix originalIpPrefix = originalBinding.getIpPrefix();
-            if (originalIpPrefix == null) {
-                LOG.warn("RpcUpdateEntry exception | Parameter 'original-binding/ip-prefix' not defined");
-                return RpcResultBuilder.success(output.build()).build();
-            }
-            final Sgt originalSgt = originalBinding.getSgt();
-            if (originalSgt == null) {
-                LOG.warn("RpcUpdateEntry exception | Parameter 'original-binding/sgt' not defined");
-                return RpcResultBuilder.success(output.build()).build();
-            }
-            if (input.getDomainName() == null) {
-                LOG.warn("RpcUpdateEntry exception | Parameter 'domain-name' not defined");
-                return RpcResultBuilder.success(output.build()).build();
-            }
-            final IpPrefix newIpPrefix = newBinding.getIpPrefix();
-            if (newIpPrefix == null) {
-                LOG.warn("RpcUpdateEntry exception | Parameter 'new-binding/ip-prefix' not defined");
-                return RpcResultBuilder.success(output.build()).build();
-            }
-            final Sgt newSgt = newBinding.getSgt();
-            if (newSgt == null) {
-                LOG.warn("RpcUpdateEntry exception | Parameter 'new-binding/sgt' not defined");
-                return RpcResultBuilder.success(output.build()).build();
-            }
-
-            final MasterDatabaseInf masterDatabase = getMasterDatabase(nodeId, input.getDomainName());
-            if (masterDatabase != null) {
-                final MasterDatabaseBinding originalDbBinding = new MasterDatabaseBindingBuilder()
-                        .setIpPrefix(originalIpPrefix)
-                        .setSecurityGroupTag(originalSgt)
-                        .build();
-
-                final List<MasterDatabaseBinding> deleted = masterDatabase
-                        .deleteBindings(Collections.singletonList(originalDbBinding));
-                if (deleted.size() == 1) {
-                    final MasterDatabaseBinding newDbBinding;
-                    if (LogicalDatastoreType.OPERATIONAL == getDatastoreType(input.getConfigPersistence())) {
-                        newDbBinding = createMasterDatabaseBinding(
-                                newIpPrefix, newSgt, BindingOriginsConfig.NETWORK_ORIGIN);
-                    } else {
-                        newDbBinding = createMasterDatabaseBinding(
-                                newIpPrefix, newSgt, BindingOriginsConfig.LOCAL_ORIGIN);
-                    }
-                    final List<MasterDatabaseBinding> updated = masterDatabase
-                            .addBindings(Collections.singletonList(newDbBinding));
-                    output.setResult(updated.size() == 1);
-                }
             }
             return RpcResultBuilder.success(output.build()).build();
         });
