@@ -43,6 +43,10 @@ public enum BindingOriginsConfig {
         return Collections.unmodifiableMap(bindingOrigins);
     }
 
+    public synchronized boolean containsOrigin(OriginType originType) {
+        return bindingOrigins.containsKey(originType);
+    }
+
     public synchronized boolean addBindingOrigin(OriginType origin, Integer priority) {
         if (bindingOrigins.containsKey(origin)) {
             LOG.warn("Binding origin: {} already exists.", origin.getValue());
