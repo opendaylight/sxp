@@ -709,6 +709,65 @@ public class SxpRpcServiceImplTest {
     }
 
     @Test
+    public void testAddDomainWithBindings() throws Exception {
+        final RpcResult<AddDomainOutput> result = service
+                .addDomain(new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setMasterDatabase(
+                                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.MasterDatabaseBuilder()
+                                        .setBinding(Lists.newArrayList(
+                                                getBinding("1.1.1.1/32", "10"),
+                                                getBinding("2.2.2.2/32", "20")))
+                                        .build())
+                        .setOrigin(BindingOriginsConfig.LOCAL_ORIGIN)
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertTrue(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddDomainNullBindingsOrigin() throws Exception {
+        final RpcResult<AddDomainOutput> result = service
+                .addDomain(new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setMasterDatabase(
+                                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.MasterDatabaseBuilder()
+                                        .setBinding(Lists.newArrayList(
+                                                getBinding("1.1.1.1/32", "10"),
+                                                getBinding("2.2.2.2/32", "20")))
+                                        .build())
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddDomainNotExistingBindingsOrigin() throws Exception {
+        final RpcResult<AddDomainOutput> result = service
+                .addDomain(new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setMasterDatabase(
+                                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.MasterDatabaseBuilder()
+                                        .setBinding(Lists.newArrayList(
+                                                getBinding("1.1.1.1/32", "10"),
+                                                getBinding("2.2.2.2/32", "20")))
+                                        .build())
+                        .setOrigin(new OriginType("CLUSTER"))
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+    }
+
+    @Test
     public void testAddDomainToNonExistingNode() throws Exception {
         final RpcResult<AddDomainOutput> result = service.addDomain(
                 new AddDomainInputBuilder()
