@@ -9,6 +9,7 @@ module sxp-controller {
     import sxp-node { prefix sxpnd; revision-date "2016-03-08"; }
     import sxp-filter { prefix sxpfl; revision-date "2015-09-11"; }
     import sxp-protocol { prefix sxppt; revision-date "2014-10-02"; }
+    import sxp-config { prefix sxpcfg; revision-date "2018-06-11"; }
 
     organization "Cisco Systems, Inc.";
 
@@ -29,6 +30,39 @@ module sxp-controller {
             enum operational;
         }
         description "If the Configuration will be preserved after shutdown";
+    }
+
+    // ***************************************
+    // Master Database Configuration Groupings
+    // ***************************************
+
+    grouping master-database-configuration-fields {
+        description "Standard configuration for master database";
+        list binding {
+            key "sgt";
+            leaf sgt {
+                type sxpdb:sgt;
+                description "Assigned source group tag";
+            }
+            leaf-list ip-prefix {
+                type inet:ip-prefix;
+                min-elements 1;
+                description "Assigned IPv4/IPv6 host IP or network address (prefix is less than 32/64).";
+            }
+        }
+    }
+
+    grouping master-database-configuration {
+        description "Standard configuration for SXP database";
+        container master-database {
+            uses master-database-configuration-fields;
+        }
+        leaf origin {
+            mandatory true;
+            type leafref {
+                path "/sxpcfg:binding-origins/sxpcfg:binding-origin/sxpcfg:origin";
+            }
+        }
     }
 
     // **************
@@ -130,7 +164,7 @@ module sxp-controller {
             }
         }
         output {
-            uses sxpdb:master-database-configuration-fields;
+            uses master-database-configuration-fields;
         }
     }
 
@@ -330,10 +364,6 @@ module sxp-controller {
     rpc add-domain {
         description "Add Domain into node";
         input {
-            leaf config-persistence {
-                type config-persistence;
-                default "pernament";
-            }
             leaf node-id {
                 type sxppt:node-id;
                 mandatory true;
@@ -344,7 +374,7 @@ module sxp-controller {
                 mandatory true;
             }
             uses sxpnd:sxp-connections-fields;
-            uses sxpdb:master-database-configuration;
+            uses master-database-configuration;
         }
         output {
             leaf result {
@@ -385,7 +415,7 @@ module sxp-controller {
                 mandatory true;
                 description "SXP node ID";
             }
-            uses sxpdb:master-database-configuration-fields;
+            uses master-database-configuration-fields;
         }
         output {
             leaf result {
@@ -406,7 +436,7 @@ module sxp-controller {
                 type string;
                 default "global";
             }
-            uses sxpdb:master-database-configuration-fields;
+            uses master-database-configuration-fields;
         }
         output {
             leaf result {
@@ -491,7 +521,6 @@ module sxp-controller {
             }
         }
     }
-
 
     rpc delete-connection-template {
         description "Delete a domain from node";
