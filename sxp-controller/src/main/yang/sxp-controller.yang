@@ -376,10 +376,6 @@ module sxp-controller {
     rpc add-bindings {
         description "Add bindings to node";
         input {
-            leaf config-persistence {
-                type config-persistence;
-                default "pernament";
-            }
             leaf domain-name {
                 type string;
                 default "global";
