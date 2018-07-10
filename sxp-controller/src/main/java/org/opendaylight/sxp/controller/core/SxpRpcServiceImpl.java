@@ -231,11 +231,10 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
      * @param bindings {@link List} of {@link Binding}
      * @param peerSequence Peers sequence path
      * @param created Data and time when binding is created
-     * @param origin Origin of binding
      * @return {@link List} of {@link MasterDatabaseBinding}
      */
     private List<MasterDatabaseBinding> transformBindings(final List<Binding> bindings,
-            final PeerSequence peerSequence, final DateAndTime created, final OriginType origin) {
+            final PeerSequence peerSequence, final DateAndTime created) {
         final List<MasterDatabaseBinding> masterDatabaseBindings = new ArrayList<>();
         for (final Binding binding : bindings) {
             final List<IpPrefix> ipPrefixes = binding.getIpPrefix();
@@ -247,7 +246,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                                     .setSecurityGroupTag(binding.getSgt())
                                     .setPeerSequence(peerSequence)
                                     .setTimestamp(created)
-                                    .setOrigin(origin)
+                                    .setOrigin(BindingOriginsConfig.LOCAL_ORIGIN)
                                     .build()
                     );
                 }
@@ -258,7 +257,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     }
 
     private List<MasterDatabaseBinding> transformBindings(final List<Binding> bindings) {
-        return transformBindings(bindings, null, null, null);
+        return transformBindings(bindings, null, null);
     }
 
     private boolean containsBindings(final MasterDatabase masterDatabase) {
@@ -267,7 +266,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     }
 
     private boolean mergeDatabaseBindingsToDs(final String nodeId, final String domain,
-            final MasterDatabase masterDatabase, final LogicalDatastoreType datastoreType) {
+            final MasterDatabase masterDatabase) {
         // nothing to process, return success
         if (!containsBindings(masterDatabase)) {
             return true;
@@ -276,17 +275,10 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         // merge bindings to data-store
         final MasterDatabaseInf database = getMasterDatabase(nodeId, domain);
         if (database != null) {
-            final OriginType origin;
-            if (LogicalDatastoreType.OPERATIONAL == datastoreType) {
-                origin = BindingOriginsConfig.NETWORK_ORIGIN;
-            } else {
-                origin = BindingOriginsConfig.LOCAL_ORIGIN;
-            }
-
             final List<MasterDatabaseBinding> bindings = transformBindings(
                     masterDatabase.getBinding(),
                     new PeerSequenceBuilder().setPeer(new ArrayList<>()).build(),
-                    TimeConv.toDt(System.currentTimeMillis()), origin);
+                    TimeConv.toDt(System.currentTimeMillis()));
             return !database.addBindings(bindings).isEmpty();
         }
         return false;
@@ -871,11 +863,10 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                 domainBuilder.setDomainFilters(new DomainFiltersBuilder().setDomainFilter(new ArrayList<>()).build());
                 domainBuilder.setConnectionTemplates(
                         new ConnectionTemplatesBuilder().setConnectionTemplate(new ArrayList<>()).build());
-                final LogicalDatastoreType datastoreType = getDatastoreType(input.getConfigPersistence());
 
                 // merge domain itself
                 try {
-                    mergeSxpDomainToDs(nodeId, domainName, domainBuilder.build(), datastoreType)
+                    mergeSxpDomainToDs(nodeId, domainName, domainBuilder.build(), LogicalDatastoreType.CONFIGURATION)
                             .get(1000, TimeUnit.MILLISECONDS);
                 } catch (final Exception e) {
                     LOG.error("Failed to merge SXP domain " + domainName + " to data store | {}", e);
@@ -903,7 +894,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
                     // merge bindings
                     final boolean mergeBindingsToDs = mergeDatabaseBindingsToDs(nodeId, domainName,
-                            input.getMasterDatabase(), datastoreType);
+                            input.getMasterDatabase());
                     output.setResult(mergeBindingsToDs);
                 } else {
                     output.setResult(true);
@@ -939,7 +930,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
             if (input.getBinding() != null && !input.getBinding().isEmpty() && masterDatabase != null) {
                 final List<MasterDatabaseBinding> bindingsToBeAdded = transformBindings(
                         input.getBinding(), new PeerSequenceBuilder().setPeer(Collections.emptyList()).build(),
-                        TimeConv.toDt(System.currentTimeMillis()), BindingOriginsConfig.LOCAL_ORIGIN);
+                        TimeConv.toDt(System.currentTimeMillis()));
                 final List<MasterDatabaseBinding> addedBindings = masterDatabase.addBindings(bindingsToBeAdded);
                 output.setResult(!addedBindings.isEmpty());
             }
