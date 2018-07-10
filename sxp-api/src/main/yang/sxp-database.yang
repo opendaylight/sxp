@@ -108,32 +108,4 @@ module sxp-database {
             uses sxp-binding-fields;
         }
     }
-
-    // ***************************************
-    // Master Database Configuration Groupings
-    // ***************************************
-
-    grouping master-database-configuration-fields {
-        description "Standard configuration for master database";
-        list binding {
-            key "sgt";
-            leaf sgt {
-                type sgt;
-                description "Assigned source group tag";
-            }
-            leaf-list ip-prefix {
-                type inet:ip-prefix;
-                min-elements 1;
-                description "Assigned IPv4/IPv6 host IP or network address (prefix is less
-                            than 32/64).";
-            }
-        }
-    }
-
-    grouping master-database-configuration {
-        description "Standard configuration for SXP database";
-        container master-database {
-            uses master-database-configuration-fields;
-        }
-    }
 }
