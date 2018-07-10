@@ -127,6 +127,7 @@ public class SxpRpcServiceImplTest {
     private static SxpNode node;
     private static SxpRpcServiceImpl service;
     private static DatastoreAccess datastoreAccess;
+    private MasterDatabaseInf masterDatabase;
 
     @SuppressWarnings("unchecked")
     @Before
@@ -134,7 +135,7 @@ public class SxpRpcServiceImplTest {
         node = PowerMockito.mock(SxpNode.class);
         datastoreAccess = mock(DatastoreAccess.class);
         final org.opendaylight.sxp.core.SxpDomain domain = mock(org.opendaylight.sxp.core.SxpDomain.class);
-        final MasterDatabaseInf masterDatabase = mock(MasterDatastoreImpl.class);
+        masterDatabase = mock(MasterDatastoreImpl.class);
         when(datastoreAccess.checkAndDelete(any(InstanceIdentifier.class), any(LogicalDatastoreType.class))).thenReturn(
                 true);
         when(datastoreAccess.checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
@@ -701,6 +702,71 @@ public class SxpRpcServiceImplTest {
         final RpcResult<AddDomainOutput> result = service.addDomain(
                 new AddDomainInputBuilder()
                         .setNodeId(new NodeId("0.0.0.0"))
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddDomainWithBindings() throws Exception {
+        final RpcResult<AddDomainOutput> result = service
+                .addDomain(new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setMasterDatabase(
+                                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.MasterDatabaseBuilder()
+                                        .setBinding(Lists.newArrayList(
+                                                getBinding("1.1.1.1/32", "10"),
+                                                getBinding("2.2.2.2/32", "20")))
+                                        .build())
+                        .setOrigin(BindingOriginsConfig.LOCAL_ORIGIN)
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertTrue(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddDomainNullBindingsOrigin() throws Exception {
+        final RpcResult<AddDomainOutput> result = service
+                .addDomain(new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setMasterDatabase(
+                                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.MasterDatabaseBuilder()
+                                        .setBinding(Lists.newArrayList(
+                                                getBinding("1.1.1.1/32", "10"),
+                                                getBinding("2.2.2.2/32", "20")))
+                                        .build())
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testAddDomainNotExistingBindingsOrigin() throws Exception {
+        // call real method to get know if checks are correctly resolved
+        when(masterDatabase.addBindings(anyListOf(MasterDatabaseBinding.class))).thenCallRealMethod();
+        when(datastoreAccess.readSynchronous(any(InstanceIdentifier.class), eq(LogicalDatastoreType.OPERATIONAL)))
+                .thenReturn(mock(MasterDatabase.class));
+
+        final RpcResult<AddDomainOutput> result = service
+                .addDomain(new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setMasterDatabase(
+                                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.MasterDatabaseBuilder()
+                                        .setBinding(Lists.newArrayList(
+                                                getBinding("1.1.1.1/32", "10"),
+                                                getBinding("2.2.2.2/32", "20")))
+                                        .build())
+                        .setOrigin(new OriginType("CLUSTER"))
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
