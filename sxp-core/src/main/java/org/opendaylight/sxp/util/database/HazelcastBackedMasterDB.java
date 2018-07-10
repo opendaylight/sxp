@@ -7,17 +7,18 @@
  */
 package org.opendaylight.sxp.util.database;
 
-import static org.opendaylight.sxp.core.BindingOriginsConfig.NETWORK_ORIGIN;
-
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.AbstractEntryProcessor;
+import com.hazelcast.query.EntryObject;
+import com.hazelcast.query.PredicateBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.hazelcast.MasterDBBindingSerializer;
 import org.opendaylight.sxp.core.hazelcast.MasterHCDBPropagatingListener;
@@ -92,12 +93,9 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
 
     @Override
     public List<MasterDatabaseBinding> getBindings(OriginType origin) {
-        throw new UnsupportedOperationException("Not supported yet");
-    }
-
-    @Override
-    public <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings) {
-        return doAddBindings(bindings, NETWORK_ORIGIN);
+        EntryObject e = new PredicateBuilder().getEntryObject();
+        PredicateBuilder equal = e.get("_origin._value").equal(origin.getValue());
+        return new ArrayList<>(bindingMap.values(equal));
     }
 
     @Override
@@ -112,22 +110,23 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
         return deletedBindings;
     }
 
-    private <T extends SxpBindingFields> List<MasterDatabaseBinding> doAddBindings(Iterable<T> bindings, OriginType bindingType) {
+    @Override
+    public <T extends SxpBindingFields> List<MasterDatabaseBinding> addBindings(List<T> bindings) {
         Map<IpPrefix, MasterDatabaseBinding> addedBindings = new HashMap<>();
         for (T incomingBinding : bindings) {
             if (ignoreBinding(incomingBinding)) {
                 continue;
             }
-            MasterDatabaseBinding bindingToAdd = new MasterDatabaseBindingBuilder(incomingBinding)
-                    .setOrigin(bindingType)
-                    .build();
+            MasterDatabaseBinding bindingToAdd = new MasterDatabaseBindingBuilder(incomingBinding).build();
             if (bindingMap.containsKey(incomingBinding.getIpPrefix())) {
                 if ((Boolean) bindingMap.executeOnKey(bindingToAdd.getIpPrefix(), new ConditionalAddProcessor(bindingToAdd))) {
                     addedBindings.put(bindingToAdd.getIpPrefix(), bindingToAdd);
                 }
             } else {
-                bindingMap.set(incomingBinding.getIpPrefix(), bindingToAdd);
-                addedBindings.put(bindingToAdd.getIpPrefix(), bindingToAdd);
+                if (BindingOriginsConfig.INSTANCE.containsOrigin(incomingBinding.getOrigin())) {
+                    bindingMap.set(incomingBinding.getIpPrefix(), bindingToAdd);
+                    addedBindings.put(bindingToAdd.getIpPrefix(), bindingToAdd);
+                }
             }
         }
         return new ArrayList<>(addedBindings.values());
