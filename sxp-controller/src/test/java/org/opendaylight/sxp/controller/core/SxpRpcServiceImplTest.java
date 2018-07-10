@@ -57,7 +57,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ad
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddEntryInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddFilterInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddNodeInputBuilder;
@@ -74,7 +73,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.De
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteEntryInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteFilterInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteNodeInputBuilder;
@@ -90,13 +88,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ge
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateEntryInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.NewBinding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.NewBindingBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBinding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
@@ -256,85 +249,6 @@ public class SxpRpcServiceImplTest {
         connection.setTcpPort(port != null ? new PortNumber(port) : null);
         connection.setPeerAddress(ip != null ? new IpAddress(ip.toCharArray()) : null);
         return connection.build();
-    }
-
-    @Test
-    public void testAddEntry() throws Exception {
-        final AddEntryInputBuilder input = new AddEntryInputBuilder();
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setSgt(new Sgt(20));
-        input.setIpPrefix(new IpPrefix(Ipv4Prefix.getDefaultInstance("2.2.2.2/32")));
-
-        assertTrue(service.addEntry(input.build()).get().getResult().isResult());
-    }
-
-    @Test
-    public void testAddEntryNullSgt() throws Exception {
-        final AddEntryInputBuilder input = new AddEntryInputBuilder();
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setSgt(null);
-
-        assertFalse(service.addEntry(input.build()).get().getResult().isResult());
-    }
-
-    @Test
-    public void testAddEntryNullIpPrefix() throws Exception {
-        final AddEntryInputBuilder input = new AddEntryInputBuilder();
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setSgt(new Sgt(20));
-        input.setIpPrefix(null);
-
-        assertFalse(service.addEntry(input.build()).get().getResult().isResult());
-    }
-
-    @Test
-    public void testDeleteEntry() throws Exception {
-        final DeleteEntryInputBuilder input = new DeleteEntryInputBuilder();
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setSgt(new Sgt(20));
-        input.setIpPrefix(Collections.singletonList(new IpPrefix(Ipv4Prefix.getDefaultInstance("0.0.0.5/32"))));
-
-        assertTrue(service.deleteEntry(input.build()).get().getResult().isResult());
-    }
-
-    @Test
-    public void testDeleteEntryNullSgt() throws Exception {
-        final DeleteEntryInputBuilder input = new DeleteEntryInputBuilder();
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setSgt(null);
-        input.setIpPrefix(Collections.singletonList(new IpPrefix(Ipv4Prefix.getDefaultInstance("0.0.0.5/32"))));
-
-        assertFalse(service.deleteEntry(input.build()).get().getResult().isResult());
-    }
-
-    @Test
-    public void testDeleteEntryNullIpPrefix() throws Exception {
-        final DeleteEntryInputBuilder input = new DeleteEntryInputBuilder();
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setSgt(new Sgt(20));
-        input.setIpPrefix(null);
-
-        assertFalse(service.deleteEntry(input.build()).get().getResult().isResult());
-    }
-
-    private OriginalBinding getOriginalBinding(String s, Integer i) {
-        OriginalBindingBuilder builder = new OriginalBindingBuilder();
-        builder.setSgt(i == null ? null : new Sgt(i));
-        builder.setIpPrefix(s == null ? null : new IpPrefix(Ipv4Prefix.getDefaultInstance(s)));
-        return builder.build();
-    }
-
-    private NewBinding getNewBinding(String s, Integer i) {
-        NewBindingBuilder builder = new NewBindingBuilder();
-        builder.setSgt(i == null ? null : new Sgt(i));
-        builder.setIpPrefix(s == null ? null : new IpPrefix(Ipv4Prefix.getDefaultInstance(s)));
-        return builder.build();
     }
 
     @Test
@@ -647,83 +561,6 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
-    }
-
-    @Test
-    public void testUpdateEntry() throws Exception {
-        final UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-        input.setNewBinding(getNewBinding("1.1.10.1/32", 50));
-        input.setOriginalBinding(getOriginalBinding("1.1.1.1/32", 450));
-
-        assertTrue(service.updateEntry(input.build()).get().getResult().isResult());
-    }
-
-    @Test
-    public void testUpdateEntryNullNewSqt() throws Exception {
-        final UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-        input.setNewBinding(getNewBinding("1.1.10.1/32", null));
-        input.setOriginalBinding(getOriginalBinding("1.1.1.1/32", 450));
-
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
-    }
-
-    @Test
-    public void testUpdateEntryNullNewIpPrefix() throws Exception {
-        final UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-        input.setNewBinding(getNewBinding(null, 50));
-        input.setOriginalBinding(getOriginalBinding("1.1.1.1/32", 450));
-
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
-    }
-
-    @Test
-    public void testUpdateEntryNullOriginalSqt() throws Exception {
-        final UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-        input.setNewBinding(getNewBinding("1.1.10.1/32", 50));
-        input.setOriginalBinding(getOriginalBinding("1.1.1.1/32", null));
-
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
-    }
-
-    @Test
-    public void testUpdateEntryNullOriginalIpPrefix() throws Exception {
-        final UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-        input.setNewBinding(getNewBinding("1.1.10.1/32", 50));
-        input.setOriginalBinding(getOriginalBinding(null, 450));
-
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
-    }
-
-    @Test
-    public void testUpdateEntryNullOriginalBinding() throws Exception {
-        final UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-        input.setNewBinding(getNewBinding("1.1.10.1/32", 50));
-        input.setOriginalBinding(null);
-
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
-    }
-
-    @Test
-    public void testUpdateEntryNullNewBinding() throws Exception {
-        final UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-        input.setNewBinding(null);
-        input.setOriginalBinding(getOriginalBinding(null, 450));
-
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
     }
 
     @Test
