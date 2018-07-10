@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6e303b25_dfd20699",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/HazelcastBackedMasterDB.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 112,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-07-10T11:28:26Z",
+      "side": 1,
+      "message": "@Override",
+      "revId": "f75662ddc8a570feb54f2f4983d4ed7ef99dd839",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
