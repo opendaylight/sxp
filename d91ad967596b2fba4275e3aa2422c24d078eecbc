@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "cda3e58a_eff36463",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/SxpRpcServiceImpl.java",
+        "patchSetId": 7
+      },
+      "lineNbr": 248,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-07-11T07:39:27Z",
+      "side": 1,
+      "message": "Although this may be OK for now, we will have to provide RPCs that allow insertion of bindings of any other type to test this with Robot csit. The origin-type functionality should not be restricted to non-ODL runtime. Thus hardcoding every incoming binding as a local looks like a misstep.",
+      "range": {
+        "startLine": 248,
+        "startChar": 0,
+        "endLine": 248,
+        "endChar": 81
+      },
+      "revId": "d91ad967596b2fba4275e3aa2422c24d078eecbc",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
