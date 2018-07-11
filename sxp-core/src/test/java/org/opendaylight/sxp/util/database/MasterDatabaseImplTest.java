@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -184,6 +185,19 @@ public class MasterDatabaseImplTest {
         // only the binding with higher priority should be added
         assertEquals(1, database.addBindings(mergeBindings(networkBinding, localBinding)).size());
         assertBindings(database.getBindings(), Collections.singletonList(localBinding));
+    }
+
+    @Test
+    public void testAddBindingsNotDefinedPriority() {
+        final String cluster = "CLUSTER";
+        final SxpBindingFields binding = getBinding("1.1.1.1/32", 10, new OriginType(cluster));
+
+        try {
+            database.addBindings(Collections.singletonList(binding));
+            Assert.fail();
+        } catch (IllegalArgumentException e) {
+            Assert.assertEquals("Cannot find binding priority: " + cluster, e.getMessage());
+        }
     }
 
     @Test
