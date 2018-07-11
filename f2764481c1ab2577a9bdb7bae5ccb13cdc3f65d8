@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "343d7356_3c678c1b",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/MasterDatabaseImpl.java",
+        "patchSetId": 31
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-07-11T06:50:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "3b203f7d_c43e935f",
+      "range": {
+        "startLine": 39,
+        "startChar": 0,
+        "endLine": 39,
+        "endChar": 99
+      },
+      "revId": "f2764481c1ab2577a9bdb7bae5ccb13cdc3f65d8",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "b418f7da_d83d7233",
         "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/MasterDatabaseImpl.java",
         "patchSetId": 31
@@ -36,6 +60,30 @@
       "writtenOn": "2018-07-10T15:36:30Z",
       "side": 1,
       "message": "synchronize",
+      "range": {
+        "startLine": 67,
+        "startChar": 0,
+        "endLine": 67,
+        "endChar": 102
+      },
+      "revId": "f2764481c1ab2577a9bdb7bae5ccb13cdc3f65d8",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2431a58c_12f9bd96",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/util/database/MasterDatabaseImpl.java",
+        "patchSetId": 31
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-07-11T06:50:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "b418f7da_d83d7233",
       "range": {
         "startLine": 67,
         "startChar": 0,
