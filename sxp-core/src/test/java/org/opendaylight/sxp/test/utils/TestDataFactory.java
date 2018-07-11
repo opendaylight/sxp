@@ -15,6 +15,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
@@ -75,11 +76,12 @@ public final class TestDataFactory {
                 .build();
     }
 
-    public static MasterDatabaseBinding createMasterDBBinding(String prefix, int sgt, String... peers) {
-        MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
-        bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
-        bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
-        bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
+    public static MasterDatabaseBinding createMasterDBBinding(String prefix, int sgt, OriginType originType, String... peers) {
+        MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder()
+                .setIpPrefix(new IpPrefix(prefix.toCharArray()))
+                .setSecurityGroupTag(new Sgt(sgt))
+                .setOrigin(originType)
+                .setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
         PeerSequenceBuilder sequenceBuilder = new PeerSequenceBuilder();
         sequenceBuilder.setPeer(new ArrayList<>());
         for (int i = 0; i < peers.length; i++) {
