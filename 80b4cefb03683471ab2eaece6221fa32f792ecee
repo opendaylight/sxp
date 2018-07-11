@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "13a3f70e_db8e8f09",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/util/database/MasterDatastoreImpl.java",
+        "patchSetId": 14
+      },
+      "lineNbr": 112,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-07-11T06:54:26Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "64efdd70_44817ec2",
+      "range": {
+        "startLine": 112,
+        "startChar": 0,
+        "endLine": 112,
+        "endChar": 99
+      },
+      "revId": "80b4cefb03683471ab2eaece6221fa32f792ecee",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "5ff29da1_504701d6",
         "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/util/database/MasterDatastoreImpl.java",
         "patchSetId": 14
@@ -36,6 +60,30 @@
       "writtenOn": "2018-07-10T15:36:54Z",
       "side": 1,
       "message": "synchronize",
+      "range": {
+        "startLine": 163,
+        "startChar": 0,
+        "endLine": 163,
+        "endChar": 102
+      },
+      "revId": "80b4cefb03683471ab2eaece6221fa32f792ecee",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e63ef763_c2514b08",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/util/database/MasterDatastoreImpl.java",
+        "patchSetId": 14
+      },
+      "lineNbr": 163,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-07-11T06:54:26Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "5ff29da1_504701d6",
       "range": {
         "startLine": 163,
         "startChar": 0,
