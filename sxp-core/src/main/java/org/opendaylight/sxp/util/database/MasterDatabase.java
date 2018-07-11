@@ -12,8 +12,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
@@ -37,13 +39,17 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
      */
     protected static <T extends SxpBindingFields> Map<IpPrefix, MasterDatabaseBinding> filterIncomingBindings(
             List<T> bindings, Function<IpPrefix, MasterDatabaseBinding> get, Function<IpPrefix, Boolean> remove) {
-        Map<IpPrefix, MasterDatabaseBinding> prefixMap = new HashMap<>();
+        final Map<IpPrefix, MasterDatabaseBinding> prefixMap = new HashMap<>();
 
         if (bindings == null || get == null || remove == null) {
             return prefixMap;
         }
 
         bindings.forEach(incoming -> {
+            final OriginType origin = incoming.getOrigin();
+            if (!BindingOriginsConfig.INSTANCE.containsOrigin(origin)) {
+                throw new IllegalArgumentException("Cannot find binding priority: " + origin.getValue());
+            }
             if (ignoreBinding(incoming)) {
                 return;
             }
@@ -59,14 +65,6 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
         });
 
         return prefixMap;
-    }
-
-    /**
-     * Get the length of the peer sequence.
-     */
-    public static <T extends SxpBindingFields> int getPeerSequenceLength(T b) {
-        return b == null || b.getPeerSequence() == null
-                || b.getPeerSequence().getPeer() == null ? 0 : b.getPeerSequence().getPeer().size();
     }
 
     /**

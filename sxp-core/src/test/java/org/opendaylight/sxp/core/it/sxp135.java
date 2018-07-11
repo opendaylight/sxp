@@ -9,6 +9,7 @@ package org.opendaylight.sxp.core.it;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertTrue;
+import static org.opendaylight.sxp.core.BindingOriginsConfig.LOCAL_ORIGIN;
 import static org.opendaylight.sxp.test.utils.TestDataFactory.createConnection;
 import static org.opendaylight.sxp.test.utils.TestDataFactory.createIdentity;
 
@@ -20,12 +21,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.rules.Timeout;
 import org.junit.runner.Description;
+import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Constants;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
@@ -58,7 +61,7 @@ public class sxp135 {
     private static final Logger LOG = LoggerFactory.getLogger(sxp135.class);
     private static final String DEFAULT_DOMAIN = "defaultDomain";
     private static final int DELETE_HOLD_DOWN_TIMER = 20;
-    private final MasterDatabaseBinding dummyBinding = TestDataFactory.createMasterDBBinding("0.0.0.5/32", 123);
+    private final MasterDatabaseBinding dummyBinding = TestDataFactory.createMasterDBBinding("0.0.0.5/32", 123, LOCAL_ORIGIN);
     @Rule
     public TestRule watcher = new TestWatcher() {
         protected void starting(Description description) {
@@ -70,6 +73,11 @@ public class sxp135 {
 
     private SxpNode node1;
     private SxpNode node2;
+
+    @BeforeClass
+    public static void initClass() {
+        BindingOriginsConfig.INSTANCE.addBindingOrigins(BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES);
+    }
 
     @Before
     public void init() throws InterruptedException, ExecutionException {
