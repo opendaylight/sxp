@@ -186,6 +186,12 @@ public class MasterDatabaseImplTest {
         assertBindings(database.getBindings(), Collections.singletonList(localBinding));
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testAddBindingsNotDefinedPriority() {
+        final SxpBindingFields binding = getBinding("1.1.1.1/32", 10, new OriginType("CLUSTER"));
+        database.addBindings(Collections.singletonList(binding));
+    }
+
     @Test
     public void testAddNullBindings() {
         assertTrue(database.addBindings(null).isEmpty());
