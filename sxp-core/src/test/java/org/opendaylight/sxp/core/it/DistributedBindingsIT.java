@@ -16,6 +16,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
@@ -86,6 +87,7 @@ public class DistributedBindingsIT {
                 .addSerializerConfig(MasterDBBindingSerializer.getSerializerConfig())
                 .addSerializerConfig(PeerSequenceSerializer.getSerializerConfig())
                 .addSerializerConfig(PeerSerializer.getSerializerConfig());
+        hcConfig.getGroupConfig().setName(UUID.randomUUID().toString());
         node1HcInstance = Hazelcast.newHazelcastInstance(hcConfig);
         node2HcInstance = Hazelcast.newHazelcastInstance(hcConfig);
         SxpDatabaseInf node1HCBackedSxpDB = new HazelcastBackedSxpDB("NODE1-ACTIVE", "NODE1-TENTATIVE", node1HcInstance);
