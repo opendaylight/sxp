@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "574423e6_b7db588d",
+        "filename": "sxp-controller/src/test/java/org/opendaylight/sxp/controller/util/database/MasterDatastoreImplTest.java",
+        "patchSetId": 9
+      },
+      "lineNbr": 246,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-07-13T11:35:54Z",
+      "side": 1,
+      "message": "Please do not check for exact error messages. That\u0027s a very fine implementation detail and should be transparent to outside world.\nIn fact, you can use the expected\u003d\u003d.class annotation for such small tests.",
+      "range": {
+        "startLine": 241,
+        "startChar": 0,
+        "endLine": 246,
+        "endChar": 9
+      },
+      "revId": "99c906288d9ce2e51849ae6a7351d0eabb54fece",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1e58d4f1_8dafa87c",
+        "filename": "sxp-core/src/test/java/org/opendaylight/sxp/util/database/MasterDatabaseImplTest.java",
+        "patchSetId": 9
+      },
+      "lineNbr": 200,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-07-13T11:35:54Z",
+      "side": 1,
+      "message": "Please do not check for exact error messages. That\u0027s a very fine implementation detail and should be transparent to outside world.\nIn fact, you can use the expected\u003d\u003d.class annotation for such small tests.",
+      "range": {
+        "startLine": 194,
+        "startChar": 0,
+        "endLine": 200,
+        "endChar": 9
+      },
+      "revId": "99c906288d9ce2e51849ae6a7351d0eabb54fece",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
