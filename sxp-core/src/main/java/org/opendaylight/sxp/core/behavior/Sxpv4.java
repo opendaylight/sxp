@@ -7,8 +7,11 @@
  */
 package org.opendaylight.sxp.core.behavior;
 
+import com.google.common.net.InetAddresses;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.List;
 import org.opendaylight.sxp.core.SxpConnection;
@@ -36,6 +39,7 @@ import org.opendaylight.sxp.util.exception.unknown.UnknownSxpMessageTypeExceptio
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.sxp.util.inet.InetAddressComparator;
+import org.opendaylight.sxp.util.netty.InetAddressExtractor;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
@@ -333,14 +337,20 @@ public final class Sxpv4 extends AbstractStrategy {
             LOG.trace("{} Remote peer has a higher IP adress, closing init contexts", connection);
             connection.closeChannelHandlerContextComplements(ctx);
         }
+
+
         if (connection.isStateDeleteHoldDown()) {
             // Replace the existing one.
             connection.closeChannelHandlerContextComplements(ctx);
             connection.setReconciliationTimer();
         } else if (connection.isStatePendingOn()) {
-            // Close the current channel.
-            connection.closeChannelHandlerContext(ctx);
-            return;
+            InetAddress remoteAddr = InetAddressExtractor.getRemoteInetAddressFrom(ctx);
+            InetAddress localAddr = InetAddressExtractor.getLocalInetAddressFrom(ctx);
+            if (InetAddressComparator.greaterThan(localAddr, remoteAddr)) {
+                // Close the channel.
+                connection.closeInitContextWithRemote((InetSocketAddress) ctx.channel().remoteAddress());
+                return;
+            }
         } else if (connection.isStateOn()) { // A valid scenario during VSS switchover, see SXP-135,
             // we close the connection to allow a new one to form
             LOG.info("{} Received an Open message from a live connection, performing administrative shutdown",
@@ -358,6 +368,7 @@ public final class Sxpv4 extends AbstractStrategy {
             ByteBuf response = composeOpenRespHoldTimeMessage(connection, openMsg, connection.getMode());
             LOG.info("{} Sending RESP {}", connection, MessageFactory.toString(response));
             ctx.writeAndFlush(response);
+            LOG.info("{} Connected", connection);
         } catch (CapabilityLengthException | HoldTimeMinException | HoldTimeMaxException | AttributeVariantException e) {
             LOG.error("{} Error sending RESP shutting down connection {} ", this, connection, e);
             connection.setStateOff();
