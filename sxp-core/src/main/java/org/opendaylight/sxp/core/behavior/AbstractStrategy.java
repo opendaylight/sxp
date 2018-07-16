@@ -22,7 +22,7 @@ public abstract class AbstractStrategy implements Strategy {
      */
     @Override
     public void onChannelInactivation(ChannelHandlerContext ctx, SxpConnection connection) {
-        LOG.info("{} Handling channel inactivation", connection);
+        LOG.info("{} Handling channel inactivation on context {}", connection, ctx);
         SxpConnection.ChannelHandlerContextType type = connection.getContextType(ctx);
         if (connection.isStateOn(type)) {
             switch (type) {
@@ -36,7 +36,9 @@ public abstract class AbstractStrategy implements Strategy {
             }
         }
         connection.setStateOff(ctx);
-        connection.scheduleRetryOpen();
+        if (connection.getInitCtxs().isEmpty()) {
+            connection.scheduleRetryOpen();
+        }
     }
 
     /**

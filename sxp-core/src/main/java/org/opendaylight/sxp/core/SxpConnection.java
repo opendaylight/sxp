@@ -18,6 +18,7 @@ import io.netty.util.concurrent.FutureListener;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -452,7 +453,7 @@ public class SxpConnection {
      *
      * @param ctx ChannelHandlerContext to be closed
      */
-    public ChannelHandlerContextType closeChannelHandlerContext(ChannelHandlerContext ctx) {
+    public synchronized ChannelHandlerContextType closeChannelHandlerContext(ChannelHandlerContext ctx) {
         ChannelHandlerContextType type = ChannelHandlerContextType.NONE_CNTXT;
         synchronized (initCtxs) {
             initCtxs.remove(ctx);
@@ -907,7 +908,7 @@ public class SxpConnection {
         }
         synchronized (ctxs) {
             ChannelHandlerContext oldContext = ctxs.put(channelHandlerContextType, ctx);
-            if (oldContext != null) {
+            if ((oldContext != null) && (oldContext != ctx)) {
                 oldContext.close();
             }
         }
@@ -1271,9 +1272,9 @@ public class SxpConnection {
      *
      * @param ctx ChannelHandlerContext to be closed
      */
-    public void setStateOff(ChannelHandlerContext ctx) {
+    public synchronized void setStateOff(ChannelHandlerContext ctx) {
         ChannelHandlerContextType type = closeChannelHandlerContext(ctx);
-        if (ctxs.isEmpty()) {
+        if (ctxs.isEmpty() && initCtxs.isEmpty()) {
             setStateOff();
         } else {
             switch (type) {
@@ -1484,6 +1485,19 @@ public class SxpConnection {
         return (connectionBuilder.getSecurityType() == SecurityType.Default)
                 && (getPassword() != null)
                 && !getPassword().trim().isEmpty();
+    }
+
+    public List<ChannelHandlerContext> getInitCtxs() {
+        return initCtxs;
+    }
+
+    public void closeInitContextWithRemote(InetSocketAddress remoteAddress) {
+        LOG.trace("Init contexts :: {}", initCtxs);
+        for (ChannelHandlerContext ctx : initCtxs) {
+            if(ctx.channel().remoteAddress().equals(remoteAddress)) {
+                ctx.close().awaitUninterruptibly();
+            }
+        }
     }
 
     @Override
