@@ -163,7 +163,7 @@ public class SxpNode {
         if (node.getSxpDomains() != null && node.getSxpDomains().getSxpDomain() != null) {
             node.getSxpDomains().getSxpDomain().forEach(sxpDomain -> sxpNode.addDomain(sxpDomain, masterDatabase, sxpDatabase));
         }
-        if (!sxpNode.sxpDomains.containsKey(DEFAULT_DOMAIN)) {
+        if (sxpNode.sxpDomains.isEmpty()) {
             sxpNode.sxpDomains.put(DEFAULT_DOMAIN,
                     SxpDomain.createInstance(sxpNode, DEFAULT_DOMAIN, sxpDatabase, masterDatabase));
         }
