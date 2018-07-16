@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -44,6 +45,7 @@ import org.opendaylight.sxp.util.exception.message.attribute.AttributeNotFoundEx
 import org.opendaylight.sxp.util.exception.message.attribute.CapabilityLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.SecurityGroupTagValueException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownSxpMessageTypeException;
+import org.opendaylight.sxp.util.netty.InetAddressExtractor;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
@@ -64,7 +66,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, Context.class, MessageFactory.class, BindingDispatcher.class})
+@PrepareForTest({SxpNode.class, Context.class, MessageFactory.class, BindingDispatcher.class, InetAddressExtractor.class})
 public class Sxpv4Test {
 
     @Rule
@@ -94,6 +96,7 @@ public class Sxpv4Test {
         when(connection.getLocalAddress()).thenReturn(new InetSocketAddress(InetAddress.getByName("0.0.0.1"), 0));
         PowerMockito.when(sxpNode.getWorker()).thenReturn(mock(ThreadsWorker.class));
         PowerMockito.mockStatic(MessageFactory.class);
+        PowerMockito.mockStatic(InetAddressExtractor.class);
     }
 
     @Test
@@ -225,15 +228,18 @@ public class Sxpv4Test {
 
         when(connection.isStateDeleteHoldDown()).thenReturn(false);
         when(connection.isStatePendingOn()).thenReturn(true);
+        when(InetAddressExtractor.getLocalInetAddressFrom(any())).thenReturn(InetAddress.getByName("127.0.0.2"));
+        when(InetAddressExtractor.getRemoteInetAddressFrom(any())).thenReturn(InetAddress.getByName("127.0.0.1"));
+        when(channelHandlerContext.channel()).thenReturn(mock(Channel.class));
         sxpv4.onInputMessage(channelHandlerContext, connection, message);
-        verify(connection).closeChannelHandlerContext(any(ChannelHandlerContext.class));
+        verify(connection).closeInitContextWithRemote(any(InetSocketAddress.class));
         verify(channelHandlerContext, times(3)).writeAndFlush(any(getClass()));
 
         when(connection.getDestination()).thenReturn(new InetSocketAddress(InetAddress.getByName("0.0.0.10"), 0));
         when(connection.isStateDeleteHoldDown()).thenReturn(false);
         when(connection.isStatePendingOn()).thenReturn(false);
         sxpv4.onInputMessage(channelHandlerContext, connection, message);
-        verify(connection).closeChannelHandlerContext(any(ChannelHandlerContext.class));
+        verify(connection,times(4)).markChannelHandlerContext(any(ChannelHandlerContext.class));
         verify(connection, times(4)).setConnection(any(OpenMessage.class));
         verify(channelHandlerContext, times(4)).writeAndFlush(any(getClass()));
 
