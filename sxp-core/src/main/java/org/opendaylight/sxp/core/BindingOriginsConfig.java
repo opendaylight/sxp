@@ -53,10 +53,19 @@ public enum BindingOriginsConfig {
             return false;
         }
         if (bindingOrigins.containsValue(priority)) {
-            LOG.warn("Priority wanted to be used: {} is already used.", priority);
+            LOG.warn("Priority wanted to add: {} is already used.", priority);
             return false;
         }
 
+        bindingOrigins.put(origin, priority);
+        return true;
+    }
+
+    public synchronized boolean addOrUpdateBindingOrigin(OriginType origin, Integer priority) {
+        if (bindingOrigins.containsValue(priority)) {
+            LOG.warn("Priority wanted to add: {} is already used.", priority);
+            return false;
+        }
         bindingOrigins.put(origin, priority);
         return true;
     }
@@ -98,6 +107,10 @@ public enum BindingOriginsConfig {
 
         bindingOrigins.remove(origin);
         return true;
+    }
+
+    public synchronized void deleteConfiguration() {
+        bindingOrigins.clear();
     }
 
     /**
