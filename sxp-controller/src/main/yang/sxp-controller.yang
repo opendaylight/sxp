@@ -415,7 +415,7 @@ module sxp-controller {
                 mandatory true;
                 description "SXP node ID";
             }
-            uses master-database-configuration-fields;
+            uses master-database-configuration;
         }
         output {
             leaf result {
