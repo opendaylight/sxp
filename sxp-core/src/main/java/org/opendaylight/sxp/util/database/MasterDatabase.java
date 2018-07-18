@@ -47,8 +47,11 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
 
         bindings.forEach(incoming -> {
             final OriginType origin = incoming.getOrigin();
+            if (origin == null) {
+                throw new IllegalArgumentException("Incoming binding is missing origin type");
+            }
             if (!BindingOriginsConfig.INSTANCE.containsOrigin(origin)) {
-                throw new IllegalArgumentException("Cannot find binding priority: " + origin.getValue());
+                throw new IllegalArgumentException("Cannot find priority for incoming binding origin type: " + origin.getValue());
             }
             if (ignoreBinding(incoming)) {
                 return;

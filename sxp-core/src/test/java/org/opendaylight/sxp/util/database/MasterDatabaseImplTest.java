@@ -192,6 +192,21 @@ public class MasterDatabaseImplTest {
         database.addBindings(Collections.singletonList(binding));
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testAddBindingsFirstBindingWithNullOrigin() {
+        database.addBindings(Collections.singletonList(getBinding("1.1.1.1/32", 10, null, new String[0])));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testAddBindingsNextBindingWithNullOrigin() {
+        final String prefix = "1.1.1.1/32";
+        final int sgt = 20;
+        final SxpBindingFields localBinding = getBinding(prefix, sgt);
+        final SxpBindingFields bindingWithNullOrigin = getBinding(prefix, sgt, null, new String[0]);
+        assertEquals(1, database.addBindings(Collections.singletonList(localBinding)).size());
+        database.addBindings(Collections.singletonList(bindingWithNullOrigin));
+    }
+
     @Test
     public void testAddNullBindings() {
         assertTrue(database.addBindings(null).isEmpty());
