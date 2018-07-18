@@ -46,14 +46,20 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
         }
 
         bindings.forEach(incoming -> {
-            final OriginType origin = incoming.getOrigin();
-            if (!BindingOriginsConfig.INSTANCE.containsOrigin(origin)) {
-                throw new IllegalArgumentException("Cannot find binding priority: " + origin.getValue());
-            }
             if (ignoreBinding(incoming)) {
                 return;
             }
 
+            // check origin type
+            final OriginType origin = incoming.getOrigin();
+            if (origin == null) {
+                throw new IllegalArgumentException("Incoming binding is missing origin type");
+            }
+            if (!BindingOriginsConfig.INSTANCE.containsOrigin(origin)) {
+                throw new IllegalArgumentException("Cannot find priority for incoming binding origin type: " + origin.getValue());
+            }
+
+            // add or update binding
             final MasterDatabaseBinding incomingBinding = new MasterDatabaseBindingBuilder(incoming).build();
             final MasterDatabaseBinding storedBinding = prefixMap.containsKey(incoming.getIpPrefix())
                     ? prefixMap.get(incoming.getIpPrefix()) : get.apply(incoming.getIpPrefix());
