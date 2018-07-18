@@ -118,6 +118,9 @@ public class HazelcastBackedMasterDB extends MasterDatabase {
                 continue;
             }
             MasterDatabaseBinding bindingToAdd = new MasterDatabaseBindingBuilder(incomingBinding).build();
+            if (incomingBinding.getOrigin() == null) {
+                throw new IllegalArgumentException("Incoming binding is missing origin type");
+            }
             if (bindingMap.containsKey(incomingBinding.getIpPrefix())) {
                 if ((Boolean) bindingMap.executeOnKey(bindingToAdd.getIpPrefix(), new ConditionalAddProcessor(bindingToAdd))) {
                     addedBindings.put(bindingToAdd.getIpPrefix(), bindingToAdd);
