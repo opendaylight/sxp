@@ -934,10 +934,15 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
             }
 
             final MasterDatabaseInf masterDatabase = getMasterDatabase(nodeId, input.getDomainName());
-            if (input.getBinding() != null && !input.getBinding().isEmpty() && masterDatabase != null) {
+            if (containsBindings(input.getMasterDatabase()) && masterDatabase != null) {
+                final OriginType origin = input.getOrigin();
+                if (origin == null) {
+                    LOG.warn("RpcAddEntry exception | Parameter 'origin' not defined");
+                    return RpcResultBuilder.success(output.build()).build();
+                }
                 final List<MasterDatabaseBinding> bindingsToBeAdded = transformBindings(
-                        input.getBinding(), new PeerSequenceBuilder().setPeer(Collections.emptyList()).build(),
-                        TimeConv.toDt(System.currentTimeMillis()), BindingOriginsConfig.LOCAL_ORIGIN);
+                        input.getMasterDatabase().getBinding(), new PeerSequenceBuilder().setPeer(Collections.emptyList()).build(),
+                        TimeConv.toDt(System.currentTimeMillis()), origin);
                 final List<MasterDatabaseBinding> addedBindings = masterDatabase.addBindings(bindingsToBeAdded);
                 output.setResult(!addedBindings.isEmpty());
             }

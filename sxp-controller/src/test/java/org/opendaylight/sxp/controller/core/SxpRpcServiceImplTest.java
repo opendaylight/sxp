@@ -779,7 +779,7 @@ public class SxpRpcServiceImplTest {
         final RpcResult<AddBindingsOutput> result =
                 service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
-                        .setBinding(null)
+                        .setMasterDatabase(null)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -792,7 +792,10 @@ public class SxpRpcServiceImplTest {
         final RpcResult<AddBindingsOutput> result =
                 service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
-                        .setBinding(new ArrayList<>())
+                        .setMasterDatabase(
+                                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.MasterDatabaseBuilder()
+                                        .setBinding(Collections.emptyList())
+                                        .build())
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -801,13 +804,36 @@ public class SxpRpcServiceImplTest {
     }
 
     @Test
+    public void testAddBindingsNullBindingsOrigin() throws Exception {
+        final RpcResult<AddBindingsOutput> result =
+                service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setMasterDatabase(
+                                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.MasterDatabaseBuilder()
+                                        .setBinding(Lists.newArrayList(
+                                                getBinding("1.1.1.1/32", "10"),
+                                                getBinding("2.2.2.2/32", "20")))
+                                        .build())
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        Boolean aBoolean = result.getResult().isResult();
+        assertFalse(aBoolean);
+    }
+
+    @Test
     public void testAddBindings() throws Exception {
         final RpcResult<AddBindingsOutput> result =
                 service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
-                        .setBinding(Collections.singletonList(new BindingBuilder().setSgt(new Sgt(112))
-                                .setIpPrefix(Collections.singletonList(new IpPrefix("1.1.1.1/32".toCharArray())))
-                                .build()))
+                        .setMasterDatabase(
+                                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.MasterDatabaseBuilder()
+                                        .setBinding(Lists.newArrayList(
+                                                getBinding("1.1.1.1/32", "10"),
+                                                getBinding("2.2.2.2/32", "20")))
+                                        .build())
+                        .setOrigin(BindingOriginsConfig.LOCAL_ORIGIN)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
