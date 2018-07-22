@@ -49,7 +49,8 @@ import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.exception.node.DomainNotFoundException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
@@ -126,7 +127,7 @@ public class SxpNodeTest {
         when(nodeIdentity.getSecurity()).thenReturn(security);
         when(nodeIdentity.getMappingExpanded()).thenReturn(150);
         when(nodeIdentity.getTcpPort()).thenReturn(new PortNumber(64999));
-        when(nodeIdentity.getSourceIp()).thenReturn(new IpAddress("127.1.1.1".toCharArray()));
+        when(nodeIdentity.getSourceIp()).thenReturn(IpAddressBuilder.getDefaultInstance("127.1.1.1"));
         when(nodeIdentity.getTcpPort()).thenReturn(PortNumber.getDefaultInstance("64999"));
 
         databaseProvider = mock(MasterDatabaseInf.class);
@@ -156,7 +157,7 @@ public class SxpNodeTest {
     private Connection mockConnection(ConnectionMode mode, ConnectionState state) {
         Connection connection = mock(Connection.class);
         when(connection.getMode()).thenReturn(mode);
-        when(connection.getPeerAddress()).thenReturn(new IpAddress(("127.0.0." + (++ip4Adrres)).toCharArray()));
+        when(connection.getPeerAddress()).thenReturn(IpAddressBuilder.getDefaultInstance("127.0.0." + (++ip4Adrres)));
         when(connection.getState()).thenReturn(state);
         when(connection.getPassword()).thenReturn("Default");
         when(connection.getVersion()).thenReturn(Version.Version4);
@@ -269,9 +270,8 @@ public class SxpNodeTest {
         assertEquals("default", node.getPassword());
         assertEquals(64999, node.getServerPort());
 
-
         SxpNodeIdentity mockIdentity = mock(SxpNodeIdentity.class);
-        when(mockIdentity.getSourceIp()).thenReturn(new IpAddress("127.1.1.1".toCharArray()));
+        when(mockIdentity.getSourceIp()).thenReturn(IpAddressBuilder.getDefaultInstance("127.1.1.1"));
 
         SxpNode node = SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), mockIdentity,
                         databaseProvider, sxpDatabaseProvider, worker);
@@ -364,7 +364,7 @@ public class SxpNodeTest {
     }
 
     private MasterDatabaseBinding getBinding(String prefix, int sgt) {
-        return new MasterDatabaseBindingBuilder().setIpPrefix(new IpPrefix(prefix.toCharArray()))
+        return new MasterDatabaseBindingBuilder().setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix))
                 .setSecurityGroupTag(new Sgt(sgt))
                 .setOrigin(BindingOriginsConfig.LOCAL_ORIGIN)
                 .build();
@@ -412,7 +412,7 @@ public class SxpNodeTest {
         assertEquals(connection.getMode(), sxpConnection.getMode());
         assertEquals(connection.getState(), sxpConnection.getState());
 
-        assertNull(node.getConnection(getInetSocketAddress(new IpAddress("0.9.9.9".toCharArray()))));
+        assertNull(node.getConnection(getInetSocketAddress(IpAddressBuilder.getDefaultInstance("0.9.9.9"))));
     }
 
     @Test

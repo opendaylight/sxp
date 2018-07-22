@@ -22,8 +22,8 @@ import java.util.List;
 import org.junit.Test;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterEntryType;
@@ -72,7 +72,7 @@ public class DifferencesTest {
     private Connection getChange(String address, int port, Version version, ConnectionMode mode) {
         return new ConnectionBuilder().setVersion(version)
                 .setMode(mode)
-                .setPeerAddress(new IpAddress(address.toCharArray()))
+                .setPeerAddress(IpAddressBuilder.getDefaultInstance(address))
                 .setTcpPort(new PortNumber(port))
                 .build();
     }
@@ -230,11 +230,11 @@ public class DifferencesTest {
     }
 
     private AclMatch getAclMatch(String ip, String mask, String subIp, String subMask) {
-        return new AclMatchBuilder().setIpAddress(new IpAddress(ip.toCharArray()))
-                .setMask(new MaskBuilder().setAddressMask(new IpAddress(subIp.toCharArray()))
-                        .setWildcardMask(new WildcardMask(subMask.toCharArray()))
+        return new AclMatchBuilder().setIpAddress(IpAddressBuilder.getDefaultInstance(ip))
+                .setMask(new MaskBuilder().setAddressMask(IpAddressBuilder.getDefaultInstance(subIp))
+                        .setWildcardMask(new WildcardMask(IpAddressBuilder.getDefaultInstance(subMask)))
                         .build())
-                .setWildcardMask(new WildcardMask(mask.toCharArray()))
+                .setWildcardMask(new WildcardMask(IpAddressBuilder.getDefaultInstance(mask)))
                 .build();
     }
 
@@ -260,7 +260,7 @@ public class DifferencesTest {
                 new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.match.fields.MaskBuilder()
                         .setMaskRange(rangeOperator)
                         .setMaskValue(new PrefixListMask(mask))
-                        .build()).setIpPrefix(new IpPrefix(prefix.toCharArray())).build();
+                        .build()).setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix)).build();
     }
 
     private PeerSequenceFilterEntries getPeerSequenceEntries(PeerSequenceEntry... entries) {

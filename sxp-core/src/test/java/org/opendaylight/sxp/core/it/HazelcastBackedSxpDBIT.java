@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.junit.After;
 import org.junit.Before;
@@ -38,6 +39,7 @@ import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.filtering.PrefixListFilter;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv6Prefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
@@ -62,7 +64,6 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * Copy-paste from {@link org.opendaylight.sxp.util.database.SxpDatabaseImplTest}
@@ -112,7 +113,7 @@ public class HazelcastBackedSxpDBIT {
 
     private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, String... peers) {
         SxpDatabaseBindingBuilder bindingBuilder = new SxpDatabaseBindingBuilder();
-        bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        bindingBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         PeerSequenceBuilder sequenceBuilder = new PeerSequenceBuilder();
         sequenceBuilder.setPeer(new ArrayList<>());
@@ -133,7 +134,7 @@ public class HazelcastBackedSxpDBIT {
         bindings1.stream()
                 .forEach(b -> assertTrue(bindings2.stream()
                         .anyMatch(r -> r.getSecurityGroupTag().getValue().equals(b.getSecurityGroupTag().getValue())
-                                && Arrays.equals(r.getIpPrefix().getValue(), b.getIpPrefix().getValue()))));
+                                && Objects.equals(r.getIpPrefix(), b.getIpPrefix()))));
     }
 
     private PrefixListEntry getPrefixListEntry(FilterEntryType entryType, PrefixListMatch prefixListMatch) {

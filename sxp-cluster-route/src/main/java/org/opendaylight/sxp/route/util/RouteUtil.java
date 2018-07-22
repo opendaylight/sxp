@@ -32,7 +32,7 @@ public class RouteUtil {
      * @return string form of given address
      */
     public static String addressToString(IpAddress address) {
-        return String.valueOf(address.getValue());
+        return String.valueOf(address.stringValue());
     }
 
     /**

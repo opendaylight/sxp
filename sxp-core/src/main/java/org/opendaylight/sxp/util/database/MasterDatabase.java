@@ -98,7 +98,7 @@ public abstract class MasterDatabase implements MasterDatabaseInf {
             databaseBindings.forEach(b -> builder.append("\t")
                     .append(b.getSecurityGroupTag().getValue())
                     .append(" ")
-                    .append(b.getIpPrefix().getValue())
+                    .append(b.getIpPrefix().stringValue())
                     .append("\n"));
         }
         return builder.toString();

@@ -21,8 +21,8 @@ import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.inet.Search;
 import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
@@ -109,7 +109,7 @@ public class ExportTestLibrary extends AbstractLibrary {
     @ArgumentNames({"node_id", "version", "port", "password"})
     public synchronized void addDestinationNode(String nodeId, String version, String port, String password) {
         LibraryServer.putNode(SxpNode.createInstance(new NodeId(nodeId),
-                new SxpNodeIdentityBuilder().setSourceIp(new IpAddress(nodeId.toCharArray()))
+                new SxpNodeIdentityBuilder().setSourceIp(IpAddressBuilder.getDefaultInstance(nodeId))
                         .setCapabilities(Configuration.getCapabilities(getVersion(version)))
                         .setEnabled(true)
                         .setName(DESTINATION)
@@ -159,7 +159,7 @@ public class ExportTestLibrary extends AbstractLibrary {
                 exportBindings =
                 Search.expandBinding(new MasterDatabaseBindingBuilder().setPeerSequence(
                         new PeerSequenceBuilder().setPeer(new ArrayList<>()).build())
-                        .setIpPrefix(new IpPrefix(Preconditions.checkNotNull(prefix).toCharArray()))
+                        .setIpPrefix(IpPrefixBuilder.getDefaultInstance(Preconditions.checkNotNull(prefix)))
                         .setTimestamp(TimeConv.toDt(System.currentTimeMillis()))
                         .setSecurityGroupTag(new Sgt(Integer.parseInt(Preconditions.checkNotNull(sgt))))
                         .setOrigin(BindingOriginsConfig.LOCAL_ORIGIN)

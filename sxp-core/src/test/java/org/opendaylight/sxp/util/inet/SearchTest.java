@@ -7,10 +7,10 @@
  */
 package org.opendaylight.sxp.util.inet;
 
-import java.lang.reflect.Constructor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 import org.junit.Assert;
 import org.junit.Test;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv6Address;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
@@ -53,7 +53,7 @@ public class SearchTest {
         List<T> bindings = new ArrayList<>();
         MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
         for (String s : strings) {
-            bindings.add((T) bindingBuilder.setIpPrefix(new IpPrefix(s.toCharArray())).build());
+            bindings.add((T) bindingBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(s)).build());
         }
         return bindings;
     }
@@ -78,9 +78,9 @@ public class SearchTest {
     @Test
     public void testExpandPrefix() throws Exception {
         assertEquals(0,
-                Search.expandPrefix(new IpPrefix("5.5.5.5/32".toCharArray())).collect(Collectors.toList()).size());
+                Search.expandPrefix(IpPrefixBuilder.getDefaultInstance("5.5.5.5/32")).collect(Collectors.toList()).size());
         Stream.iterate(16, n -> n + 1).limit(16).forEach(n -> {
-            assertEquals((long) Math.pow(2, 32 - n), Search.expandPrefix(new IpPrefix(("0.0.0.0/" + n).toCharArray()))
+            assertEquals((long) Math.pow(2, 32 - n), Search.expandPrefix(IpPrefixBuilder.getDefaultInstance("0.0.0.0/" + n))
                     .collect(Collectors.toList())
                     .size());
         });

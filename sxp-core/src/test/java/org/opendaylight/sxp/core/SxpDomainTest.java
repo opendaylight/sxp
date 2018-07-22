@@ -41,7 +41,7 @@ import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
@@ -343,7 +343,7 @@ public class SxpDomainTest {
 
     private MasterDatabaseBinding getMasterDatabaseBinding(String prefix, int sgt) {
         return new MasterDatabaseBindingBuilder().setSecurityGroupTag(new Sgt(sgt))
-                .setIpPrefix(new IpPrefix(prefix.toCharArray()))
+                .setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix))
                 .build();
     }
 
@@ -413,7 +413,7 @@ public class SxpDomainTest {
     private ConnectionTemplate getTemplate(String ipPrefix, String pass) {
         ConnectionTemplateBuilder builder = new ConnectionTemplateBuilder();
         builder.setTemplateTcpPort(new PortNumber(64999));
-        builder.setTemplatePrefix(new IpPrefix(ipPrefix.toCharArray()));
+        builder.setTemplatePrefix(IpPrefixBuilder.getDefaultInstance(ipPrefix));
         builder.setTemplatePassword(pass);
         return builder.build();
     }
@@ -446,20 +446,20 @@ public class SxpDomainTest {
         assertTrue(domain.addConnectionTemplate(getTemplate("1.1.1.1/32", null)));
         assertEquals(1, domain.getConnectionTemplates().size());
 
-        assertNull(domain.removeConnectionTemplate(new IpPrefix("0.0.0.0/32".toCharArray())));
+        assertNull(domain.removeConnectionTemplate(IpPrefixBuilder.getDefaultInstance("0.0.0.0/32")));
         assertEquals(1, domain.getConnectionTemplates().size());
 
-        assertNotNull(domain.removeConnectionTemplate(new IpPrefix("1.1.1.1/32".toCharArray())));
+        assertNotNull(domain.removeConnectionTemplate(IpPrefixBuilder.getDefaultInstance("1.1.1.1/32")));
         assertEquals(0, domain.getConnectionTemplates().size());
         verify(sxpNode, never()).updateMD5keys();
 
         assertTrue(domain.addConnectionTemplate(getTemplate("1.1.1.1/32", "password")));
         assertEquals(1, domain.getConnectionTemplates().size());
 
-        assertNull(domain.removeConnectionTemplate(new IpPrefix("0.0.0.0/32".toCharArray())));
+        assertNull(domain.removeConnectionTemplate(IpPrefixBuilder.getDefaultInstance("0.0.0.0/32")));
         assertEquals(1, domain.getConnectionTemplates().size());
 
-        assertNotNull(domain.removeConnectionTemplate(new IpPrefix("1.1.1.1/32".toCharArray())));
+        assertNotNull(domain.removeConnectionTemplate(IpPrefixBuilder.getDefaultInstance("1.1.1.1/32")));
         assertEquals(0, domain.getConnectionTemplates().size());
         verify(sxpNode, times(2)).updateMD5keys();
     }

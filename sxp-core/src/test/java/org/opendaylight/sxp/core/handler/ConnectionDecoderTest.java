@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpConnectionTemplateFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.templates.fields.connection.templates.ConnectionTemplate;
@@ -67,7 +67,7 @@ public class ConnectionDecoderTest {
     private ConnectionTemplate getTemplate(ConnectionMode mode, Version version) {
         ConnectionTemplateBuilder builder = new ConnectionTemplateBuilder();
         builder.setTemplateTcpPort(new PortNumber(64999));
-        builder.setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()));
+        builder.setTemplatePrefix(IpPrefixBuilder.getDefaultInstance("0.0.0.0/0"));
         builder.setTemplateMode(mode);
         builder.setTemplateVersion(version);
         return builder.build();

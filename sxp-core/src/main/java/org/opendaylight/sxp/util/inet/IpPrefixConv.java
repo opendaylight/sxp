@@ -19,6 +19,7 @@ import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 
 @SuppressWarnings("all")
 public final class IpPrefixConv {
@@ -67,7 +68,7 @@ public final class IpPrefixConv {
             _prefix = _prefix.substring(1);
         }
         _prefix += "/" + (0xFF & array[0]);
-        return new IpPrefix(_prefix.toCharArray());
+        return IpPrefixBuilder.getDefaultInstance(_prefix);
     }
 
     /**
@@ -85,7 +86,7 @@ public final class IpPrefixConv {
             ipPrefix = ipPrefix.substring(1);
         }
 
-        return new IpPrefix(ipPrefix.toCharArray());
+        return IpPrefixBuilder.getDefaultInstance(ipPrefix);
     }
 
     /**
@@ -166,7 +167,7 @@ public final class IpPrefixConv {
      * @return Length of specified IpPrefix
      */
     public static int getPrefixLength(IpPrefix ipPrefix) {
-        String _ipPrefix = new String(ipPrefix.getValue());
+        String _ipPrefix = ipPrefix.stringValue();
         int i = _ipPrefix.lastIndexOf('/');
         if (i == -1) {
             return i;
@@ -211,7 +212,7 @@ public final class IpPrefixConv {
      * @return Byte Array representing specified IpPrefix
      */
     public static byte[] toBytes(IpPrefix prefix) {
-        String _prefix = new String(prefix.getValue());
+        String _prefix = prefix.stringValue();
         if (_prefix.startsWith("/")) {
             _prefix = _prefix.substring(1);
         }
@@ -251,7 +252,7 @@ public final class IpPrefixConv {
         if (prefix == null) {
             return "";
         }
-        String result = new String(prefix.getValue());
+        String result = prefix.stringValue();
         if (result.startsWith("/")) {
             result = result.substring(1);
         }

@@ -47,6 +47,7 @@ import org.opendaylight.sxp.util.exception.message.attribute.SecurityGroupTagVal
 import org.opendaylight.sxp.util.inet.IpPrefixConv;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequence;
@@ -145,7 +146,7 @@ public class BindingHandlerTest {
 
     private SxpDatabaseBinding getBinding(String prefix, int sgt, PeerSequence peerSequence) {
         SxpDatabaseBindingBuilder bindingBuilder = new SxpDatabaseBindingBuilder();
-        bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        bindingBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setPeerSequence(peerSequence);
         bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
@@ -186,13 +187,12 @@ public class BindingHandlerTest {
         //test with null bindings
         Stream<SxpBindingFields> result2 = BindingHandler.loopDetection(new NodeId("127.0.2.1"), null);
         assertEquals(result2, null);
-
     }
 
     private List<IpPrefix> getIpPrefixes(String... strings) {
         List<IpPrefix> ipPrefixes = new ArrayList<>();
         for (String s : strings) {
-            ipPrefixes.add(new IpPrefix(s.toCharArray()));
+            ipPrefixes.add(IpPrefixBuilder.getDefaultInstance(s));
         }
         return ipPrefixes;
     }
@@ -200,7 +200,7 @@ public class BindingHandlerTest {
     private Attribute getDeleteIpv4(String prefix) {
         DeleteIpv4AttributeBuilder deleteIpv4AttributeBuilder = new DeleteIpv4AttributeBuilder();
         DeleteIpv4AttributesBuilder deleteIpv4AttributesBuilder = new DeleteIpv4AttributesBuilder();
-        deleteIpv4AttributesBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        deleteIpv4AttributesBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix));
         deleteIpv4AttributeBuilder.setDeleteIpv4Attributes(deleteIpv4AttributesBuilder.build());
         AttributeBuilder builder = new AttributeBuilder();
         builder.setAttributeOptionalFields(deleteIpv4AttributeBuilder.build());
@@ -212,7 +212,7 @@ public class BindingHandlerTest {
     private Attribute getDeleteIpv6(String prefix) {
         DeleteIpv6AttributeBuilder deleteIpv6AttributeBuilder = new DeleteIpv6AttributeBuilder();
         DeleteIpv6AttributesBuilder deleteIpv6AttributesBuilder = new DeleteIpv6AttributesBuilder();
-        deleteIpv6AttributesBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        deleteIpv6AttributesBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix));
         deleteIpv6AttributeBuilder.setDeleteIpv6Attributes(deleteIpv6AttributesBuilder.build());
         AttributeBuilder builder = new AttributeBuilder();
         builder.setAttributeOptionalFields(deleteIpv6AttributeBuilder.build());
@@ -224,7 +224,7 @@ public class BindingHandlerTest {
     private Attribute getAddIpv4(String prefix) {
         AddIpv4AttributeBuilder addIpv4AttributeBuilder = new AddIpv4AttributeBuilder();
         AddIpv4AttributesBuilder addIpv4AttributesBuilder = new AddIpv4AttributesBuilder();
-        addIpv4AttributesBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        addIpv4AttributesBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix));
         addIpv4AttributeBuilder.setAddIpv4Attributes(addIpv4AttributesBuilder.build());
         AttributeBuilder builder = new AttributeBuilder();
         builder.setAttributeOptionalFields(addIpv4AttributeBuilder.build());
@@ -235,7 +235,7 @@ public class BindingHandlerTest {
 
     private MappingRecord getAddIp(int sgt, String prefix, AttributeType attributeType) {
         MappingRecordBuilder mappingRecordBuilder = new MappingRecordBuilder();
-        mappingRecordBuilder.setAddress(new IpPrefix(prefix.toCharArray()));
+        mappingRecordBuilder.setAddress(IpPrefixBuilder.getDefaultInstance(prefix));
         mappingRecordBuilder.setOperationCode(attributeType);
         List<Tlv> tlvs = new ArrayList<>();
         mappingRecordBuilder.setTlv(tlvs);
@@ -255,7 +255,7 @@ public class BindingHandlerTest {
     private Attribute getAddIpv6(String prefix) {
         AddIpv6AttributeBuilder addIpv6AttributeBuilder = new AddIpv6AttributeBuilder();
         AddIpv6AttributesBuilder addIpv6AttributesBuilder = new AddIpv6AttributesBuilder();
-        addIpv6AttributesBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        addIpv6AttributesBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix));
         addIpv6AttributeBuilder.setAddIpv6Attributes(addIpv6AttributesBuilder.build());
         AttributeBuilder builder = new AttributeBuilder();
         builder.setAttributeOptionalFields(addIpv6AttributeBuilder.build());
@@ -311,14 +311,14 @@ public class BindingHandlerTest {
                         AttributeFactory.COMPACT));
 
         //Legacy
-        ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("128.0.0.0/32"));
         attributes.add(getAddIpv4("128.0.0.0/32"));
-        ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("128.50.0.0/24"));
         attributes.add(getAddIpv4("128.50.0.0/24"));
 
-        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("2001:0:0:0:0:0:0:8/32"));
         attributes.add(getAddIpv6("2001:0:0:0:0:0:0:8/32"));
-        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("2001:0:0:0:0:C:0:8/128"));
         attributes.add(getAddIpv6("2001:0:0:0:0:C:0:8/128"));
         return attributes;
     }
@@ -348,11 +348,11 @@ public class BindingHandlerTest {
 
     private List<MappingRecord> getLegacyDeletion() {
         List<MappingRecord> attributes = new ArrayList<>();
-        attributes.add(LegacyAttributeFactory.createDeleteIpv4(new IpPrefix("128.0.0.0/32".toCharArray())));
-        attributes.add(LegacyAttributeFactory.createDeleteIpv4(new IpPrefix("128.50.0.0/24".toCharArray())));
+        attributes.add(LegacyAttributeFactory.createDeleteIpv4(IpPrefixBuilder.getDefaultInstance("128.0.0.0/32")));
+        attributes.add(LegacyAttributeFactory.createDeleteIpv4(IpPrefixBuilder.getDefaultInstance("128.50.0.0/24")));
 
-        attributes.add(LegacyAttributeFactory.createDeleteIpv4(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray())));
-        attributes.add(LegacyAttributeFactory.createDeleteIpv4(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray())));
+        attributes.add(LegacyAttributeFactory.createDeleteIpv4(IpPrefixBuilder.getDefaultInstance("2001:0:0:0:0:0:0:8/32")));
+        attributes.add(LegacyAttributeFactory.createDeleteIpv4(IpPrefixBuilder.getDefaultInstance("2001:0:0:0:0:C:0:8/128")));
         return attributes;
     }
 
@@ -361,10 +361,10 @@ public class BindingHandlerTest {
         List<IpPrefix> ipPrefixes = getIpPrefixes("127.0.0.0/32", "127.0.10.2/32");
         ipPrefixes.addAll(getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"));
         //Legacy
-        ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
-        ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
-        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
-        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("128.0.0.0/32"));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("128.50.0.0/24"));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("2001:0:0:0:0:0:0:8/32"));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("2001:0:0:0:0:C:0:8/128"));
 
         List<SxpDatabaseBinding> bindings = BindingHandler.processMessageAddition(getMessage(getAddition()), null);
         assertDatabase(bindings, ipPrefixes);
@@ -373,10 +373,10 @@ public class BindingHandlerTest {
     @Test
     public void testProcessMessageAdditionLegacy() throws Exception {
         List<IpPrefix> ipPrefixes = new ArrayList<>();
-        ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
-        ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
-        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
-        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("128.0.0.0/32"));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("128.50.0.0/24"));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("2001:0:0:0:0:0:0:8/32"));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("2001:0:0:0:0:C:0:8/128"));
 
         List<SxpDatabaseBinding>
                 bindings =
@@ -390,11 +390,11 @@ public class BindingHandlerTest {
         List<IpPrefix> ipPrefixes = getIpPrefixes("127.0.0.0/32", "127.0.10.2/32");
         ipPrefixes.addAll(getIpPrefixes("2001:0:0:0:0:0:0:1/128", "2001:0:0:0:0:0:0:0/64"));
         //Legacy
-        ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
-        ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("128.0.0.0/32"));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("128.50.0.0/24"));
 
-        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
-        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("2001:0:0:0:0:0:0:8/32"));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("2001:0:0:0:0:C:0:8/128"));
 
         List<SxpDatabaseBinding> bindings = BindingHandler.processMessageDeletion(getMessage(getDeletion()));
         assertDatabase(bindings, ipPrefixes);
@@ -414,10 +414,10 @@ public class BindingHandlerTest {
     public void testProcessMessageDeletionLegacy() throws Exception {
         List<IpPrefix> ipPrefixes = new ArrayList<>();
 
-        ipPrefixes.add(new IpPrefix("128.0.0.0/32".toCharArray()));
-        ipPrefixes.add(new IpPrefix("128.50.0.0/24".toCharArray()));
-        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:0:0:8/32".toCharArray()));
-        ipPrefixes.add(new IpPrefix("2001:0:0:0:0:C:0:8/128".toCharArray()));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("128.0.0.0/32"));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("128.50.0.0/24"));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("2001:0:0:0:0:0:0:8/32"));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("2001:0:0:0:0:C:0:8/128"));
 
         List<SxpDatabaseBinding>
                 bindings =

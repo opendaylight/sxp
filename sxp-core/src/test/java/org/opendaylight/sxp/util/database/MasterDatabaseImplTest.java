@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,6 +29,7 @@ import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
@@ -71,7 +73,7 @@ public class MasterDatabaseImplTest {
 
     private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, OriginType origin, String... peers) {
         MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
-        bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        bindingBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setTimestamp(TimeConv.toDt(time += 1000));
         bindingBuilder.setOrigin(origin);
@@ -89,12 +91,12 @@ public class MasterDatabaseImplTest {
         return new ArrayList<>(Arrays.asList(binding));
     }
 
-    private <T extends SxpBindingFields, R extends SxpBindingFields> void assertBindings(List<T> bindings1,
-            List<R> bindings2) {
+    private <T extends SxpBindingFields, R extends SxpBindingFields> void assertBindings(
+            List<T> bindings1, List<R> bindings2) {
         bindings1.forEach(b -> assertTrue(bindings2.stream().anyMatch(
-                r -> r.getSecurityGroupTag().getValue().equals(b.getSecurityGroupTag().getValue())
-                        && Arrays.equals(r.getIpPrefix().getValue(), b.getIpPrefix().getValue())
-                        && r.getOrigin().equals(b.getOrigin()))));
+                r -> Objects.equals(r.getSecurityGroupTag(), b.getSecurityGroupTag())
+                        && Objects.equals(r.getIpPrefix(), b.getIpPrefix())
+                        && Objects.equals(r.getOrigin(), (b.getOrigin())))));
     }
 
     @Test

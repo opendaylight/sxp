@@ -29,7 +29,7 @@ import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
@@ -66,7 +66,7 @@ public class SxpDatastoreNodeTest {
         when(nodeIdentity.getSecurity()).thenReturn(security);
         when(nodeIdentity.getMappingExpanded()).thenReturn(150);
         when(nodeIdentity.getTcpPort()).thenReturn(new PortNumber(64999));
-        when(nodeIdentity.getSourceIp()).thenReturn(new IpAddress(ID.toCharArray()));
+        when(nodeIdentity.getSourceIp()).thenReturn(IpAddressBuilder.getDefaultInstance(ID));
         when(nodeIdentity.getTcpPort()).thenReturn(PortNumber.getDefaultInstance("64999"));
         dispatcher = mock(BindingDispatcher.class);
 
@@ -92,7 +92,7 @@ public class SxpDatastoreNodeTest {
     public void testAddConnection() throws Exception {
         SxpConnection
                 sxpConnection =
-                node.addConnection(new ConnectionBuilder().setPeerAddress(new IpAddress("1.1.1.1".toCharArray()))
+                node.addConnection(new ConnectionBuilder().setPeerAddress(IpAddressBuilder.getDefaultInstance("1.1.1.1"))
                         .setTcpPort(new PortNumber(64999))
                         .setMode(ConnectionMode.Both)
                         .setVersion(Version.Version4)
@@ -128,7 +128,7 @@ public class SxpDatastoreNodeTest {
     public void testClose() throws Exception {
         SxpConnection
                 connection =
-                node.addConnection(new ConnectionBuilder().setPeerAddress(new IpAddress("1.1.1.1".toCharArray()))
+                node.addConnection(new ConnectionBuilder().setPeerAddress(IpAddressBuilder.getDefaultInstance("1.1.1.1"))
                         .setTcpPort(new PortNumber(64999))
                         .setMode(ConnectionMode.Both)
                         .setState(ConnectionState.On)

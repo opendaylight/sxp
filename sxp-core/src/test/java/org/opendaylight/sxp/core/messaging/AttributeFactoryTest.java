@@ -11,6 +11,10 @@ package org.opendaylight.sxp.core.messaging;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,8 +22,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyAttributeFactory;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.CapabilityLengthException;
@@ -28,6 +30,7 @@ import org.opendaylight.sxp.util.exception.message.attribute.HoldTimeMinExceptio
 import org.opendaylight.sxp.util.exception.message.attribute.SecurityGroupTagValueException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.AttributeVariant;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
@@ -48,8 +51,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.capabilities.attribute.capabilities.attributes.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.capabilities.attribute.capabilities.attributes.CapabilitiesBuilder;
 import org.powermock.api.mockito.PowerMockito;
-import static org.powermock.api.mockito.PowerMockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
@@ -175,7 +176,7 @@ public class AttributeFactoryTest {
     @Test
     public void testCreateIpv4AddPrefix() throws Exception {
         List<IpPrefix> ipPrefixes = new ArrayList<>();
-        ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("127.0.0.0/32"));
         Attribute attribute = AttributeFactory.createIpv4AddPrefix(ipPrefixes, AttributeFactory.COMPACT);
         assertEquals(AttributeType.Ipv4AddPrefix, attribute.getType());
         assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
@@ -186,7 +187,7 @@ public class AttributeFactoryTest {
 
         for (int i = 1; i <= 256; i++) {
             String ip = "127.0." + ((i > 254) ? i - 254 : 0) + "." + i % 255 + "/32";
-            ipPrefixes.add(new IpPrefix(ip.toCharArray()));
+            ipPrefixes.add(IpPrefixBuilder.getDefaultInstance(ip));
         }
 
         attribute = AttributeFactory.createIpv4AddPrefix(ipPrefixes, AttributeFactory.COMPACT);
@@ -201,7 +202,7 @@ public class AttributeFactoryTest {
     @Test
     public void testCreateIpv4DeletePrefix() throws Exception {
         List<IpPrefix> ipPrefixes = new ArrayList<>();
-        ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("127.0.0.0/32"));
         Attribute attribute = AttributeFactory.createIpv4DeletePrefix(ipPrefixes, AttributeFactory.COMPACT);
         assertEquals(AttributeType.Ipv4DeletePrefix, attribute.getType());
         assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
@@ -214,7 +215,7 @@ public class AttributeFactoryTest {
 
         for (int i = 1; i <= 256; i++) {
             String ip = "127.0." + ((i > 254) ? i - 254 : 0) + "." + i % 255 + "/32";
-            ipPrefixes.add(new IpPrefix(ip.toCharArray()));
+            ipPrefixes.add(IpPrefixBuilder.getDefaultInstance(ip));
         }
 
         attribute = AttributeFactory.createIpv4DeletePrefix(ipPrefixes, AttributeFactory.COMPACT);
@@ -229,7 +230,7 @@ public class AttributeFactoryTest {
     @Test
     public void testCreateIpv6AddPrefix() throws Exception {
         List<IpPrefix> ipPrefixes = new ArrayList<>();
-        ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("127.0.0.0/32"));
         Attribute attribute = AttributeFactory.createIpv6AddPrefix(ipPrefixes, AttributeFactory.COMPACT);
         assertEquals(AttributeType.Ipv6AddPrefix, attribute.getType());
         assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
@@ -240,7 +241,7 @@ public class AttributeFactoryTest {
 
         for (int i = 1; i <= 256; i++) {
             String ip = "127.0." + ((i > 254) ? i - 254 : 0) + "." + i % 255 + "/32";
-            ipPrefixes.add(new IpPrefix(ip.toCharArray()));
+            ipPrefixes.add(IpPrefixBuilder.getDefaultInstance(ip));
         }
 
         attribute = AttributeFactory.createIpv6AddPrefix(ipPrefixes, AttributeFactory.COMPACT);
@@ -255,7 +256,7 @@ public class AttributeFactoryTest {
     @Test
     public void testCreateIpv6DeletePrefix() throws Exception {
         List<IpPrefix> ipPrefixes = new ArrayList<>();
-        ipPrefixes.add(new IpPrefix("127.0.0.0/32".toCharArray()));
+        ipPrefixes.add(IpPrefixBuilder.getDefaultInstance("127.0.0.0/32"));
         Attribute attribute = AttributeFactory.createIpv6DeletePrefix(ipPrefixes, AttributeFactory.COMPACT);
         assertEquals(AttributeType.Ipv6DeletePrefix, attribute.getType());
         assertEquals(AttributeVariant.Compact, attribute.getAttributeVariant());
@@ -268,7 +269,7 @@ public class AttributeFactoryTest {
 
         for (int i = 1; i <= 256; i++) {
             String ip = "127.0." + ((i > 254) ? i - 254 : 0) + "." + i % 255 + "/32";
-            ipPrefixes.add(new IpPrefix(ip.toCharArray()));
+            ipPrefixes.add(IpPrefixBuilder.getDefaultInstance(ip));
         }
 
         attribute = AttributeFactory.createIpv6DeletePrefix(ipPrefixes, AttributeFactory.COMPACT);
@@ -425,7 +426,6 @@ public class AttributeFactoryTest {
         payload[3] = 4;
         attr = AttributeFactory.decode(payload);
         assertNotNull(attr);
-
     }
 
     @Test
