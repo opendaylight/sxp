@@ -48,7 +48,7 @@ public class MappingRecordList extends ArrayList<MappingRecord> {
      * @return Byte representation of MappingRecord
      */
     private static byte[] toBytes(MappingRecord mappingRecord) {
-        String prefix = new String(mappingRecord.getAddress().getValue());
+        String prefix = mappingRecord.getAddress().stringValue();
         if (prefix.startsWith("/")) {
             prefix = prefix.substring(1);
         }
