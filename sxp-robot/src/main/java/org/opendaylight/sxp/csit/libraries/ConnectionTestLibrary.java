@@ -19,6 +19,7 @@ import org.opendaylight.sxp.csit.LibraryServer;
 import org.opendaylight.sxp.util.database.MasterDatabaseImpl;
 import org.opendaylight.sxp.util.database.SxpDatabaseImpl;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
@@ -98,7 +99,7 @@ public class ConnectionTestLibrary extends AbstractLibrary {
     @Override
     public synchronized void addNode(String nodeId, String version, String port, String password) {
         LibraryServer.putNode(SxpNode.createInstance(new NodeId(nodeId),
-                new SxpNodeIdentityBuilder().setSourceIp(new IpAddress(nodeId.toCharArray()))
+                new SxpNodeIdentityBuilder().setSourceIp(IpAddressBuilder.getDefaultInstance(nodeId))
                         .setCapabilities(Configuration.getCapabilities(Version.Version4))
                         .setEnabled(true)
                         .setVersion(getVersion(version))

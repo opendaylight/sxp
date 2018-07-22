@@ -31,7 +31,7 @@ import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
@@ -101,7 +101,7 @@ public class ConnectionsListenerTest {
         ConnectionBuilder builder = new ConnectionBuilder();
         builder.setTcpPort(new PortNumber(port));
         builder.setState(state);
-        builder.setPeerAddress(new IpAddress(ip.toCharArray()));
+        builder.setPeerAddress(IpAddressBuilder.getDefaultInstance(ip));
         return builder.build();
     }
 
@@ -147,11 +147,11 @@ public class ConnectionsListenerTest {
     @Test
     public void testGetIdentifier() throws Exception {
         assertNotNull(identityListener.getIdentifier(new ConnectionBuilder().setTcpPort(new PortNumber(64))
-                .setPeerAddress(new IpAddress("1.1.1.1".toCharArray()))
+                .setPeerAddress(IpAddressBuilder.getDefaultInstance("1.1.1.1"))
                 .build(), getIdentifier()));
 
         assertTrue(identityListener.getIdentifier(new ConnectionBuilder().setTcpPort(new PortNumber(64))
-                .setPeerAddress(new IpAddress("1.1.1.1".toCharArray()))
+                .setPeerAddress(IpAddressBuilder.getDefaultInstance("1.1.1.1"))
                 .build(), getIdentifier()).getTargetType().equals(Connection.class));
     }
 

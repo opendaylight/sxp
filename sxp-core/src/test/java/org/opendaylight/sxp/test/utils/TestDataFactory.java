@@ -12,7 +12,8 @@ import java.util.Collections;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
@@ -56,7 +57,7 @@ public final class TestDataFactory {
                         .build())).build());
         builder.setVersion(version);
         builder.setTcpPort(new PortNumber(port));
-        builder.setSourceIp(new IpAddress(ip.toCharArray()));
+        builder.setSourceIp(IpAddressBuilder.getDefaultInstance(ip));
         builder.setTimers(new TimersBuilder().setDeleteHoldDownTime(deleteHoldDownTimer).setRetryOpenTime(retryOpenTime).build());
         builder.setMessageBuffering(
                 new MessageBufferingBuilder().setInBuffer(50).setOutBuffer(150).build());
@@ -78,7 +79,7 @@ public final class TestDataFactory {
 
     public static MasterDatabaseBinding createMasterDBBinding(String prefix, int sgt, OriginType originType, String... peers) {
         MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder()
-                .setIpPrefix(new IpPrefix(prefix.toCharArray()))
+                .setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix))
                 .setSecurityGroupTag(new Sgt(sgt))
                 .setOrigin(originType)
                 .setTimestamp(TimeConv.toDt(System.currentTimeMillis()));

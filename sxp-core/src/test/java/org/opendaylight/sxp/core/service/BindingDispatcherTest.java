@@ -8,7 +8,6 @@
 
 package org.opendaylight.sxp.core.service;
 
-import io.netty.channel.ChannelHandlerContext;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -18,6 +17,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.netty.channel.ChannelHandlerContext;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,7 +32,7 @@ import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
@@ -64,7 +64,7 @@ public class BindingDispatcherTest {
         List<T> bindings = new ArrayList<>();
         MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
         for (String s : strings) {
-            bindings.add((T) bindingBuilder.setIpPrefix(new IpPrefix(s.toCharArray())).build());
+            bindings.add((T) bindingBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(s)).build());
         }
         return bindings;
     }

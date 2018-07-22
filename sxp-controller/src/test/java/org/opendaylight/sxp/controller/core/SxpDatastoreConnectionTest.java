@@ -32,7 +32,7 @@ import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimers;
@@ -72,7 +72,7 @@ public class SxpDatastoreConnectionTest {
         PowerMockito.when(sxpNode.getWorker()).thenReturn(worker);
         connection =
                 SxpDatastoreConnection.create(datastoreAccess, sxpNode,
-                        new ConnectionBuilder().setPeerAddress(new IpAddress("127.0.0.1".toCharArray()))
+                        new ConnectionBuilder().setPeerAddress(IpAddressBuilder.getDefaultInstance("127.0.0.1"))
                                 .setTcpPort(new PortNumber(64999))
                                 .setMode(ConnectionMode.None)
                                 .setState(ConnectionState.On)

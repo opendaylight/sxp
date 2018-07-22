@@ -31,7 +31,7 @@ import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeer;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.sxp.peers.SxpPeerBuilder;
@@ -95,7 +95,7 @@ public class PeerGroupListenerTest {
         builder.setName(name);
         List<SxpPeer> peerList = new ArrayList<>();
         for (int i = 0; i < peers; i++) {
-            peerList.add(new SxpPeerBuilder().setPeerAddress(new IpAddress(("1.0.0." + i).toCharArray())).build());
+            peerList.add(new SxpPeerBuilder().setPeerAddress(IpAddressBuilder.getDefaultInstance("1.0.0." + i)).build());
         }
         builder.setSxpPeers(new SxpPeersBuilder().setSxpPeer(peerList).build());
         return builder.build();

@@ -40,8 +40,9 @@ import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv6Prefix;
@@ -212,7 +213,7 @@ public class SxpRpcServiceImplTest {
 
     private MasterDatabaseBinding getBinding(String prefix, int sgt, OriginType origin, String... peers) {
         MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
-        bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        bindingBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setOrigin(origin);
         bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
@@ -249,7 +250,7 @@ public class SxpRpcServiceImplTest {
     private Connection getConnection(String ip, Integer port) {
         ConnectionBuilder connection = new ConnectionBuilder();
         connection.setTcpPort(port != null ? new PortNumber(port) : null);
-        connection.setPeerAddress(ip != null ? new IpAddress(ip.toCharArray()) : null);
+        connection.setPeerAddress(ip != null ? IpAddressBuilder.getDefaultInstance(ip) : null);
         return connection.build();
     }
 
@@ -646,7 +647,7 @@ public class SxpRpcServiceImplTest {
                 service.deleteBindings(new DeleteBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(Collections.singletonList(new BindingBuilder().setSgt(new Sgt(112))
-                                .setIpPrefix(Collections.singletonList(new IpPrefix("1.1.1.1/32".toCharArray())))
+                                .setIpPrefix(Collections.singletonList(IpPrefixBuilder.getDefaultInstance("1.1.1.1/32")))
                                 .build()))
                         .build()).get();
         assertNotNull(result);
@@ -991,7 +992,7 @@ public class SxpRpcServiceImplTest {
         result =
                 service.deleteConnectionTemplate(
                         new DeleteConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
-                                .setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()))
+                                .setTemplatePrefix(IpPrefixBuilder.getDefaultInstance("0.0.0.0/0"))
                                 .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -1001,7 +1002,7 @@ public class SxpRpcServiceImplTest {
         result =
                 service.deleteConnectionTemplate(
                         new DeleteConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
-                                .setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()))
+                                .setTemplatePrefix(IpPrefixBuilder.getDefaultInstance("0.0.0.0/0"))
                                 .setDomainName(SxpNode.DEFAULT_DOMAIN)
                                 .build()).get();
         assertNotNull(result);
@@ -1040,7 +1041,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.addConnectionTemplate(new AddConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
-                        .setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()))
+                        .setTemplatePrefix(IpPrefixBuilder.getDefaultInstance("0.0.0.0/0"))
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -1050,7 +1051,7 @@ public class SxpRpcServiceImplTest {
         result =
                 service.addConnectionTemplate(new AddConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
                         .setDomainName(SxpNode.DEFAULT_DOMAIN)
-                        .setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()))
+                        .setTemplatePrefix(IpPrefixBuilder.getDefaultInstance("0.0.0.0/0"))
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());

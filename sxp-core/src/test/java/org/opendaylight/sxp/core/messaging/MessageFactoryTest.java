@@ -29,7 +29,7 @@ import org.opendaylight.sxp.util.exception.message.attribute.AttributeNotFoundEx
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
@@ -79,7 +79,7 @@ public class MessageFactoryTest {
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
         bindingBuilder.setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
-        bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        bindingBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix));
         return bindingBuilder.build();
     }
 
@@ -128,7 +128,6 @@ public class MessageFactoryTest {
                 new byte[] {0, 0, 0, 30, 0, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 1, 80, 5, 4, -64, -88, 0, 1, 80, 7, 4, 0, 120,
                         0, -106};
         assertArrayEquals(result, toBytes(message));
-
     }
 
     @Test
@@ -291,29 +290,28 @@ public class MessageFactoryTest {
                 (Ipv4AddPrefixAttribute) AttributeList.get(message.getAttribute(), AttributeType.Ipv4AddPrefix);
         assertTrue(ipv4AddPrefixAttribute.getIpv4AddPrefixAttributes()
                 .getIpPrefix()
-                .contains(new IpPrefix("10.10.10.10/30".toCharArray())));
+                .contains(IpPrefixBuilder.getDefaultInstance("10.10.10.10/30")));
 
         Ipv6AddPrefixAttribute
                 ipv6AddPrefixAttribute =
                 (Ipv6AddPrefixAttribute) AttributeList.get(message.getAttribute(), AttributeType.Ipv6AddPrefix);
         assertTrue(ipv6AddPrefixAttribute.getIpv6AddPrefixAttributes()
                 .getIpPrefix()
-                .contains(new IpPrefix("2001:0:0:0:0:0:0:0/64".toCharArray())));
+                .contains(IpPrefixBuilder.getDefaultInstance("2001:0:0:0:0:0:0:0/64")));
 
         Ipv4DeletePrefixAttribute
                 ipv4DeletePrefixAttribute =
                 (Ipv4DeletePrefixAttribute) AttributeList.get(message.getAttribute(), AttributeType.Ipv4DeletePrefix);
         assertTrue(ipv4DeletePrefixAttribute.getIpv4DeletePrefixAttributes()
                 .getIpPrefix()
-                .contains(new IpPrefix("192.168.0.1/32".toCharArray())));
+                .contains(IpPrefixBuilder.getDefaultInstance("192.168.0.1/32")));
 
         Ipv6DeletePrefixAttribute
                 ipv6DeletePrefixAttribute =
                 (Ipv6DeletePrefixAttribute) AttributeList.get(message.getAttribute(), AttributeType.Ipv6DeletePrefix);
         assertTrue(ipv6DeletePrefixAttribute.getIpv6DeletePrefixAttributes()
                 .getIpPrefix()
-                .contains(new IpPrefix("2002:0:0:0:0:0:0:1/128".toCharArray())));
-
+                .contains(IpPrefixBuilder.getDefaultInstance("2002:0:0:0:0:0:0:1/128")));
     }
 
     @Test
@@ -345,7 +343,6 @@ public class MessageFactoryTest {
         message.release();
         assertTrue(notification instanceof OpenMessageLegacy);
         assertEquals(MessageType.Open, ((OpenMessageLegacy) notification).getType());
-
     }
 
     @Test
@@ -369,7 +366,6 @@ public class MessageFactoryTest {
         message.release();
         assertTrue(notification instanceof OpenMessageLegacy);
         assertEquals(MessageType.OpenResp, ((OpenMessageLegacy) notification).getType());
-
     }
 
     @Test
@@ -393,7 +389,6 @@ public class MessageFactoryTest {
         notification = MessageFactory.parse(Version.Version3, message);
         assertTrue(notification instanceof UpdateMessageLegacy);
         assertEquals(MessageType.Update, ((UpdateMessageLegacy) notification).getType());
-
     }
 
     @Test

@@ -37,7 +37,7 @@ import org.opendaylight.sxp.controller.listeners.spi.Listener;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
@@ -137,7 +137,7 @@ public class NodeIdentityListenerTest {
                 new SxpDomainBuilder().setConnections(new ConnectionsBuilder().build()).build())).build());
         builder.setVersion(version);
         builder.setTcpPort(new PortNumber(port));
-        builder.setSourceIp(new IpAddress(ip.toCharArray()));
+        builder.setSourceIp(IpAddressBuilder.getDefaultInstance(ip));
         builder.setTimers(new TimersBuilder().setDeleteHoldDownTime(deleteHoldDownTimer).build());
         builder.setMessageBuffering(
                 new MessageBufferingBuilder().setInBuffer(inBuffer).setOutBuffer(outBuffer).build());

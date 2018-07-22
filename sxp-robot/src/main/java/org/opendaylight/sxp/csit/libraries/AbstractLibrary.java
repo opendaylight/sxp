@@ -12,7 +12,7 @@ import com.google.common.base.Preconditions;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.csit.LibraryServer;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.fields.ConnectionTimersBuilder;
@@ -106,7 +106,7 @@ public abstract class AbstractLibrary extends AbstractClassLibrary implements Au
             String password) {
         Preconditions.checkNotNull(node)
                 .addConnection(new ConnectionBuilder().setVersion(version)
-                        .setPeerAddress(new IpAddress(ip.toCharArray()))
+                        .setPeerAddress(IpAddressBuilder.getDefaultInstance(ip))
                         .setMode(mode)
                         .setTcpPort(new PortNumber(Integer.parseInt(Preconditions.checkNotNull(port))))
                         .setCapabilities(Configuration.getCapabilities(version))
@@ -136,7 +136,7 @@ public abstract class AbstractLibrary extends AbstractClassLibrary implements Au
     @ArgumentNames({"node_id", "version", "port", "password"})
     public synchronized void addNode(String nodeId, String version, String port, String password) {
         LibraryServer.putNode(SxpNode.createInstance(new NodeId(nodeId),
-                new SxpNodeIdentityBuilder().setSourceIp(new IpAddress(nodeId.toCharArray()))
+                new SxpNodeIdentityBuilder().setSourceIp(IpAddressBuilder.getDefaultInstance(nodeId))
                         .setCapabilities(Configuration.getCapabilities(Version.Version4))
                         .setEnabled(true)
                         .setName(SOURCE)

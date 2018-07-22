@@ -21,7 +21,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.opendaylight.sxp.route.spi.SystemCall;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinitionBuilder;
 
 /**
@@ -41,8 +41,8 @@ public class LinuxRoutingServiceTest {
         Mockito.when(systemCall.execute(Matchers.anyString())).thenReturn(process);
         service =
                 new LinuxRoutingService(systemCall, new RoutingDefinitionBuilder().setInterface(ifName)
-                        .setNetmask(new IpAddress(netMask.toCharArray()))
-                        .setIpAddress(new IpAddress(virtualIp.toCharArray()))
+                        .setNetmask(IpAddressBuilder.getDefaultInstance(netMask))
+                        .setIpAddress(IpAddressBuilder.getDefaultInstance(virtualIp))
                         .build());
         mockCommand("");
         mockCommand(0);
@@ -93,14 +93,14 @@ public class LinuxRoutingServiceTest {
 
     @Test
     public void setNetmask() throws Exception {
-        service.setNetmask(new IpAddress("255.255.0.0".toCharArray()));
+        service.setNetmask(IpAddressBuilder.getDefaultInstance("255.255.0.0"));
         Assert.assertEquals("Expected \"255.255.0.0\", got", "255.255.0.0", addressToString(service.getNetmask()));
 
         service.addRouteForCurrentService();
-        service.setNetmask(new IpAddress("255.255.0.0".toCharArray()));
+        service.setNetmask(IpAddressBuilder.getDefaultInstance("255.255.0.0"));
         Assert.assertEquals("Expected \"255.255.0.0\", got", "255.255.0.0", addressToString(service.getNetmask()));
 
-        service.setNetmask(new IpAddress("255.0.0.0".toCharArray()));
+        service.setNetmask(IpAddressBuilder.getDefaultInstance("255.0.0.0"));
         Assert.assertEquals("Expected \"255.0.0.0\", got", "255.0.0.0", addressToString(service.getNetmask()));
     }
 

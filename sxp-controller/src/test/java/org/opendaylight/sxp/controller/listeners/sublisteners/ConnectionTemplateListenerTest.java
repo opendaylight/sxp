@@ -32,6 +32,7 @@ import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
@@ -107,7 +108,7 @@ public class ConnectionTemplateListenerTest {
             Version version) {
         ConnectionTemplateBuilder builder = new ConnectionTemplateBuilder();
         builder.setTemplateTcpPort(new PortNumber(port));
-        builder.setTemplatePrefix(new IpPrefix(prefix.toCharArray()));
+        builder.setTemplatePrefix(IpPrefixBuilder.getDefaultInstance(prefix));
         builder.setTemplatePassword(pass);
         builder.setTemplateMode(mode);
         builder.setTemplateVersion(version);
@@ -177,11 +178,11 @@ public class ConnectionTemplateListenerTest {
     public void testGetIdentifier() throws Exception {
         assertNotNull(identityListener.getIdentifier(
                 new ConnectionTemplateBuilder().setTemplateTcpPort(new PortNumber(64))
-                        .setTemplatePrefix(new IpPrefix("1.1.1.1/32".toCharArray()))
+                        .setTemplatePrefix(IpPrefixBuilder.getDefaultInstance("1.1.1.1/32"))
                         .build(), getIdentifier()));
 
         assertTrue(identityListener.getIdentifier(new ConnectionTemplateBuilder().setTemplateTcpPort(new PortNumber(64))
-                .setTemplatePrefix(new IpPrefix("1.1.1.1/32".toCharArray()))
+                .setTemplatePrefix(IpPrefixBuilder.getDefaultInstance("1.1.1.1/32"))
                 .build(), getIdentifier()).getTargetType().equals(ConnectionTemplate.class));
     }
 

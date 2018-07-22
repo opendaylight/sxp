@@ -9,6 +9,7 @@
 package org.opendaylight.sxp.route.core;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinition;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinitionBuilder;
 
@@ -23,8 +24,8 @@ public class RouteTestFactory {
      * @return dummy routing definition
      */
     static RoutingDefinition createDummyRoutingDef(final int idSeed, final int valueSeed) {
-        final IpAddress virtualIp = new IpAddress(("1.2.3." + idSeed).toCharArray());
-        final IpAddress netmask = new IpAddress(("255.255.255." + valueSeed).toCharArray());
+        final IpAddress virtualIp = IpAddressBuilder.getDefaultInstance("1.2.3." + idSeed);
+        final IpAddress netmask = IpAddressBuilder.getDefaultInstance("255.255.255." + valueSeed);
 
         return new RoutingDefinitionBuilder().setInterface("eth" + valueSeed)
                 .setIpAddress(virtualIp)

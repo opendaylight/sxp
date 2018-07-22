@@ -95,7 +95,7 @@ public class MappingRecord extends ArrayList<Tlv> {
      */
     public static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.mapping.records.fields.MappingRecord create(
             AttributeType operationCode, IpPrefix prefix, Sgt sgt) {
-        String _prefix = new String(prefix.getValue());
+        String _prefix = prefix.stringValue();
         if (_prefix.startsWith("/")) {
             _prefix = _prefix.substring(1);
         }

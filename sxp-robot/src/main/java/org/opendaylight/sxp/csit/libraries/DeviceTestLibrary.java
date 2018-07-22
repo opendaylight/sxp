@@ -24,7 +24,9 @@ import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.csit.LibraryServer;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
@@ -65,7 +67,7 @@ public class DeviceTestLibrary extends AbstractLibrary {
                         jgen.writeStartObject();
                         jgen.writeNumberField("sgt", value.getSecurityGroupTag().getValue());
                         jgen.writeArrayFieldStart("ip-prefix");
-                        jgen.writeString(new String(value.getIpPrefix().getValue()));
+                        jgen.writeString(new String(value.getIpPrefix().stringValue()));
                         jgen.writeEndArray();
                         jgen.writeEndObject();
                     }
@@ -77,7 +79,7 @@ public class DeviceTestLibrary extends AbstractLibrary {
     @Override
     public synchronized void addNode(String nodeId, String version, String port, String password) {
         LibraryServer.putNode(SxpNode.createInstance(new NodeId(nodeId),
-                new SxpNodeIdentityBuilder().setSourceIp(new IpAddress("0.0.0.0".toCharArray()))
+                new SxpNodeIdentityBuilder().setSourceIp(IpAddressBuilder.getDefaultInstance("0.0.0.0"))
                         .setCapabilities(Configuration.getCapabilities(Version.Version4))
                         .setEnabled(true)
                         .setName(SOURCE)
@@ -135,7 +137,7 @@ public class DeviceTestLibrary extends AbstractLibrary {
         bindingBuilder.setPeerSequence(new PeerSequenceBuilder().setPeer(new ArrayList<>()).build());
         bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
-        bindingBuilder.setIpPrefix(new IpPrefix(Objects.requireNonNull(prefix).toCharArray()));
+        bindingBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(Objects.requireNonNull(prefix)));
         bindingBuilder.setOrigin(BindingOriginsConfig.LOCAL_ORIGIN);
         return bindingBuilder.build();
     }

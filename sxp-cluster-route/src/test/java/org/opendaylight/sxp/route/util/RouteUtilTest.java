@@ -18,16 +18,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.route.spi.Routing;
-import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
-import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinition;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinitionBuilder;
 
@@ -38,14 +35,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212
 public class RouteUtilTest {
 
     private static final String DUMMY_ADDRESS_IPV4 = "1.2.3.4";
-
     private static final String DUMMY_NETMASK_IPV4 = "255.254.253.252";
+    private static final String DUMMY_IFACE = "iface123";
 
     @Rule public ExpectedException thrown = ExpectedException.none();
-    @Mock public ThreadsWorker threadsWorker;
-    @Mock private MasterDatabaseInf masterDatabase;
-    @Mock private SxpDatabaseInf sxpDatabase;
-    public static final String DUMMY_IFACE = "iface123";
 
     @Test
     public void addressToString_NPE() throws Exception {
@@ -55,14 +48,14 @@ public class RouteUtilTest {
 
     @Test
     public void addressToString() throws Exception {
-        final String actual = RouteUtil.addressToString(new IpAddress(DUMMY_ADDRESS_IPV4.toCharArray()));
+        final String actual = RouteUtil.addressToString(IpAddressBuilder.getDefaultInstance(DUMMY_ADDRESS_IPV4));
         Assert.assertEquals(DUMMY_ADDRESS_IPV4, actual);
     }
 
     @Test
     public void findSxpNodesOnVirtualIp_empty() throws Exception {
         final Collection<SxpNode> sxpNodes = Collections.emptyList();
-        final IpAddress virtualIp = new IpAddress(DUMMY_ADDRESS_IPV4.toCharArray());
+        final IpAddress virtualIp = IpAddressBuilder.getDefaultInstance(DUMMY_ADDRESS_IPV4);
         final Collection<SxpNode> actual = RouteUtil.findSxpNodesOnVirtualIp(virtualIp, sxpNodes);
 
         Assert.assertEquals(0, actual.size());
@@ -71,7 +64,7 @@ public class RouteUtilTest {
     @Test
     public void findSxpNodesOnVirtualIp_not_found() throws Exception {
         final Collection<SxpNode> sxpNodes = Collections.singletonList(createSxpNode("5.6.7.8"));
-        final IpAddress virtualIp = new IpAddress(DUMMY_ADDRESS_IPV4.toCharArray());
+        final IpAddress virtualIp = IpAddressBuilder.getDefaultInstance(DUMMY_ADDRESS_IPV4);
 
         final Collection<SxpNode> actual = RouteUtil.findSxpNodesOnVirtualIp(virtualIp, sxpNodes);
 
@@ -83,7 +76,7 @@ public class RouteUtilTest {
         final Collection<SxpNode>
                 sxpNodes =
                 Lists.newArrayList(createSxpNode("5.6.7.8"), createSxpNode(DUMMY_ADDRESS_IPV4));
-        final IpAddress virtualIp = new IpAddress(DUMMY_ADDRESS_IPV4.toCharArray());
+        final IpAddress virtualIp = IpAddressBuilder.getDefaultInstance(DUMMY_ADDRESS_IPV4);
 
         final Collection<SxpNode> actual = RouteUtil.findSxpNodesOnVirtualIp(virtualIp, sxpNodes);
 
@@ -96,16 +89,16 @@ public class RouteUtilTest {
         final RoutingDefinition
                 routingDefinition =
                 new RoutingDefinitionBuilder().setInterface(DUMMY_IFACE)
-                        .setIpAddress(new IpAddress(DUMMY_ADDRESS_IPV4.toCharArray()))
-                        .setNetmask(new IpAddress(DUMMY_NETMASK_IPV4.toCharArray()))
+                        .setIpAddress(IpAddressBuilder.getDefaultInstance(DUMMY_ADDRESS_IPV4))
+                        .setNetmask(IpAddressBuilder.getDefaultInstance(DUMMY_NETMASK_IPV4))
                         .build();
         final long beforeCreated = (System.currentTimeMillis() / 1000) * 1000;
         final RoutingDefinition
                 actual =
                 RouteUtil.createOperationalRouteDefinition(routingDefinition, true, "dummy explanation");
 
-        Assert.assertEquals(DUMMY_ADDRESS_IPV4, String.valueOf(actual.getIpAddress().getValue()));
-        Assert.assertEquals(DUMMY_NETMASK_IPV4, String.valueOf(actual.getNetmask().getValue()));
+        Assert.assertEquals(DUMMY_ADDRESS_IPV4, String.valueOf(actual.getIpAddress().stringValue()));
+        Assert.assertEquals(DUMMY_NETMASK_IPV4, String.valueOf(actual.getNetmask().stringValue()));
         Assert.assertEquals(DUMMY_IFACE, actual.getInterface());
         Assert.assertTrue(actual.isConsistent());
         Assert.assertEquals("dummy explanation", actual.getInfo());
@@ -116,13 +109,13 @@ public class RouteUtilTest {
     public void extractRoutingDefinition() throws Exception {
         final Routing routingService = Mockito.mock(Routing.class);
         Mockito.when(routingService.getInterface()).thenReturn(DUMMY_IFACE);
-        Mockito.when(routingService.getVirtualIp()).thenReturn(new IpAddress(DUMMY_ADDRESS_IPV4.toCharArray()));
-        Mockito.when(routingService.getNetmask()).thenReturn(new IpAddress(DUMMY_NETMASK_IPV4.toCharArray()));
+        Mockito.when(routingService.getVirtualIp()).thenReturn(IpAddressBuilder.getDefaultInstance(DUMMY_ADDRESS_IPV4));
+        Mockito.when(routingService.getNetmask()).thenReturn(IpAddressBuilder.getDefaultInstance(DUMMY_NETMASK_IPV4));
 
         final RoutingDefinition actual = RouteUtil.extractRoutingDefinition(routingService);
 
-        Assert.assertEquals(DUMMY_ADDRESS_IPV4, String.valueOf(actual.getIpAddress().getValue()));
-        Assert.assertEquals(DUMMY_NETMASK_IPV4, String.valueOf(actual.getNetmask().getValue()));
+        Assert.assertEquals(DUMMY_ADDRESS_IPV4, String.valueOf(actual.getIpAddress().stringValue()));
+        Assert.assertEquals(DUMMY_NETMASK_IPV4, String.valueOf(actual.getNetmask().stringValue()));
         Assert.assertEquals(DUMMY_IFACE, actual.getInterface());
     }
 

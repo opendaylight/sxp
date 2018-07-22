@@ -24,7 +24,7 @@ import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownPrefixException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
@@ -51,7 +51,7 @@ public class LegacyMessageFactoryTest {
         MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
-        bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        bindingBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix));
         return bindingBuilder.build();
     }
 
@@ -277,11 +277,10 @@ public class LegacyMessageFactoryTest {
                 record =
                 message.getMappingRecord().get(0);
         assertEquals(record.getOperationCode(), AttributeType.AddIpv4);
-        assertEquals(record.getAddress(), new IpPrefix("192.168.0.1/32".toCharArray()));
+        assertEquals(record.getAddress(), IpPrefixBuilder.getDefaultInstance("192.168.0.1/32"));
 
         record = message.getMappingRecord().get(1);
         assertEquals(record.getOperationCode(), AttributeType.DelIpv4);
-        assertEquals(record.getAddress(), new IpPrefix("192.168.0.2/32".toCharArray()));
-
+        assertEquals(record.getAddress(), IpPrefixBuilder.getDefaultInstance("192.168.0.2/32"));
     }
 }

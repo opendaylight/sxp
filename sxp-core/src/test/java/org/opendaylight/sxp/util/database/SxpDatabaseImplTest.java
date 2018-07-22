@@ -10,6 +10,7 @@ package org.opendaylight.sxp.util.database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -19,15 +20,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import static org.mockito.Matchers.any;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.filtering.PrefixListFilter;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv6Prefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
@@ -76,7 +78,7 @@ public class SxpDatabaseImplTest {
 
     private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, String... peers) {
         MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
-        bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
+        bindingBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix));
         bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
         PeerSequenceBuilder sequenceBuilder = new PeerSequenceBuilder();
         sequenceBuilder.setPeer(new ArrayList<>());
@@ -92,12 +94,11 @@ public class SxpDatabaseImplTest {
         return new ArrayList<>(Arrays.asList(binding));
     }
 
-    private <T extends SxpBindingFields, R extends SxpBindingFields> void assertBindings(List<T> bindings1,
-            List<R> bindings2) {
-        bindings1.stream()
-                .forEach(b -> assertTrue(bindings2.stream()
-                        .anyMatch(r -> r.getSecurityGroupTag().getValue().equals(b.getSecurityGroupTag().getValue())
-                                && Arrays.equals(r.getIpPrefix().getValue(), b.getIpPrefix().getValue()))));
+    private <T extends SxpBindingFields, R extends SxpBindingFields> void assertBindings(
+            List<T> bindings1, List<R> bindings2) {
+        bindings1.forEach(b -> assertTrue(bindings2.stream().anyMatch(
+                r -> Objects.equals(r.getSecurityGroupTag(), b.getSecurityGroupTag())
+                        && Objects.equals(r.getIpPrefix(), b.getIpPrefix()))));
     }
 
     private PrefixListEntry getPrefixListEntry(FilterEntryType entryType, PrefixListMatch prefixListMatch) {

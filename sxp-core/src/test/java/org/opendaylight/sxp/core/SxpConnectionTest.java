@@ -54,7 +54,7 @@ import org.opendaylight.sxp.util.exception.connection.SocketAddressNotRecognized
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownTimerTypeException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
@@ -134,7 +134,7 @@ public class SxpConnectionTest {
     private Connection mockConnection(ConnectionMode mode, ConnectionState state) {
         Connection connection = mock(Connection.class);
         when(connection.getMode()).thenReturn(mode);
-        when(connection.getPeerAddress()).thenReturn(new IpAddress(("127.0.0." + (++ip4Address)).toCharArray()));
+        when(connection.getPeerAddress()).thenReturn(IpAddressBuilder.getDefaultInstance("127.0.0." + (++ip4Address)));
         when(connection.getState()).thenReturn(state);
         when(connection.getVersion()).thenReturn(Version.Version4);
         ConnectionTimers timers = mock(ConnectionTimers.class);

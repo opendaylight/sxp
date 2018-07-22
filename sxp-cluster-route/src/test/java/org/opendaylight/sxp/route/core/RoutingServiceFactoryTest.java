@@ -17,7 +17,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opendaylight.sxp.route.spi.Routing;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinition;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinitionBuilder;
 
@@ -34,9 +34,9 @@ public class RoutingServiceFactoryTest {
     public void setUp() throws Exception {
         routingServiceFactory = new RoutingServiceFactory();
         routingDefinition =
-                new RoutingDefinitionBuilder().setIpAddress(new IpAddress("0.0.0.0".toCharArray()))
+                new RoutingDefinitionBuilder().setIpAddress(IpAddressBuilder.getDefaultInstance("0.0.0.0"))
                         .setInterface("eth0:0")
-                        .setNetmask(new IpAddress("255.255.255.0".toCharArray()))
+                        .setNetmask(IpAddressBuilder.getDefaultInstance("255.255.255.0"))
                         .build();
     }
 
