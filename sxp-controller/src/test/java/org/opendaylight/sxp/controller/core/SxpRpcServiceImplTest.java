@@ -446,6 +446,21 @@ public class SxpRpcServiceImplTest {
     }
 
     @Test
+    public void testGetNodeBindingsNotExistingDomain() throws Exception {
+        final RpcResult<GetNodeBindingsOutput>
+                result =
+                service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
+                        .setDomainName("guest")
+                        .setBindingsRange(GetNodeBindingsInput.BindingsRange.All)
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertNotNull(result.getResult().getBinding());
+        assertTrue(result.getResult().getBinding().isEmpty());
+    }
+
+    @Test
     public void testGetEmptyNodeBindings() throws Exception {
         final RpcResult<GetNodeBindingsOutput>
                 result =
