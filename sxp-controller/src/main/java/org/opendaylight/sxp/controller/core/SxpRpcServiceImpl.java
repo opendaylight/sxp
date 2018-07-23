@@ -219,10 +219,22 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         return datastoreAccess;
     }
 
-    private MasterDatabaseInf getMasterDatabase(final String nodeId, final String domain) {
-        return Configuration.getRegisteredNode(nodeId)
-                .getDomain(domain)
-                .getMasterDatabase();
+    /**
+     * Get master database for the specified domain of the node.
+     * <p>
+     * It is responsibility of the caller to ensure that the node exists in data-store
+     * and it is registered in configuration.
+     *
+     * @param nodeId Node identifier
+     * @param domainName Domain name of the domain in the node
+     * @return master database of specified domain in the node or {@code null} if domain does not exist
+     */
+    private MasterDatabaseInf getMasterDatabase(final String nodeId, final String domainName) {
+        final org.opendaylight.sxp.core.SxpDomain domain = Configuration.getRegisteredNode(nodeId).getDomain(domainName);
+        if (domain == null) {
+            return null;
+        }
+        return domain.getMasterDatabase();
     }
 
     /**

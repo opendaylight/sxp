@@ -176,7 +176,7 @@ public class SxpRpcServiceImplTest {
                 any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class)))
                 .thenReturn(
                         mock(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class));
-        when(node.getDomain(anyString())).thenReturn(domain);
+        when(node.getDomain(eq(SxpNode.DEFAULT_DOMAIN))).thenReturn(domain);
         when(domain.getMasterDatabase()).thenReturn(masterDatabase);
         Configuration.register(node);
         service = new SxpRpcServiceImpl(mock(DataBroker.class));
@@ -443,6 +443,21 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertNotNull(result.getResult().getConnections());
+    }
+
+    @Test
+    public void testGetNodeBindingsNotExistingDomain() throws Exception {
+        final RpcResult<GetNodeBindingsOutput>
+                result =
+                service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName("guest")
+                        .setBindingsRange(GetNodeBindingsInput.BindingsRange.All)
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertNotNull(result.getResult().getBinding());
+        assertTrue(result.getResult().getBinding().isEmpty());
     }
 
     @Test
