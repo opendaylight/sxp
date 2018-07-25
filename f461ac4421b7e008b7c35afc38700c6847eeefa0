@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "4aea59fb_f8650a41",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/SxpConnection.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 1497,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-07-25T14:48:22Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "02666608_5f586af6",
+      "range": {
+        "startLine": 1497,
+        "startChar": 12,
+        "endLine": 1497,
+        "endChar": 15
+      },
+      "revId": "f461ac4421b7e008b7c35afc38700c6847eeefa0",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "fe17a75f_e97a0d46",
         "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/SxpNode.java",
         "patchSetId": 1
@@ -36,6 +60,24 @@
       "writtenOn": "2018-07-25T14:41:03Z",
       "side": 1,
       "message": "remove xpDomains.get(connection.getDomainName()",
+      "revId": "f461ac4421b7e008b7c35afc38700c6847eeefa0",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "73bba459_be47f343",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/SxpNode.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 205,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-07-25T14:48:22Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "fe17a75f_e97a0d46",
       "revId": "f461ac4421b7e008b7c35afc38700c6847eeefa0",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
@@ -59,6 +101,24 @@
     },
     {
       "key": {
+        "uuid": "2b3965f8_67e7b2fd",
+        "filename": "sxp-core/src/main/java/org/opendaylight/sxp/core/behavior/Sxpv4.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 349,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-07-25T14:48:22Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "4169cf98_4fd9a750",
+      "revId": "f461ac4421b7e008b7c35afc38700c6847eeefa0",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "90ca5f39_612fe183",
         "filename": "sxp-core/src/test/java/org/opendaylight/sxp/core/it/BindingOriginsIT.java",
         "patchSetId": 1
@@ -70,6 +130,24 @@
       "writtenOn": "2018-07-25T14:41:03Z",
       "side": 1,
       "message": "I am not sure but maybe using just:\nthrows Exception would be better as is in unit tests?",
+      "revId": "f461ac4421b7e008b7c35afc38700c6847eeefa0",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f027c5ba_620beaa9",
+        "filename": "sxp-core/src/test/java/org/opendaylight/sxp/core/it/BindingOriginsIT.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 119,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-07-25T14:48:22Z",
+      "side": 1,
+      "message": "I do not agree. Defining exact exceptions states clearly what is allowed to happen. Unit test or not.",
+      "parentUuid": "90ca5f39_612fe183",
       "revId": "f461ac4421b7e008b7c35afc38700c6847eeefa0",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
@@ -93,6 +171,24 @@
     },
     {
       "key": {
+        "uuid": "ca05b1c5_d05bc173",
+        "filename": "sxp-core/src/test/java/org/opendaylight/sxp/core/it/BindingOriginsIT.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 165,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-07-25T14:48:22Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "fa93ceb5_e84230e3",
+      "revId": "f461ac4421b7e008b7c35afc38700c6847eeefa0",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "11ebd7ce_abed8f0c",
         "filename": "sxp-core/src/test/java/org/opendaylight/sxp/core/it/BindingOriginsIT.java",
         "patchSetId": 1
@@ -110,6 +206,24 @@
     },
     {
       "key": {
+        "uuid": "d5a1377a_9384379d",
+        "filename": "sxp-core/src/test/java/org/opendaylight/sxp/core/it/BindingOriginsIT.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 171,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-07-25T14:48:22Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "11ebd7ce_abed8f0c",
+      "revId": "f461ac4421b7e008b7c35afc38700c6847eeefa0",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "756b7e00_f1024383",
         "filename": "sxp-core/src/test/java/org/opendaylight/sxp/core/it/BindingOriginsIT.java",
         "patchSetId": 1
@@ -121,6 +235,30 @@
       "writtenOn": "2018-07-25T14:41:03Z",
       "side": 1,
       "message": "personally I prefer:\nreturn sgt.equals(bindings.get(0).getSecurityGroupTag())",
+      "range": {
+        "startLine": 192,
+        "startChar": 12,
+        "endLine": 192,
+        "endChar": 68
+      },
+      "revId": "f461ac4421b7e008b7c35afc38700c6847eeefa0",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d11f7b4d_fce82eb6",
+        "filename": "sxp-core/src/test/java/org/opendaylight/sxp/core/it/BindingOriginsIT.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 192,
+      "author": {
+        "id": 5872
+      },
+      "writtenOn": "2018-07-25T14:48:22Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "756b7e00_f1024383",
       "range": {
         "startLine": 192,
         "startChar": 12,
