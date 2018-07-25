@@ -93,7 +93,7 @@ public class sxp135 {
         start2.get();
         LOG.debug("Started node 2");
         LOG.debug("Putting a dummy binding into node nr. 2");
-        node2.putLocalBindingsMasterDatabase(Collections.singletonList(dummyBinding), DEFAULT_DOMAIN);
+        node2.putBindingsMasterDatabase(Collections.singletonList(dummyBinding), DEFAULT_DOMAIN);
     }
 
     @Test

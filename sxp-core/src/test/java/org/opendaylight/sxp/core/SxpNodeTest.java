@@ -371,27 +371,27 @@ public class SxpNodeTest {
     }
 
     @Test
-    public void testPutLocalBindingsMasterDatabase() throws Exception {
+    public void testPutBindingsMasterDatabase() throws Exception {
         assertNotNull(
-                node.putLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "global"));
+                node.putBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "global"));
         verify(databaseProvider).addBindings(anyList());
         assertNotNull(
-                node.putLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "global"));
+                node.putBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "global"));
         verify(databaseProvider, times(2)).addBindings(anyList());
         exception.expect(DomainNotFoundException.class);
-        node.putLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "badDomain");
+        node.putBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "badDomain");
     }
 
     @Test
-    public void testRemoveLocalBindingsMasterDatabase() throws Exception {
-        assertNotNull(node.removeLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)),
+    public void testRemoveBindingsMasterDatabase() throws Exception {
+        assertNotNull(node.removeBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)),
                 "global"));
         verify(databaseProvider).deleteBindings(anyList());
-        assertNotNull(node.removeLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)),
+        assertNotNull(node.removeBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)),
                 "global"));
         verify(databaseProvider, times(2)).deleteBindings(anyList());
         exception.expect(DomainNotFoundException.class);
-        node.removeLocalBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "badDomain");
+        node.removeBindingsMasterDatabase(Collections.singletonList(getBinding("1.1.1.1/32", 56)), "badDomain");
     }
 
     @Test

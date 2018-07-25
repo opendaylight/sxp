@@ -23,9 +23,7 @@ import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.csit.LibraryServer;
 import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
@@ -152,7 +150,7 @@ public class DeviceTestLibrary extends AbstractLibrary {
     @ArgumentNames({"prefix", "sgt", "node_id"})
     public synchronized boolean addBinding(String prefix, String sgt, String nodeId) {
         return !LibraryServer.getNode(Objects.requireNonNull(nodeId))
-                .putLocalBindingsMasterDatabase(Collections.singletonList(getBinding(prefix, Integer.parseInt(sgt))),
+                .putBindingsMasterDatabase(Collections.singletonList(getBinding(prefix, Integer.parseInt(sgt))),
                         SxpNode.DEFAULT_DOMAIN)
                 .isEmpty();
     }
@@ -167,7 +165,7 @@ public class DeviceTestLibrary extends AbstractLibrary {
     @ArgumentNames({"prefix", "sgt", "node_id"})
     public synchronized boolean deleteBinding(String prefix, String sgt, String nodeId) {
         return !LibraryServer.getNode(Objects.requireNonNull(nodeId))
-                .removeLocalBindingsMasterDatabase(Collections.singletonList(getBinding(prefix, Integer.parseInt(sgt))),
+                .removeBindingsMasterDatabase(Collections.singletonList(getBinding(prefix, Integer.parseInt(sgt))),
                         SxpNode.DEFAULT_DOMAIN)
                 .isEmpty();
     }
