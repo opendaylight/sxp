@@ -131,7 +131,7 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
     }
 
     @Override
-    public List<MasterDatabaseBinding> putLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings,
+    public List<MasterDatabaseBinding> putBindingsMasterDatabase(List<MasterDatabaseBinding> bindings,
             String domainName) throws DomainNotFoundException {
 
         final org.opendaylight.sxp.core.SxpDomain sxpDomain = getDomain(domainName);
@@ -145,7 +145,7 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
     }
 
     @Override
-    public List<MasterDatabaseBinding> removeLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings,
+    public List<MasterDatabaseBinding> removeBindingsMasterDatabase(List<MasterDatabaseBinding> bindings,
             String domainName) throws DomainNotFoundException {
 
         final org.opendaylight.sxp.core.SxpDomain sxpDomain = getDomain(domainName);

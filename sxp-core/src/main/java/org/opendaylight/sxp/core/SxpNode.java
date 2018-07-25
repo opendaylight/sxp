@@ -1102,35 +1102,13 @@ public class SxpNode {
     }
 
     /**
-     * Adds Bindings to database as Local bindings
-     *
-     * @deprecated replaced by {@link #putLocalBindingsMasterDatabase(List, String)}
-     * @param bindings MasterDatabase containing bindings that will be added
-     */
-    @Deprecated
-    public List<MasterDatabaseBinding> putLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings) {
-        return putLocalBindingsMasterDatabase(bindings, DEFAULT_DOMAIN);
-    }
-
-    /**
-     * Removes Local Bindings from database
-     *
-     * @deprecated replaced by {@link #removeLocalBindingsMasterDatabase(List, String)}
-     * @param bindings MasterDatabase containing bindings that will be removed
-     */
-    @Deprecated
-    public List<MasterDatabaseBinding> removeLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings) {
-        return removeLocalBindingsMasterDatabase(bindings, DEFAULT_DOMAIN);
-    }
-
-    /**
-     * Adds Bindings to database as Local bindings
+     * Adds Bindings to database
      *
      * @param bindings   MasterDatabase containing bindings that will be added
      * @param domainName Domain where bindings wil be added
      * @throws DomainNotFoundException if Domain does not exist
      */
-    public List<MasterDatabaseBinding> putLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings,
+    public List<MasterDatabaseBinding> putBindingsMasterDatabase(List<MasterDatabaseBinding> bindings,
             String domainName) {
         final SxpDomain sxpDomain = getDomain(domainName);
         if (sxpDomain == null) {
@@ -1145,13 +1123,13 @@ public class SxpNode {
     }
 
     /**
-     * Removes Local Bindings from database
+     * Removes Bindings from database
      *
      * @param bindings   MasterDatabase bindings that will be removed
      * @param domainName Domain from which bindings will be removed
      * @throws DomainNotFoundException if Domain does not exist
      */
-    public List<MasterDatabaseBinding> removeLocalBindingsMasterDatabase(List<MasterDatabaseBinding> bindings,
+    public List<MasterDatabaseBinding> removeBindingsMasterDatabase(List<MasterDatabaseBinding> bindings,
             String domainName) {
         final SxpDomain sxpDomain = getDomain(domainName);
         if (sxpDomain == null) {
