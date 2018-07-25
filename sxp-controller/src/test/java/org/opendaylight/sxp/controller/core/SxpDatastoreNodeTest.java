@@ -102,13 +102,13 @@ public class SxpDatastoreNodeTest {
 
     @Test
     public void testPutLocalBindingsMasterDatabase() throws Exception {
-        assertNotNull(node.putLocalBindingsMasterDatabase(Collections.emptyList(), SxpNode.DEFAULT_DOMAIN));
+        assertNotNull(node.putBindingsMasterDatabase(Collections.emptyList(), SxpNode.DEFAULT_DOMAIN));
         verify(dispatcher).propagateUpdate(anyList(), anyList(), anyList());
     }
 
     @Test
     public void testRemoveLocalBindingsMasterDatabase() throws Exception {
-        assertNotNull(node.removeLocalBindingsMasterDatabase(Collections.emptyList(), SxpNode.DEFAULT_DOMAIN));
+        assertNotNull(node.removeBindingsMasterDatabase(Collections.emptyList(), SxpNode.DEFAULT_DOMAIN));
         verify(dispatcher).propagateUpdate(anyList(), anyList(), anyList());
     }
 
