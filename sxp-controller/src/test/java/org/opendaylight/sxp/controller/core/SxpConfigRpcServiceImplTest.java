@@ -14,6 +14,8 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,7 +48,7 @@ public class SxpConfigRpcServiceImplTest {
 
     @Before
     @SuppressWarnings("unchecked")
-    public void init() {
+    public void setUp() {
         final DatastoreAccess datastoreAccess = mock(DatastoreAccess.class);
         when(datastoreAccess.putIfNotExists(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.CONFIGURATION))).thenReturn(true);
@@ -61,9 +63,46 @@ public class SxpConfigRpcServiceImplTest {
         service = new SxpConfigRpcServiceImpl(Mockito.mock(DataBroker.class));
     }
 
+    @After
+    public void tearDown() {
+        BindingOriginsConfig.INSTANCE.deleteConfiguration();
+    }
+
     @Test
     public void testAddBindingOrigin() throws Exception {
         assertTrue(addBindingOrigin("LOCAL", (short) 0).getResult().isResult());
+    }
+
+    @Test
+    public void testAddBindingOriginNullType() throws Exception {
+        final AddBindingOriginInput input = Mockito.mock(AddBindingOriginInput.class);
+        Mockito.when(input.getOrigin()).thenReturn(null);
+        Mockito.when(input.getPriority()).thenReturn((short) 1);
+
+        final RpcResult<AddBindingOriginOutput> result = service.addBindingOrigin(input).get();
+        Assert.assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddBindingOriginNullPriority() throws Exception {
+        final AddBindingOriginInput input = Mockito.mock(AddBindingOriginInput.class);
+        Mockito.when(input.getOrigin()).thenReturn(new OriginType("LOCAL"));
+        Mockito.when(input.getPriority()).thenReturn(null);
+
+        final RpcResult<AddBindingOriginOutput> result = service.addBindingOrigin(input).get();
+        Assert.assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddConflictingTypeBinding() throws Exception {
+        assertTrue(addBindingOrigin("LOCAL", (short) 0).getResult().isResult());
+        assertFalse(addBindingOrigin("LOCAL", (short) 1).getResult().isResult());
+    }
+
+    @Test
+    public void testAddConflictingPriorityBinding() throws Exception {
+        assertTrue(addBindingOrigin("LOCAL", (short) 0).getResult().isResult());
+        assertFalse(addBindingOrigin("NETWORK", (short) 0).getResult().isResult());
     }
 
     @Test
@@ -82,6 +121,55 @@ public class SxpConfigRpcServiceImplTest {
     }
 
     @Test
+    public void testUpdateBindingOriginNullType() throws Exception {
+        final UpdateBindingOriginInput input = Mockito.mock(UpdateBindingOriginInput.class);
+        Mockito.when(input.getOrigin()).thenReturn(null);
+        Mockito.when(input.getPriority()).thenReturn((short) 1);
+
+        final RpcResult<UpdateBindingOriginOutput> result = service.updateBindingOrigin(input).get();
+        Assert.assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    public void testUpdateBindingOriginNullPriority() throws Exception {
+        final UpdateBindingOriginInput input = Mockito.mock(UpdateBindingOriginInput.class);
+        Mockito.when(input.getOrigin()).thenReturn(new OriginType("LOCAL"));
+        Mockito.when(input.getPriority()).thenReturn(null);
+
+        final RpcResult<UpdateBindingOriginOutput> result = service.updateBindingOrigin(input).get();
+        Assert.assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    public void testUpdateBindingOriginNotExistingType() throws Exception {
+        // update not existing origin type
+        final UpdateBindingOriginInput input = new UpdateBindingOriginInputBuilder()
+                .setOrigin(new OriginType("NETWORK"))
+                .setPriority((short) 2)
+                .build();
+
+        final RpcResult<UpdateBindingOriginOutput> result = service.updateBindingOrigin(input).get();
+        assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    public void testUpdateBindingOriginConflictingPriority() throws Exception {
+        // add LOCAL binding origin
+        assertTrue(addBindingOrigin("LOCAL", (short) 1).getResult().isResult());
+        // add NETWORK binding origin
+        assertTrue(addBindingOrigin("NETWORK", (short) 2).getResult().isResult());
+
+        // try to update LOCAL binding origin to use priority of NETWORK origin
+        final UpdateBindingOriginInput input = new UpdateBindingOriginInputBuilder()
+                .setOrigin(new OriginType("LOCAL"))
+                .setPriority((short) 2)
+                .build();
+
+        final RpcResult<UpdateBindingOriginOutput> result = service.updateBindingOrigin(input).get();
+        assertFalse(result.getResult().isResult());
+    }
+
+    @Test
     public void testDeleteBindingOrigin() throws Exception {
         // add binding origin
         assertTrue(addBindingOrigin("CLUSTER", (short) 3).getResult().isResult());
@@ -96,6 +184,16 @@ public class SxpConfigRpcServiceImplTest {
     }
 
     @Test
+    public void testDeleteNotExistingBindingOrigin() throws Exception {
+        final DeleteBindingOriginInput input = new DeleteBindingOriginInputBuilder()
+                .setOrigin(new OriginType("CLUSTER"))
+                .build();
+
+        final RpcResult<DeleteBindingOriginOutput> result = service.deleteBindingOrigin(input).get();
+        assertFalse(result.getResult().isResult());
+    }
+
+    @Test
     public void testDeleteDefaultBindingOrigin() throws Exception {
         final DeleteBindingOriginInput localInput = new DeleteBindingOriginInputBuilder()
                 .setOrigin(BindingOriginsConfig.LOCAL_ORIGIN)
@@ -106,6 +204,16 @@ public class SxpConfigRpcServiceImplTest {
 
         assertFalse(service.deleteBindingOrigin(localInput).get().getResult().isResult());
         assertFalse(service.deleteBindingOrigin(networkInput).get().getResult().isResult());
+    }
+
+    @Test
+    public void testDeleteBindingOriginNullType() throws Exception {
+        final DeleteBindingOriginInput input = new DeleteBindingOriginInputBuilder()
+                .setOrigin(null)
+                .build();
+
+        final RpcResult<DeleteBindingOriginOutput> result = service.deleteBindingOrigin(input).get();
+        assertFalse(result.getResult().isResult());
     }
 
     private RpcResult<AddBindingOriginOutput> addBindingOrigin(String origin, Short priority) throws Exception {
