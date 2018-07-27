@@ -14,6 +14,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -67,6 +68,26 @@ public class SxpConfigRpcServiceImplTest {
     }
 
     @Test
+    public void testAddBindingOriginNullType() throws Exception {
+        final AddBindingOriginInput input = Mockito.mock(AddBindingOriginInput.class);
+        Mockito.when(input.getOrigin()).thenReturn(null);
+        Mockito.when(input.getPriority()).thenReturn((short) 1);
+
+        final RpcResult<AddBindingOriginOutput> result = service.addBindingOrigin(input).get();
+        Assert.assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddBindingOriginNullPriority() throws Exception {
+        final AddBindingOriginInput input = Mockito.mock(AddBindingOriginInput.class);
+        Mockito.when(input.getOrigin()).thenReturn(new OriginType("LOCAL"));
+        Mockito.when(input.getPriority()).thenReturn(null);
+
+        final RpcResult<AddBindingOriginOutput> result = service.addBindingOrigin(input).get();
+        Assert.assertFalse(result.getResult().isResult());
+    }
+
+    @Test
     public void testUpdateBindingOrigin() throws Exception {
         // add binding origin
         assertTrue(addBindingOrigin("NETWORK", (short) 1).getResult().isResult());
@@ -79,6 +100,26 @@ public class SxpConfigRpcServiceImplTest {
 
         final RpcResult<UpdateBindingOriginOutput> result = service.updateBindingOrigin(input).get();
         assertTrue(result.getResult().isResult());
+    }
+
+    @Test
+    public void testUpdateBindingOriginNullType() throws Exception {
+        final UpdateBindingOriginInput input = Mockito.mock(UpdateBindingOriginInput.class);
+        Mockito.when(input.getOrigin()).thenReturn(null);
+        Mockito.when(input.getPriority()).thenReturn((short) 1);
+
+        final RpcResult<UpdateBindingOriginOutput> result = service.updateBindingOrigin(input).get();
+        Assert.assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    public void testUpdateBindingOriginNullPriority() throws Exception {
+        final UpdateBindingOriginInput input = Mockito.mock(UpdateBindingOriginInput.class);
+        Mockito.when(input.getOrigin()).thenReturn(new OriginType("LOCAL"));
+        Mockito.when(input.getPriority()).thenReturn(null);
+
+        final RpcResult<UpdateBindingOriginOutput> result = service.updateBindingOrigin(input).get();
+        Assert.assertFalse(result.getResult().isResult());
     }
 
     @Test
@@ -106,6 +147,16 @@ public class SxpConfigRpcServiceImplTest {
 
         assertFalse(service.deleteBindingOrigin(localInput).get().getResult().isResult());
         assertFalse(service.deleteBindingOrigin(networkInput).get().getResult().isResult());
+    }
+
+    @Test
+    public void testDeleteBindingOriginNullType() throws Exception {
+        final DeleteBindingOriginInput input = new DeleteBindingOriginInputBuilder()
+                .setOrigin(null)
+                .build();
+
+        final RpcResult<DeleteBindingOriginOutput> result = service.deleteBindingOrigin(input).get();
+        assertFalse(result.getResult().isResult());
     }
 
     private RpcResult<AddBindingOriginOutput> addBindingOrigin(String origin, Short priority) throws Exception {
