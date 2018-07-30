@@ -142,9 +142,11 @@ public class LinuxRoutingService implements Routing {
             return true;
         } else if (executeCommand("sudo ifconfig " + interfaceName).replace(System.getProperty("line.separator"), "")
                 .matches(createVirtualIpRegisteredMatch())) {
-            return (isRouteActive = true);
+            isRouteActive = true;
+            return (true);
         }
-        return (isRouteActive = executeCommandRC(createIfaceUpCmd()) == 0);
+        isRouteActive = (executeCommandRC(createIfaceUpCmd()) == 0);
+        return (isRouteActive);
     }
 
     @Override
