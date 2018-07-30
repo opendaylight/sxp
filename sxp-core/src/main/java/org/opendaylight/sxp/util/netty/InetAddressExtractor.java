@@ -13,7 +13,7 @@ import io.netty.channel.ChannelHandlerContext;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
-public class InetAddressExtractor {
+public final class InetAddressExtractor {
 
     private InetAddressExtractor() {
     }

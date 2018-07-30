@@ -7,7 +7,6 @@
  */
 package org.opendaylight.sxp.core.behavior;
 
-import com.google.common.net.InetAddresses;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import java.net.InetAddress;
