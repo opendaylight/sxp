@@ -71,14 +71,16 @@ public class MasterDatabaseImpl extends MasterDatabase {
         }
         bindings.forEach(inputBinding -> {
             MasterDatabaseBinding storedBinding = bindingMap.get(inputBinding.getIpPrefix());
-            if (storedBinding != null) {
-                if (Objects.equals(storedBinding.getSecurityGroupTag(), inputBinding.getSecurityGroupTag())) {
-                    removed.add(bindingMap.remove(inputBinding.getIpPrefix()));
-                }
+            if (storedBinding != null && equalsBySgt(storedBinding, inputBinding)) {
+                removed.add(bindingMap.remove(inputBinding.getIpPrefix()));
             }
         });
         dbListener.onBindingsRemoved(removed);
         return removed;
+    }
+
+    private static <T extends SxpBindingFields> boolean equalsBySgt(MasterDatabaseBinding storedBinding, T inputBinding) {
+        return Objects.equals(storedBinding.getSecurityGroupTag(), inputBinding.getSecurityGroupTag());
     }
 
     @Override
