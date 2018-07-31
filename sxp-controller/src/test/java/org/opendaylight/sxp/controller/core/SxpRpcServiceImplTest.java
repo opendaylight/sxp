@@ -104,8 +104,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.do
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroupKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpPeerGroups;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpPeerGroupsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
@@ -157,12 +160,25 @@ public class SxpRpcServiceImplTest {
             Configuration.register(sxpNode);
             return true;
         });
+        final org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup sxpPeerGroup =
+                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroupBuilder()
+                        .setName(SxpNode.DEFAULT_DOMAIN)
+                        .build();
+        final SxpPeerGroups sxpPeerGroups = new SxpPeerGroupsBuilder()
+                .setSxpPeerGroup(Collections.singletonList(sxpPeerGroup))
+                .build();
+        when(datastoreAccess.readSynchronous(eq(getIdentifier("0.0.0.0").child(SxpPeerGroups.class)), eq(LogicalDatastoreType.OPERATIONAL)))
+                .thenReturn(sxpPeerGroups);
+        when(datastoreAccess.readSynchronous(
+                eq(getIdentifier("0.0.0.0")
+                        .child(SxpPeerGroups.class)
+                        .child(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup.class,
+                                new SxpPeerGroupKey(SxpNode.DEFAULT_DOMAIN))),
+                eq(LogicalDatastoreType.OPERATIONAL))).thenReturn(sxpPeerGroup);
         PowerMockito.mockStatic(DatastoreAccess.class);
         PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
         when(node.getNodeId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
-        ArrayList<SxpPeerGroup> sxpPeerGroups = new ArrayList<>();
-        sxpPeerGroups.add(mock(SxpPeerGroup.class));
-        when(node.getPeerGroups()).thenReturn(sxpPeerGroups);
+        when(node.getPeerGroups()).thenReturn(Collections.singletonList(mock(SxpPeerGroup.class)));
         when(node.getWorker()).thenReturn(new ThreadsWorker());
         when(node.getPeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
         when(node.removePeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
@@ -522,19 +538,26 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testGetPeerGroup() throws Exception {
-        RpcResult<GetPeerGroupOutput>
-                result =
-                service.getPeerGroup(new GetPeerGroupInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build())
-                        .get();
+        final RpcResult<GetPeerGroupOutput> result = service.getPeerGroup(
+                new GetPeerGroupInputBuilder()
+                        .setRequestedNode(new NodeId("0.0.0.0"))
+                        .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
+                        .build())
+                .get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
-        assertNull(result.getResult().getSxpPeerGroup());
+        assertNotNull(result.getResult().getSxpPeerGroup());
+    }
 
-        result =
-                service.getPeerGroup(new GetPeerGroupInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+    @Test
+    public void testGetPeerGroupNotExistingNode() throws Exception {
+        final RpcResult<GetPeerGroupOutput> result = service.getPeerGroup(
+                new GetPeerGroupInputBuilder()
+                        .setRequestedNode(new NodeId("0.0.0.1"))
                         .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
-                        .build()).get();
+                        .build())
+                .get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
@@ -543,22 +566,24 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testGetPeerGroups() throws Exception {
-        RpcResult<GetPeerGroupsOutput>
-                result =
-                service.getPeerGroups(new GetPeerGroupsInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build())
-                        .get();
+        final RpcResult<GetPeerGroupsOutput> result = service.getPeerGroups(
+                new GetPeerGroupsInputBuilder().setRequestedNode(new NodeId("0.0.0.0")).build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertNotNull(result.getResult().getSxpPeerGroup());
+        assertFalse(result.getResult().getSxpPeerGroup().isEmpty());
+    }
 
-        result =
-                service.getPeerGroups(new GetPeerGroupsInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build())
-                        .get();
+    @Test
+    public void testGetPeerGroupsNotExistingNode() throws Exception {
+        final RpcResult<GetPeerGroupsOutput> result = service.getPeerGroups(
+                new GetPeerGroupsInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertNotNull(result.getResult().getSxpPeerGroup());
+        assertTrue(result.getResult().getSxpPeerGroup().isEmpty());
     }
 
     @Test
