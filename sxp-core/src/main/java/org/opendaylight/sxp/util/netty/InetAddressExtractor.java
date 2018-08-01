@@ -8,7 +8,6 @@
 package org.opendaylight.sxp.util.netty;
 
 import com.google.common.net.InetAddresses;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -18,23 +17,25 @@ public final class InetAddressExtractor {
     private InetAddressExtractor() {
     }
 
+    /**
+     * Get remote address of the connection.
+     *
+     * @param ctx Connection channel handler
+     * @return remote address of the connection
+     */
     public static InetAddress getRemoteInetAddressFrom(ChannelHandlerContext ctx) {
-        Channel channel = ctx.channel();
-        if (channel != null) {
-            String remoteAddrString = ((InetSocketAddress) channel.remoteAddress()).getAddress().getHostAddress();
-            return InetAddresses.forString(remoteAddrString);
-        } else {
-            return null;
-        }
+        String remoteAddrString = ((InetSocketAddress) ctx.channel().remoteAddress()).getAddress().getHostAddress();
+        return InetAddresses.forString(remoteAddrString);
     }
 
+    /**
+     * Get local address of the connection.
+     *
+     * @param ctx Connection channel handler
+     * @return local address of the connection
+     */
     public static InetAddress getLocalInetAddressFrom(ChannelHandlerContext ctx) {
-        Channel channel = ctx.channel();
-        if (channel != null) {
-            String localAddrString = ((InetSocketAddress) ctx.channel().localAddress()).getAddress().getHostAddress();
-            return InetAddresses.forString(localAddrString);
-        } else {
-            return null;
-        }
+        String localAddrString = ((InetSocketAddress) ctx.channel().localAddress()).getAddress().getHostAddress();
+        return InetAddresses.forString(localAddrString);
     }
 }
