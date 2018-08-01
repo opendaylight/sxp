@@ -261,7 +261,6 @@ public class Sxpv4Test {
         when(connection.isBidirectionalBoth()).thenReturn(true);
         sxpv4.onInputMessage(channelHandlerContext, connection, message);
         verify(connection, times(5)).setConnection(any(OpenMessage.class));
-
     }
 
     @Test

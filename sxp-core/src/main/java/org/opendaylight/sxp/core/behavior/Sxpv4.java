@@ -336,8 +336,6 @@ public final class Sxpv4 extends AbstractStrategy {
             LOG.trace("{} Remote peer has a higher IP adress, closing init contexts", connection);
             connection.closeChannelHandlerContextComplements(ctx);
         }
-
-
         if (connection.isStateDeleteHoldDown()) {
             // Replace the existing one.
             connection.closeChannelHandlerContextComplements(ctx);
