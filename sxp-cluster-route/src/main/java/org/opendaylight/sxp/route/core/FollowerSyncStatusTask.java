@@ -10,7 +10,7 @@ package org.opendaylight.sxp.route.core;
 
 import com.google.common.base.Preconditions;
 import java.util.Objects;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.util.time.SxpTimerTask;

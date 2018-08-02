@@ -19,22 +19,21 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.base.Optional;
 import com.google.common.util.concurrent.CheckedFuture;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Matchers;
-import org.opendaylight.controller.md.sal.binding.api.BindingTransactionChain;
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
-import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
+import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
+import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.WriteTransaction;
 import org.opendaylight.mdsal.common.api.CommitInfo;
-import org.opendaylight.sxp.controller.listeners.TransactionChainListenerImpl;
+import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -51,7 +50,7 @@ public class DatastoreAccessTest {
     public void init() {
         dataBroker = mock(DataBroker.class);
         transactionChain = mock(BindingTransactionChain.class);
-        when(dataBroker.createTransactionChain(any(TransactionChainListenerImpl.class))).thenReturn(transactionChain);
+        when(dataBroker.createTransactionChain(any(SxpTransactionChainListenerImpl.class))).thenReturn(transactionChain);
         access = DatastoreAccess.getInstance(dataBroker);
     }
 
@@ -133,7 +132,7 @@ public class DatastoreAccessTest {
 
     @Test
     public void testRead() throws Exception {
-        ReadOnlyTransaction transaction = mock(ReadOnlyTransaction.class);
+        ReadTransaction transaction = mock(ReadTransaction.class);
         InstanceIdentifier identifier = mock(InstanceIdentifier.class);
 
         when(transactionChain.newReadOnlyTransaction()).thenReturn(transaction);
@@ -148,7 +147,7 @@ public class DatastoreAccessTest {
 
     @Test
     public void testReadException() throws Exception {
-        when(transactionChain.newReadOnlyTransaction()).thenReturn(mock(ReadOnlyTransaction.class));
+        when(transactionChain.newReadOnlyTransaction()).thenReturn(mock(ReadTransaction.class));
         exception.expect(NullPointerException.class);
         access.read(null, null);
     }
@@ -194,7 +193,7 @@ public class DatastoreAccessTest {
         CheckedFuture future = mock(CheckedFuture.class);
         when(future.checkedGet()).thenReturn(optional);
 
-        ReadOnlyTransaction transaction = mock(ReadOnlyTransaction.class);
+        ReadTransaction transaction = mock(ReadTransaction.class);
         when(transaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(future);
         InstanceIdentifier identifier = mock(InstanceIdentifier.class);
 
@@ -211,14 +210,14 @@ public class DatastoreAccessTest {
     @Test
     public void testCheckAndPut() throws Exception {
         WriteTransaction writeTransaction = mock(WriteTransaction.class);
-        ReadOnlyTransaction readOnlyTransaction = mock(ReadOnlyTransaction.class);
+        ReadTransaction ReadTransaction = mock(ReadTransaction.class);
         when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-        when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
+        when(transactionChain.newReadOnlyTransaction()).thenReturn(ReadTransaction);
 
         CheckedFuture future = mock(CheckedFuture.class);
         Optional optional = mock(Optional.class);
         when(future.checkedGet()).thenReturn(optional);
-        when(readOnlyTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(
+        when(ReadTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(
                 future);
         doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction).commit();
 
@@ -238,14 +237,14 @@ public class DatastoreAccessTest {
     @Test
     public void testCheckAndMerge() throws Exception {
         WriteTransaction writeTransaction = mock(WriteTransaction.class);
-        ReadOnlyTransaction readOnlyTransaction = mock(ReadOnlyTransaction.class);
+        ReadTransaction ReadTransaction = mock(ReadTransaction.class);
         when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-        when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
+        when(transactionChain.newReadOnlyTransaction()).thenReturn(ReadTransaction);
 
         CheckedFuture future = mock(CheckedFuture.class);
         Optional optional = mock(Optional.class);
         when(future.checkedGet()).thenReturn(optional);
-        when(readOnlyTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(
+        when(ReadTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(
                 future);
         doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction).commit();
 
@@ -259,14 +258,14 @@ public class DatastoreAccessTest {
     @Test
     public void testCheckAndDelete() throws Exception {
         WriteTransaction writeTransaction = mock(WriteTransaction.class);
-        ReadOnlyTransaction readOnlyTransaction = mock(ReadOnlyTransaction.class);
+        ReadTransaction ReadTransaction = mock(ReadTransaction.class);
         when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-        when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
+        when(transactionChain.newReadOnlyTransaction()).thenReturn(ReadTransaction);
 
         CheckedFuture future = mock(CheckedFuture.class);
         Optional optional = mock(Optional.class);
         when(future.checkedGet()).thenReturn(optional);
-        when(readOnlyTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(
+        when(ReadTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(
                 future);
         doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction).commit();
 
@@ -288,15 +287,15 @@ public class DatastoreAccessTest {
     @SuppressWarnings("unchecked")
     public void testPutIfNotExists() throws Exception {
         WriteTransaction writeTransaction = mock(WriteTransaction.class);
-        ReadOnlyTransaction readOnlyTransaction = mock(ReadOnlyTransaction.class);
+        ReadTransaction ReadTransaction = mock(ReadTransaction.class);
         when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-        when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
+        when(transactionChain.newReadOnlyTransaction()).thenReturn(ReadTransaction);
 
         // data did not exist before
         CheckedFuture future = mock(CheckedFuture.class);
         Optional optional = mock(Optional.class);
         when(future.checkedGet()).thenReturn(optional);
-        when(readOnlyTransaction.read(Matchers.eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class)))
+        when(ReadTransaction.read(Matchers.eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class)))
                 .thenReturn(future);
         doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction).commit();
 
