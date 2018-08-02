@@ -1,12 +1,12 @@
 package org.opendaylight.sxp.restconfclient;
 
-import com.google.common.base.Optional;
 import com.google.gson.stream.JsonReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import javassist.ClassPool;
 import org.opendaylight.mdsal.binding.dom.adapter.BindingToNormalizedNodeCodec;
