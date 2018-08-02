@@ -18,9 +18,9 @@ import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.opendaylight.controller.md.sal.binding.api.BindingTransactionChain;
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
+import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
+import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.ReadTransaction;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -34,7 +34,7 @@ public class FollowerSyncStatusTaskTest {
     @Mock private Topology topology;
     @Mock private DataBroker dataBroker;
     @Mock private BindingTransactionChain txChain;
-    @Mock private ReadOnlyTransaction roTx;
+    @Mock private ReadTransaction roTx;
 
     private FollowerSyncStatusTask task;
 
