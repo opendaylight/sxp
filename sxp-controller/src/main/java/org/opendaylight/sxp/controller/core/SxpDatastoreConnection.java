@@ -9,7 +9,7 @@
 package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Preconditions;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
