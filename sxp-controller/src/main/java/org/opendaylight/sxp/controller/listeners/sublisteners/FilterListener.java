@@ -11,8 +11,8 @@ package org.opendaylight.sxp.controller.listeners.sublisteners;
 import static org.opendaylight.sxp.controller.listeners.spi.Listener.Differences.checkFilterEntries;
 
 import com.google.common.base.Preconditions;
-import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.mdsal.binding.api.DataObjectModification;
+import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.spi.ContainerListener;
 import org.opendaylight.sxp.core.SxpNode;
