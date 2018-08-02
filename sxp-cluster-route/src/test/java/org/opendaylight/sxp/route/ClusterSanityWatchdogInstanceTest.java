@@ -8,9 +8,8 @@
 
 package org.opendaylight.sxp.route;
 
-import com.google.common.base.Optional;
-import com.google.common.util.concurrent.Futures;
 import java.util.Collections;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,13 +17,14 @@ import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.opendaylight.controller.md.sal.binding.api.BindingTransactionChain;
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
+import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
+import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.ReadTransaction;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvider;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceRegistration;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 /**
@@ -37,7 +37,7 @@ public class ClusterSanityWatchdogInstanceTest {
     @Mock private Topology topology;
     @Mock private DataBroker dataBroker;
     @Mock private BindingTransactionChain txChain;
-    @Mock private ReadOnlyTransaction roTx;
+    @Mock private ReadTransaction roTx;
     @Mock private ClusterSingletonService singletonService;
     @Mock private ClusterSingletonServiceProvider singletonServiceProvider;
     @Mock private ClusterSingletonServiceRegistration serviceRegistration;
@@ -59,10 +59,10 @@ public class ClusterSanityWatchdogInstanceTest {
     private void setClusterHealth(boolean healty) {
         if (healty) {
             Mockito.when(roTx.read(Matchers.any(), Matchers.<InstanceIdentifier<Topology>>any()))
-                    .thenReturn(Futures.immediateCheckedFuture(Optional.of(topology)));
+                    .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(topology)));
         } else {
             Mockito.when(roTx.read(Matchers.any(), Matchers.<InstanceIdentifier<Topology>>any()))
-                    .thenReturn(Futures.immediateCheckedFuture(Optional.absent()));
+                    .thenReturn(FluentFutures.immediateFluentFuture(Optional.empty()));
         }
     }
 
