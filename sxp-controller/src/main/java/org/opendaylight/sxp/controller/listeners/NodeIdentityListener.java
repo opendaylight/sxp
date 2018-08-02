@@ -18,12 +18,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeListener;
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
-import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
-import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.mdsal.binding.api.ClusteredDataTreeChangeListener;
+import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.DataTreeChangeListener;
+import org.opendaylight.mdsal.binding.api.DataTreeIdentifier;
+import org.opendaylight.mdsal.binding.api.DataTreeModification;
+import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.listeners.spi.Listener;
@@ -72,7 +72,7 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
     public ListenerRegistration<DataTreeChangeListener> register(final DataBroker dataBroker,
             final LogicalDatastoreType datastoreType) {
         //noinspection unchecked
-        return dataBroker.registerDataTreeChangeListener(new DataTreeIdentifier<>(datastoreType,
+        return dataBroker.registerDataTreeChangeListener(DataTreeIdentifier.create(datastoreType,
                 SUBSCRIBED_PATH.child(Node.class).augmentation(SxpNodeIdentity.class)), this);
     }
 
