@@ -7,24 +7,20 @@
  */
 package org.opendaylight.sxp.controller.core;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.FluentFuture;
-import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import org.opendaylight.controller.md.sal.binding.api.BindingTransactionChain;
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
-import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
-import org.opendaylight.controller.md.sal.common.api.data.TransactionChainListener;
+import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
+import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.WriteTransaction;
 import org.opendaylight.mdsal.common.api.CommitInfo;
-import org.opendaylight.sxp.controller.listeners.TransactionChainListenerImpl;
+import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
+import org.opendaylight.mdsal.common.api.TransactionChainListener;
 import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -32,14 +28,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class DatastoreAccess implements AutoCloseable {
-
     private static final Logger LOG = LoggerFactory.getLogger(DatastoreAccess.class);
 
     private final TransactionChainListener chainListener;
-    private BindingTransactionChain bindingTransactionChain;
     private final DataBroker dataBroker;
-    private boolean closed = false;
     private final List<DatastoreAccess> childDatastoreAccesses = new ArrayList<>();
+
+    private BindingTransactionChain bindingTransactionChain;
+    private boolean closed = false;
 
     /**
      * Create new instance of DatastoreAccess.
@@ -70,7 +66,7 @@ public final class DatastoreAccess implements AutoCloseable {
      * @param dataBroker DataBroker that will be used to access data store
      */
     private DatastoreAccess(DataBroker dataBroker) {
-        this.chainListener = new TransactionChainListenerImpl(this);
+        this.chainListener = new SxpTransactionChainListenerImpl();
         this.dataBroker = Preconditions.checkNotNull(dataBroker);
         bindingTransactionChain = this.dataBroker.createTransactionChain(chainListener);
     }
@@ -174,13 +170,12 @@ public final class DatastoreAccess implements AutoCloseable {
      * @param <T>                  Any type extending DataObject
      * @return Future result of operation
      */
-    public synchronized <T extends DataObject> CheckedFuture<Optional<T>, ReadFailedException> read(
+    public synchronized <T extends DataObject> FluentFuture<java.util.Optional<T>> read(
             InstanceIdentifier<T> path, LogicalDatastoreType logicalDatastoreType) {
         if (!checkParams(path, logicalDatastoreType)) {
-            return Futures.makeChecked(Futures.immediateCancelledFuture(), input ->
-                    new ReadFailedException("Datastore was closed"));
+            return FluentFutures.immediateCancelledFluentFuture();
         }
-        try (ReadOnlyTransaction transaction = bindingTransactionChain.newReadOnlyTransaction()) {
+        try (ReadTransaction transaction = bindingTransactionChain.newReadOnlyTransaction()) {
             return transaction.read(logicalDatastoreType, path);
         }
     }
@@ -267,9 +262,9 @@ public final class DatastoreAccess implements AutoCloseable {
     public synchronized <T extends DataObject> T readSynchronous(InstanceIdentifier<T> path,
             LogicalDatastoreType logicalDatastoreType) {
         try {
-            Optional<T> result = read(path, logicalDatastoreType).checkedGet();
-            return result.isPresent() ? result.get() : null;
-        } catch (ReadFailedException e) {
+            Optional<T> result = read(path, logicalDatastoreType).get();
+            return result.orElse(null);
+        } catch (ExecutionException | InterruptedException e) {
             return null;
         }
     }

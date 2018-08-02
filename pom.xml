@@ -21,7 +21,6 @@
         <module>sxp-cluster-route</module>
         <module>sxp-robot</module>
         <module>features</module>
-        <module>sxp-system-tests</module>
     </modules>
 
     <profiles>

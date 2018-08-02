@@ -11,47 +11,49 @@ package org.opendaylight.sxp.controller.core;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.base.Optional;
-import com.google.common.util.concurrent.CheckedFuture;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Matchers;
-import org.opendaylight.controller.md.sal.binding.api.BindingTransactionChain;
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
-import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
+import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.WriteTransaction;
 import org.opendaylight.mdsal.common.api.CommitInfo;
-import org.opendaylight.sxp.controller.listeners.TransactionChainListenerImpl;
+import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 public class DatastoreAccessTest {
 
-    @Rule public ExpectedException exception = ExpectedException.none();
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+    @Mock
+    private DataBroker dataBroker;
+    @Mock
+    private BindingTransactionChain transactionChain;
 
-    private static DataBroker dataBroker;
-    private static DatastoreAccess access;
-    private static BindingTransactionChain transactionChain;
+    private DatastoreAccess access;
 
     @Before
     public void init() {
-        dataBroker = mock(DataBroker.class);
-        transactionChain = mock(BindingTransactionChain.class);
-        when(dataBroker.createTransactionChain(any(TransactionChainListenerImpl.class))).thenReturn(transactionChain);
+        MockitoAnnotations.initMocks(this);
+        when(dataBroker.createTransactionChain(any(SxpTransactionChainListenerImpl.class))).thenReturn(transactionChain);
         access = DatastoreAccess.getInstance(dataBroker);
     }
 
@@ -109,19 +111,39 @@ public class DatastoreAccessTest {
     }
 
     @Test
-    public void testPut() throws Exception {
-        WriteTransaction transaction = mock(WriteTransaction.class);
-        InstanceIdentifier identifier = mock(InstanceIdentifier.class);
-        DataObject dataObject = mock(DataObject.class);
+    @SuppressWarnings("unchecked")
+    public void testPutIfNotExists() throws Exception {
+        InstanceIdentifier path = InstanceIdentifier.create(SxpNodeIdentity.class);
 
-        when(transactionChain.newWriteOnlyTransaction()).thenReturn(transaction);
-        access.put(identifier, dataObject, LogicalDatastoreType.OPERATIONAL);
+        ReadTransaction readTransaction = mock(ReadTransaction.class);
+        WriteTransaction writeTransaction = mock(WriteTransaction.class);
+        when(transactionChain.newReadOnlyTransaction()).thenReturn(readTransaction);
+        when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
 
-        verify(transaction).put(LogicalDatastoreType.OPERATIONAL, identifier, dataObject);
+        when(readTransaction.read(eq(LogicalDatastoreType.CONFIGURATION), eq(path)))
+                .thenReturn(FluentFutures.immediateFluentFuture(Optional.empty()));
+        when(writeTransaction.commit()).thenReturn(FluentFutures.immediateNullFluentFuture());
 
-        when(transactionChain.newWriteOnlyTransaction()).thenReturn(null);
-        exception.expect(NullPointerException.class);
-        access.put(identifier, dataObject, LogicalDatastoreType.OPERATIONAL);
+        Assert.assertTrue(access.checkAndPut(
+                path, mock(DataObject.class), LogicalDatastoreType.CONFIGURATION, false));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testNotPutIfExists() throws Exception {
+        InstanceIdentifier path = InstanceIdentifier.create(SxpNodeIdentity.class);
+
+        ReadTransaction readTransaction = mock(ReadTransaction.class);
+        WriteTransaction writeTransaction = mock(WriteTransaction.class);
+        when(transactionChain.newReadOnlyTransaction()).thenReturn(readTransaction);
+        when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
+
+        when(readTransaction.read(eq(LogicalDatastoreType.CONFIGURATION), eq(path)))
+                .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(mock(SxpNodeIdentity.class))));
+        when(writeTransaction.commit()).thenReturn(FluentFutures.immediateNullFluentFuture());
+
+        Assert.assertFalse(access.checkAndPut(
+                path, mock(DataObject.class), LogicalDatastoreType.CONFIGURATION, false));
     }
 
     @Test
@@ -133,7 +155,7 @@ public class DatastoreAccessTest {
 
     @Test
     public void testRead() throws Exception {
-        ReadOnlyTransaction transaction = mock(ReadOnlyTransaction.class);
+        ReadTransaction transaction = mock(ReadTransaction.class);
         InstanceIdentifier identifier = mock(InstanceIdentifier.class);
 
         when(transactionChain.newReadOnlyTransaction()).thenReturn(transaction);
@@ -148,7 +170,7 @@ public class DatastoreAccessTest {
 
     @Test
     public void testReadException() throws Exception {
-        when(transactionChain.newReadOnlyTransaction()).thenReturn(mock(ReadOnlyTransaction.class));
+        when(transactionChain.newReadOnlyTransaction()).thenReturn(mock(ReadTransaction.class));
         exception.expect(NullPointerException.class);
         access.read(null, null);
     }
@@ -186,130 +208,70 @@ public class DatastoreAccessTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testReadSynchronous() throws Exception {
-        Optional optional = mock(Optional.class);
-        when(optional.isPresent()).thenReturn(true);
-        when(optional.get()).thenReturn(mock(DataObject.class));
+        InstanceIdentifier path = InstanceIdentifier.create(SxpNodeIdentity.class);
 
-        CheckedFuture future = mock(CheckedFuture.class);
-        when(future.checkedGet()).thenReturn(optional);
+        ReadTransaction readTransaction = mock(ReadTransaction.class);
+        when(transactionChain.newReadOnlyTransaction()).thenReturn(readTransaction);
 
-        ReadOnlyTransaction transaction = mock(ReadOnlyTransaction.class);
-        when(transaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(future);
-        InstanceIdentifier identifier = mock(InstanceIdentifier.class);
+        when(readTransaction.read(eq(LogicalDatastoreType.CONFIGURATION), eq(path)))
+                .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(mock(SxpNodeIdentity.class))));
 
-        when(transactionChain.newReadOnlyTransaction()).thenReturn(transaction);
-        assertNotNull(access.readSynchronous(identifier, LogicalDatastoreType.OPERATIONAL));
-
-        verify(transaction).read(LogicalDatastoreType.OPERATIONAL, identifier);
-
-        when(transaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenThrow(
-                ReadFailedException.class);
-        assertNull(access.readSynchronous(identifier, LogicalDatastoreType.OPERATIONAL));
-    }
-
-    @Test
-    public void testCheckAndPut() throws Exception {
-        WriteTransaction writeTransaction = mock(WriteTransaction.class);
-        ReadOnlyTransaction readOnlyTransaction = mock(ReadOnlyTransaction.class);
-        when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-        when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
-
-        CheckedFuture future = mock(CheckedFuture.class);
-        Optional optional = mock(Optional.class);
-        when(future.checkedGet()).thenReturn(optional);
-        when(readOnlyTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(
-                future);
-        doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction).commit();
-
-        InstanceIdentifier identifier = InstanceIdentifier.create(DataObject.class);
-
-        when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-        assertTrue(access.checkAndPut(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL, false));
-        assertFalse(access.checkAndPut(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL, true));
-
-        when(optional.isPresent()).thenReturn(true);
-        when(optional.get()).thenReturn(mock(DataObject.class));
-
-        assertTrue(access.checkAndPut(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL, true));
-        assertFalse(access.checkAndPut(identifier, mock(DataObject.class), LogicalDatastoreType.OPERATIONAL, false));
-    }
-
-    @Test
-    public void testCheckAndMerge() throws Exception {
-        WriteTransaction writeTransaction = mock(WriteTransaction.class);
-        ReadOnlyTransaction readOnlyTransaction = mock(ReadOnlyTransaction.class);
-        when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-        when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
-
-        CheckedFuture future = mock(CheckedFuture.class);
-        Optional optional = mock(Optional.class);
-        when(future.checkedGet()).thenReturn(optional);
-        when(readOnlyTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(
-                future);
-        doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction).commit();
-
-        when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-
-        when(optional.isPresent()).thenReturn(true);
-        when(optional.get()).thenReturn(mock(DataObject.class));
-
-    }
-
-    @Test
-    public void testCheckAndDelete() throws Exception {
-        WriteTransaction writeTransaction = mock(WriteTransaction.class);
-        ReadOnlyTransaction readOnlyTransaction = mock(ReadOnlyTransaction.class);
-        when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-        when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
-
-        CheckedFuture future = mock(CheckedFuture.class);
-        Optional optional = mock(Optional.class);
-        when(future.checkedGet()).thenReturn(optional);
-        when(readOnlyTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class))).thenReturn(
-                future);
-        doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction).commit();
-
-        InstanceIdentifier identifier = InstanceIdentifier.create(DataObject.class);
-
-        when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-        assertFalse(access.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
-
-        when(optional.isPresent()).thenReturn(true);
-        when(optional.get()).thenReturn(mock(DataObject.class));
-
-        assertTrue(access.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
-
-        doReturn(FluentFutures.immediateCancelledFluentFuture()).when(writeTransaction).commit();
-        assertFalse(access.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+        Assert.assertNotNull(access.readSynchronous(path, LogicalDatastoreType.CONFIGURATION));
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void testPutIfNotExists() throws Exception {
+    public void testCheckAndPut() throws Exception {
+        InstanceIdentifier path = InstanceIdentifier.create(SxpNodeIdentity.class);
+
         WriteTransaction writeTransaction = mock(WriteTransaction.class);
-        ReadOnlyTransaction readOnlyTransaction = mock(ReadOnlyTransaction.class);
+        ReadTransaction readTransaction = mock(ReadTransaction.class);
+        when(transactionChain.newReadOnlyTransaction()).thenReturn(readTransaction);
         when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-        when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
 
-        // data did not exist before
-        CheckedFuture future = mock(CheckedFuture.class);
-        Optional optional = mock(Optional.class);
-        when(future.checkedGet()).thenReturn(optional);
-        when(readOnlyTransaction.read(Matchers.eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class)))
-                .thenReturn(future);
-        doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction).commit();
+        when(readTransaction.read(eq(LogicalDatastoreType.CONFIGURATION), eq(path)))
+                .thenReturn(FluentFutures.immediateFluentFuture(Optional.empty()));
+        when(writeTransaction.commit()).thenReturn(FluentFutures.immediateNullFluentFuture());
 
-        InstanceIdentifier identifier = InstanceIdentifier.create(DataObject.class);
+        Assert.assertTrue(access.checkAndPut(
+                path, mock(DataObject.class), LogicalDatastoreType.CONFIGURATION, false));
+    }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testCheckAndMerge() throws Exception {
+        InstanceIdentifier path = InstanceIdentifier.create(SxpNodeIdentity.class);
+
+        WriteTransaction writeTransaction = mock(WriteTransaction.class);
+        ReadTransaction readTransaction = mock(ReadTransaction.class);
+        when(transactionChain.newReadOnlyTransaction()).thenReturn(readTransaction);
         when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
-        assertTrue(access.putIfNotExists(identifier, mock(DataObject.class), LogicalDatastoreType.CONFIGURATION));
 
-        // data already exist
-        when(optional.isPresent()).thenReturn(true);
-        when(optional.get()).thenReturn(mock(DataObject.class));
+        when(readTransaction.read(eq(LogicalDatastoreType.CONFIGURATION), eq(path)))
+                .thenReturn(FluentFutures.immediateFluentFuture(Optional.empty()));
+        when(writeTransaction.commit()).thenReturn(FluentFutures.immediateNullFluentFuture());
 
-        assertFalse(access.putIfNotExists(identifier, mock(DataObject.class), LogicalDatastoreType.CONFIGURATION));
+        Assert.assertTrue(access.checkAndMerge(
+                path, mock(DataObject.class), LogicalDatastoreType.CONFIGURATION, false));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testCheckAndDelete() throws Exception {
+        InstanceIdentifier path = InstanceIdentifier.create(SxpNodeIdentity.class);
+
+        WriteTransaction writeTransaction = mock(WriteTransaction.class);
+        ReadTransaction readTransaction = mock(ReadTransaction.class);
+        when(transactionChain.newReadOnlyTransaction()).thenReturn(readTransaction);
+        when(transactionChain.newWriteOnlyTransaction()).thenReturn(writeTransaction);
+
+        when(readTransaction.read(eq(LogicalDatastoreType.CONFIGURATION), eq(path)))
+                .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(mock(SxpNodeIdentity.class))));
+        when(writeTransaction.commit()).thenReturn(FluentFutures.immediateNullFluentFuture());
+
+        Assert.assertTrue(access.checkAndDelete(path, LogicalDatastoreType.CONFIGURATION));
     }
 
     @Test
