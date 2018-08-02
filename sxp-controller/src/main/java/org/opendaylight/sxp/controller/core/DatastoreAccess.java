@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Optional;
@@ -42,6 +41,8 @@ public final class DatastoreAccess implements AutoCloseable {
     private final List<DatastoreAccess> childDatastoreAccesses = new ArrayList<>();
 
     /**
+     * Create new instance of this class.
+     *
      * @param dataBroker DataBroker used for accessing data store
      * @return DataAccess used to access data store
      */
@@ -50,7 +51,7 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
-     * Creates Datastore access with Parent-child dependency,
+     * Create Datastore access with Parent-child dependency,
      * when Parent is closed all its children are also closed.
      *
      * @param datastoreAccess DataAccess used to access data store
@@ -63,6 +64,8 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Create new instance of this class.
+     *
      * @param dataBroker DataBroker that will be used to access data store
      */
     private DatastoreAccess(DataBroker dataBroker) {
@@ -72,6 +75,9 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Check if data-store access is not closed, binding transaction chain
+     * and provided path and logical data-store type are not null.
+     *
      * @param path                 Identifier path to be checked
      * @param logicalDatastoreType DataStore type to be checked
      * @param <T>                  Any type extending DataObject
@@ -111,6 +117,8 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Merge data at specified path.
+     *
      * @param path                 InstanceIdentifier path specifying data
      * @param data                 Data that will be used in operation
      * @param logicalDatastoreType Type of datastore where operation will be held
@@ -134,6 +142,8 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Put data at specified path.
+     *
      * @param path                 InstanceIdentifier path specifying data
      * @param data                 Data that will be used in operation
      * @param logicalDatastoreType Type of datastore where operation will be held
@@ -156,6 +166,8 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Read data at specified path.
+     *
      * @param path                 InstanceIdentifier path specifying data
      * @param logicalDatastoreType Type of datastore where operation will be held
      * @param <T>                  Any type extending DataObject
@@ -173,6 +185,8 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Merge data at specified path and wait till operation ends.
+     *
      * @param path                 InstanceIdentifier path specifying data
      * @param data                 Data that will be used in operation
      * @param logicalDatastoreType Type of datastore where operation will be held
@@ -232,6 +246,8 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Read data at specified path and wait till operation ends.
+     *
      * @param path                 InstanceIdentifier path specifying data
      * @param logicalDatastoreType Type of datastore where operation will be held
      * @param <T>                  Any type extending DataObject
@@ -248,6 +264,8 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Synchronously verify that parent node of the node at specified path exists.
+     *
      * @param identifier    InstanceIdentifier that will be checked
      * @param datastoreType Datastore type where datastore will be checked
      * @param <T>           Any type extending DataObject
@@ -264,6 +282,11 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Put data at specified path only if its parent node exists and presence condition holds.
+     *
+     * If mustContains is set to {@code true} operation fails if node has not previously exists.
+     * If mustContains is set to {@code false} operation fails if node has already exists.
+     *
      * @param identifier    InstanceIdentifier path specifying data
      * @param data          Data that will be used in operation
      * @param datastoreType Type of datastore where operation will be held
@@ -282,6 +305,11 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Merge data at specified path only if its parent node exists and presence condition holds.
+     *
+     * If mustContains is set to {@code true} operation fails if node has not previously exists.
+     * If mustContains is set to {@code false} operation fails if node has already exists.
+     *
      * @param identifier    InstanceIdentifier path specifying data
      * @param data          Data that will be used in operation
      * @param datastoreType Type of datastore where operation will be held
@@ -303,6 +331,10 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Delete data at specified path.
+     *
+     * Data must exist before deletion.
+     *
      * @param identifier    InstanceIdentifier path specifying data
      * @param datastoreType Type of datastore where operation will be held
      * @param <T>           Any type extending DataObject
