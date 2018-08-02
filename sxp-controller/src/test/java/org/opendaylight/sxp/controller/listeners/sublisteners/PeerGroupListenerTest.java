@@ -24,9 +24,9 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
-import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.mdsal.binding.api.DataObjectModification;
+import org.opendaylight.mdsal.binding.api.DataTreeModification;
+import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.core.Configuration;
@@ -81,7 +81,7 @@ public class PeerGroupListenerTest {
         DataObjectModification<SxpPeerGroups> modification = mock(DataObjectModification.class);
         when(modification.getModificationType()).thenReturn(DataObjectModification.ModificationType.WRITE);
         when(modification.getDataType()).thenReturn(SxpPeerGroups.class);
-        when(modification.getModifiedChildren()).thenReturn(Collections.singletonList(change));
+        when(modification.getModifiedChildren()).thenAnswer(invocation -> Collections.singletonList(change));
         return modification;
     }
 
