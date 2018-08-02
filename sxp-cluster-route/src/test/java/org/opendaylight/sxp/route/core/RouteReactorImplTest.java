@@ -8,17 +8,17 @@
 
 package org.opendaylight.sxp.route.core;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,10 +29,10 @@ import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.opendaylight.controller.md.sal.binding.api.BindingTransactionChain;
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
-import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
+import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
+import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.ReadWriteTransaction;
 import org.opendaylight.sxp.route.spi.Routing;
 import org.opendaylight.sxp.route.util.RouteUtil;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
@@ -40,6 +40,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.SxpClusterRouteBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinition;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinitionBuilder;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 /**
@@ -51,7 +52,7 @@ public class RouteReactorImplTest {
     @Mock private DataBroker dataBroker;
     @Mock private BindingTransactionChain txChain;
     @Mock private ReadWriteTransaction wTx;
-    @Mock private ReadOnlyTransaction rTx;
+    @Mock private ReadTransaction rTx;
     @Mock private RoutingServiceFactory routingServiceFactory;
     @Mock private Routing routingService;
     @Captor ArgumentCaptor<InstanceIdentifier<SxpClusterRoute>> pathCaptor;
@@ -313,8 +314,8 @@ public class RouteReactorImplTest {
         Mockito.when(routingService.removeRouteForCurrentService()).thenReturn(true);
 
         Mockito.when(rTx.read(Matchers.any(), Matchers.any()))
-                .thenReturn(Futures.immediateCheckedFuture(Optional.of(oldRoute)));
-        Mockito.when(wTx.submit()).thenReturn(Futures.immediateCheckedFuture(null));
+                .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(oldRoute)));
+        Mockito.when(wTx.commit()).thenReturn(FluentFutures.immediateNullFluentFuture());
 
         Iterables.concat(leftSide, rightSide).forEach(routeDef -> {
             reactor.getRoutingServiceMap().putIfAbsent(routeDef.getIpAddress(), routingService);
@@ -329,8 +330,7 @@ public class RouteReactorImplTest {
         final List<RoutingDefinition> actual = dataCaptor.getValue().getRoutingDefinition();
         Assert.assertEquals(3, actual.size());
 
-        Collections.sort(actual, (o1, o2) -> RouteUtil.addressToString(o1.getIpAddress())
-                .compareTo(RouteUtil.addressToString(o2.getIpAddress())));
+        Collections.sort(actual, Comparator.comparing(o -> RouteUtil.addressToString(o.getIpAddress())));
 
         int idx = 0;
         Assert.assertEquals(null, actual.get(idx).getInfo());
@@ -344,7 +344,6 @@ public class RouteReactorImplTest {
         Assert.assertEquals("added", actual.get(idx).getInfo());
         Assert.assertEquals(true, actual.get(idx).isConsistent());
         Assert.assertEquals("1.2.3.4", RouteUtil.addressToString(actual.get(idx).getIpAddress()));
-
     }
 
     private RoutingDefinition distillDefinition(final RoutingDefinition routingDefinition) {

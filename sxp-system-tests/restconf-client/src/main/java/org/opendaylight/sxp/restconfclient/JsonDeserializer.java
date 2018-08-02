@@ -1,6 +1,5 @@
 package org.opendaylight.sxp.restconfclient;
 
-import com.google.common.base.Optional;
 import com.google.gson.stream.JsonReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -42,16 +41,14 @@ public class JsonDeserializer {
     private static final Logger LOG = LoggerFactory.getLogger(JsonDeserializer.class);
 
     private final SchemaContext schemaContext;
-    private final ModuleInfoBackedContext moduleInfoBackedCntxt;
     private final BindingToNormalizedNodeCodec codec;
 
     public JsonDeserializer() {
         List<YangModuleInfo> moduleInfos = loadModuleInfos();
-        moduleInfoBackedCntxt = ModuleInfoBackedContext.create();
+        ModuleInfoBackedContext moduleInfoBackedCntxt = ModuleInfoBackedContext.create();
         moduleInfoBackedCntxt.addModuleInfos(moduleInfos);
 
-        Optional<SchemaContext> schemaContextOpt = moduleInfoBackedCntxt.tryToCreateSchemaContext();
-        this.schemaContext = schemaContextOpt.get();
+        this.schemaContext = moduleInfoBackedCntxt.getSchemaContext();
         LOG.info("Schema context created: {}", schemaContext);
 
         DataObjectSerializerGenerator serializerGenerator
