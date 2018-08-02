@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Optional;
@@ -42,19 +41,21 @@ public final class DatastoreAccess implements AutoCloseable {
     private final List<DatastoreAccess> childDatastoreAccesses = new ArrayList<>();
 
     /**
+     * Create new instance of DatastoreAccess.
+     *
      * @param dataBroker DataBroker used for accessing data store
-     * @return DataAccess used to access data store
+     * @return DatastoreAccess used to access data store
      */
     public static DatastoreAccess getInstance(DataBroker dataBroker) {
         return new DatastoreAccess(Preconditions.checkNotNull(dataBroker));
     }
 
     /**
-     * Creates Datastore access with Parent-child dependency,
+     * Create DatastoreAccess with Parent-child dependency,
      * when Parent is closed all its children are also closed.
      *
      * @param datastoreAccess DataAccess used to access data store
-     * @return DataAccess used to access data store
+     * @return DatastoreAccess used to access data store
      */
     public static DatastoreAccess getInstance(DatastoreAccess datastoreAccess) {
         DatastoreAccess child = new DatastoreAccess(Preconditions.checkNotNull(datastoreAccess).dataBroker);
@@ -63,6 +64,8 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Create new instance of DatastoreAccess.
+     *
      * @param dataBroker DataBroker that will be used to access data store
      */
     private DatastoreAccess(DataBroker dataBroker) {
@@ -72,9 +75,15 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Check if DataStoreAccess is not closed.
+     * <p>
+     * Additionally it verifies by preconditions if binding transaction chain,
+     * provided path and logical data-store type are not null.
+     *
      * @param path                 Identifier path to be checked
      * @param logicalDatastoreType DataStore type to be checked
      * @param <T>                  Any type extending DataObject
+     * @return {@code true} if DatastoreAccess is not closed, {@code false} otherwise
      */
     private <T extends DataObject> boolean checkParams(InstanceIdentifier<T> path,
             LogicalDatastoreType logicalDatastoreType) {
@@ -82,8 +91,8 @@ public final class DatastoreAccess implements AutoCloseable {
             return false;
         }
         Preconditions.checkNotNull(bindingTransactionChain);
-        Preconditions.checkNotNull(logicalDatastoreType);
         Preconditions.checkNotNull(path);
+        Preconditions.checkNotNull(logicalDatastoreType);
         return true;
     }
 
@@ -93,7 +102,7 @@ public final class DatastoreAccess implements AutoCloseable {
      * @param path                 InstanceIdentifier path specifying data
      * @param logicalDatastoreType Type of datastore where operation will be held
      * @param <T>                  Any type extending DataObject
-     * @return ListenableFuture callback of operation
+     * @return Future result of operation
      */
     public synchronized <T extends DataObject> ListenableFuture<Void> delete(InstanceIdentifier<T> path,
             LogicalDatastoreType logicalDatastoreType) {
@@ -111,11 +120,13 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Merge data at specified path.
+     *
      * @param path                 InstanceIdentifier path specifying data
      * @param data                 Data that will be used in operation
      * @param logicalDatastoreType Type of datastore where operation will be held
      * @param <T>                  Any type extending DataObject
-     * @return CheckedFuture callback of operation
+     * @return Future result of operation
      */
     public synchronized <T extends DataObject> CheckedFuture<Void, TransactionCommitFailedException> merge(
             InstanceIdentifier<T> path, T data, LogicalDatastoreType logicalDatastoreType) {
@@ -130,15 +141,16 @@ public final class DatastoreAccess implements AutoCloseable {
         WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
         transaction.merge(logicalDatastoreType, path, data);
         return transaction.submit();
-
     }
 
     /**
+     * Put data at specified path.
+     *
      * @param path                 InstanceIdentifier path specifying data
      * @param data                 Data that will be used in operation
      * @param logicalDatastoreType Type of datastore where operation will be held
      * @param <T>                  Any type extending DataObject
-     * @return CheckedFuture callback of operation
+     * @return Future result of operation
      */
     public synchronized <T extends DataObject> CheckedFuture<Void, TransactionCommitFailedException> put(
             InstanceIdentifier<T> path, T data, LogicalDatastoreType logicalDatastoreType) {
@@ -156,10 +168,12 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Read data at specified path.
+     *
      * @param path                 InstanceIdentifier path specifying data
      * @param logicalDatastoreType Type of datastore where operation will be held
      * @param <T>                  Any type extending DataObject
-     * @return CheckedFuture callback of operation
+     * @return Future result of operation
      */
     public synchronized <T extends DataObject> CheckedFuture<Optional<T>, ReadFailedException> read(
             InstanceIdentifier<T> path, LogicalDatastoreType logicalDatastoreType) {
@@ -173,11 +187,13 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Merge data at specified path and wait till operation ends.
+     *
      * @param path                 InstanceIdentifier path specifying data
      * @param data                 Data that will be used in operation
      * @param logicalDatastoreType Type of datastore where operation will be held
      * @param <T>                  Any type extending DataObject
-     * @return If operation was successful
+     * @return {@code true} if operation was successful, {@code false} otherwise
      */
     public synchronized <T extends DataObject> boolean mergeSynchronous(InstanceIdentifier<T> path, T data,
             LogicalDatastoreType logicalDatastoreType) {
@@ -196,7 +212,7 @@ public final class DatastoreAccess implements AutoCloseable {
      * @param data                 Data that will be used in operation
      * @param logicalDatastoreType Type of datastore where operation will be held
      * @param <T>                  Any type extending DataObject
-     * @return If operation was successful
+     * @return {@code true} if operation was successful, {@code false} otherwise
      */
     public synchronized <T extends DataObject> boolean putSynchronous(InstanceIdentifier<T> path, T data,
             LogicalDatastoreType logicalDatastoreType) {
@@ -212,8 +228,9 @@ public final class DatastoreAccess implements AutoCloseable {
     /**
      * Delete data at specified path and wait till operation ends.
      *
-     * @param path Path to node to be deleted
+     * @param path                 Path to node to be deleted
      * @param logicalDatastoreType data-store type
+     * @param <T>                  Any type extending DataObject
      * @return {@code true} if data node was successfully deleted, {@code false} otherwise
      */
     public synchronized <T extends DataObject> boolean deleteSynchronous(InstanceIdentifier<T> path,
@@ -232,10 +249,12 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Read data at specified path and wait till operation ends.
+     *
      * @param path                 InstanceIdentifier path specifying data
      * @param logicalDatastoreType Type of datastore where operation will be held
      * @param <T>                  Any type extending DataObject
-     * @return Data read from datastore or null if operation was interrupted
+     * @return Data read from datastore or {@code null} if operation failed
      */
     public synchronized <T extends DataObject> T readSynchronous(InstanceIdentifier<T> path,
             LogicalDatastoreType logicalDatastoreType) {
@@ -248,10 +267,12 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Synchronously verify that parent node of the node at specified path exists.
+     *
      * @param identifier    InstanceIdentifier that will be checked
      * @param datastoreType Datastore type where datastore will be checked
      * @param <T>           Any type extending DataObject
-     * @return If All parents of provided path exists
+     * @return {@code true} if all parents of provided path exists, {@code false} otherwise
      */
     private <T extends DataObject> boolean checkParentExist(final InstanceIdentifier<T> identifier,
             final LogicalDatastoreType datastoreType) {
@@ -264,12 +285,17 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Put data at specified path only if its parent node exists and presence condition holds.
+     * <p>
+     * If mustContains is set to {@code true} operation fails if node has not previously exists.
+     * If mustContains is set to {@code false} operation fails if node has already exists.
+     *
      * @param identifier    InstanceIdentifier path specifying data
      * @param data          Data that will be used in operation
      * @param datastoreType Type of datastore where operation will be held
      * @param mustContains  Specifying if object mus preexist or not
      * @param <T>           Any type extending DataObject
-     * @return If operation was successful
+     * @return {@code true} if operation was successful, {@code false} otherwise
      */
     public synchronized <T extends DataObject> boolean checkAndPut(InstanceIdentifier<T> identifier, T data,
             LogicalDatastoreType datastoreType, final boolean mustContains) {
@@ -282,12 +308,17 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Merge data at specified path only if its parent node exists and presence condition holds.
+     * <p>
+     * If mustContains is set to {@code true} operation fails if node has not previously exists.
+     * If mustContains is set to {@code false} operation fails if node has already exists.
+     *
      * @param identifier    InstanceIdentifier path specifying data
      * @param data          Data that will be used in operation
      * @param datastoreType Type of datastore where operation will be held
      * @param mustContains  Specifying if object mus preexist or not
      * @param <T>           Any type extending DataObject
-     * @return If operation was successful
+     * @return {@code true} if operation was successful, {@code false} otherwise
      */
     public synchronized <T extends DataObject> boolean checkAndMerge(InstanceIdentifier<T> identifier, T data,
             LogicalDatastoreType datastoreType, final boolean mustContains) {
@@ -303,10 +334,14 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
+     * Delete data at specified path.
+     * <p>
+     * Data must exist before deletion.
+     *
      * @param identifier    InstanceIdentifier path specifying data
      * @param datastoreType Type of datastore where operation will be held
      * @param <T>           Any type extending DataObject
-     * @return If operation was successful
+     * @return {@code true} if operation was successful, {@code false} otherwise
      */
     public synchronized <T extends DataObject> boolean checkAndDelete(InstanceIdentifier<T> identifier,
             LogicalDatastoreType datastoreType) {
@@ -322,9 +357,10 @@ public final class DatastoreAccess implements AutoCloseable {
      * This method does not check for existence of parent nodes. It is
      * responsibility of its caller to create all parent nodes.
      *
-     * @param identifier Path to node to be created
-     * @param data Node data to be created
+     * @param identifier    Path to node to be created
+     * @param data          Node data to be created
      * @param datastoreType data-store type
+     * @param <T>           Any type extending DataObject
      * @return {@code true} if node was successfully created, {@code false} otherwise
      */
     public synchronized <T extends DataObject> boolean putIfNotExists(InstanceIdentifier<T> identifier, T data,
@@ -338,7 +374,7 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
-     * Recreate transaction chain if error occurred and decrement allowed error rate counter
+     * Recreate transaction chain if error occurred.
      */
     public synchronized void reinitializeChain() {
         if (!closed) {
