@@ -19,13 +19,13 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
-import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeListener;
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
-import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
-import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.mdsal.binding.api.ClusteredDataTreeChangeListener;
+import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.DataObjectModification;
+import org.opendaylight.mdsal.binding.api.DataTreeIdentifier;
+import org.opendaylight.mdsal.binding.api.DataTreeModification;
 import org.opendaylight.mdsal.common.api.CommitInfo;
+import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvider;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceRegistration;
@@ -75,7 +75,7 @@ public class SxpClusterRouteManager
             InstanceIdentifier.create(SxpClusterRoute.class);
     static final DataTreeIdentifier<SxpClusterRoute>
             ROUTING_DEFINITION_DT_IDENTIFIER =
-            new DataTreeIdentifier<>(LogicalDatastoreType.CONFIGURATION, SXP_CLUSTER_ROUTE_CONFIG_PATH);
+            DataTreeIdentifier.create(LogicalDatastoreType.CONFIGURATION, SXP_CLUSTER_ROUTE_CONFIG_PATH);
 
     @GuardedBy("stateLock") private RouteListenerState state;
     private final Object stateLock = new Object();
