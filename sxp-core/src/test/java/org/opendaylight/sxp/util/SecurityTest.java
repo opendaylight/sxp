@@ -8,11 +8,11 @@
 
 package org.opendaylight.sxp.util;
 
-import java.lang.reflect.Constructor;
-import org.junit.Assert;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import java.lang.reflect.Constructor;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class SecurityTest {

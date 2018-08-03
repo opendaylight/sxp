@@ -7,6 +7,9 @@
  */
 package org.opendaylight.sxp.core.threading;
 
+import static org.mockito.Matchers.any;
+import static org.powermock.api.mockito.PowerMockito.when;
+
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -17,9 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Matchers;
-import static org.mockito.Matchers.any;
 import org.mockito.Mock;
-import static org.powermock.api.mockito.PowerMockito.when;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 /**
