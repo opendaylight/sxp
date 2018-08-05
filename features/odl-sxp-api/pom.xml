@@ -11,7 +11,7 @@
 
     <groupId>org.opendaylight.sxp</groupId>
     <artifactId>odl-sxp-api</artifactId>
-    <version>1.6.3-SNAPSHOT</version>
+    <version>1.6.3</version>
 
     <name>Feature :: OpenDaylight :: Sxp :: Api</name>
 

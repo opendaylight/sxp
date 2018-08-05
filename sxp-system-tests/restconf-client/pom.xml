@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.opendaylight.sxp</groupId>
     <artifactId>restconf-client</artifactId>
-    <version>0.0.4-SNAPSHOT</version>
+    <version>0.0.4</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -11,7 +11,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <!--versions-->
-        <mdsal.version>2.4.3-SNAPSHOT</mdsal.version>
+        <mdsal.version>2.4.3</mdsal.version>
         <jersey.version>2.26</jersey.version>
         <javax.ws.rs.api.version>2.1</javax.ws.rs.api.version>
         <slf4j.version>1.7.25</slf4j.version>
