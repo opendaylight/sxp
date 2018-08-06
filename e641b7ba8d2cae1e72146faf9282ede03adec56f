@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a3e691aa_8171d66b",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/DatastoreAccess.java",
+        "patchSetId": 3
+      },
+      "lineNbr": 233,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-08-06T11:09:09Z",
+      "side": 1,
+      "message": "align",
+      "revId": "e641b7ba8d2cae1e72146faf9282ede03adec56f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6b1a2afe_0b7d4bda",
+        "filename": "sxp-controller/src/main/java/org/opendaylight/sxp/controller/core/DatastoreAccess.java",
+        "patchSetId": 3
+      },
+      "lineNbr": 363,
+      "author": {
+        "id": 8144
+      },
+      "writtenOn": "2018-08-06T11:09:09Z",
+      "side": 1,
+      "message": "align",
+      "revId": "e641b7ba8d2cae1e72146faf9282ede03adec56f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
