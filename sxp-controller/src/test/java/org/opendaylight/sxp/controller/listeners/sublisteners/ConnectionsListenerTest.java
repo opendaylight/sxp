@@ -86,7 +86,7 @@ public class ConnectionsListenerTest {
         DataObjectModification<Connections> modification = mock(DataObjectModification.class);
         when(modification.getModificationType()).thenReturn(DataObjectModification.ModificationType.WRITE);
         when(modification.getDataType()).thenReturn(Connections.class);
-        when(modification.getModifiedChildren()).thenReturn(Collections.singletonList(change));
+        when(modification.getModifiedChildren()).thenAnswer(invocation -> Collections.singletonList(change));
         return modification;
     }
 

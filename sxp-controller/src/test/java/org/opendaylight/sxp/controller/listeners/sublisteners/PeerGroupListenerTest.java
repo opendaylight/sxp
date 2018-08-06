@@ -81,7 +81,7 @@ public class PeerGroupListenerTest {
         DataObjectModification<SxpPeerGroups> modification = mock(DataObjectModification.class);
         when(modification.getModificationType()).thenReturn(DataObjectModification.ModificationType.WRITE);
         when(modification.getDataType()).thenReturn(SxpPeerGroups.class);
-        when(modification.getModifiedChildren()).thenReturn(Collections.singletonList(change));
+        when(modification.getModifiedChildren()).thenAnswer(invocation -> Collections.singletonList(change));
         return modification;
     }
 
