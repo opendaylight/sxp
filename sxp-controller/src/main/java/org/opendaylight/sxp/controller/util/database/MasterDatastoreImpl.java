@@ -8,7 +8,6 @@
 
 package org.opendaylight.sxp.controller.util.database;
 
-import com.google.common.base.Functions;
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -175,7 +174,7 @@ public final class MasterDatastoreImpl extends MasterDatabase {
 
         List<MasterDatabaseBinding> removedBindings = new ArrayList<>(databaseBindings);
         Map<IpPrefix, T> mapBindingsToDelete = bindings.stream()
-                .collect(Collectors.toMap(SxpBindingFields::getIpPrefix, Functions.identity()));
+                .collect(Collectors.toMap(SxpBindingFields::getIpPrefix, Function.identity()));
 
         if (databaseBindings.removeIf(bindingIsToBeDeleted(mapBindingsToDelete))) {
             datastoreAccess.put(getIdentifierBuilder().build(), database, LogicalDatastoreType.OPERATIONAL);
