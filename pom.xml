@@ -4,13 +4,13 @@
     <parent>
         <groupId>org.opendaylight.mdsal</groupId>
         <artifactId>binding-parent</artifactId>
-        <version>0.13.0-SNAPSHOT</version>
+        <version>0.14.0-SNAPSHOT</version>
         <relativePath/>
     </parent>
 
     <groupId>org.opendaylight.sxp</groupId>
     <artifactId>sxp-parent</artifactId>
-    <version>1.7.0-SNAPSHOT</version>
+    <version>1.8.0-SNAPSHOT</version>
     <name>sxp</name> <!-- Used by Sonar to set project name -->
     <packaging>pom</packaging>
 
@@ -41,10 +41,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <packaging-suffix>jar</packaging-suffix>
 
-        <controller.mdsal.version>1.8.0-SNAPSHOT</controller.mdsal.version>
-        <mdsal.singleton.version>2.5.0-SNAPSHOT</mdsal.singleton.version>
-        <mdsal.model.version>0.13.0-SNAPSHOT</mdsal.model.version>
-        <restconf.version>1.8.0-SNAPSHOT</restconf.version>
+        <controller.mdsal.version>1.9.0-SNAPSHOT</controller.mdsal.version>
+        <mdsal.singleton.version>2.6.0-SNAPSHOT</mdsal.singleton.version>
+        <mdsal.model.version>0.14.0-SNAPSHOT</mdsal.model.version>
+        <restconf.version>1.9.0-SNAPSHOT</restconf.version>
 
         <!-- EPOLL artifacts -->
         <os.detected.classifier>linux-x86_64</os.detected.classifier>
