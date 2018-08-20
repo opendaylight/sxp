@@ -133,7 +133,7 @@ public class LinuxRoutingService implements Routing {
      */
     @VisibleForTesting
     String createIfaceDownCmd() {
-        return String.format("sudo ifconfig %s down", interfaceName);
+        return String.format("sudo ifconfig %s 0.0.0.0 down", interfaceName);
     }
 
     @Override
