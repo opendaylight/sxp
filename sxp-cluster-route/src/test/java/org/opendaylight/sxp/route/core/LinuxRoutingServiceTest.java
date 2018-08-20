@@ -187,7 +187,7 @@ public class LinuxRoutingServiceTest {
 
     @Test
     public void createIfaceDownCmd() throws Exception {
-        Assert.assertEquals("sudo ifconfig eth42:0 down", service.createIfaceDownCmd());
+        Assert.assertEquals("sudo ifconfig eth42:0 0.0.0.0 down", service.createIfaceDownCmd());
     }
 
     @Test
