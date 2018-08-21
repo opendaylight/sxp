@@ -788,17 +788,16 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                     return RpcResultBuilder.success(output.build()).build();
                 }
 
-                // wait until node appears in configuration
-                for (int i = 0; Configuration.getRegisteredNode(nodeId) == null && i < 10; i++) {
-                    try {
-                        Thread.sleep(100);
-                    } catch (final InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        LOG.error("Failed to wait for SXP node " + nodeId + " to appear in configuration | {}", e);
-                    }
-                }
-                if (Configuration.getRegisteredNode(nodeId) == null) {
-                    LOG.error("SXP node " + nodeId + " is not present in configuration");
+                /*
+                FIXME wait until node appears in configuration:
+                Current way when Configuration is updated by data-store listener is not
+                working in cluster environment.
+                 */
+                try {
+                    Thread.sleep(1000);
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    LOG.error("Failed to wait for SXP node " + nodeId + " to appear in configuration | {}", e);
                     return RpcResultBuilder.success(output.build()).build();
                 }
 
