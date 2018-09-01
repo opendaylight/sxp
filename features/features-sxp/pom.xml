@@ -14,7 +14,7 @@
 
     <groupId>org.opendaylight.sxp</groupId>
     <artifactId>features-sxp</artifactId>
-    <version>1.7.0-SNAPSHOT</version>
+    <version>1.7.0</version>
 
     <dependencies>
         <dependency>
