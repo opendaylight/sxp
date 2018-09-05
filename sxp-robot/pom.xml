@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.opendaylight.sxp</groupId>
         <artifactId>sxp-parent</artifactId>
-        <version>1.7.0-SNAPSHOT</version>
+        <version>1.7.1-SNAPSHOT</version>
     </parent>
     <artifactId>sxp-robot</artifactId>
     <packaging>bundle</packaging>
