@@ -17,3 +17,7 @@ MANIFEST.MF
 .checkstyle
 *.iml
 
+# Sphinx documentation
+.tox/
+docs/_build/
+
