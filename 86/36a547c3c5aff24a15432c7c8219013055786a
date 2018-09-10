@@ -1,0 +1,7 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Ivan Hrasko <ihrasko@cisco.com>
+Submitted-by: Ivan Hrasko <ihrasko@cisco.com>
+Submitted-at: Mon, 10 Sep 2018 06:18:18 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/75887
+Project: sxp
+Branch: refs/heads/stable/fluorine
