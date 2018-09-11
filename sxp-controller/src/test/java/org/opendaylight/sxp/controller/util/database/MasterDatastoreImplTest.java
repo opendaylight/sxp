@@ -10,103 +10,83 @@ package org.opendaylight.sxp.controller.util.database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
+import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.WriteTransaction;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
+import org.opendaylight.mdsal.common.api.TransactionChainListener;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
+import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, DatastoreAccess.class, BindingDispatcher.class})
 public class MasterDatastoreImplTest {
 
-    private static MasterDatastoreImpl database;
-    private static long time = System.currentTimeMillis();
-    private static DatastoreAccess access;
-    private static Map<IpPrefix, MasterDatabaseBinding> databaseBindings_Op = new HashMap<>();
-    @Mock private BindingDispatcher dispatcherMock;
-    @Mock private SxpDomain domainMock;
-    @Mock private SxpNode nodeMock;
+    @Mock
+    private SxpDomain domainMock;
+    @Mock
+    private SxpNode sxpNode;
+    @Mock
+    private DataBroker dataBroker;
+    @Mock
+    private ReadTransaction readTransaction;
+    @Mock
+    private WriteTransaction writeTransaction;
+
+    private MasterDatastoreImpl database;
+    private long time = System.currentTimeMillis();
 
     @BeforeClass
     public static void initClass() {
         BindingOriginsConfig.INSTANCE.addBindingOrigins(BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES);
+    }
 
-        access = PowerMockito.mock(DatastoreAccess.class);
-        PowerMockito.when(
-                access.merge(any(InstanceIdentifier.class), any(MasterDatabase.class), any(LogicalDatastoreType.class)))
-                .then(invocation -> {
-                    ((MasterDatabase) invocation.getArguments()[1]).getMasterDatabaseBinding().stream().forEach(b -> {
-                        databaseBindings_Op.put(b.getIpPrefix(), b);
-                    });
-                    return Futures.immediateCheckedFuture(null);
-                });
-        PowerMockito.when(
-                access.put(any(InstanceIdentifier.class), any(MasterDatabase.class), any(LogicalDatastoreType.class)))
-                .then(invocation -> {
-                    databaseBindings_Op.clear();
-                    ((MasterDatabase) invocation.getArguments()[1]).getMasterDatabaseBinding().stream().forEach(b -> {
-                        databaseBindings_Op.put(b.getIpPrefix(), b);
-                    });
-                    return Futures.immediateCheckedFuture(null);
-                });
-        PowerMockito.when(access.readSynchronous(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
-                .then(invocation -> {
-                    if (((InstanceIdentifier) invocation.getArguments()[0]).getTargetType() == MasterDatabase.class) {
-                        return new MasterDatabaseBuilder().setMasterDatabaseBinding(
-                                new ArrayList<>(databaseBindings_Op.values())).build();
-                    } else if (((InstanceIdentifier) invocation.getArguments()[0]).getTargetType()
-                            == MasterDatabaseBinding.class) {
-                        return databaseBindings_Op.get(
-                                ((MasterDatabaseBindingKey) ((InstanceIdentifier) invocation.getArguments()[0])
-                                        .firstKeyOf(
-                                                MasterDatabaseBinding.class)).getIpPrefix());
-                    }
-                    return null;
-                });
+    @AfterClass
+    public static void tearDown() {
+        BindingOriginsConfig.INSTANCE.deleteConfiguration();
     }
 
     @Before
     public void init() {
-        databaseBindings_Op.clear();
-        when(dispatcherMock.getOwner()).thenReturn(nodeMock);
+        MockitoAnnotations.initMocks(this);
+        when(sxpNode.getWorker()).thenReturn(new ThreadsWorker());
+        DatastoreAccess access = prepareDataStore(dataBroker, readTransaction, writeTransaction);
         database = new MasterDatastoreImpl(access, "0.0.0.0", "DOMAIN");
-        database.initDBPropagatingListener(dispatcherMock, domainMock);
+        database.initDBPropagatingListener(new BindingDispatcher(sxpNode), domainMock);
     }
 
     private <T extends SxpBindingFields> T getBinding(String prefix, int sgt, String... peers) {
@@ -347,5 +327,36 @@ public class MasterDatastoreImplTest {
 
         assertEquals("\t100 1.1.1.1/32\n" + "\t15 0:0:0:0:0:0:0:A/32\n" + "\t2000 2.2.2.2/32\n" + "\t2000 2.2.2.20/32\n"
                 + "MasterDatastoreImpl\n", value.toString());
+    }
+
+    /**
+     * Prepare {@link DatastoreAccess} mock instance backed by {@link DataBroker} for tests.
+     * <p>
+     * {@link ReadTransaction} and {@link WriteTransaction} are assumed to be created by
+     * {@link DatastoreAccess} {@link BindingTransactionChain}.
+     * <p>
+     * {@link ReadTransaction} reads an mock instance of {@link MasterDatabase} on any read.
+     * {@link WriteTransaction} is committed successfully.
+     *
+     * @param dataBroker mock of {@link DataBroker}
+     * @param readTransaction mock of {@link ReadTransaction}
+     * @param writeTransaction mock of {@link WriteTransaction}
+     * @return mock of {@link DatastoreAccess}
+     */
+    private static DatastoreAccess prepareDataStore(DataBroker dataBroker, ReadTransaction readTransaction,
+            WriteTransaction writeTransaction) {
+        BindingTransactionChain transactionChain = mock(BindingTransactionChain.class);
+        doReturn(CommitInfo.emptyFluentFuture())
+                .when(writeTransaction).commit();
+        when(readTransaction.read(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class)))
+                .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(mock(MasterDatabase.class))));
+        when(transactionChain.newReadOnlyTransaction())
+                .thenReturn(readTransaction);
+        when(transactionChain.newWriteOnlyTransaction())
+                .thenReturn(writeTransaction);
+        when(dataBroker.createTransactionChain(any(TransactionChainListener.class)))
+                .thenReturn(transactionChain);
+
+        return DatastoreAccess.getInstance(dataBroker);
     }
 }
