@@ -14,13 +14,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.TransactionChain;
+import org.opendaylight.mdsal.binding.api.TransactionChainListener;
 import org.opendaylight.mdsal.binding.api.WriteTransaction;
 import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
-import org.opendaylight.mdsal.common.api.TransactionChainListener;
 import org.opendaylight.sxp.controller.listeners.TransactionChainListenerImpl;
 import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.DataObject;
@@ -35,7 +35,7 @@ public final class DatastoreAccess implements AutoCloseable {
     private final DataBroker dataBroker;
     private final List<DatastoreAccess> childDatastoreAccesses = new ArrayList<>();
 
-    private BindingTransactionChain bindingTransactionChain;
+    private TransactionChain bindingTransactionChain;
     private boolean closed = false;
 
     /**

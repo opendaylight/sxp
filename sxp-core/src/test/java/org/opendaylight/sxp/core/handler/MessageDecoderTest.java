@@ -7,8 +7,8 @@
  */
 package org.opendaylight.sxp.core.handler;
 
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -16,55 +16,60 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.handler.codec.DecoderException;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLHandshakeException;
+import java.util.Collections;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.opendaylight.sxp.core.SxpConnection;
+import org.opendaylight.sxp.core.SxpConnection.ChannelHandlerContextType;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.behavior.Context;
-import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
-import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
+import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
-import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorCodeNonExtended;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ErrorSubCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, Context.class, LegacyMessageFactory.class})
 public class MessageDecoderTest {
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    private static SxpConnection connection;
-    private static SxpNode sxpNode;
-    private static ChannelInboundHandler decoder;
-    private static ChannelHandlerContext channelHandlerContext;
-    private static Context context;
+    private SxpConnection connection;
+    private SxpNode sxpNode;
+    private ChannelInboundHandler decoder;
+    private ChannelHandlerContext channelHandlerContext;
 
     @Before
     public void init() throws Exception {
+        sxpNode = mock(SxpNode.class);
+        NodeId nodeId = new NodeId("10.10.10.10");
+        when(sxpNode.getNodeId()).thenReturn(nodeId);
+        Context context = new Context(sxpNode, Version.Version4);
         connection = mock(SxpConnection.class);
-        context = PowerMockito.mock(Context.class);
+        when(connection.getOwner()).thenReturn(sxpNode);
         when(connection.getContext()).thenReturn(context);
-        sxpNode = PowerMockito.mock(SxpNode.class);
-        PowerMockito.when(sxpNode.getConnection(any(SocketAddress.class))).thenReturn(connection);
+        when(connection.getOwnerId()).thenReturn(nodeId);
+        when(connection.getVersion()).thenReturn(Version.Version4);
+        when(connection.getLocalAddress()).thenReturn(new InetSocketAddress("20.20.20.20", 0));
+        when(connection.getDestination()).thenReturn(new InetSocketAddress("10.10.10.10", 0));
+        when(sxpNode.getConnection(any(SocketAddress.class))).thenReturn(connection);
         decoder = MessageDecoder.createClientProfile(sxpNode);
         channelHandlerContext = mock(ChannelHandlerContext.class);
         Channel channel = mock(Channel.class);
@@ -76,29 +81,22 @@ public class MessageDecoderTest {
     @Test
     public void testChannelActive() throws Exception {
         when(connection.isStateOn()).thenReturn(false);
-        when(connection.isModeBoth()).thenReturn(false);
+        when(connection.getMode()).thenReturn(ConnectionMode.Speaker);
         decoder.channelActive(channelHandlerContext);
         verify(connection).addChannelHandlerContext(any(ChannelHandlerContext.class));
-        verify(context).executeChannelActivationStrategy(any(ChannelHandlerContext.class), any(SxpConnection.class));
 
-        when(connection.isModeBoth()).thenReturn(true);
-        when(connection.isStateOn(Matchers.<SxpConnection.ChannelHandlerContextType>any())).thenReturn(true);
+        when(connection.getMode()).thenReturn(ConnectionMode.Both);
+        when(connection.isStateOn(ArgumentMatchers.any(ChannelHandlerContextType.class))).thenReturn(true);
         decoder.channelActive(channelHandlerContext);
         verify(connection, times(2)).addChannelHandlerContext(any(ChannelHandlerContext.class));
-        verify(context, times(2)).executeChannelActivationStrategy(any(ChannelHandlerContext.class),
-                any(SxpConnection.class));
 
-        when(connection.isStateOn(Matchers.<SxpConnection.ChannelHandlerContextType>any())).thenReturn(false);
+        when(connection.isStateOn(ArgumentMatchers.any(ChannelHandlerContextType.class))).thenReturn(false);
         decoder.channelActive(channelHandlerContext);
         verify(connection, times(3)).addChannelHandlerContext(any(ChannelHandlerContext.class));
-        verify(context, times(3)).executeChannelActivationStrategy(any(ChannelHandlerContext.class),
-                any(SxpConnection.class));
 
         decoder = MessageDecoder.createServerProfile(sxpNode);
         decoder.channelActive(channelHandlerContext);
         verify(connection, times(4)).addChannelHandlerContext(any(ChannelHandlerContext.class));
-        verify(context, times(3)).executeChannelActivationStrategy(any(ChannelHandlerContext.class),
-                any(SxpConnection.class));
 
         when(sxpNode.getConnection(any(SocketAddress.class))).thenReturn(null);
         decoder.channelActive(channelHandlerContext);
@@ -112,35 +110,59 @@ public class MessageDecoderTest {
     @Test
     public void testChannelInactive() throws Exception {
         decoder.channelInactive(channelHandlerContext);
-        verify(context).executeChannelInactivationStrategy(any(ChannelHandlerContext.class), any(SxpConnection.class));
+        verify(connection).setStateOff(eq(channelHandlerContext));
 
         when(sxpNode.getConnection(any(SocketAddress.class))).thenReturn(null);
         decoder.channelInactive(channelHandlerContext);
-        verify(context).executeChannelInactivationStrategy(any(ChannelHandlerContext.class), any(SxpConnection.class));
+        verify(connection).setStateOff(eq(channelHandlerContext));
     }
 
     @Test
     public void testChannelRead0() throws Exception {
-        ByteBuf byteBuf = mock(ByteBuf.class);
-        when(byteBuf.readableBytes()).thenReturn(1, 0);
-        PowerMockito.when(context.executeParseInput(any(ByteBuf.class))).thenReturn(mock(Notification.class));
+        when(connection.getMode()).thenReturn(ConnectionMode.Speaker);
 
+        ByteBuf byteBuf = MessageFactory.createOpen(Version.Version4, ConnectionMode.Speaker, sxpNode.getNodeId(), 0);
         decoder.channelRead(channelHandlerContext, byteBuf);
-        verify(context).executeParseInput(any(ByteBuf.class));
-        verify(context).executeInputMessageStrategy(any(ChannelHandlerContext.class), any(SxpConnection.class),
-                any(Notification.class));
-        Exception[] classes
-                = new Exception[]{new ErrorMessageException(ErrorCodeNonExtended.NoError, null),
-                    new ErrorMessageReceivedException(""),
-                    new UpdateMessageConnectionStateException(ConnectionState.AdministrativelyDown)};
-        for (byte i = 0; i < classes.length; i++) {
-            doThrow(classes[i]).when(context)
-                    .executeInputMessageStrategy(any(ChannelHandlerContext.class), any(SxpConnection.class),
-                            any(Notification.class));
-            when(byteBuf.readableBytes()).thenReturn(1, 0);
-            decoder.channelRead(channelHandlerContext, byteBuf);
-            verify(connection, times(i + 1)).setStateOff(any(ChannelHandlerContext.class));
-        }
+
+        // connection is set up
+        verify(connection).setConnection(any(OpenMessage.class));
+    }
+
+    @Test
+    public void testChannelRead0ErrMsg() throws Exception {
+        when(connection.getMode()).thenReturn(ConnectionMode.Speaker);
+
+        ByteBuf byteBuf = Unpooled.copyInt(4, 0, 0);
+        decoder.channelRead(channelHandlerContext, byteBuf);
+
+        // error to decode msg - connection is shut down
+        verify(connection).setStateOff(eq(channelHandlerContext));
+    }
+
+    @Test
+    public void testChannelRead0ErrMsgReceived() throws Exception {
+        when(connection.getMode()).thenReturn(ConnectionMode.Speaker);
+
+        ByteBuf byteBuf = MessageFactory
+                .createError(ErrorCode.MessageHeaderError, ErrorSubCode.MalformedAttributeList, new byte[] {});
+        decoder.channelRead(channelHandlerContext, byteBuf);
+
+        // error msg received - connection is shut down
+        verify(connection).setStateOff(eq(channelHandlerContext));
+    }
+
+    @Test
+    public void testChannelRead0UpdateMsgConnectionState() throws Exception {
+        when(connection.getMode()).thenReturn(ConnectionMode.Speaker);
+        when(connection.getState()).thenReturn(ConnectionState.Off);
+
+        ByteBuf byteBuf = MessageFactory
+                .createUpdate(Collections.emptyList(), Collections.emptyList(), sxpNode.getNodeId(),
+                        Collections.emptyList(), null);
+        decoder.channelRead(channelHandlerContext, byteBuf);
+
+        // update msg received when connection is not on - connection is shut down
+        verify(connection).setStateOff(eq(channelHandlerContext));
     }
 
     @Test
@@ -150,52 +172,39 @@ public class MessageDecoderTest {
     }
 
     @Test
-    public void testExceptionCaught() throws Exception {
-        decoder.exceptionCaught(channelHandlerContext, new DecoderException("error"));
-        verify(context, never()).executeExceptionCaughtStrategy(any(ChannelHandlerContext.class),
-                any(SxpConnection.class));
-
-        decoder.exceptionCaught(channelHandlerContext, new DecoderException(new SSLHandshakeException("error")));
-        verify(context, never()).executeExceptionCaughtStrategy(any(ChannelHandlerContext.class),
-                any(SxpConnection.class));
-
-        decoder.exceptionCaught(channelHandlerContext, new DecoderException(new SSLException("error")));
-        verify(context, never()).executeExceptionCaughtStrategy(any(ChannelHandlerContext.class),
-                any(SxpConnection.class));
-
+    public void testIOExceptionCaught() throws Exception {
         decoder.exceptionCaught(channelHandlerContext, new IOException("error"));
-        verify(context, never()).executeExceptionCaughtStrategy(any(ChannelHandlerContext.class),
-                any(SxpConnection.class));
+        verify(connection).setStateOff(eq(channelHandlerContext));
+    }
 
-        decoder.exceptionCaught(channelHandlerContext, null);
-        verify(context).executeExceptionCaughtStrategy(any(ChannelHandlerContext.class), any(SxpConnection.class));
+    @Test
+    public void testDecoderExceptionCaught() throws Exception {
+        decoder.exceptionCaught(channelHandlerContext, new DecoderException("error"));
+        verify(connection).setStateOff(eq(channelHandlerContext));
+    }
 
-        when(sxpNode.getConnection(any())).thenReturn(null);
+    @Test
+    public void testNullExceptionCaught() throws Exception {
         decoder.exceptionCaught(channelHandlerContext, null);
+        verify(connection, never()).setStateOff(any());
     }
 
     @Test
     public void testSendErrorMessage() throws Exception {
-        ChannelHandlerContext context = mock(ChannelHandlerContext.class);
-        when(connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT)).thenReturn(
-                context);
+        when(connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT))
+                .thenReturn(channelHandlerContext);
         MessageDecoder.sendErrorMessage(null,
-                new ErrorMessageException(ErrorCodeNonExtended.NoError, new Exception("")), connection);
-
-        verify(context).writeAndFlush(any(ByteBuf.class));
+                new ErrorMessageException(ErrorCodeNonExtended.NoError, new Exception()), connection);
+        verify(channelHandlerContext).close();
     }
 
     @Test
     public void testSendErrorMessageExceptionHandling() throws Exception {
-        PowerMockito.mockStatic(LegacyMessageFactory.class);
         when(connection.getChannelHandlerContext(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT))
                 .thenThrow(ChannelHandlerContextNotFoundException.class);
-        ByteBuf byteBufMock = mock(ByteBuf.class);
-        when(LegacyMessageFactory.createError(ErrorCodeNonExtended.NoError, null)).thenReturn(byteBufMock);
         MessageDecoder.sendErrorMessage(null,
-                new ErrorMessageException(ErrorCodeNonExtended.NoError, new Exception("")), connection);
-
-        verify(byteBufMock).release();
+                new ErrorMessageException(ErrorCodeNonExtended.NoError, new Exception()), connection);
+        verify(channelHandlerContext, never()).close();
     }
 
     @Test
