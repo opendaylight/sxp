@@ -14,16 +14,10 @@ import static org.mockito.Mockito.verify;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.opendaylight.mdsal.common.api.AsyncTransaction;
 import org.opendaylight.mdsal.common.api.TransactionChain;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
-import org.opendaylight.sxp.core.Configuration;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({Configuration.class, DatastoreAccess.class})
 public class TransactionChainListenerImplTest {
 
     private DatastoreAccess datastoreAccess;

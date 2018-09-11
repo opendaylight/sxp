@@ -10,7 +10,9 @@ package org.opendaylight.sxp.controller.util.database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
@@ -22,7 +24,6 @@ import java.util.Objects;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
@@ -43,12 +44,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({DatastoreAccess.class})
 public class SxpDatastoreImplTest {
 
     private static SxpDatastoreImpl database;
@@ -58,8 +54,8 @@ public class SxpDatastoreImplTest {
 
     @BeforeClass
     public static void initClass() {
-        access = PowerMockito.mock(DatastoreAccess.class);
-        PowerMockito.when(
+        access = mock(DatastoreAccess.class);
+        when(
                 access.merge(any(InstanceIdentifier.class), any(BindingSource.class), any(LogicalDatastoreType.class)))
                 .then(invocation -> {
                     InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
@@ -79,7 +75,7 @@ public class SxpDatastoreImplTest {
                     }
                     return Futures.immediateCheckedFuture(null);
                 });
-        PowerMockito.when(
+        when(
                 access.put(any(InstanceIdentifier.class), any(MasterDatabase.class), any(LogicalDatastoreType.class)))
                 .then(invocation -> {
                     InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
@@ -100,7 +96,7 @@ public class SxpDatastoreImplTest {
                     }
                     return Futures.immediateCheckedFuture(null);
                 });
-        PowerMockito.when(access.checkAndDelete(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
+        when(access.checkAndDelete(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
                 .then(invocation -> {
                     InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
                     if (identifier.getTargetType() == BindingSource.class) {
@@ -116,7 +112,7 @@ public class SxpDatastoreImplTest {
                     }
                     return null;
                 });
-        PowerMockito.when(access.readSynchronous(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
+        when(access.readSynchronous(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
                 .then(invocation -> {
                     InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
                     Map<NodeId, List<SxpDatabaseBinding>>

@@ -9,8 +9,8 @@ package org.opendaylight.sxp.controller.core;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -18,7 +18,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
@@ -36,12 +35,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.Origin
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({DatastoreAccess.class})
 public class SxpConfigRpcServiceImplTest {
 
     private SxpConfigRpcServiceImpl service;
@@ -57,8 +51,7 @@ public class SxpConfigRpcServiceImplTest {
         when(datastoreAccess.deleteSynchronous(any(InstanceIdentifier.class),
                 eq(LogicalDatastoreType.CONFIGURATION))).thenReturn(true);
 
-        PowerMockito.mockStatic(DatastoreAccess.class);
-        PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
+        when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
 
         service = new SxpConfigRpcServiceImpl(Mockito.mock(DataBroker.class));
     }

@@ -12,8 +12,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -27,7 +27,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
@@ -345,7 +345,7 @@ public class DatastoreAccessTest {
         when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
 
         // data did not exist before
-        when(readOnlyTransaction.read(Matchers.eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class)))
+        when(readOnlyTransaction.read(ArgumentMatchers.eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class)))
                 .thenReturn(FluentFutures.immediateFluentFuture(Optional.empty()));
         doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction).commit();
 
@@ -365,7 +365,7 @@ public class DatastoreAccessTest {
         when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
 
         // data exists before
-        when(readOnlyTransaction.read(Matchers.eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class)))
+        when(readOnlyTransaction.read(ArgumentMatchers.eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class)))
                 .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(mock(SxpNodeIdentity.class))));
         doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction).commit();
 

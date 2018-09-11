@@ -12,18 +12,16 @@ import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyList;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.netty.channel.Channel;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
@@ -38,12 +36,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({DatastoreAccess.class, BindingDispatcher.class})
 public class SxpDatastoreNodeTest {
 
     private static String ID = "127.0.0.1";
@@ -56,9 +49,8 @@ public class SxpDatastoreNodeTest {
     public void setUp() throws Exception {
         nodeIdentity = mock(SxpNodeIdentity.class);
         datastoreAccess = mock(DatastoreAccess.class);
-        PowerMockito.mockStatic(DatastoreAccess.class);
-        PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
-        PowerMockito.when(DatastoreAccess.getInstance(any(DatastoreAccess.class))).thenReturn(datastoreAccess);
+        when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
+        when(DatastoreAccess.getInstance(any(DatastoreAccess.class))).thenReturn(datastoreAccess);
         when(nodeIdentity.getVersion()).thenReturn(Version.Version4);
         Security security = mock(Security.class);
         when(security.getPassword()).thenReturn("default");
@@ -72,8 +64,6 @@ public class SxpDatastoreNodeTest {
 
         node = SxpDatastoreNode.createInstance(NodeIdConv.createNodeId(ID), datastoreAccess, nodeIdentity);
         node.addDomain(new SxpDomainBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN).build());
-        PowerMockito.field(SxpNode.class, "serverChannel").set(node, mock(Channel.class));
-        PowerMockito.field(SxpNode.class, "svcBindingDispatcher").set(node, dispatcher);
     }
 
     @Test

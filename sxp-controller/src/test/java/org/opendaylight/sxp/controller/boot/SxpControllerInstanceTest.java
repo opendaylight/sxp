@@ -8,8 +8,8 @@
 package org.opendaylight.sxp.controller.boot;
 
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -19,7 +19,6 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.opendaylight.mdsal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.DataTreeIdentifier;
@@ -39,12 +38,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Node
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({DatastoreAccess.class})
 public class SxpControllerInstanceTest {
 
     private static final InstanceIdentifier<BindingOrigins> BINDING_ORIGINS = InstanceIdentifier
@@ -59,9 +53,8 @@ public class SxpControllerInstanceTest {
 
     @Before
     public void init() {
-        PowerMockito.mockStatic(DatastoreAccess.class);
         datastoreAccess = mock(DatastoreAccess.class);
-        PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
+        when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
         BindingOrigin local = new BindingOriginBuilder()
                 .setOrigin(BindingOriginsConfig.LOCAL_ORIGIN)
                 .setPriority((short) 1)

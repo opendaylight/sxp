@@ -10,9 +10,9 @@ package org.opendaylight.sxp.controller.listeners.sublisteners;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -22,13 +22,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.opendaylight.mdsal.binding.api.DataObjectModification;
 import org.opendaylight.mdsal.binding.api.DataTreeModification;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
-import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntries;
@@ -48,12 +46,7 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({Configuration.class, DatastoreAccess.class})
 public class DomainFilterListenerTest {
 
     private DomainFilterListener identityListener;
@@ -62,14 +55,10 @@ public class DomainFilterListenerTest {
 
     @Before
     public void setUp() throws Exception {
-        datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
+        datastoreAccess = mock(DatastoreAccess.class);
         identityListener = new DomainFilterListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
         when(sxpNode.addFilterToDomain(anyString(), any(DomainFilter.class))).thenReturn(true);
-        PowerMockito.mockStatic(Configuration.class);
-        PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
     }
 
     private DataObjectModification<DomainFilter> getObjectModification(

@@ -12,11 +12,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyListOf;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
@@ -120,12 +119,7 @@ import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({MasterDatastoreImpl.class, DatastoreAccess.class, SxpNode.class})
 public class SxpRpcServiceImplTest {
 
     private static SxpNode node;
@@ -135,7 +129,7 @@ public class SxpRpcServiceImplTest {
     @SuppressWarnings("unchecked")
     @Before
     public void init() {
-        node = PowerMockito.mock(SxpNode.class);
+        node = mock(SxpNode.class);
         datastoreAccess = mock(DatastoreAccess.class);
         final org.opendaylight.sxp.core.SxpDomain domain = mock(org.opendaylight.sxp.core.SxpDomain.class);
         final MasterDatabaseInf masterDatabase = mock(MasterDatastoreImpl.class);
@@ -175,8 +169,7 @@ public class SxpRpcServiceImplTest {
                         .child(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup.class,
                                 new SxpPeerGroupKey(SxpNode.DEFAULT_DOMAIN))),
                 eq(LogicalDatastoreType.OPERATIONAL))).thenReturn(sxpPeerGroup);
-        PowerMockito.mockStatic(DatastoreAccess.class);
-        PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
+        when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
         when(node.getNodeId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
         when(node.getPeerGroups()).thenReturn(Collections.singletonList(mock(SxpPeerGroup.class)));
         when(node.getWorker()).thenReturn(new ThreadsWorker());

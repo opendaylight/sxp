@@ -10,7 +10,8 @@ package org.opendaylight.sxp.controller.util.database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.Futures;
@@ -24,7 +25,6 @@ import java.util.Objects;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
@@ -47,12 +47,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, DatastoreAccess.class, BindingDispatcher.class})
 public class MasterDatastoreImplTest {
 
     private static MasterDatastoreImpl database;
@@ -67,8 +62,8 @@ public class MasterDatastoreImplTest {
     public static void initClass() {
         BindingOriginsConfig.INSTANCE.addBindingOrigins(BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES);
 
-        access = PowerMockito.mock(DatastoreAccess.class);
-        PowerMockito.when(
+        access = mock(DatastoreAccess.class);
+        when(
                 access.merge(any(InstanceIdentifier.class), any(MasterDatabase.class), any(LogicalDatastoreType.class)))
                 .then(invocation -> {
                     ((MasterDatabase) invocation.getArguments()[1]).getMasterDatabaseBinding().stream().forEach(b -> {
@@ -76,7 +71,7 @@ public class MasterDatastoreImplTest {
                     });
                     return Futures.immediateCheckedFuture(null);
                 });
-        PowerMockito.when(
+        when(
                 access.put(any(InstanceIdentifier.class), any(MasterDatabase.class), any(LogicalDatastoreType.class)))
                 .then(invocation -> {
                     databaseBindings_Op.clear();
@@ -85,7 +80,7 @@ public class MasterDatastoreImplTest {
                     });
                     return Futures.immediateCheckedFuture(null);
                 });
-        PowerMockito.when(access.readSynchronous(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
+        when(access.readSynchronous(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
                 .then(invocation -> {
                     if (((InstanceIdentifier) invocation.getArguments()[0]).getTargetType() == MasterDatabase.class) {
                         return new MasterDatabaseBuilder().setMasterDatabaseBinding(
