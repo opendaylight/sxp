@@ -12,11 +12,9 @@ import java.util.Collections;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
 import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.ReadTransaction;
@@ -30,7 +28,6 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 /**
  * Test for {@link ClusterSanityWatchdogInstance}.
  */
-@RunWith(MockitoJUnitRunner.class)
 public class ClusterSanityWatchdogInstanceTest {
 
     private final long TIMEOUT = 5000;
@@ -46,7 +43,7 @@ public class ClusterSanityWatchdogInstanceTest {
 
     @Before
     public void setUp() throws Exception {
-        Mockito.when(dataBroker.createTransactionChain(Matchers.any())).thenReturn(txChain);
+        Mockito.when(dataBroker.createTransactionChain(ArgumentMatchers.any())).thenReturn(txChain);
         Mockito.when(txChain.newReadOnlyTransaction()).thenReturn(roTx);
         Mockito.when(
                 singletonServiceProvider.registerClusterSingletonService(Mockito.any(ClusterSingletonService.class)))
@@ -58,16 +55,16 @@ public class ClusterSanityWatchdogInstanceTest {
 
     private void setClusterHealth(boolean healty) {
         if (healty) {
-            Mockito.when(roTx.read(Matchers.any(), Matchers.<InstanceIdentifier<Topology>>any()))
+            Mockito.when(roTx.read(ArgumentMatchers.any(), ArgumentMatchers.<InstanceIdentifier<Topology>>any()))
                     .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(topology)));
         } else {
-            Mockito.when(roTx.read(Matchers.any(), Matchers.<InstanceIdentifier<Topology>>any()))
+            Mockito.when(roTx.read(ArgumentMatchers.any(), ArgumentMatchers.<InstanceIdentifier<Topology>>any()))
                     .thenReturn(FluentFutures.immediateFluentFuture(Optional.empty()));
         }
     }
 
     private void setClusterInfoUnreachable() {
-        Mockito.when(roTx.read(Matchers.any(), Matchers.<InstanceIdentifier<Topology>>any()))
+        Mockito.when(roTx.read(ArgumentMatchers.any(), ArgumentMatchers.<InstanceIdentifier<Topology>>any()))
                 .thenThrow(new RuntimeException());
     }
 
