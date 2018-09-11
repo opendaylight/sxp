@@ -30,9 +30,9 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.TransactionChain;
 import org.opendaylight.mdsal.binding.api.WriteTransaction;
 import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
@@ -50,7 +50,7 @@ public class DatastoreAccessTest {
     @Mock
     private DataBroker dataBroker;
     @Mock
-    private BindingTransactionChain transactionChain;
+    private TransactionChain transactionChain;
 
     private DatastoreAccess access;
 
