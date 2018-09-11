@@ -8,8 +8,8 @@
 
 package org.opendaylight.sxp.core.handler;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -130,7 +130,7 @@ public class ConnectionDecoderTest {
 
         domains.add(getDomain(getTemplate(ConnectionMode.Listener, Version.Version4)));
         decoder.channelRead0(ctx, getMessage(MessageType.OpenResp, Version.Version4, ConnectionMode.Listener));
-        verify(sxpNode).addConnection(any(Connection.class), anyString());
+        verify(sxpNode).addConnection(any(), any());
         verify(ctx).close();
     }
 
@@ -142,7 +142,7 @@ public class ConnectionDecoderTest {
 
         domains.add(getDomain(getTemplate(ConnectionMode.Listener, null)));
         decoder.channelRead0(ctx, getMessage(MessageType.Open, Version.Version4, ConnectionMode.Listener));
-        verify(sxpNode).addConnection(any(Connection.class), anyString());
+        verify(sxpNode).addConnection(any(), any());
         verify(ctx).close();
     }
 
@@ -154,7 +154,7 @@ public class ConnectionDecoderTest {
 
         domains.add(getDomain(getTemplate(null, Version.Version4)));
         decoder.channelRead0(ctx, getMessage(MessageType.OpenResp, Version.Version4, ConnectionMode.Listener));
-        verify(sxpNode).addConnection(any(Connection.class), anyString());
+        verify(sxpNode).addConnection(any(), any());
         verify(ctx).close();
     }
 
@@ -166,7 +166,7 @@ public class ConnectionDecoderTest {
 
         domains.add(getDomain(getTemplate(null, null)));
         decoder.channelRead0(ctx, getMessage(MessageType.Open, Version.Version4, ConnectionMode.Listener));
-        verify(sxpNode).addConnection(any(Connection.class), anyString());
+        verify(sxpNode).addConnection(any(), any());
         verify(ctx).close();
     }
 
