@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collections;
 import org.junit.Assert;
@@ -24,44 +25,40 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageLegacy;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, StrategyFactory.class})
 public class ContextTest {
 
     @Rule public ExpectedException exception = ExpectedException.none();
 
-    private static SxpConnection connection;
-    private static SxpNode sxpNode;
-    private static ChannelHandlerContext channelHandlerContext;
-    private static Context context;
-    private static Strategy strategy;
+    private SxpConnection connection;
+    private SxpNode sxpNode;
+    private ChannelHandlerContext channelHandlerContext;
+    private Context context;
 
     @Before
     public void init() throws Exception {
         connection = mock(SxpConnection.class);
-        sxpNode = PowerMockito.mock(SxpNode.class);
+        sxpNode = mock(SxpNode.class);
         when(connection.getOwner()).thenReturn(sxpNode);
-        PowerMockito.when(sxpNode.getConnection(any(SocketAddress.class))).thenReturn(connection);
+        when(connection.getMode()).thenReturn(ConnectionMode.Both);
+        InetSocketAddress destination = new InetSocketAddress("10.10.10.10", 0);
+        InetSocketAddress local = new InetSocketAddress("20.20.20.20", 0);
+        when(connection.getDestination()).thenReturn(destination);
+        when(connection.getLocalAddress()).thenReturn(local);
+        when(sxpNode.getConnection(any(SocketAddress.class))).thenReturn(connection);
         channelHandlerContext = mock(ChannelHandlerContext.class);
         Channel channel = mock(Channel.class);
         when(channel.localAddress()).thenReturn(mock(SocketAddress.class));
         when(channel.remoteAddress()).thenReturn(mock(SocketAddress.class));
         when(channelHandlerContext.channel()).thenReturn(channel);
-        strategy = mock(Strategy.class);
-        PowerMockito.mockStatic(StrategyFactory.class);
-        PowerMockito.when(StrategyFactory.getStrategy(any(SxpNode.class), any(Version.class))).thenReturn(strategy);
     }
 
     @Test
@@ -76,8 +73,6 @@ public class ContextTest {
         when(connection.getVersion()).thenReturn(Version.Version3);
 
         context.executeInputMessageStrategy(channelHandlerContext, connection, message);
-        verify(strategy).onInputMessage(any(ChannelHandlerContext.class), any(SxpConnection.class),
-                any(OpenMessageLegacy.class));
 
         when(message.getType()).thenReturn(MessageType.OpenResp);
         exception.expect(IllegalStateException.class);
@@ -108,9 +103,9 @@ public class ContextTest {
         when(message1.getType()).thenReturn(MessageType.Open);
         when(connection.getVersion()).thenReturn(Version.Version2);
         context.executeInputMessageStrategy(channelHandlerContext, connection, message1);
-        verify(strategy).onInputMessage(channelHandlerContext, connection, message1);
 
-        when(message.getType()).thenReturn(MessageType.OpenResp);
+        when(message1.getType()).thenReturn(MessageType.OpenResp);
+        when(connection.getVersion()).thenReturn(Version.Version4);
         context.executeInputMessageStrategy(channelHandlerContext, connection, message);
         verify(connection, times(2)).setBehaviorContexts(Version.Version1);
     }
@@ -136,9 +131,7 @@ public class ContextTest {
     @Test
     public void testExecuteParseInput() throws Exception {
         Context ctxt = new Context(sxpNode, Version.Version4);
-        Notification notificationMock = mock(Notification.class);
-        when(strategy.onParseInput(any())).thenReturn(notificationMock);
-        Assert.assertNotNull(ctxt.executeParseInput(mock(ByteBuf.class)));
+        Assert.assertNotNull(ctxt.executeParseInput(LegacyMessageFactory.createOpen(Version.Version4, ConnectionMode.Both)));
     }
 
     @Test
@@ -150,8 +143,6 @@ public class ContextTest {
     @Test
     public void testExecuteUpdateMessageStrategy() throws Exception {
         Context ctxt = new Context(sxpNode, Version.Version4);
-        ByteBuf bbufMock = mock(ByteBuf.class);
-        when(strategy.onUpdateMessage(any(), any(), any(), any())).thenReturn(bbufMock);
-        Assert.assertNotNull(ctxt.executeUpdateMessageStrategy(connection, Collections.EMPTY_LIST, Collections.EMPTY_LIST, null));
+        Assert.assertNotNull(ctxt.executeUpdateMessageStrategy(connection, Collections.emptyList(), Collections.emptyList(), null));
     }
 }
