@@ -10,7 +10,7 @@ package org.opendaylight.sxp.util.database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Objects;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.filtering.PrefixListFilter;
@@ -48,12 +47,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.entry.PrefixListMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class})
 public class SxpDatabaseImplTest {
 
     private static SxpDatabaseImpl database;
@@ -63,10 +57,10 @@ public class SxpDatabaseImplTest {
     @Before
     public void init() {
         database = new SxpDatabaseImpl();
-        node = PowerMockito.mock(SxpNode.class);
-        PowerMockito.when(node.getBindingSxpDatabase()).thenReturn(database);
-        PowerMockito.when(node.getAllConnections()).thenReturn(sxpConnections);
-        PowerMockito.when(node.getAllConnections(any())).thenReturn(sxpConnections);
+        node = mock(SxpNode.class);
+        when(node.getBindingSxpDatabase()).thenReturn(database);
+        when(node.getAllConnections()).thenReturn(sxpConnections);
+        when(node.getAllConnections(any())).thenReturn(sxpConnections);
     }
 
     private SxpConnection mockConnection(String remoteId) {

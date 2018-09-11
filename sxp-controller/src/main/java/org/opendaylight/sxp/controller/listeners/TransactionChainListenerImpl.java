@@ -9,9 +9,9 @@
 package org.opendaylight.sxp.controller.listeners;
 
 import java.util.Objects;
-import org.opendaylight.mdsal.common.api.AsyncTransaction;
-import org.opendaylight.mdsal.common.api.TransactionChain;
-import org.opendaylight.mdsal.common.api.TransactionChainListener;
+import org.opendaylight.mdsal.binding.api.Transaction;
+import org.opendaylight.mdsal.binding.api.TransactionChain;
+import org.opendaylight.mdsal.binding.api.TransactionChainListener;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +32,7 @@ public class TransactionChainListenerImpl implements TransactionChainListener {
     }
 
     @Override
-    public void onTransactionChainFailed(TransactionChain<?, ?> chain, AsyncTransaction<?, ?> transaction,
-            Throwable cause) {
+    public void onTransactionChainFailed(TransactionChain chain, Transaction transaction, Throwable cause) {
         datastoreAccess.reinitializeChain();
         LOG.warn("{} Transaction chain failed creating new one.", datastoreAccess);
         if (LOG.isDebugEnabled()) {
@@ -42,7 +41,7 @@ public class TransactionChainListenerImpl implements TransactionChainListener {
     }
 
     @Override
-    public void onTransactionChainSuccessful(TransactionChain<?, ?> chain) {
+    public void onTransactionChainSuccessful(TransactionChain chain) {
         if (LOG.isTraceEnabled()) {
             LOG.trace("Transaction chain Success");
         }
