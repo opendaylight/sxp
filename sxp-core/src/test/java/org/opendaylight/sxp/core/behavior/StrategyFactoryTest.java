@@ -8,21 +8,16 @@
 package org.opendaylight.sxp.core.behavior;
 
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.exception.unknown.UnknownVersionException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class})
 public class StrategyFactoryTest {
 
     @Rule public ExpectedException exception = ExpectedException.none();
@@ -31,7 +26,7 @@ public class StrategyFactoryTest {
 
     @Before
     public void init() {
-        sxpNode = PowerMockito.mock(SxpNode.class);
+        sxpNode = mock(SxpNode.class);
     }
 
     @Test

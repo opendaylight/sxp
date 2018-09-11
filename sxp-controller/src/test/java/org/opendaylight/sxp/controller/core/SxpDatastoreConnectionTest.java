@@ -10,23 +10,31 @@ package org.opendaylight.sxp.controller.core;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.TransactionChain;
+import org.opendaylight.mdsal.binding.api.TransactionChainListener;
+import org.opendaylight.mdsal.binding.api.WriteTransaction;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
@@ -44,32 +52,35 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, DatastoreAccess.class})
 public class SxpDatastoreConnectionTest {
 
-    private DatastoreAccess datastoreAccess;
     private SxpDatastoreConnection connection;
-    private static SxpNode sxpNode;
+
+    @Mock
     private static ThreadsWorker worker;
+    @Mock
+    private SxpNode sxpNode;
+    @Mock
+    private DataBroker dataBroker;
+    @Mock
+    private ReadTransaction readTransaction;
+    @Mock
+    private WriteTransaction writeTransaction;
 
     @Before
     public void setUp() throws Exception {
-        worker = mock(ThreadsWorker.class);
+        MockitoAnnotations.initMocks(this);
         when(worker.scheduleTask(any(Callable.class), anyInt(), any(TimeUnit.class))).thenReturn(
                 mock(ListenableScheduledFuture.class));
         when(worker.executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(
                 mock(ListenableFuture.class));
         when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(
                 mock(ListenableFuture.class));
-        sxpNode = PowerMockito.mock(SxpNode.class);
-        datastoreAccess = mock(DatastoreAccess.class);
-        PowerMockito.when(sxpNode.getWorker()).thenReturn(worker);
+        when(sxpNode.getWorker()).thenReturn(worker);
+        DatastoreAccess datastoreAccess = prepareDataStore(dataBroker, readTransaction, writeTransaction);
         connection =
                 SxpDatastoreConnection.create(datastoreAccess, sxpNode,
                         new ConnectionBuilder().setPeerAddress(IpAddressBuilder.getDefaultInstance("127.0.0.1"))
@@ -89,8 +100,8 @@ public class SxpDatastoreConnectionTest {
         assertEquals(60, connection.getHoldTime());
         assertEquals(180, connection.getHoldTimeMax());
         assertEquals(90, connection.getHoldTimeMinAcceptable());
-        verify(datastoreAccess, atLeastOnce()).checkAndPut(any(InstanceIdentifier.class), eq(timers),
-                any(LogicalDatastoreType.class), anyBoolean());
+        verify(writeTransaction, atLeastOnce()).put(any(LogicalDatastoreType.class),
+                any(InstanceIdentifier.class), eq(timers));
     }
 
     @Test
@@ -102,8 +113,8 @@ public class SxpDatastoreConnectionTest {
         assertFalse(connection.getCapabilitiesRemote().contains(CapabilityType.LoopDetection));
         assertFalse(connection.getCapabilitiesRemote().contains(CapabilityType.SubnetBindings));
         assertFalse(connection.getCapabilitiesRemote().contains(CapabilityType.SxpCapabilityExchange));
-        verify(datastoreAccess, atLeastOnce()).checkAndPut(any(InstanceIdentifier.class), eq(capabilities),
-                any(LogicalDatastoreType.class), anyBoolean());
+        verify(writeTransaction, atLeastOnce()).put(any(LogicalDatastoreType.class),
+                any(InstanceIdentifier.class), eq(capabilities));
     }
 
     @Test
@@ -112,8 +123,8 @@ public class SxpDatastoreConnectionTest {
 
         connection.setVersion(Version.Version1);
         assertEquals(Version.Version1, connection.getVersion());
-        verify(datastoreAccess, atLeastOnce()).checkAndMerge(any(InstanceIdentifier.class), captor.capture(),
-                any(LogicalDatastoreType.class), anyBoolean());
+        verify(writeTransaction, atLeastOnce()).merge(any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
+                captor.capture());
         assertEquals(Version.Version1, captor.getValue().getVersion());
     }
 
@@ -123,8 +134,8 @@ public class SxpDatastoreConnectionTest {
 
         connection.setState(ConnectionState.DeleteHoldDown);
         assertEquals(ConnectionState.DeleteHoldDown, connection.getState());
-        verify(datastoreAccess, atLeastOnce()).checkAndMerge(any(InstanceIdentifier.class), captor.capture(),
-                any(LogicalDatastoreType.class), anyBoolean());
+        verify(writeTransaction, atLeastOnce()).merge(any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
+                captor.capture());
         assertEquals(ConnectionState.DeleteHoldDown, captor.getValue().getState());
     }
 
@@ -135,8 +146,8 @@ public class SxpDatastoreConnectionTest {
 
         connection.setNodeIdRemote(nodeId);
         assertEquals(nodeId, connection.getNodeIdRemote());
-        verify(datastoreAccess, atLeastOnce()).checkAndMerge(any(InstanceIdentifier.class), captor.capture(),
-                any(LogicalDatastoreType.class), anyBoolean());
+        verify(writeTransaction, atLeastOnce()).merge(any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
+                captor.capture());
         assertEquals(nodeId, captor.getValue().getNodeId());
     }
 
@@ -145,8 +156,8 @@ public class SxpDatastoreConnectionTest {
         ArgumentCaptor<Connection> captor = ArgumentCaptor.forClass(Connection.class);
 
         connection.setUpdateOrKeepaliveMessageTimestamp();
-        verify(datastoreAccess, atLeastOnce()).checkAndMerge(any(InstanceIdentifier.class), captor.capture(),
-                any(LogicalDatastoreType.class), anyBoolean());
+        verify(writeTransaction, atLeastOnce()).merge(any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
+                captor.capture());
         assertEquals(connection.getTimestampUpdateOrKeepAliveMessage(),
                 TimeConv.toLong(captor.getValue().getTimestampUpdateOrKeepAliveMessage()));
     }
@@ -154,7 +165,39 @@ public class SxpDatastoreConnectionTest {
     @Test
     public void testShutdown() throws Exception {
         connection.shutdown();
-        verify(datastoreAccess, atLeastOnce()).readSynchronous(any(InstanceIdentifier.class),
-                any(LogicalDatastoreType.class));
+        verify(readTransaction, atLeastOnce()).read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class));
+    }
+
+    /**
+     * Prepare {@link DatastoreAccess} mock instance backed by {@link DataBroker} for tests.
+     * <p>
+     * {@link ReadTransaction} and {@link WriteTransaction} are assumed to be created by {@link TransactionChain}.
+     * <p>
+     * {@link ReadTransaction} reads an mock instance of required target type on any read.
+     * {@link WriteTransaction} is committed successfully.
+     *
+     * @param dataBroker mock of {@link DataBroker}
+     * @param readTransaction mock of {@link ReadTransaction}
+     * @param writeTransaction mock of {@link WriteTransaction}
+     * @return mock of {@link DatastoreAccess}
+     */
+    private static DatastoreAccess prepareDataStore(DataBroker dataBroker, ReadTransaction readTransaction,
+            WriteTransaction writeTransaction) {
+        TransactionChain transactionChain = mock(TransactionChain.class);
+        doReturn(CommitInfo.emptyFluentFuture())
+                .when(writeTransaction).commit();
+        when(readTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class)))
+                .thenAnswer(invocation -> {
+                    InstanceIdentifier<?> identifier = invocation.getArgument(1);
+                    return FluentFutures.immediateFluentFuture(Optional.of(mock(identifier.getTargetType())));
+                });
+        when(transactionChain.newReadOnlyTransaction())
+                .thenReturn(readTransaction);
+        when(transactionChain.newWriteOnlyTransaction())
+                .thenReturn(writeTransaction);
+        when(dataBroker.createTransactionChain(any(TransactionChainListener.class)))
+                .thenReturn(transactionChain);
+
+        return DatastoreAccess.getInstance(dataBroker);
     }
 }

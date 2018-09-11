@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Constants;
@@ -62,6 +64,20 @@ public class BindingOriginsIT {
     private static final MasterDatabaseBinding DUMMY_LOCAL_BINDING = TestDataFactory.createMasterDBBinding("0.0.0.5/32", 100, LOCAL_ORIGIN);
     private static final MasterDatabaseBinding DUMMY_NETWORK_BINDING = TestDataFactory.createMasterDBBinding("0.0.0.5/32", 200, NETWORK_ORIGIN);
     private static final MasterDatabaseBinding DUMMY_CLOUD_BINDING = TestDataFactory.createMasterDBBinding("0.0.0.5/32", 300, CLOUD_ORIGIN_TYPE);
+
+    @BeforeClass
+    public static void setupTestOriginPriorities() {
+        LOG.info("Setting up origin priorities");
+        BindingOriginsConfig.INSTANCE.deleteConfiguration();
+        BindingOriginsConfig.INSTANCE.addOrUpdateBindingOrigin(NETWORK_ORIGIN, 1);
+        BindingOriginsConfig.INSTANCE.addOrUpdateBindingOrigin(LOCAL_ORIGIN, 2);
+        BindingOriginsConfig.INSTANCE.addOrUpdateBindingOrigin(CLOUD_ORIGIN_TYPE, 0);
+    }
+
+    @AfterClass
+    public static void cleanTestOriginPriorities() {
+        BindingOriginsConfig.INSTANCE.deleteConfiguration();
+    }
 
     private void setupInMemoryTopology() throws ExecutionException, InterruptedException {
         SxpNodeIdentity nodeIdentity1 = createIdentity("127.0.0.1", Constants.SXP_DEFAULT_PORT, Version.Version4, 20, 999);
@@ -115,9 +131,19 @@ public class BindingOriginsIT {
         LOG.info("Connections are up");
     }
 
+    @After
+    public void shutdown() throws ExecutionException, InterruptedException {
+        ListenableFuture<Boolean> shutdown1 = listenerNode.shutdown();
+        ListenableFuture<Boolean> shutdown2 = speakerNode.shutdown();
+        shutdown1.get();
+        shutdown2.get();
+        if (speakerNodeHCInstance != null) {
+            speakerNodeHCInstance.shutdown();
+        }
+    }
+
     @Test
     public void testCorrectPropagationOfPrioritizedOverwrites() throws ExecutionException, InterruptedException {
-        setupTestOriginPriorities();
         setupInMemoryTopology();
 
         LOG.info("Adding bindings to speaker node");
@@ -133,7 +159,6 @@ public class BindingOriginsIT {
 
     @Test
     public void testCorrectPropagationUsingMixedHazelcastTopo() throws ExecutionException, InterruptedException {
-        setupTestOriginPriorities();
         setupMixedTopology();
 
         LOG.info("Adding bindings to speaker node");
@@ -147,8 +172,8 @@ public class BindingOriginsIT {
 
     @Test
     public void testIfLocalBindingGetsOverwrittenFromRemote() throws ExecutionException, InterruptedException {
-        setupTestOriginPriorities();
         setupInMemoryTopology();
+
         //store a local binding within listener node
         listenerNode.getBindingMasterDatabase(DEFAULT_DOMAIN).addBindings(Collections.singletonList(DUMMY_LOCAL_BINDING));
 
@@ -160,8 +185,8 @@ public class BindingOriginsIT {
 
     @Test
     public void testOverwriteDoesNotHappen() throws ExecutionException, InterruptedException {
-        setupTestOriginPriorities();
         setupInMemoryTopology();
+
         //store a cloud binding within listener node
         listenerNode.getBindingMasterDatabase(DEFAULT_DOMAIN).addBindings(Collections.singletonList(DUMMY_CLOUD_BINDING));
 
@@ -172,17 +197,6 @@ public class BindingOriginsIT {
         await().atMost(4, TimeUnit.SECONDS).until(() -> bindingWithSGTIsPresent(listenerNode, DUMMY_CLOUD_BINDING.getSecurityGroupTag()));
     }
 
-    @After
-    public void shutdown() throws ExecutionException, InterruptedException {
-        ListenableFuture<Boolean> shutdown1 = listenerNode.shutdown();
-        ListenableFuture<Boolean> shutdown2 = speakerNode.shutdown();
-        shutdown1.get();
-        shutdown2.get();
-        if (speakerNodeHCInstance != null) {
-            speakerNodeHCInstance.shutdown();
-        }
-    }
-
     private boolean bindingWithSGTIsPresent(SxpNode node, Sgt sgt) {
         List<MasterDatabaseBinding> bindings = node.getBindingMasterDatabase(DEFAULT_DOMAIN).getBindings();
         LOG.info("Bindings: {}", bindings);
@@ -191,13 +205,5 @@ public class BindingOriginsIT {
         } else {
             return sgt.equals(bindings.get(0).getSecurityGroupTag());
         }
-    }
-
-    private void setupTestOriginPriorities() {
-        LOG.info("Setting up origin priorities");
-        BindingOriginsConfig.INSTANCE.deleteConfiguration();
-        BindingOriginsConfig.INSTANCE.addOrUpdateBindingOrigin(NETWORK_ORIGIN, 1);
-        BindingOriginsConfig.INSTANCE.addOrUpdateBindingOrigin(LOCAL_ORIGIN, 2);
-        BindingOriginsConfig.INSTANCE.addOrUpdateBindingOrigin(CLOUD_ORIGIN_TYPE, 0);
     }
 }

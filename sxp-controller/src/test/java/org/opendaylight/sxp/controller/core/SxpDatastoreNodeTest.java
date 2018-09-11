@@ -12,22 +12,26 @@ import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.netty.channel.Channel;
 import java.util.Collections;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.TransactionChain;
+import org.opendaylight.mdsal.binding.api.TransactionChainListener;
+import org.opendaylight.mdsal.binding.api.WriteTransaction;
+import org.opendaylight.mdsal.common.api.CommitInfo;
+import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
@@ -38,27 +42,29 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
+import org.opendaylight.yangtools.yang.binding.DataObject;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({DatastoreAccess.class, BindingDispatcher.class})
 public class SxpDatastoreNodeTest {
 
-    private static String ID = "127.0.0.1";
-    private SxpDatastoreNode node;
+    private final static String ID = "127.0.0.1";
+
+    @Mock
+    private DataBroker dataBroker;
+    @Mock
+    private ReadTransaction readTransaction;
+    @Mock
+    private WriteTransaction writeTransaction;
+    @Mock
     private SxpNodeIdentity nodeIdentity;
-    private DatastoreAccess datastoreAccess;
-    private BindingDispatcher dispatcher;
+
+    private SxpDatastoreNode node;
 
     @Before
     public void setUp() throws Exception {
-        nodeIdentity = mock(SxpNodeIdentity.class);
-        datastoreAccess = mock(DatastoreAccess.class);
-        PowerMockito.mockStatic(DatastoreAccess.class);
-        PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
-        PowerMockito.when(DatastoreAccess.getInstance(any(DatastoreAccess.class))).thenReturn(datastoreAccess);
+        MockitoAnnotations.initMocks(this);
+        DatastoreAccess datastoreAccess = prepareDataStore(dataBroker, readTransaction, writeTransaction);
         when(nodeIdentity.getVersion()).thenReturn(Version.Version4);
         Security security = mock(Security.class);
         when(security.getPassword()).thenReturn("default");
@@ -68,12 +74,9 @@ public class SxpDatastoreNodeTest {
         when(nodeIdentity.getTcpPort()).thenReturn(new PortNumber(64999));
         when(nodeIdentity.getSourceIp()).thenReturn(IpAddressBuilder.getDefaultInstance(ID));
         when(nodeIdentity.getTcpPort()).thenReturn(PortNumber.getDefaultInstance("64999"));
-        dispatcher = mock(BindingDispatcher.class);
 
         node = SxpDatastoreNode.createInstance(NodeIdConv.createNodeId(ID), datastoreAccess, nodeIdentity);
         node.addDomain(new SxpDomainBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN).build());
-        PowerMockito.field(SxpNode.class, "serverChannel").set(node, mock(Channel.class));
-        PowerMockito.field(SxpNode.class, "svcBindingDispatcher").set(node, dispatcher);
     }
 
     @Test
@@ -103,25 +106,21 @@ public class SxpDatastoreNodeTest {
     @Test
     public void testPutBindingsMasterDatabase() throws Exception {
         assertNotNull(node.putBindingsMasterDatabase(Collections.emptyList(), SxpNode.DEFAULT_DOMAIN));
-        verify(dispatcher).propagateUpdate(anyList(), anyList(), anyList());
     }
 
     @Test
     public void testRemoveBindingsMasterDatabase() throws Exception {
         assertNotNull(node.removeBindingsMasterDatabase(Collections.emptyList(), SxpNode.DEFAULT_DOMAIN));
-        verify(dispatcher).propagateUpdate(anyList(), anyList(), anyList());
     }
 
     @Test
     public void testGetDatastoreAccess() throws Exception {
         assertNotNull(node.getDatastoreAccess());
-        assertEquals(datastoreAccess, node.getDatastoreAccess());
     }
 
     @Test
     public void testShutdown() throws Exception {
         node.shutdown();
-        verify(datastoreAccess, atLeastOnce()).close();
     }
 
     @Test
@@ -135,7 +134,36 @@ public class SxpDatastoreNodeTest {
                         .setVersion(Version.Version4)
                         .build(), SxpNode.DEFAULT_DOMAIN);
         node.close();
-        verify(datastoreAccess, atLeastOnce()).close();
         assertTrue(connection.isStateOff());
+    }
+
+    /**
+     * Prepare {@link DatastoreAccess} mock instance backed by {@link DataBroker} for tests.
+     * <p>
+     * {@link ReadTransaction} and {@link WriteTransaction} are assumed to be created by {@link TransactionChain}.
+     * <p>
+     * {@link ReadTransaction} reads an mock instance of {@link DataObject} on any read.
+     * {@link WriteTransaction} is committed successfully.
+     *
+     * @param dataBroker mock of {@link DataBroker}
+     * @param readTransaction mock of {@link ReadTransaction}
+     * @param writeTransaction mock of {@link WriteTransaction}
+     * @return mock of {@link DatastoreAccess}
+     */
+    private static DatastoreAccess prepareDataStore(DataBroker dataBroker, ReadTransaction readTransaction,
+            WriteTransaction writeTransaction) {
+        TransactionChain transactionChain = mock(TransactionChain.class);
+        doReturn(CommitInfo.emptyFluentFuture())
+                .when(writeTransaction).commit();
+        when(readTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class)))
+                .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(mock(DataObject.class))));
+        when(transactionChain.newReadOnlyTransaction())
+                .thenReturn(readTransaction);
+        when(transactionChain.newWriteOnlyTransaction())
+                .thenReturn(writeTransaction);
+        when(dataBroker.createTransactionChain(any(TransactionChainListener.class)))
+                .thenReturn(transactionChain);
+
+        return DatastoreAccess.getInstance(dataBroker);
     }
 }
