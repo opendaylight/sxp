@@ -13,7 +13,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyList;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.mock;
@@ -21,10 +21,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -39,10 +41,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.opendaylight.sxp.core.service.BindingHandler;
-import org.opendaylight.sxp.core.service.ConnectFacade;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
@@ -87,34 +85,30 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({ConnectFacade.class, BindingHandler.class})
 public class SxpNodeTest {
 
     @Rule public ExpectedException exception = ExpectedException.none();
 
-    private static SxpNode node;
+    private SxpNode node;
 
-    private static SxpNodeIdentity nodeIdentity;
-    private static MasterDatabaseInf databaseProvider;
-    private static SxpDatabaseInf sxpDatabaseProvider;
-    private static ThreadsWorker worker;
-    private static Timers timers;
-    private static int ip4Adrres = 0;
+    private SxpNodeIdentity nodeIdentity;
+    private MasterDatabaseInf databaseProvider;
+    private SxpDatabaseInf sxpDatabaseProvider;
+    private ThreadsWorker worker;
+    private Timers timers;
+    private int ip4Adrres = 0;
 
     @Before
     public void init() throws Exception {
         worker = mock(ThreadsWorker.class);
-        ListenableFuture future = mock(ListenableFuture.class);
-        when(future.isDone()).thenReturn(true);
-        when(worker.scheduleTask(any(Callable.class), anyInt(), any(TimeUnit.class))).thenReturn(
-                mock(ListenableScheduledFuture.class));
-        when(worker.executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(future);
-        when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(future);
+        ListenableFuture future = Futures.immediateFuture(null);
+        when(worker.scheduleTask(any(Callable.class), anyInt(), any(TimeUnit.class)))
+                .thenReturn(mock(ListenableScheduledFuture.class));
+        when(worker.executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class)))
+                .thenReturn(future);
+        when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class)))
+                .thenReturn(future);
         when(worker.executeTaskInSequence(any(Callable.class), any(ThreadsWorker.WorkerType.class),
                 any(SxpConnection.class))).thenReturn(future);
         timers = getNodeTimers();
@@ -132,12 +126,14 @@ public class SxpNodeTest {
 
         databaseProvider = mock(MasterDatabaseInf.class);
         sxpDatabaseProvider = mock(SxpDatabaseInf.class);
-        node =
-                SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), nodeIdentity, databaseProvider,
+        node = SxpNode.createInstance(NodeIdConv.createNodeId("127.0.0.1"), nodeIdentity, databaseProvider,
                         sxpDatabaseProvider, worker);
+
         Channel channel = mock(Channel.class);
         when(channel.isActive()).thenReturn(true);
-        PowerMockito.field(SxpNode.class, "serverChannel").set(node, channel);
+        Field serverChannel = node.getClass().getDeclaredField("serverChannel");
+        serverChannel.setAccessible(true);
+        serverChannel.set(node, channel);
     }
 
     private Timers getNodeTimers() {
@@ -312,7 +308,6 @@ public class SxpNodeTest {
 
     @Test
     public void testOpenConnections() throws Exception {
-        ArgumentCaptor<Runnable> argument = ArgumentCaptor.forClass(Runnable.class);
         node.addConnection(mockConnection(ConnectionMode.Speaker, ConnectionState.DeleteHoldDown));
         node.addConnection(mockConnection(ConnectionMode.Listener, ConnectionState.DeleteHoldDown));
         node.addConnection(mockConnection(ConnectionMode.Speaker, ConnectionState.PendingOn));
@@ -321,19 +316,11 @@ public class SxpNodeTest {
         verify(worker, times(5)).executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class));
         node.addConnection(mockConnection(ConnectionMode.Speaker, ConnectionState.Off));
         node.openConnections();
-        verify(worker, times(7)).executeTask(argument.capture(), any(ThreadsWorker.WorkerType.class));
-
-        PowerMockito.mockStatic(ConnectFacade.class);
-        argument.getValue().run();
-        PowerMockito.verifyStatic();
+        verify(worker, times(7)).executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class));
     }
 
     @Test
     public void testShutdownConnections() throws Exception {
-        when(worker.executeTaskInSequence(any(Callable.class), any(ThreadsWorker.WorkerType.class),
-                any(SxpConnection.class))).thenReturn(mock(ListenableFuture.class))
-                .thenReturn(mock(ListenableFuture.class))
-                .thenReturn(mock(ListenableFuture.class));
         node.addConnection(mockConnection(ConnectionMode.Listener, ConnectionState.On));
         node.shutdownConnections();
         assertEquals(1, node.getAllOffConnections().size());
@@ -417,8 +404,6 @@ public class SxpNodeTest {
 
     @Test
     public void testAddConnection() throws Exception {
-        PowerMockito.mockStatic(ConnectFacade.class);
-        when(ConnectFacade.createClient(any(), any(), any())).thenReturn(mock(ChannelFuture.class));
         assertEquals(0, node.getAllConnections().size());
 
         List<SxpPeer> sxpPeers = new ArrayList<>();
@@ -431,13 +416,10 @@ public class SxpNodeTest {
 
         node.addConnection(mockConnection(ConnectionMode.Both, ConnectionState.On));
         assertEquals(2, node.getAllConnections().size());
-        PowerMockito.verifyStatic();
     }
 
     @Test
     public void testAddConnections() throws Exception {
-        PowerMockito.mockStatic(ConnectFacade.class);
-        when(ConnectFacade.createClient(any(), any(), any())).thenReturn(mock(ChannelFuture.class));
         List<Connection> connection = new ArrayList<>();
 
         node.addConnections(null);
@@ -455,7 +437,6 @@ public class SxpNodeTest {
         connection.add(mockConnection(ConnectionMode.Both, ConnectionState.On));
         node.addConnections(connections);
         assertEquals(1, node.getAllConnections().size());
-        PowerMockito.verifyStatic();
     }
 
     private ArrayList<SxpFilter> getFilters(FilterType... types) {
