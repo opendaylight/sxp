@@ -11,7 +11,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <!--versions-->
-        <mdsal.version>2.6.0-SNAPSHOT</mdsal.version>
+        <mdsal.version>2.7.0-SNAPSHOT</mdsal.version>
         <jersey.version>2.27</jersey.version>
         <javax.ws.rs.api.version>2.1</javax.ws.rs.api.version>
         <slf4j.version>1.7.25</slf4j.version>
@@ -22,7 +22,7 @@
             <dependency>
                 <groupId>org.opendaylight.yangtools</groupId>
                 <artifactId>yangtools-artifacts</artifactId>
-                <version>2.0.10</version>
+                <version>2.1.2-SNAPSHOT</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
