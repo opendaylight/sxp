@@ -16,13 +16,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InOrder;
-import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.sxp.route.api.RouteReactor;
@@ -33,7 +31,6 @@ import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 /**
  * Test for {@link RouteReactorZipImpl}.
  */
-@RunWith(MockitoJUnitRunner.class)
 public class RouteReactorZipImplTest {
 
     @Mock private RouteReactor delegate;
@@ -76,7 +73,7 @@ public class RouteReactorZipImplTest {
     @Test
     public void updateRouting_compression() throws Exception {
         final CountDownLatch firstUpdateLatch = new CountDownLatch(1);
-        Mockito.when(delegate.updateRouting(Matchers.any(), Matchers.any()))
+        Mockito.when(delegate.updateRouting(ArgumentMatchers.any(), ArgumentMatchers.any()))
                 .then((Answer<FluentFuture<? extends CommitInfo>>) invocationOnMock -> {
                     firstUpdateLatch.countDown();
                     return FluentFutures.immediateNullFluentFuture();
@@ -116,7 +113,7 @@ public class RouteReactorZipImplTest {
         final SettableFuture<Void> updateTask1Outcome = SettableFuture.create();
         final CountDownLatch firstUpdateLatch = new CountDownLatch(1);
 
-        Mockito.when(delegate.updateRouting(Matchers.any(), Matchers.any())).then(new Answer<ListenableFuture<Void>>() {
+        Mockito.when(delegate.updateRouting(ArgumentMatchers.any(), ArgumentMatchers.any())).then(new Answer<ListenableFuture<Void>>() {
 
             @Override
             public ListenableFuture<Void> answer(final InvocationOnMock invocationOnMock) throws Throwable {
