@@ -10,9 +10,10 @@ package org.opendaylight.sxp.controller.listeners.sublisteners;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -20,15 +21,22 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.DataObjectModification;
 import org.opendaylight.mdsal.binding.api.DataTreeModification;
+import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.TransactionChain;
+import org.opendaylight.mdsal.binding.api.TransactionChainListener;
+import org.opendaylight.mdsal.binding.api.WriteTransaction;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
-import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
@@ -40,30 +48,29 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.data
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({Configuration.class, DatastoreAccess.class})
 public class DomainListenerTest {
 
-    private DomainListener identityListener;
-    private DatastoreAccess datastoreAccess;
+    @Mock
     private SxpNode sxpNode;
+    @Mock
+    private DataBroker dataBroker;
+    @Mock
+    private ReadTransaction readTransaction;
+    @Mock
+    private WriteTransaction writeTransaction;
+
+    private DomainListener domainListener;
 
     @Before
     public void setUp() throws Exception {
-        datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
-        identityListener = new DomainListener(datastoreAccess);
-        sxpNode = mock(SxpNode.class);
+        MockitoAnnotations.initMocks(this);
+        DatastoreAccess datastoreAccess = prepareDataStore(dataBroker, readTransaction, writeTransaction);
         when(sxpNode.removeDomain(anyString())).thenReturn(mock(org.opendaylight.sxp.core.SxpDomain.class));
-        PowerMockito.mockStatic(Configuration.class);
-        PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
+        domainListener = new DomainListener(datastoreAccess);
     }
 
     private DataObjectModification<SxpDomain> getObjectModification(
@@ -101,13 +108,13 @@ public class DomainListenerTest {
     @Test
     public void testHandleOperational_1() throws Exception {
         SxpDomain domain = getDomain("global");
-        identityListener.handleOperational(
+        domainListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, domain), getIdentifier(),
                 sxpNode);
         verify(sxpNode).addDomain(domain);
 
         domain = getDomain("secure");
-        identityListener.handleOperational(
+        domainListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, domain), getIdentifier(),
                 sxpNode);
         verify(sxpNode).addDomain(domain);
@@ -116,13 +123,13 @@ public class DomainListenerTest {
     @Test
     public void testHandleOperational_2() throws Exception {
         SxpDomain domain = getDomain("global");
-        identityListener.handleOperational(
+        domainListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, domain, null), getIdentifier(),
                 sxpNode);
         verify(sxpNode).removeDomain("global");
 
         domain = getDomain("secure");
-        identityListener.handleOperational(
+        domainListener.handleOperational(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, domain, null), getIdentifier(),
                 sxpNode);
         verify(sxpNode).removeDomain("secure");
@@ -130,48 +137,82 @@ public class DomainListenerTest {
 
     @Test
     public void testGetModifications() throws Exception {
-        assertNotNull(identityListener.getIdentifier(new SxpDomainBuilder().setDomainName("global").build(),
+        assertNotNull(domainListener.getIdentifier(new SxpDomainBuilder().setDomainName("global").build(),
                 getIdentifier()));
         assertTrue(
-                identityListener.getIdentifier(new SxpDomainBuilder().setDomainName("global").build(), getIdentifier())
+                domainListener.getIdentifier(new SxpDomainBuilder().setDomainName("global").build(), getIdentifier())
                         .getTargetType()
                         .equals(SxpDomain.class));
 
-        assertNotNull(identityListener.getObjectModifications(null));
-        assertNotNull(identityListener.getObjectModifications(mock(DataObjectModification.class)));
-        assertNotNull(identityListener.getModifications(null));
+        assertNotNull(domainListener.getObjectModifications(null));
+        assertNotNull(domainListener.getObjectModifications(mock(DataObjectModification.class)));
+        assertNotNull(domainListener.getModifications(null));
         DataTreeModification dtm = mock(DataTreeModification.class);
         when(dtm.getRootNode()).thenReturn(mock(DataObjectModification.class));
-        assertNotNull(identityListener.getModifications(dtm));
+        assertNotNull(domainListener.getModifications(dtm));
     }
 
     @Test
     public void testHandleChange() throws Exception {
-        identityListener.handleChange(Collections.singletonList(getObjectModification(
+        domainListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getDomain("global"),
                         getDomain("global-two")))), LogicalDatastoreType.OPERATIONAL, getIdentifier());
-        verify(datastoreAccess, never()).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
-        verify(datastoreAccess, never()).mergeSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
-        verify(datastoreAccess, never()).checkAndDelete(any(InstanceIdentifier.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
+        verify(writeTransaction, never())
+                .put(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class), any(DataObject.class));
+        verify(writeTransaction, never())
+                .merge(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class), any(DataObject.class));
+        verify(writeTransaction, never()).delete(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class));
 
-        identityListener.handleChange(Collections.singletonList(getObjectModification(
+        domainListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, getDomain("global")))),
                 LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess).checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL), eq(false));
+        verify(writeTransaction).put(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class),
+                any(DataObject.class));
 
-        identityListener.handleChange(Collections.singletonList(getObjectModification(
+        domainListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getDomain("global"),
                         getDomain("global")))), LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess).merge(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
+        verify(writeTransaction)
+                .merge(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class), any(DataObject.class));
 
-        identityListener.handleChange(Collections.singletonList(getObjectModification(
+        domainListener.handleChange(Collections.singletonList(getObjectModification(
                 getObjectModification(DataObjectModification.ModificationType.DELETE, getDomain("global"),
                         getDomain("global")))), LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess).checkAndDelete(any(InstanceIdentifier.class), eq(LogicalDatastoreType.OPERATIONAL));
+        verify(writeTransaction).delete(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class));
+    }
+
+    /**
+     * Prepare {@link DatastoreAccess} mock instance backed by {@link DataBroker} for tests.
+     * <p>
+     * {@link ReadTransaction} and {@link WriteTransaction} are assumed to be created by {@link TransactionChain}.
+     * <p>
+     * {@link ReadTransaction} reads {@link Optional#empty()} or a mock instance of {@link DataObject}
+     * to satisfies {@link DatastoreAccess#checkAndPut(InstanceIdentifier, DataObject, LogicalDatastoreType, boolean)}
+     * called with {@code false}.
+     * <p>
+     * {@link WriteTransaction} is committed successfully.
+     *
+     * @param dataBroker mock of {@link DataBroker}
+     * @param readTransaction mock of {@link ReadTransaction}
+     * @param writeTransaction mock of {@link WriteTransaction}
+     * @return mock of {@link DatastoreAccess}
+     */
+    private static DatastoreAccess prepareDataStore(DataBroker dataBroker, ReadTransaction readTransaction,
+            WriteTransaction writeTransaction) {
+        TransactionChain transactionChain = mock(TransactionChain.class);
+        doReturn(CommitInfo.emptyFluentFuture())
+                .when(writeTransaction).commit();
+        when(readTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class)))
+                .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(mock(DataObject.class))))
+                .thenReturn(FluentFutures.immediateFluentFuture(Optional.empty()))
+                .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(mock(DataObject.class))));
+        when(transactionChain.newReadOnlyTransaction())
+                .thenReturn(readTransaction);
+        when(transactionChain.newWriteOnlyTransaction())
+                .thenReturn(writeTransaction);
+        when(dataBroker.createTransactionChain(any(TransactionChainListener.class)))
+                .thenReturn(transactionChain);
+
+        return DatastoreAccess.getInstance(dataBroker);
     }
 }
