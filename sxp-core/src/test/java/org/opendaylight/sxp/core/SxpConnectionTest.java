@@ -15,11 +15,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -27,7 +28,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -41,11 +42,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
-import org.opendaylight.sxp.core.service.UpdateExportTask;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
@@ -84,49 +85,50 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, UpdateExportTask.class, BindingDispatcher.class})
 public class SxpConnectionTest {
 
-    @Rule public ExpectedException exception = ExpectedException.none();
+    private static final String DOMAIN_NAME = "global";
 
-    private static String DOMAIN_NAME = "global";
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+    @Mock
+    private SxpNode sxpNode;
+    @Mock
+    private SxpDomain domain;
+    @Mock
+    private SxpDatabaseInf sxpDatabase;
+    @Mock
+    private ThreadsWorker worker;
 
-    private static int ip4Address = 0;
-    private static SxpNode sxpNode;
-    private static SxpConnection sxpConnection;
-    private static SxpDatabaseInf sxpDatabase;
-    private static ThreadsWorker worker;
+    private SxpConnection sxpConnection;
+    private int ip4Address = 0;
 
     @Before
     public void init() throws Exception {
-        worker = mock(ThreadsWorker.class);
-        when(worker.scheduleTask(any(Callable.class), anyInt(), any(TimeUnit.class))).thenReturn(
-                mock(ListenableScheduledFuture.class));
-        when(worker.executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(
-                mock(ListenableFuture.class));
-        when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(
-                mock(ListenableFuture.class));
-        sxpNode = PowerMockito.mock(SxpNode.class);
+        MockitoAnnotations.initMocks(this);
+        when(sxpNode.getWorker()).thenReturn(new ThreadsWorker());
         sxpDatabase = mock(SxpDatabaseInf.class);
-        SxpDomain domain = mock(SxpDomain.class);
-        PowerMockito.when(sxpNode.getSvcBindingHandler())
-                .thenReturn(new BindingHandler(sxpNode, mock(BindingDispatcher.class)));
-        PowerMockito.when(sxpNode.getDomain(anyString())).thenReturn(domain);
-        PowerMockito.when(sxpNode.getBindingSxpDatabase(anyString())).thenReturn(sxpDatabase);
-        when(domain.getSxpDatabase()).thenReturn(sxpDatabase);
-        PowerMockito.when(sxpNode.getBindingMasterDatabase(anyString())).thenReturn(mock(MasterDatabaseInf.class));
+        BindingDispatcher dispatcher = new BindingDispatcher(sxpNode);
+        BindingHandler handler = new BindingHandler(sxpNode, dispatcher);
+        when(sxpNode.getSvcBindingHandler()).thenReturn(handler);
         when(domain.getMasterDatabase()).thenReturn(mock(MasterDatabaseInf.class));
-        PowerMockito.when(sxpNode.getAllOnSpeakerConnections(anyString())).thenReturn(new ArrayList<>());
-        PowerMockito.when(sxpNode.getSvcBindingDispatcher()).thenReturn(mock(BindingDispatcher.class));
-        PowerMockito.when(sxpNode.getHoldTimeMax()).thenReturn(120);
-        PowerMockito.when(sxpNode.getHoldTimeMin()).thenReturn(60);
-        PowerMockito.when(sxpNode.getHoldTimeMinAcceptable()).thenReturn(60);
-        PowerMockito.when(sxpNode.getWorker()).thenReturn(worker);
+        when(domain.getSxpDatabase()).thenReturn(sxpDatabase);
+        when(sxpNode.getDomain(anyString())).thenReturn(domain);
+        when(sxpNode.getBindingSxpDatabase(anyString())).thenReturn(sxpDatabase);
+        when(sxpNode.getBindingMasterDatabase(anyString())).thenReturn(mock(MasterDatabaseInf.class));
+        when(sxpNode.getAllOnSpeakerConnections(anyString())).thenReturn(new ArrayList<>());
+        when(sxpNode.getSvcBindingDispatcher()).thenReturn(dispatcher);
+        when(sxpNode.getHoldTimeMax()).thenReturn(120);
+        when(sxpNode.getHoldTimeMin()).thenReturn(60);
+        when(sxpNode.getHoldTimeMinAcceptable()).thenReturn(60);
+        when(worker.scheduleTask(any(Callable.class), anyInt(), any(TimeUnit.class)))
+                .thenReturn(mock(ListenableScheduledFuture.class));
+        when(worker.executeTask(any(Runnable.class), any(ThreadsWorker.WorkerType.class)))
+                .thenReturn(Futures.immediateFuture(null));
+        when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class)))
+                .thenReturn(Futures.immediateFuture(null));
+        when(sxpNode.getWorker()).thenReturn(worker);
         sxpConnection =
                 SxpConnection.create(sxpNode, mockConnection(ConnectionMode.None, ConnectionState.On), DOMAIN_NAME);
     }
@@ -206,7 +208,7 @@ public class SxpConnectionTest {
     public void testPurgeBindings() throws Exception {
         ArgumentCaptor<Runnable> argument = ArgumentCaptor.forClass(Runnable.class);
         sxpConnection.purgeBindings();
-        verify(sxpNode.getWorker()).addListener(any(ListenableFuture.class), argument.capture());
+        verify(sxpNode.getWorker()).addListener(isNull(), argument.capture());
         verify(sxpNode.getWorker()).executeTaskInSequence(any(Callable.class), eq(ThreadsWorker.WorkerType.INBOUND),
                 eq(sxpConnection));
         argument.getValue().run();
@@ -304,7 +306,7 @@ public class SxpConnectionTest {
         Connection connection1 = mockConnection(ConnectionMode.Speaker, ConnectionState.On);
         ArgumentCaptor<Callable> taskCaptor = ArgumentCaptor.forClass(Callable.class);
         when(worker.executeTaskInSequence(taskCaptor.capture(), any(ThreadsWorker.WorkerType.class),
-                any(SxpConnection.class))).thenReturn(mock(ListenableFuture.class));
+                any(SxpConnection.class))).thenReturn(Futures.immediateFuture(null));
 
         sxpConnection = SxpConnection.create(sxpNode, connection, DOMAIN_NAME);
         sxpConnection.shutdown();

@@ -15,11 +15,10 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.MockitoAnnotations;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.DataObjectModification;
 import org.opendaylight.mdsal.binding.api.DataTreeModification;
@@ -36,7 +35,6 @@ import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 /**
  * Test for {@link SxpClusterRouteManager}.
  */
-@RunWith(MockitoJUnitRunner.class)
 public class SxpClusterRouteManagerTest {
 
     @Mock private DataBroker dataBroker;
@@ -51,7 +49,8 @@ public class SxpClusterRouteManagerTest {
 
     @Before
     public void setUp() throws Exception {
-        Mockito.when(routeReactor.updateRouting(Matchers.any(), Matchers.any()))
+        MockitoAnnotations.initMocks(this);
+        Mockito.when(routeReactor.updateRouting(ArgumentMatchers.any(), ArgumentMatchers.any()))
                 .thenReturn(FluentFutures.immediateNullFluentFuture());
         Mockito.when(routeReactor.wipeRouting()).thenReturn(FluentFutures.immediateNullFluentFuture());
         manager = new SxpClusterRouteManager(dataBroker, cssProvider, routeReactor);

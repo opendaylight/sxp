@@ -17,9 +17,7 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.route.spi.Routing;
 import org.opendaylight.sxp.util.time.TimeConv;
@@ -31,7 +29,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212
 /**
  * Test for {@link RouteUtil}.
  */
-@RunWith(MockitoJUnitRunner.class)
 public class RouteUtilTest {
 
     private static final String DUMMY_ADDRESS_IPV4 = "1.2.3.4";
