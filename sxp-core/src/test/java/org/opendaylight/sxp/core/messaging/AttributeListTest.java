@@ -28,8 +28,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 
 public class AttributeListTest {
 
-    private static AttributeList attributes;
     @Rule public ExpectedException exception = ExpectedException.none();
+
+    private AttributeList attributes;
 
     private Attribute getAttribute(AttributeType type, AttributeVariant variant, FlagsFields.Flags flags) {
         AttributeBuilder builder = new AttributeBuilder();
@@ -44,7 +45,7 @@ public class AttributeListTest {
 
     @Before
     public void init() throws Exception {
-        attributes = AttributeList.create(new ArrayList<Attribute>());
+        attributes = AttributeList.create(new ArrayList<>());
         attributes.add(getAttribute(AttributeType.HoldTime, AttributeVariant.Compact,
                 new FlagsFields.Flags(false, true, false, false, false)));
         attributes.add(getAttribute(AttributeType.Capabilities, AttributeVariant.CompactExtendedLength,
