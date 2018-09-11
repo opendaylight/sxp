@@ -10,9 +10,10 @@ package org.opendaylight.sxp.controller.listeners.sublisteners;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -22,15 +23,22 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
+import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.DataObjectModification;
 import org.opendaylight.mdsal.binding.api.DataTreeModification;
+import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.WriteTransaction;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
+import org.opendaylight.mdsal.common.api.TransactionChainListener;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
-import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
@@ -45,29 +53,30 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({Configuration.class, DatastoreAccess.class})
+@SuppressWarnings("unchecked")
 public class FilterListenerTest {
 
-    private FilterListener identityListener;
-    private DatastoreAccess datastoreAccess;
+    @Mock
     private SxpNode sxpNode;
+    @Mock
+    private DataBroker dataBroker;
+    @Mock
+    private ReadTransaction readTransaction;
+    @Mock
+    private WriteTransaction writeTransaction;
+
+    private FilterListener identityListener;
 
     @Before
     public void setUp() throws Exception {
-        datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
+        MockitoAnnotations.initMocks(this);
+        DatastoreAccess datastoreAccess = prepareDataStore(dataBroker, readTransaction, writeTransaction);
         identityListener = new FilterListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
-        PowerMockito.mockStatic(Configuration.class);
-        PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
     }
 
     private DataObjectModification<SxpFilter> getObjectModification(
@@ -154,28 +163,55 @@ public class FilterListenerTest {
         identityListener.handleChange(Collections.singletonList(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getSxpFilter(5), getSxpFilter(4))),
                 LogicalDatastoreType.OPERATIONAL, getIdentifier());
-        verify(datastoreAccess, never()).putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
-        verify(datastoreAccess, never()).mergeSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
-        verify(datastoreAccess).checkAndDelete(any(InstanceIdentifier.class), eq(LogicalDatastoreType.OPERATIONAL));
+        verify(writeTransaction, never())
+                .put(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class), any(DataObject.class));
+        verify(writeTransaction, never())
+                .merge(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class), any(DataObject.class));
 
         identityListener.handleChange(Collections.singletonList(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, null, getSxpFilter(5))),
                 LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess).checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL), eq(false));
 
         identityListener.handleChange(Collections.singletonList(
                 getObjectModification(DataObjectModification.ModificationType.WRITE, getSxpFilter(5), getSxpFilter(6))),
                 LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess).merge(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
+        verify(writeTransaction)
+                .merge(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class), any(DataObject.class));
 
         identityListener.handleChange(Collections.singletonList(
                 getObjectModification(DataObjectModification.ModificationType.DELETE, getSxpFilter(5),
                         getSxpFilter(6))), LogicalDatastoreType.CONFIGURATION, getIdentifier());
-        verify(datastoreAccess, times(2)).checkAndDelete(any(InstanceIdentifier.class),
-                eq(LogicalDatastoreType.OPERATIONAL));
+        verify(writeTransaction, times(1)).delete(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class));
+    }
+
+    /**
+     * Prepare {@link DatastoreAccess} mock instance backed by {@link DataBroker} for tests.
+     * <p>
+     * {@link ReadTransaction} and {@link WriteTransaction} are assumed to be created by
+     * {@link DatastoreAccess} {@link BindingTransactionChain}.
+     * <p>
+     * {@link ReadTransaction} reads an mock instance of {@link DataObject} on any read.
+     * {@link WriteTransaction} is committed successfully.
+     *
+     * @param dataBroker mock of {@link DataBroker}
+     * @param readTransaction mock of {@link ReadTransaction}
+     * @param writeTransaction mock of {@link WriteTransaction}
+     * @return mock of {@link DatastoreAccess}
+     */
+    private static DatastoreAccess prepareDataStore(DataBroker dataBroker, ReadTransaction readTransaction,
+            WriteTransaction writeTransaction) {
+        BindingTransactionChain transactionChain = mock(BindingTransactionChain.class);
+        doReturn(CommitInfo.emptyFluentFuture())
+                .when(writeTransaction).commit();
+        when(readTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class)))
+                .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(mock(DataObject.class))));
+        when(transactionChain.newReadOnlyTransaction())
+                .thenReturn(readTransaction);
+        when(transactionChain.newWriteOnlyTransaction())
+                .thenReturn(writeTransaction);
+        when(dataBroker.createTransactionChain(any(TransactionChainListener.class)))
+                .thenReturn(transactionChain);
+
+        return DatastoreAccess.getInstance(dataBroker);
     }
 }
