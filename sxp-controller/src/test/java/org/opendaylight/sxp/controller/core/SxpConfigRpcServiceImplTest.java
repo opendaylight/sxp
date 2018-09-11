@@ -9,19 +9,25 @@ package org.opendaylight.sxp.controller.core;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
+import java.util.Optional;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
 import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.WriteTransaction;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
+import org.opendaylight.mdsal.common.api.TransactionChainListener;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.controller.rev180629.AddBindingOriginInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.controller.rev180629.AddBindingOriginInputBuilder;
@@ -33,34 +39,37 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.controller.rev18
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.controller.rev180629.UpdateBindingOriginInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.controller.rev180629.UpdateBindingOriginOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
-import org.opendaylight.yangtools.yang.binding.DataObject;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({DatastoreAccess.class})
 public class SxpConfigRpcServiceImplTest {
 
     private SxpConfigRpcServiceImpl service;
 
+    @Mock
+    private DataBroker dataBroker;
+    @Mock
+    private ReadTransaction readTransaction;
+    @Mock
+    private WriteTransaction writeTransaction;
+    @Mock
+    private BindingTransactionChain transactionChain;
+
     @Before
-    @SuppressWarnings("unchecked")
     public void setUp() {
-        final DatastoreAccess datastoreAccess = mock(DatastoreAccess.class);
-        when(datastoreAccess.putIfNotExists(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.CONFIGURATION))).thenReturn(true);
-        when(datastoreAccess.putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.CONFIGURATION))).thenReturn(true);
-        when(datastoreAccess.deleteSynchronous(any(InstanceIdentifier.class),
-                eq(LogicalDatastoreType.CONFIGURATION))).thenReturn(true);
-
-        PowerMockito.mockStatic(DatastoreAccess.class);
-        PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
-
-        service = new SxpConfigRpcServiceImpl(Mockito.mock(DataBroker.class));
+        MockitoAnnotations.initMocks(this);
+        doReturn(CommitInfo.emptyFluentFuture())
+                .when(writeTransaction).commit();
+        when(readTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class)))
+                .thenReturn(FluentFutures.immediateFluentFuture(Optional.empty()));
+        when(transactionChain.newReadOnlyTransaction())
+                .thenReturn(readTransaction);
+        when(transactionChain.newWriteOnlyTransaction())
+                .thenReturn(writeTransaction);
+        when(dataBroker.createTransactionChain(any(TransactionChainListener.class)))
+                .thenReturn(transactionChain);
+        service = new SxpConfigRpcServiceImpl(dataBroker);
     }
 
     @After

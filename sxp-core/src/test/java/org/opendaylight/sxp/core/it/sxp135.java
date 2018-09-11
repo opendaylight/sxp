@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -77,6 +78,11 @@ public class sxp135 {
     @BeforeClass
     public static void initClass() {
         BindingOriginsConfig.INSTANCE.addBindingOrigins(BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES);
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        BindingOriginsConfig.INSTANCE.deleteConfiguration();
     }
 
     @Before
