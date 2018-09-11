@@ -9,7 +9,7 @@ package org.opendaylight.sxp.core.it;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,7 +30,6 @@ import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.rules.Timeout;
 import org.junit.runner.Description;
-import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.HazelcastBackedSxpDB;
@@ -58,10 +57,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.prefix.list.entry.PrefixListMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,9 +64,6 @@ import org.slf4j.LoggerFactory;
  * Copy-paste from {@link org.opendaylight.sxp.util.database.SxpDatabaseImplTest}
  *
  */
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class})
-@PowerMockIgnore("javax.management.*")
 public class HazelcastBackedSxpDBIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(HazelcastBackedSxpDBIT.class);
@@ -90,10 +82,10 @@ public class HazelcastBackedSxpDBIT {
         Config hcConfig = new Config();
         hcConfig.getGroupConfig().setName(UUID.randomUUID().toString());
         database = new HazelcastBackedSxpDB("ACTIVE_BINDINGS", "TENTATIVE_BINDINGS", hcConfig);
-        node = PowerMockito.mock(SxpNode.class);
-        PowerMockito.when(node.getBindingSxpDatabase()).thenReturn(database);
-        PowerMockito.when(node.getAllConnections()).thenReturn(sxpConnections);
-        PowerMockito.when(node.getAllConnections(any())).thenReturn(sxpConnections);
+        node = mock(SxpNode.class);
+        when(node.getBindingSxpDatabase()).thenReturn(database);
+        when(node.getAllConnections()).thenReturn(sxpConnections);
+        when(node.getAllConnections(any())).thenReturn(sxpConnections);
         LOG.info("Test init done");
     }
 
