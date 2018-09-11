@@ -15,11 +15,9 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
 import org.opendaylight.sxp.route.spi.SystemCall;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinitionBuilder;
@@ -27,7 +25,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212
 /**
  * Test for {@link LinuxRoutingService}.
  */
-@RunWith(MockitoJUnitRunner.class)
 public class LinuxRoutingServiceTest {
 
     private final String virtualIp = "1.2.3.4", ifName = "eth42:0", netMask = "255.255.255.0";
@@ -38,7 +35,7 @@ public class LinuxRoutingServiceTest {
 
     @Before
     public void setUp() throws Exception {
-        Mockito.when(systemCall.execute(Matchers.anyString())).thenReturn(process);
+        Mockito.when(systemCall.execute(ArgumentMatchers.anyString())).thenReturn(process);
         service =
                 new LinuxRoutingService(systemCall, new RoutingDefinitionBuilder().setInterface(ifName)
                         .setNetmask(IpAddressBuilder.getDefaultInstance(netMask))
