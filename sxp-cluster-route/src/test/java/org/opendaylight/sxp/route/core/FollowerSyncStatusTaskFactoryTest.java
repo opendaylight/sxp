@@ -11,16 +11,14 @@ package org.opendaylight.sxp.route.core;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.MockitoAnnotations;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 
 /**
  * Test for {@link FollowerSyncStatusTaskFactory}.
  */
-@RunWith(MockitoJUnitRunner.class)
 public class FollowerSyncStatusTaskFactoryTest {
 
     private final int taskPeriod = 10;
@@ -30,6 +28,7 @@ public class FollowerSyncStatusTaskFactoryTest {
 
     @Before
     public void setUp() throws Exception {
+        MockitoAnnotations.initMocks(this);
         datastoreAccess = DatastoreAccess.getInstance(dataBroker);
         taskFactory = new FollowerSyncStatusTaskFactory(taskPeriod, 0);
     }

@@ -7,8 +7,8 @@
  */
 package org.opendaylight.sxp.core.threading;
 
-import static org.mockito.Matchers.any;
-import static org.powermock.api.mockito.PowerMockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -18,16 +18,14 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockitoAnnotations;
 
 /**
  *
  * @author Martin Dindoffer
  */
-@RunWith(PowerMockRunner.class)
 public class SettableListenableFutureTest {
 
     private ListeningExecutorService listeningExecService;
@@ -38,6 +36,7 @@ public class SettableListenableFutureTest {
 
     @Before
     public void init() {
+        MockitoAnnotations.initMocks(this);
         this.listeningExecService = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
         this.slFuture = new SettableListenableFuture<>(() -> new Object(), listeningExecService);
     }
@@ -105,7 +104,7 @@ public class SettableListenableFutureTest {
     public void testGetOnSetFutureWithTimeout() throws Exception {
         slFuture.setFuture(lfMock);
         Object response = new Object();
-        when(lfMock.get(Matchers.anyLong(), any())).thenReturn(response);
+        when(lfMock.get(ArgumentMatchers.anyLong(), any())).thenReturn(response);
         Assert.assertEquals(response, slFuture.get(1, TimeUnit.SECONDS));
     }
 
