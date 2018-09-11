@@ -10,9 +10,9 @@ package org.opendaylight.sxp.core.service;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,12 +25,12 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.SxpConnection;
@@ -83,32 +83,33 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlv.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlv.fields.tlv.optional.fields.source.group.tag.tlv.attribute.SourceGroupTagTlvAttributesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlvs.fields.Tlv;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.tlvs.fields.TlvBuilder;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, BindingDispatcher.class})
 public class BindingHandlerTest {
 
     @Rule public ExpectedException exception = ExpectedException.none();
-    private static SxpNode sxpNode;
-    private static SxpConnection connection;
-    private static ThreadsWorker worker;
+
+    private SxpNode sxpNode;
+    private SxpConnection connection;
+    private ThreadsWorker worker;
     private ArgumentCaptor<Callable> taskCaptor;
-    private static SxpDatabaseInf sxpDatabaseInf;
-    private static MasterDatabaseInf masterDatabaseInf;
-    private static BindingHandler handler;
+    private SxpDatabaseInf sxpDatabaseInf;
+    private MasterDatabaseInf masterDatabaseInf;
+    private BindingHandler handler;
 
     @BeforeClass
     public static void initClass() {
         BindingOriginsConfig.INSTANCE.addBindingOrigins(BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES);
     }
 
+    @AfterClass
+    public static void tearDown() {
+        BindingOriginsConfig.INSTANCE.deleteConfiguration();
+    }
+
     @Before
     public void init() throws Exception {
-        sxpNode = PowerMockito.mock(SxpNode.class);
-        PowerMockito.when(sxpNode.isEnabled()).thenReturn(true);
+        sxpNode = mock(SxpNode.class);
+        when(sxpNode.isEnabled()).thenReturn(true);
         connection = mock(SxpConnection.class);
 
         worker = mock(ThreadsWorker.class);
@@ -119,22 +120,21 @@ public class BindingHandlerTest {
         when(connection.getDomainName()).thenReturn("default");
         when(connection.getId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
         when(connection.getOwnerId()).thenReturn(NodeId.getDefaultInstance("1.1.1.1"));
-        PowerMockito.when(sxpNode.getWorker()).thenReturn(worker);
+        when(sxpNode.getWorker()).thenReturn(worker);
         List<CapabilityType> capabilities = new ArrayList<>();
         capabilities.add(CapabilityType.LoopDetection);
         when(connection.getCapabilities()).thenReturn(capabilities);
         when(connection.getDestination()).thenReturn(new InetSocketAddress(InetAddress.getByName("1.1.1.1"), 5));
         sxpDatabaseInf = new SxpDatabaseImpl();
         masterDatabaseInf = new MasterDatabaseImpl();
-        BindingDispatcher dispatcherMock = PowerMockito.mock(BindingDispatcher.class);
-        when(dispatcherMock.getOwner()).thenReturn(sxpNode);
-        when(sxpNode.getSvcBindingDispatcher()).thenReturn(dispatcherMock);
-        PowerMockito.when(sxpNode.getBindingSxpDatabase(anyString())).thenReturn(sxpDatabaseInf);
-        PowerMockito.when(sxpNode.getBindingMasterDatabase(anyString())).thenReturn(masterDatabaseInf);
+        BindingDispatcher dispatcher = new BindingDispatcher(sxpNode);
+        when(sxpNode.getSvcBindingDispatcher()).thenReturn(dispatcher);
+        when(sxpNode.getBindingSxpDatabase(anyString())).thenReturn(sxpDatabaseInf);
+        when(sxpNode.getBindingMasterDatabase(anyString())).thenReturn(masterDatabaseInf);
         SxpDomain myDomain = SxpDomain.createInstance(sxpNode, "default", sxpDatabaseInf, masterDatabaseInf);
-        PowerMockito.when(sxpNode.getDomain(anyString()))
+        when(sxpNode.getDomain(anyString()))
                 .thenReturn(myDomain);
-        handler = new BindingHandler(sxpNode, dispatcherMock);
+        handler = new BindingHandler(sxpNode, dispatcher);
     }
 
     private Peer getPeer(String id, int key) {
@@ -486,7 +486,7 @@ public class BindingHandlerTest {
 
     @Test
     public void testCreateHandlerWithSetBufferSize() {
-        BindingHandler bindingHandler = new BindingHandler(sxpNode, PowerMockito.mock(BindingDispatcher.class), 1);
+        BindingHandler bindingHandler = new BindingHandler(sxpNode, new BindingDispatcher(sxpNode), 1);
         assertNotNull(bindingHandler);
     }
 }

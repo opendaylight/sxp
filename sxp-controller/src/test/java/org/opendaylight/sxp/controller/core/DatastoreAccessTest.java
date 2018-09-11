@@ -12,8 +12,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -27,12 +27,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.TransactionChain;
 import org.opendaylight.mdsal.binding.api.WriteTransaction;
 import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
@@ -50,7 +50,7 @@ public class DatastoreAccessTest {
     @Mock
     private DataBroker dataBroker;
     @Mock
-    private BindingTransactionChain transactionChain;
+    private TransactionChain transactionChain;
 
     private DatastoreAccess access;
 
@@ -176,10 +176,10 @@ public class DatastoreAccessTest {
 
         when(transactionChain.newWriteOnlyTransaction()).thenReturn(transaction);
         assertTrue(access.mergeSynchronous(identifier, dataObject, LogicalDatastoreType.OPERATIONAL));
-
         verify(transaction).merge(LogicalDatastoreType.OPERATIONAL, identifier, dataObject);
 
-        when(transaction.commit()).thenThrow(ExecutionException.class);
+        doReturn(FluentFutures.immediateFailedFluentFuture(new ExecutionException(new NullPointerException())))
+                .when(transaction).commit();
         assertFalse(access.mergeSynchronous(identifier, dataObject, LogicalDatastoreType.OPERATIONAL));
     }
 
@@ -195,7 +195,8 @@ public class DatastoreAccessTest {
 
         verify(transaction).put(LogicalDatastoreType.OPERATIONAL, identifier, dataObject);
 
-        when(transaction.commit()).thenThrow(ExecutionException.class);
+        doReturn(FluentFutures.immediateFailedFluentFuture(new ExecutionException(new NullPointerException())))
+                .when(transaction).commit();
         assertFalse(access.putSynchronous(identifier, dataObject, LogicalDatastoreType.OPERATIONAL));
     }
 
@@ -345,7 +346,7 @@ public class DatastoreAccessTest {
         when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
 
         // data did not exist before
-        when(readOnlyTransaction.read(Matchers.eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class)))
+        when(readOnlyTransaction.read(ArgumentMatchers.eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class)))
                 .thenReturn(FluentFutures.immediateFluentFuture(Optional.empty()));
         doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction).commit();
 
@@ -365,7 +366,7 @@ public class DatastoreAccessTest {
         when(transactionChain.newReadOnlyTransaction()).thenReturn(readOnlyTransaction);
 
         // data exists before
-        when(readOnlyTransaction.read(Matchers.eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class)))
+        when(readOnlyTransaction.read(ArgumentMatchers.eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class)))
                 .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(mock(SxpNodeIdentity.class))));
         doReturn(CommitInfo.emptyFluentFuture()).when(writeTransaction).commit();
 
