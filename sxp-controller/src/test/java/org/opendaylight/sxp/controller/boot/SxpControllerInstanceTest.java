@@ -24,7 +24,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.opendaylight.mdsal.binding.api.ClusteredDataTreeChangeListener;
@@ -150,7 +149,7 @@ public class SxpControllerInstanceTest {
         verify(dataBroker, atLeastOnce()).registerDataTreeChangeListener(any(DataTreeIdentifier.class),
                 any(ClusteredDataTreeChangeListener.class));
         verify(rpcProviderService).registerRpcImplementation(
-                Matchers.eq(SxpControllerService.class), any(SxpRpcServiceImpl.class));
+                eq(SxpControllerService.class), any(SxpRpcServiceImpl.class));
         verify(rpcProviderService).registerRpcImplementation(
                 eq(SxpConfigControllerService.class), any(SxpConfigRpcServiceImpl.class));
     }
