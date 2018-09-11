@@ -13,7 +13,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyList;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.mock;
@@ -39,10 +39,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.opendaylight.sxp.core.service.BindingHandler;
-import org.opendaylight.sxp.core.service.ConnectFacade;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
 import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
@@ -87,12 +84,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({ConnectFacade.class, BindingHandler.class})
 public class SxpNodeTest {
 
     @Rule public ExpectedException exception = ExpectedException.none();
@@ -137,7 +129,6 @@ public class SxpNodeTest {
                         sxpDatabaseProvider, worker);
         Channel channel = mock(Channel.class);
         when(channel.isActive()).thenReturn(true);
-        PowerMockito.field(SxpNode.class, "serverChannel").set(node, channel);
     }
 
     private Timers getNodeTimers() {
@@ -323,9 +314,7 @@ public class SxpNodeTest {
         node.openConnections();
         verify(worker, times(7)).executeTask(argument.capture(), any(ThreadsWorker.WorkerType.class));
 
-        PowerMockito.mockStatic(ConnectFacade.class);
         argument.getValue().run();
-        PowerMockito.verifyStatic();
     }
 
     @Test
@@ -417,8 +406,6 @@ public class SxpNodeTest {
 
     @Test
     public void testAddConnection() throws Exception {
-        PowerMockito.mockStatic(ConnectFacade.class);
-        when(ConnectFacade.createClient(any(), any(), any())).thenReturn(mock(ChannelFuture.class));
         assertEquals(0, node.getAllConnections().size());
 
         List<SxpPeer> sxpPeers = new ArrayList<>();
@@ -431,13 +418,10 @@ public class SxpNodeTest {
 
         node.addConnection(mockConnection(ConnectionMode.Both, ConnectionState.On));
         assertEquals(2, node.getAllConnections().size());
-        PowerMockito.verifyStatic();
     }
 
     @Test
     public void testAddConnections() throws Exception {
-        PowerMockito.mockStatic(ConnectFacade.class);
-        when(ConnectFacade.createClient(any(), any(), any())).thenReturn(mock(ChannelFuture.class));
         List<Connection> connection = new ArrayList<>();
 
         node.addConnections(null);
@@ -455,7 +439,6 @@ public class SxpNodeTest {
         connection.add(mockConnection(ConnectionMode.Both, ConnectionState.On));
         node.addConnections(connections);
         assertEquals(1, node.getAllConnections().size());
-        PowerMockito.verifyStatic();
     }
 
     private ArrayList<SxpFilter> getFilters(FilterType... types) {

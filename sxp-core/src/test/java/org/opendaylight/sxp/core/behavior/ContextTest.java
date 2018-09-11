@@ -8,13 +8,19 @@
 
 package org.opendaylight.sxp.core.behavior;
 
+import static org.mockito.ArgumentMatchers.anyByte;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.opendaylight.sxp.core.Constants.MESSAGE_HEADER_LENGTH_LENGTH;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.EmptyByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import java.net.SocketAddress;
@@ -24,7 +30,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
@@ -32,12 +37,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Vers
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.Notification;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageLegacy;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, StrategyFactory.class})
 public class ContextTest {
 
     @Rule public ExpectedException exception = ExpectedException.none();
@@ -51,17 +51,15 @@ public class ContextTest {
     @Before
     public void init() throws Exception {
         connection = mock(SxpConnection.class);
-        sxpNode = PowerMockito.mock(SxpNode.class);
+        sxpNode = mock(SxpNode.class);
         when(connection.getOwner()).thenReturn(sxpNode);
-        PowerMockito.when(sxpNode.getConnection(any(SocketAddress.class))).thenReturn(connection);
+        when(sxpNode.getConnection(any(SocketAddress.class))).thenReturn(connection);
         channelHandlerContext = mock(ChannelHandlerContext.class);
         Channel channel = mock(Channel.class);
         when(channel.localAddress()).thenReturn(mock(SocketAddress.class));
         when(channel.remoteAddress()).thenReturn(mock(SocketAddress.class));
         when(channelHandlerContext.channel()).thenReturn(channel);
         strategy = mock(Strategy.class);
-        PowerMockito.mockStatic(StrategyFactory.class);
-        PowerMockito.when(StrategyFactory.getStrategy(any(SxpNode.class), any(Version.class))).thenReturn(strategy);
     }
 
     @Test
@@ -138,7 +136,10 @@ public class ContextTest {
         Context ctxt = new Context(sxpNode, Version.Version4);
         Notification notificationMock = mock(Notification.class);
         when(strategy.onParseInput(any())).thenReturn(notificationMock);
-        Assert.assertNotNull(ctxt.executeParseInput(mock(ByteBuf.class)));
+        ByteBuf mock = mock(ByteBuf.class);
+        when(mock.readBytes(new byte[MESSAGE_HEADER_LENGTH_LENGTH])).thenReturn(mock);
+        Assert.assertNotNull(ctxt.executeParseInput(mock));
+        // Assert.assertNotNull(ctxt.executeParseInput(Unpooled.copiedBuffer(new byte[] {1, 0, 1, 0, 1, 0, 1, 0})));
     }
 
     @Test

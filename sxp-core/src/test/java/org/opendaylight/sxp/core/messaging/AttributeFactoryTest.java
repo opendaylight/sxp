@@ -11,17 +11,16 @@ package org.opendaylight.sxp.core.messaging;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.powermock.api.mockito.PowerMockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyAttributeFactory;
 import org.opendaylight.sxp.util.exception.message.attribute.AttributeLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.CapabilityLengthException;
@@ -50,12 +49,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.capabilities.attribute.CapabilitiesAttributesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.capabilities.attribute.capabilities.attributes.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.attribute.attribute.optional.fields.capabilities.attribute.capabilities.attributes.CapabilitiesBuilder;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({LegacyAttributeFactory.class})
 public class AttributeFactoryTest {
 
     @Rule public ExpectedException exception = ExpectedException.none();
@@ -387,7 +381,6 @@ public class AttributeFactoryTest {
 
     @Test
     public void testDecodeWithLegacyMocks() throws Exception {
-        PowerMockito.mockStatic(LegacyAttributeFactory.class);
         AttributeOptionalFields attrFieldsMock = mock(AttributeOptionalFields.class);
         when(LegacyAttributeFactory.decodeAddIPv4(any(), anyInt(), any())).thenReturn(attrFieldsMock);
         byte[] payload = new byte[500];

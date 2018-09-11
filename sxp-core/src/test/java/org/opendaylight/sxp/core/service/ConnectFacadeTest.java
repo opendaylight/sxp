@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpDomain;
@@ -31,12 +30,7 @@ import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
 import org.opendaylight.sxp.test.utils.templates.PrebuiltConnectionTemplates;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SecurityType;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, SslContextFactory.class, Epoll.class})
 public class ConnectFacadeTest {
 
     private static SxpNode sxpNode;
@@ -44,16 +38,16 @@ public class ConnectFacadeTest {
 
     @Before
     public void init() throws Exception {
-        sxpNode = PowerMockito.mock(SxpNode.class);
-        contextFactory = PowerMockito.mock(SslContextFactory.class);
-        PowerMockito.when(sxpNode.getPassword()).thenReturn("cisco");
-        PowerMockito.when(sxpNode.getSourceIp()).thenReturn(InetAddress.getByName("127.0.0.1"));
-        PowerMockito.when(sxpNode.getSslContextFactory()).thenReturn(contextFactory);
-        PowerMockito.when(contextFactory.getClientContext()).thenReturn(Optional.of(mock(SslContext.class)));
-        PowerMockito.when(contextFactory.getServerContext()).thenReturn(Optional.of(mock(SslContext.class)));
-        SxpDomain domainMock = PowerMockito.mock(SxpDomain.class);
-        PowerMockito.when(domainMock.getConnectionTemplates()).thenReturn(Arrays.asList(PrebuiltConnectionTemplates.DEFAULT_CT));
-        PowerMockito.when(sxpNode.getDomains()).thenReturn(Arrays.asList(domainMock));
+        sxpNode = mock(SxpNode.class);
+        contextFactory = mock(SslContextFactory.class);
+        when(sxpNode.getPassword()).thenReturn("cisco");
+        when(sxpNode.getSourceIp()).thenReturn(InetAddress.getByName("127.0.0.1"));
+        when(sxpNode.getSslContextFactory()).thenReturn(contextFactory);
+        when(contextFactory.getClientContext()).thenReturn(Optional.of(mock(SslContext.class)));
+        when(contextFactory.getServerContext()).thenReturn(Optional.of(mock(SslContext.class)));
+        SxpDomain domainMock = mock(SxpDomain.class);
+        when(domainMock.getConnectionTemplates()).thenReturn(Arrays.asList(PrebuiltConnectionTemplates.DEFAULT_CT));
+        when(sxpNode.getDomains()).thenReturn(Arrays.asList(domainMock));
     }
 
     @Test
@@ -81,7 +75,7 @@ public class ConnectFacadeTest {
         assertTrue(channel.isWritable());
         channel.close().get();
 
-        PowerMockito.when(contextFactory.getClientContext()).thenReturn(Optional.empty());
+        when(contextFactory.getClientContext()).thenReturn(Optional.empty());
         try {
             ConnectFacade.createClient(sxpNode, connection, handlerFactory).channel();
             fail("Should fail as SSL context is missing");
@@ -112,7 +106,7 @@ public class ConnectFacadeTest {
 
     @Test(expected = UnsupportedOperationException.class)
     public void testEpollUnavailable() {
-        PowerMockito.mockStatic(Epoll.class);
+        mock(Epoll.class);
         when(Epoll.isAvailable()).thenReturn(false);
         when(Epoll.unavailabilityCause()).thenReturn(new Exception());
 
