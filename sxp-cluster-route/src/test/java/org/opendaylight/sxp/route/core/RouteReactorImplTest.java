@@ -22,13 +22,12 @@ import java.util.Optional;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
-import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.MockitoAnnotations;
 import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.ReadTransaction;
@@ -46,7 +45,6 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 /**
  * Test for {@link RouteReactorImpl}.
  */
-@RunWith(MockitoJUnitRunner.class)
 public class RouteReactorImplTest {
 
     @Mock private DataBroker dataBroker;
@@ -66,10 +64,11 @@ public class RouteReactorImplTest {
 
     @Before
     public void setUp() throws Exception {
-        Mockito.when(routingService.setInterface(Matchers.any())).thenReturn(routingService);
-        Mockito.when(routingService.setNetmask(Matchers.any())).thenReturn(routingService);
-        Mockito.when(routingServiceFactory.instantiateRoutingService(Matchers.any())).thenReturn(routingService);
-        Mockito.when(dataBroker.createTransactionChain(Matchers.any())).thenReturn(txChain);
+        MockitoAnnotations.initMocks(this);
+        Mockito.when(routingService.setInterface(ArgumentMatchers.any())).thenReturn(routingService);
+        Mockito.when(routingService.setNetmask(ArgumentMatchers.any())).thenReturn(routingService);
+        Mockito.when(routingServiceFactory.instantiateRoutingService(ArgumentMatchers.any())).thenReturn(routingService);
+        Mockito.when(dataBroker.createTransactionChain(ArgumentMatchers.any())).thenReturn(txChain);
         Mockito.when(txChain.newWriteOnlyTransaction()).thenReturn(wTx);
         Mockito.when(txChain.newReadOnlyTransaction()).thenReturn(rTx);
 
@@ -313,7 +312,7 @@ public class RouteReactorImplTest {
         Mockito.when(routingService.addRouteForCurrentService()).thenReturn(true);
         Mockito.when(routingService.removeRouteForCurrentService()).thenReturn(true);
 
-        Mockito.when(rTx.read(Matchers.any(), Matchers.any()))
+        Mockito.when(rTx.read(ArgumentMatchers.any(), ArgumentMatchers.any()))
                 .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(oldRoute)));
         Mockito.when(wTx.commit()).thenReturn(FluentFutures.immediateNullFluentFuture());
 
@@ -323,7 +322,7 @@ public class RouteReactorImplTest {
 
         reactor.updateRouting(oldRoute, newRoute);
 
-        Mockito.verify(wTx).put(Matchers.any(), pathCaptor.capture(), dataCaptor.capture());
+        Mockito.verify(wTx).put(ArgumentMatchers.any(), pathCaptor.capture(), dataCaptor.capture());
         Assert.assertEquals(1, pathCaptor.getAllValues().size());
         Assert.assertEquals(1, dataCaptor.getAllValues().size());
 
