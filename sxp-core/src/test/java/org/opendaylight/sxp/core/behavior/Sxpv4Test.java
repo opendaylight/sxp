@@ -7,7 +7,7 @@
  */
 package org.opendaylight.sxp.core.behavior;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -29,7 +29,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.messaging.MessageFactory;
@@ -41,8 +40,6 @@ import org.opendaylight.sxp.util.exception.ErrorMessageReceivedException;
 import org.opendaylight.sxp.util.exception.message.ErrorMessageException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageCompositionException;
 import org.opendaylight.sxp.util.exception.message.UpdateMessageConnectionStateException;
-import org.opendaylight.sxp.util.exception.message.attribute.AttributeNotFoundException;
-import org.opendaylight.sxp.util.exception.message.attribute.CapabilityLengthException;
 import org.opendaylight.sxp.util.exception.message.attribute.SecurityGroupTagValueException;
 import org.opendaylight.sxp.util.exception.unknown.UnknownSxpMessageTypeException;
 import org.opendaylight.sxp.util.netty.InetAddressExtractor;
@@ -50,6 +47,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Attr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.MessageType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.Attribute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.attributes.fields.AttributeBuilder;
@@ -61,21 +59,16 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessage;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, Context.class, MessageFactory.class, BindingDispatcher.class, InetAddressExtractor.class})
 public class Sxpv4Test {
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    private static Sxpv4 sxpv4;
-    private static ChannelHandlerContext channelHandlerContext;
-    private static SxpConnection connection;
-    private static SxpNode sxpNode;
+    private Sxpv4 sxpv4;
+    private ChannelHandlerContext channelHandlerContext;
+    private SxpConnection connection;
+    private SxpNode sxpNode;
 
     @Before
     public void init() throws Exception {
@@ -83,20 +76,19 @@ public class Sxpv4Test {
         connection = mock(SxpConnection.class);
         when(connection.getVersion()).thenReturn(Version.Version4);
         when(connection.getMode()).thenReturn(ConnectionMode.Speaker);
-        PowerMockito.mockStatic(LegacyMessageFactory.class);
-        sxpNode = PowerMockito.mock(SxpNode.class);
-        PowerMockito.when(sxpNode.getSvcBindingHandler())
-                .thenReturn(new BindingHandler(sxpNode, mock(BindingDispatcher.class)));
-        Context context = PowerMockito.mock(Context.class);
+        mock(LegacyMessageFactory.class);
+        sxpNode = mock(SxpNode.class);
+        when(sxpNode.getWorker()).thenReturn(new ThreadsWorker());
+        BindingHandler handler = new BindingHandler(sxpNode, new BindingDispatcher(sxpNode));
+        when(sxpNode.getSvcBindingHandler()).thenReturn(handler);
+        Context context = new Context(sxpNode, Version.Version4);
         sxpv4 = new Sxpv4(sxpNode);
-        PowerMockito.when(context.getOwner()).thenReturn(sxpNode);
         when(connection.getContext()).thenReturn(context);
+        when(connection.getOwnerId()).thenReturn(new NodeId("0.0.0.0"));
         when(connection.getOwner()).thenReturn(sxpNode);
         when(connection.getDestination()).thenReturn(new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 0));
         when(connection.getLocalAddress()).thenReturn(new InetSocketAddress(InetAddress.getByName("0.0.0.1"), 0));
-        PowerMockito.when(sxpNode.getWorker()).thenReturn(mock(ThreadsWorker.class));
-        PowerMockito.mockStatic(MessageFactory.class);
-        PowerMockito.mockStatic(InetAddressExtractor.class);
+        when(sxpNode.getWorker()).thenReturn(mock(ThreadsWorker.class));
     }
 
     @Test
@@ -118,17 +110,12 @@ public class Sxpv4Test {
         verify(channelHandlerContext, times(3)).writeAndFlush(any(ByteBuf.class));
         verify(connection, times(3)).setStatePendingOn();
 
-        when(connection.isStateDeleteHoldDown()).thenReturn(Boolean.TRUE);
-        when(connection.isStateOn()).thenReturn(Boolean.TRUE);
+        when(connection.isStateDeleteHoldDown()).thenReturn(true);
+        when(connection.isStateOn()).thenReturn(true);
         sxpv4.onChannelActivation(channelHandlerContext, connection);
         verify(channelHandlerContext, times(4)).writeAndFlush(any(ByteBuf.class));
         verify(connection, times(3)).setStatePendingOn();
         verify(connection).setReconciliationTimer();
-
-        when(connection.isModeBoth()).thenThrow(CapabilityLengthException.class);
-        sxpv4.onChannelActivation(channelHandlerContext, connection);
-        verify(channelHandlerContext, times(4)).writeAndFlush(any(ByteBuf.class));
-        verify(connection, times(3)).setStatePendingOn();
     }
 
     private List<Attribute> getHoldTime() {
@@ -158,13 +145,13 @@ public class Sxpv4Test {
         sxpv4.onInputMessage(channelHandlerContext, connection, message);
         verify(connection).setConnection(any(OpenMessage.class));
         verify(connection, never()).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
-        verify(channelHandlerContext).writeAndFlush(any(getClass()));
+        verify(channelHandlerContext).writeAndFlush(any());
 
         when(message.getSxpMode()).thenReturn(ConnectionMode.Speaker);
         sxpv4.onInputMessage(channelHandlerContext, connection, message);
         verify(connection, times(2)).setConnection(any(OpenMessage.class));
         verify(connection, never()).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
-        verify(channelHandlerContext, times(2)).writeAndFlush(any(getClass()));
+        verify(channelHandlerContext, times(2)).writeAndFlush(any());
     }
 
     @Test
@@ -174,29 +161,14 @@ public class Sxpv4Test {
         when(message.getType()).thenReturn(MessageType.Open);
         when(message.getPayload()).thenReturn(new byte[]{});
         when(message.getAttribute()).thenReturn(getHoldTime());
+        when(message.getSxpMode()).thenReturn(ConnectionMode.Listener);
         when(connection.getMode()).thenReturn(ConnectionMode.Both);
         when(connection.isModeBoth()).thenReturn(true);
 
-        when(message.getSxpMode()).thenReturn(ConnectionMode.Listener);
-        when(MessageFactory.decodeCapabilities(any())).thenThrow(AttributeNotFoundException.class);
         sxpv4.onInputMessage(channelHandlerContext, connection, message);
-        verify(connection, never()).setConnection(any(OpenMessage.class));
-    }
 
-    @Test
-    public void testOnInputMessageOpenBothModeConnectionErrHandling2() throws Exception {
-        OpenMessage message = mock(OpenMessage.class);
-        when(message.getVersion()).thenReturn(Version.Version4);
-        when(message.getType()).thenReturn(MessageType.Open);
-        when(message.getPayload()).thenReturn(new byte[]{});
-        when(message.getAttribute()).thenReturn(getHoldTime());
-        when(connection.getMode()).thenReturn(ConnectionMode.Both);
-        when(connection.isModeBoth()).thenReturn(true);
-
-        when(message.getSxpMode()).thenReturn(ConnectionMode.Listener);
-        when(MessageFactory.decodeCapabilities(any())).thenThrow(CapabilityLengthException.class);
-        sxpv4.onInputMessage(channelHandlerContext, connection, message);
-        verify(connection).setStateOff(any());
+        verify(connection, never()).setConnection(eq(message));
+        verify(connection, never()).setStateOff(channelHandlerContext);
     }
 
     @Test
@@ -211,20 +183,20 @@ public class Sxpv4Test {
         sxpv4.onInputMessage(channelHandlerContext, connection, message);
         verify(connection).setConnection(any(OpenMessage.class));
         verify(connection, never()).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
-        verify(channelHandlerContext).writeAndFlush(any(getClass()));
+        verify(channelHandlerContext).writeAndFlush(any());
 
         when(message.getSxpMode()).thenReturn(ConnectionMode.Speaker);
         sxpv4.onInputMessage(channelHandlerContext, connection, message);
         verify(connection, times(2)).setConnection(any(OpenMessage.class));
         verify(connection, never()).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
-        verify(channelHandlerContext, times(2)).writeAndFlush(any(getClass()));
+        verify(channelHandlerContext, times(2)).writeAndFlush(any());
 
         //DeleteHoldDown/PendingOn/IPDropdown
         when(connection.isStateDeleteHoldDown()).thenReturn(true);
         sxpv4.onInputMessage(channelHandlerContext, connection, message);
         verify(connection).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
         verify(connection, times(3)).setConnection(any(OpenMessage.class));
-        verify(channelHandlerContext, times(3)).writeAndFlush(any(getClass()));
+        verify(channelHandlerContext, times(3)).writeAndFlush(any());
 
         when(connection.isStateDeleteHoldDown()).thenReturn(false);
         when(connection.isStatePendingOn()).thenReturn(true);
@@ -233,7 +205,7 @@ public class Sxpv4Test {
         when(channelHandlerContext.channel()).thenReturn(mock(Channel.class));
         sxpv4.onInputMessage(channelHandlerContext, connection, message);
         verify(connection).closeInitContextWithRemote(any(InetSocketAddress.class));
-        verify(channelHandlerContext, times(3)).writeAndFlush(any(getClass()));
+        verify(channelHandlerContext, times(3)).writeAndFlush(any());
 
         when(connection.getDestination()).thenReturn(new InetSocketAddress(InetAddress.getByName("0.0.0.10"), 0));
         when(connection.isStateDeleteHoldDown()).thenReturn(false);
@@ -241,7 +213,7 @@ public class Sxpv4Test {
         sxpv4.onInputMessage(channelHandlerContext, connection, message);
         verify(connection,times(4)).markChannelHandlerContext(any(ChannelHandlerContext.class));
         verify(connection, times(4)).setConnection(any(OpenMessage.class));
-        verify(channelHandlerContext, times(4)).writeAndFlush(any(getClass()));
+        verify(channelHandlerContext, times(4)).writeAndFlush(any());
 
         //BOTH mode
         when(message.getSxpMode()).thenReturn(ConnectionMode.Listener);
@@ -251,11 +223,11 @@ public class Sxpv4Test {
         verify(connection).setConnectionSpeakerPart(any(OpenMessage.class));
         verify(connection).markChannelHandlerContext(any(ChannelHandlerContext.class),
                 any(SxpConnection.ChannelHandlerContextType.class));
-        verify(channelHandlerContext, times(5)).writeAndFlush(any(getClass()));
+        verify(channelHandlerContext, times(5)).writeAndFlush(any());
 
         when(message.getSxpMode()).thenReturn(ConnectionMode.Speaker);
         sxpv4.onInputMessage(channelHandlerContext, connection, message);
-        verify(channelHandlerContext, times(6)).writeAndFlush(any(getClass()));
+        verify(channelHandlerContext, times(6)).writeAndFlush(any());
         verify(connection).setStateOff(any(ChannelHandlerContext.class));
 
         when(connection.isBidirectionalBoth()).thenReturn(true);
@@ -363,8 +335,8 @@ public class Sxpv4Test {
 
     @Test
     public void testOnParseInputGoldenPath() throws Exception {
-        Notification notificationMock = PowerMockito.mock(Notification.class);
-        ByteBuf byteBufMock = PowerMockito.mock(ByteBuf.class);
+        Notification notificationMock = mock(Notification.class);
+        ByteBuf byteBufMock = mock(ByteBuf.class);
         when(MessageFactory.parse(eq(Version.Version4), any(ByteBuf.class))).thenReturn(notificationMock);
         try {
             sxpv4.onParseInput(byteBufMock);
@@ -376,7 +348,7 @@ public class Sxpv4Test {
     @Test(expected = ErrorMessageException.class)
     public void testOnParseInputExceptionHandling() throws Exception {
         when(MessageFactory.parse(eq(Version.Version4), any(ByteBuf.class))).thenThrow(UnknownSxpMessageTypeException.class);
-        ByteBuf byteBufMock = PowerMockito.mock(ByteBuf.class);
+        ByteBuf byteBufMock = mock(ByteBuf.class);
         sxpv4.onParseInput(byteBufMock);
     }
 

@@ -10,10 +10,11 @@ package org.opendaylight.sxp.core.threading;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -28,14 +29,8 @@ import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.SxpConnection;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({MoreExecutors.class})
 public class ThreadsWorkerTest {
 
     private static ThreadsWorker worker;
@@ -56,11 +51,6 @@ public class ThreadsWorkerTest {
         executorService = mock(ListeningExecutorService.class);
         executorServiceInbound = mock(ListeningExecutorService.class);
         executorServiceOutbound = mock(ListeningExecutorService.class);
-        PowerMockito.mockStatic(MoreExecutors.class);
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class)))
-                .thenReturn(executorService, executorServiceInbound, executorServiceOutbound);
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(ScheduledExecutorService.class)))
-                .thenReturn(scheduledExecutorService);
     }
 
     @After
@@ -113,8 +103,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testExecuteTaskInSequence_Ordering() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(ScheduledExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
         final CountDownLatch latch = new CountDownLatch(3);
         final int[] samples = {3, 10};
@@ -159,7 +147,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testExecuteTaskInSequence_Canceling() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
 
         final int[] monitor = {0, 0};
@@ -206,7 +193,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testExecuteTaskInSequence_Get() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
 
         final int[] monitor = {0, 0};
@@ -244,7 +230,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testCancelTasksInSequence() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
 
         final int[] monitor = {0, 0};
@@ -283,8 +268,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testExecuteTaskInSequence_Ordering_Connection() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(ScheduledExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
         final CountDownLatch latch = new CountDownLatch(3);
         final int[] samples = {3, 10};
@@ -329,7 +312,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testExecuteTaskInSequence_Canceling_Connection() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
 
         final int[] monitor = {0, 0};
@@ -376,7 +358,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testExecuteTaskInSequence_Get_Connection() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
 
         final int[] monitor = {0, 0};
@@ -414,7 +395,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testCancelTasksInSequence_Connection() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
         worker = new ThreadsWorker();
 
         final int[] monitor = {0, 0};

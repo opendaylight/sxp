@@ -10,10 +10,10 @@ package org.opendaylight.sxp.controller.core;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -45,12 +45,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, DatastoreAccess.class})
 public class SxpDatastoreConnectionTest {
 
     private DatastoreAccess datastoreAccess;
@@ -67,9 +62,9 @@ public class SxpDatastoreConnectionTest {
                 mock(ListenableFuture.class));
         when(worker.executeTask(any(Callable.class), any(ThreadsWorker.WorkerType.class))).thenReturn(
                 mock(ListenableFuture.class));
-        sxpNode = PowerMockito.mock(SxpNode.class);
+        sxpNode = mock(SxpNode.class);
         datastoreAccess = mock(DatastoreAccess.class);
-        PowerMockito.when(sxpNode.getWorker()).thenReturn(worker);
+        when(sxpNode.getWorker()).thenReturn(worker);
         connection =
                 SxpDatastoreConnection.create(datastoreAccess, sxpNode,
                         new ConnectionBuilder().setPeerAddress(IpAddressBuilder.getDefaultInstance("127.0.0.1"))

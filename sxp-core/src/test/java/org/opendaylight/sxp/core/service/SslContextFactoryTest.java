@@ -18,7 +18,6 @@ import java.security.cert.CertificateException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PathType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.StoreType;
@@ -26,11 +25,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.security
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.security.fields.TlsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.tls.security.fields.KeystoreBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.tls.security.fields.TruststoreBuilder;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PowerMockIgnore({"javax.net.ssl.*","javax.security.*"})
 public class SslContextFactoryTest {
 
     private SslContextFactory contextFactory;

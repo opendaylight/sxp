@@ -19,7 +19,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.route.spi.Routing;
 import org.opendaylight.sxp.util.time.TimeConv;
