@@ -9,10 +9,10 @@
 package org.opendaylight.sxp.core.service;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.anyList;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.netty.buffer.ByteBuf;
@@ -21,18 +21,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.SxpConnection;
-import org.opendaylight.sxp.core.behavior.Context;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.filtering.SxpBindingFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({Context.class})
 public class UpdateExportTaskTest {
 
     private static SxpConnection connection;
@@ -44,14 +37,10 @@ public class UpdateExportTaskTest {
     @Before
     public void init() throws Exception {
         connection = mock(SxpConnection.class);
-        Context context = PowerMockito.mock(Context.class);
-        when(connection.getContext()).thenReturn(context);
         when(connection.getVersion()).thenReturn(Version.Version4);
         ByteBuf byteBuf = mock(ByteBuf.class);
         when(byteBuf.duplicate()).thenReturn(byteBuf);
         when(byteBuf.capacity()).thenReturn(10);
-        PowerMockito.when(context.executeUpdateMessageStrategy(any(SxpConnection.class), anyList(), anyList(),
-                any(SxpBindingFilter.class))).thenReturn(byteBuf);
         byteBuffs = new ByteBuf[] {byteBuf};
         partitions = new BiFunction[] {(c, f) -> byteBuf};
         atomicInteger = new AtomicInteger(1);
@@ -91,6 +80,6 @@ public class UpdateExportTaskTest {
     public void testCallWithNullMessage() {
         partitions[0] = (t, u) -> null;
         new UpdateExportTask(connection, byteBuffs, partitions, atomicInteger).call();
-        PowerMockito.verifyNoMoreInteractions(byteBuffs);
+        verifyNoMoreInteractions(byteBuffs);
     }
 }
