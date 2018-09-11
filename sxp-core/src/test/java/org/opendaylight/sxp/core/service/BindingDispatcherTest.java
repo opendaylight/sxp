@@ -9,8 +9,8 @@
 package org.opendaylight.sxp.core.service;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -27,7 +27,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
@@ -36,19 +35,15 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.SxpBindingFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class})
 public class BindingDispatcherTest {
 
     @Rule public ExpectedException exception = ExpectedException.none();
-    private static SxpNode sxpNode;
-    private static BindingDispatcher dispatcher;
-    private static ThreadsWorker worker;
-    private static List<SxpConnection> sxpConnections;
+
+    private SxpNode sxpNode;
+    private BindingDispatcher dispatcher;
+    private ThreadsWorker worker;
+    private List<SxpConnection> sxpConnections;
 
     private SxpConnection mockConnection(Version version) {
         SxpConnection connection = mock(SxpConnection.class);
@@ -72,12 +67,12 @@ public class BindingDispatcherTest {
     @Before
     public void init() throws Exception {
         worker = mock(ThreadsWorker.class);
-        sxpNode = PowerMockito.mock(SxpNode.class);
-        PowerMockito.when(sxpNode.getWorker()).thenReturn(worker);
-        PowerMockito.when(sxpNode.isEnabled()).thenReturn(true);
-        PowerMockito.when(sxpNode.getExpansionQuantity()).thenReturn(50);
+        sxpNode = mock(SxpNode.class);
+        when(sxpNode.getWorker()).thenReturn(worker);
+        when(sxpNode.isEnabled()).thenReturn(true);
+        when(sxpNode.getExpansionQuantity()).thenReturn(50);
         sxpConnections = new ArrayList<>();
-        PowerMockito.when(sxpNode.getAllOnSpeakerConnections()).thenReturn(sxpConnections);
+        when(sxpNode.getAllOnSpeakerConnections()).thenReturn(sxpConnections);
         dispatcher = new BindingDispatcher(sxpNode);
     }
 
