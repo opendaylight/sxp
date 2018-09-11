@@ -139,10 +139,7 @@ public final class SslContextFactory {
         final KeyStore ts = KeyStore.getInstance(Objects.requireNonNull(truststore).getType().name());
         ts.load(asInputStream(truststore.getLocation(), truststore.getPathType()),
                 truststore.getPassword().toCharArray());
-
-        final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        tmf.init(ts);
-        return tmf;
+        return null;
     }
 
     /**

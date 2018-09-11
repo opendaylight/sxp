@@ -8,7 +8,7 @@
 
 package org.opendaylight.sxp.core.behavior;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -19,17 +19,14 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.concurrent.Callable;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.core.service.BindingHandler;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
@@ -45,12 +42,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.OpenMessageLegacy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.PurgeAllMessage;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.sxp.messages.UpdateMessageLegacy;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, Context.class, BindingDispatcher.class, Version.class})
 public class SxpLegacyTest {
 
     @Rule public ExpectedException exception = ExpectedException.none();
@@ -61,22 +53,20 @@ public class SxpLegacyTest {
     private static SxpNode sxpNode;
 
     @Before
-    public void init() throws UnknownHostException {
-        sxpLegacy = new SxpLegacy(PowerMockito.mock(Version.class));
+    public void init() throws Exception {
+        sxpLegacy = new SxpLegacy(Version.Version4);
         channelHandlerContext = mock(ChannelHandlerContext.class);
+        sxpNode = mock(SxpNode.class);
         connection = mock(SxpConnection.class);
         when(connection.getVersion()).thenReturn(Version.Version1);
         when(connection.getMode()).thenReturn(ConnectionMode.None);
         when(connection.getNodeIdRemote()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
         when(connection.getDestination()).thenReturn(new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 5));
-        PowerMockito.mockStatic(LegacyMessageFactory.class);
-        sxpNode = PowerMockito.mock(SxpNode.class);
-        PowerMockito.when(sxpNode.getSvcBindingHandler())
-                .thenReturn(new BindingHandler(sxpNode, mock(BindingDispatcher.class)));
+        when(sxpNode.getWorker()).thenReturn(mock(ThreadsWorker.class));
+        BindingHandler handler = new BindingHandler(sxpNode, new BindingDispatcher(sxpNode));
+        when(sxpNode.getSvcBindingHandler()).thenReturn(handler);
         when(connection.getOwner()).thenReturn(sxpNode);
-        Context context = PowerMockito.mock(Context.class);
-        PowerMockito.when(context.getOwner()).thenReturn(sxpNode);
-        PowerMockito.when(sxpNode.getWorker()).thenReturn(mock(ThreadsWorker.class));
+        Context context = new Context(sxpNode, Version.Version4);
         when(connection.getContext()).thenReturn(context);
     }
 
@@ -100,7 +90,7 @@ public class SxpLegacyTest {
 
     @Test
     public void testOnChannelInactivation() throws Exception {
-        when(connection.isStateOn(Matchers.<SxpConnection.ChannelHandlerContextType>any())).thenReturn(true);
+        when(connection.isStateOn(ArgumentMatchers.any())).thenReturn(true);
         when(connection.getContextType(any(ChannelHandlerContext.class))).thenReturn(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT);
 
         sxpLegacy.onChannelInactivation(channelHandlerContext, connection);
@@ -110,7 +100,6 @@ public class SxpLegacyTest {
         sxpLegacy.onChannelInactivation(channelHandlerContext, connection);
         verify(channelHandlerContext).writeAndFlush(any(ByteBuf.class));
         verify(connection, times(1)).setStateOff(any(ChannelHandlerContext.class));
-
     }
 
     @Test
@@ -126,14 +115,14 @@ public class SxpLegacyTest {
         verify(connection).setStateOff(any(ChannelHandlerContext.class));
         verify(connection, times(0)).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
         verify(connection, times(0)).setStateOn();
-        verify(channelHandlerContext).writeAndFlush(any(getClass()));
+        verify(channelHandlerContext).writeAndFlush(any());
 
         when(connection.isModeListener()).thenReturn(false);
         when(connection.isModeSpeaker()).thenReturn(true);
         sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
         verify(connection).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
         verify(connection).setStateOn();
-        verify(channelHandlerContext, times(2)).writeAndFlush(any(getClass()));
+        verify(channelHandlerContext, times(2)).writeAndFlush(any());
 
         when(message.getSxpMode()).thenReturn(ConnectionMode.Speaker);
         when(connection.isModeListener()).thenReturn(true);
@@ -141,7 +130,7 @@ public class SxpLegacyTest {
         sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
         verify(connection, times(2)).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
         verify(connection, times(2)).setStateOn();
-        verify(channelHandlerContext, times(3)).writeAndFlush(any(getClass()));
+        verify(channelHandlerContext, times(3)).writeAndFlush(any());
 
         when(message.getType()).thenReturn(MessageType.OpenResp);
         sxpLegacy.onInputMessage(channelHandlerContext, connection, message);
@@ -152,7 +141,7 @@ public class SxpLegacyTest {
         verify(connection, times(2)).setStateOff(any(ChannelHandlerContext.class));
         verify(connection, times(3)).closeChannelHandlerContextComplements(any(ChannelHandlerContext.class));
         verify(connection, times(3)).setStateOn();
-        verify(channelHandlerContext, times(4)).writeAndFlush(any(getClass()));
+        verify(channelHandlerContext, times(4)).writeAndFlush(any());
 
         when(connection.getVersion()).thenReturn(Version.Version4);
         exception.expect(ErrorMessageException.class);

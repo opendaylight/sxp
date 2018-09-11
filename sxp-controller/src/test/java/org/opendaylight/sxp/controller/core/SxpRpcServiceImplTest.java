@@ -12,33 +12,38 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
 
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
 import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.WriteTransaction;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
+import org.opendaylight.mdsal.common.api.TransactionChainListener;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
+import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.core.threading.ThreadsWorker;
+import org.opendaylight.sxp.core.service.BindingDispatcher;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
-import org.opendaylight.sxp.util.inet.NodeIdConv;
-import org.opendaylight.sxp.util.time.TimeConv;
+import org.opendaylight.sxp.util.database.spi.SxpDatabaseInf;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
@@ -46,7 +51,6 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv6Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddBindingsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddConnectionInputBuilder;
@@ -92,155 +96,70 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Up
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.fields.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntriesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.domain.filter.SxpDomainFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroupKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpPeerGroups;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpPeerGroupsBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentityBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomainsBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
 import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.IdentifiableItem;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.PathArgument;
 import org.opendaylight.yangtools.yang.common.RpcResult;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({MasterDatastoreImpl.class, DatastoreAccess.class, SxpNode.class})
 public class SxpRpcServiceImplTest {
 
-    private static SxpNode node;
-    private static SxpRpcServiceImpl service;
-    private static DatastoreAccess datastoreAccess;
+    private static final NodeId NODE_ID = NodeId.getDefaultInstance("0.0.0.0");
 
-    @SuppressWarnings("unchecked")
-    @Before
-    public void init() {
-        node = PowerMockito.mock(SxpNode.class);
-        datastoreAccess = mock(DatastoreAccess.class);
-        final org.opendaylight.sxp.core.SxpDomain domain = mock(org.opendaylight.sxp.core.SxpDomain.class);
-        final MasterDatabaseInf masterDatabase = mock(MasterDatastoreImpl.class);
-        when(datastoreAccess.checkAndDelete(any(InstanceIdentifier.class), any(LogicalDatastoreType.class))).thenReturn(
-                true);
-        when(datastoreAccess.checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
-                any(LogicalDatastoreType.class), anyBoolean())).thenReturn(true);
-        when(datastoreAccess.putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
-                any(LogicalDatastoreType.class))).thenReturn(true);
-        when(datastoreAccess.readSynchronous(eq(getIdentifier("0.0.0.0").child(SxpDomains.class)
-                .child(SxpDomain.class, new SxpDomainKey(SxpNode.DEFAULT_DOMAIN))
-                .child(MasterDatabase.class)), any(LogicalDatastoreType.class))).thenReturn(
-                new MasterDatabaseBuilder().setMasterDatabaseBinding(new ArrayList<>()).build());
-        when(datastoreAccess.readSynchronous(eq(getIdentifier("0.0.0.0")), any(LogicalDatastoreType.class))).thenReturn(
-                mock(SxpNodeIdentity.class));
-        when(datastoreAccess.merge(any(InstanceIdentifier.class), any(DataObject.class),
-                any(LogicalDatastoreType.class))).thenReturn(FluentFutures.immediateNullFluentFuture());
-        when(datastoreAccess.putSynchronous(eq(getIdentifier("0.0.0.1")), any(SxpNodeIdentity.class),
-                eq(LogicalDatastoreType.CONFIGURATION))).thenAnswer(invocation -> {
-            final SxpNode sxpNode = mock(SxpNode.class);
-            when(sxpNode.getNodeId()).thenReturn(NodeId.getDefaultInstance("0.0.0.1"));
-            Configuration.register(sxpNode);
-            return true;
-        });
-        final org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup sxpPeerGroup =
-                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroupBuilder()
-                        .setName(SxpNode.DEFAULT_DOMAIN)
-                        .build();
-        final SxpPeerGroups sxpPeerGroups = new SxpPeerGroupsBuilder()
-                .setSxpPeerGroup(Collections.singletonList(sxpPeerGroup))
-                .build();
-        when(datastoreAccess.readSynchronous(eq(getIdentifier("0.0.0.0").child(SxpPeerGroups.class)), eq(LogicalDatastoreType.OPERATIONAL)))
-                .thenReturn(sxpPeerGroups);
-        when(datastoreAccess.readSynchronous(
-                eq(getIdentifier("0.0.0.0")
-                        .child(SxpPeerGroups.class)
-                        .child(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup.class,
-                                new SxpPeerGroupKey(SxpNode.DEFAULT_DOMAIN))),
-                eq(LogicalDatastoreType.OPERATIONAL))).thenReturn(sxpPeerGroup);
-        PowerMockito.mockStatic(DatastoreAccess.class);
-        PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
-        when(node.getNodeId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
-        when(node.getPeerGroups()).thenReturn(Collections.singletonList(mock(SxpPeerGroup.class)));
-        when(node.getWorker()).thenReturn(new ThreadsWorker());
-        when(node.getPeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
-        when(node.removePeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
-        when(node.removeFilterFromPeerGroup(anyString(), any(FilterType.class), any(FilterSpecific.class))).thenReturn(
-                true);
-        when(node.addPeerGroup(any(SxpPeerGroup.class))).thenReturn(true);
-        when(node.addFilterToPeerGroup(anyString(),
-                any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class)))
-                .thenReturn(true);
-        when(node.updateFilterInPeerGroup(anyString(),
-                any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class)))
-                .thenReturn(
-                        mock(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class));
-        when(node.getDomain(eq(SxpNode.DEFAULT_DOMAIN))).thenReturn(domain);
-        when(domain.getMasterDatabase()).thenReturn(masterDatabase);
-        Configuration.register(node);
-        service = new SxpRpcServiceImpl(mock(DataBroker.class));
-        when(node.getBindingMasterDatabase()).thenReturn(masterDatabase);
+    @Mock
+    private DataBroker dataBroker;
+    @Mock
+    private ReadTransaction readTransaction;
+    @Mock
+    private WriteTransaction writeTransaction;
 
-        final MasterDatabaseBinding localBinding = getBinding(
-                "10.0.0.1/24", 1, BindingOriginsConfig.LOCAL_ORIGIN);
-        final MasterDatabaseBinding networkBinding = getBinding(
-                "10.0.0.2/24", 2, BindingOriginsConfig.NETWORK_ORIGIN);
-        when(masterDatabase.getBindings(eq(BindingOriginsConfig.LOCAL_ORIGIN)))
-                .thenReturn(Lists.newArrayList(localBinding));
-        when(masterDatabase.getBindings()).thenReturn(Lists.newArrayList(localBinding, networkBinding));
+    private SxpRpcServiceImpl service;
 
-        when(masterDatabase.addBindings(anyListOf(MasterDatabaseBinding.class))).thenAnswer(invocation -> {
-            final List<MasterDatabaseBinding> input = (List<MasterDatabaseBinding>) invocation.getArguments()[0];
-            if (input.isEmpty()) {
-                return Collections.emptyList();
-            } else {
-                // assume all bindings were added
-                return input;
-            }
-        });
-
-        when(masterDatabase.deleteBindings(anyListOf(MasterDatabaseBinding.class))).thenAnswer(invocation -> {
-            final List<MasterDatabaseBinding> input = (List<MasterDatabaseBinding>) invocation.getArguments()[0];
-            if (input.isEmpty()) {
-                return Collections.emptyList();
-            } else {
-                // assume all bindings were deleted
-                return input;
-            }
-        });
+    @BeforeClass
+    public static void setUp() {
+        BindingOriginsConfig.INSTANCE.addBindingOrigins(BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES);
     }
 
-    private MasterDatabaseBinding getBinding(String prefix, int sgt, OriginType origin, String... peers) {
-        MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
-        bindingBuilder.setIpPrefix(IpPrefixBuilder.getDefaultInstance(prefix));
-        bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
-        bindingBuilder.setOrigin(origin);
-        bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
-        PeerSequenceBuilder sequenceBuilder = new PeerSequenceBuilder();
-        sequenceBuilder.setPeer(new ArrayList<>());
-        for (int i = 0; i < peers.length; i++) {
-            sequenceBuilder.getPeer()
-                    .add(new PeerBuilder().setSeq(i).setNodeId(NodeId.getDefaultInstance(peers[i])).build());
-        }
-        bindingBuilder.setPeerSequence(sequenceBuilder.build());
-        return bindingBuilder.build();
+    @Before
+    public void init() {
+        MockitoAnnotations.initMocks(this);
+
+        final DatastoreAccess datastoreAccess = prepareDataStore(dataBroker, readTransaction, writeTransaction);
+        final SxpDatabaseInf sxpDatabase = new SxpDatastoreImpl(datastoreAccess, NODE_ID.getValue(), SxpNode.DEFAULT_DOMAIN);
+        final SxpNodeIdentity nodeIdentity = new SxpNodeIdentityBuilder()
+                .setName(NODE_ID.getValue())
+                .setSourceIp(new IpAddress(Ipv4Address.getDefaultInstance(NODE_ID.getValue())))
+                .setSxpDomains(new SxpDomainsBuilder()
+                        .setSxpDomain(Collections.singletonList(new SxpDomainBuilder()
+                                .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                                .build()))
+                        .build())
+                .build();
+
+        final MasterDatabaseInf masterDatabase = new MasterDatastoreImpl(datastoreAccess, NODE_ID.getValue(), SxpNode.DEFAULT_DOMAIN);
+        final SxpNode node = SxpNode.createInstance(NODE_ID, nodeIdentity);
+        final SxpDomain domain = SxpDomain.createInstance(node, SxpNode.DEFAULT_DOMAIN, sxpDatabase, masterDatabase);
+        masterDatabase.initDBPropagatingListener(new BindingDispatcher(node), domain);
+
+        Configuration.register(node);
+        service = new SxpRpcServiceImpl(dataBroker);
     }
 
     private org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.master.database.configuration.fields.Binding getBinding(
@@ -362,7 +281,7 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testDeleteNode() throws Exception {
-        Configuration.unRegister(NodeIdConv.toString(node.getNodeId()));
+        Configuration.unRegister(NODE_ID.getValue());
         RpcResult<DeleteNodeOutput> result = service.deleteNode(
                 new DeleteNodeInputBuilder().setNodeId(new NodeId("0.0.0.0")).build()).get();
         assertNotNull(result);
@@ -997,7 +916,6 @@ public class SxpRpcServiceImplTest {
     @Test
     public void testClose() throws Exception {
         service.close();
-        verify(datastoreAccess).close();
     }
 
     @Test
@@ -1097,5 +1015,51 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertTrue(result.getResult().isResult());
+    }
+
+    /**
+     * Prepare {@link DatastoreAccess} mock instance backed by {@link DataBroker} for tests.
+     * <p>
+     * {@link ReadTransaction} and {@link WriteTransaction} are assumed to be created by
+     * {@link DatastoreAccess} {@link BindingTransactionChain}.
+     * <p>
+     * {@link ReadTransaction} reads an mock instance of {@link DataObject} on any read.
+     * {@link WriteTransaction} is committed successfully.
+     *
+     * @param dataBroker mock of {@link DataBroker}
+     * @param readTransaction mock of {@link ReadTransaction}
+     * @param writeTransaction mock of {@link WriteTransaction}
+     * @return mock of {@link DatastoreAccess}
+     */
+    private static DatastoreAccess prepareDataStore(DataBroker dataBroker, ReadTransaction readTransaction,
+            WriteTransaction writeTransaction) {
+        BindingTransactionChain transactionChain = mock(BindingTransactionChain.class);
+        doReturn(CommitInfo.emptyFluentFuture())
+                .when(writeTransaction).commit();
+        when(readTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class)))
+                .then(invocation -> {
+                    InstanceIdentifier<?> identifier = invocation.getArgument(1);
+                    if (SxpNodeIdentity.class == identifier.getTargetType()) {
+                        Iterable<PathArgument> pathArguments = identifier.getPathArguments();
+                        for (PathArgument next : pathArguments) {
+                            if (Node.class == next.getType()) {
+                                NodeKey nodeKey = (NodeKey) ((IdentifiableItem) next).getKey();
+                                if (!"0.0.0.0".equals(nodeKey.getNodeId().getValue())) {
+                                    return FluentFutures.immediateFluentFuture(Optional.empty());
+                                }
+                            }
+                        }
+                    }
+
+                    return FluentFutures.immediateFluentFuture(Optional.of(mock(identifier.getTargetType())));
+                });
+        when(transactionChain.newReadOnlyTransaction())
+                .thenReturn(readTransaction);
+        when(transactionChain.newWriteOnlyTransaction())
+                .thenReturn(writeTransaction);
+        when(dataBroker.createTransactionChain(any(TransactionChainListener.class)))
+                .thenReturn(transactionChain);
+
+        return DatastoreAccess.getInstance(dataBroker);
     }
 }
