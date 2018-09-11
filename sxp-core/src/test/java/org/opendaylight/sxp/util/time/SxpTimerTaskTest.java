@@ -15,16 +15,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
-import org.opendaylight.sxp.core.messaging.MessageFactory;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextDiscrepancyException;
 import org.opendaylight.sxp.util.exception.connection.ChannelHandlerContextNotFoundException;
 import org.opendaylight.sxp.util.time.connection.DeleteHoldDownTimerTask;
@@ -33,12 +31,7 @@ import org.opendaylight.sxp.util.time.connection.KeepAliveTimerTask;
 import org.opendaylight.sxp.util.time.connection.ReconcilationTimerTask;
 import org.opendaylight.sxp.util.time.connection.RetryOpenTimerTask;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.TimerType;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class, MessageFactory.class})
 public class SxpTimerTaskTest {
 
     private static SxpNode sxpNode;
@@ -46,11 +39,11 @@ public class SxpTimerTaskTest {
 
     @Before
     public void init() {
-        sxpNode = PowerMockito.mock(SxpNode.class);
+        sxpNode = mock(SxpNode.class);
         sxpConnection = mock(SxpConnection.class);
         List<SxpConnection> connections = new ArrayList<>();
         connections.add(sxpConnection);
-        PowerMockito.when(sxpNode.getAllConnections()).thenReturn(connections);
+        when(sxpNode.getAllConnections()).thenReturn(connections);
         when(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.SPEAKER_CNTXT)).thenReturn(true);
         when(sxpConnection.isStateOn(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT)).thenReturn(true);
         when(sxpConnection.isStateOn()).thenReturn(true);
@@ -61,7 +54,7 @@ public class SxpTimerTaskTest {
 
     @Test
     public void testRetryOpenTimerTask() throws Exception {
-        PowerMockito.when(sxpNode.isEnabled()).thenReturn(true).thenReturn(false);
+        when(sxpNode.isEnabled()).thenReturn(true).thenReturn(false);
         RetryOpenTimerTask timerTask = new RetryOpenTimerTask(sxpConnection);
         timerTask.call();
         verify(sxpConnection).openConnection();
@@ -111,11 +104,8 @@ public class SxpTimerTaskTest {
     public void testKeepAliveTimerTaskErrorHandling() throws Exception {
         KeepAliveTimerTask timerTask = new KeepAliveTimerTask(sxpConnection, 0);
         when(sxpConnection.getChannelHandlerContext(any())).thenThrow(ChannelHandlerContextNotFoundException.class);
-        ByteBuf byteBufMock = mock(ByteBuf.class);
-        PowerMockito.mockStatic(MessageFactory.class);
-        when(MessageFactory.createKeepalive()).thenReturn(byteBufMock);
         timerTask.call();
-        verify(byteBufMock).release();
+        verify(sxpConnection).setTimer(TimerType.KeepAliveTimer, timerTask.getPeriod());
     }
 
     @Test
@@ -150,9 +140,10 @@ public class SxpTimerTaskTest {
     }
 
     @Test
-    public void testHoldTimerTaskErrorHandling() {
+    public void testHoldTimerTaskErrorHandling() throws Exception {
         HoldTimerTask timerTask = new HoldTimerTask(sxpConnection, 0);
-        when(sxpConnection.getTimestampUpdateOrKeepAliveMessage()).thenThrow(ChannelHandlerContextDiscrepancyException.class);
+        when(sxpConnection.getChannelHandlerContext(Mockito.eq(SxpConnection.ChannelHandlerContextType.LISTENER_CNTXT)))
+                .thenThrow(ChannelHandlerContextDiscrepancyException.class);
         timerTask.call();
         verify(sxpConnection, times(0)).setDeleteHoldDownTimer();
     }

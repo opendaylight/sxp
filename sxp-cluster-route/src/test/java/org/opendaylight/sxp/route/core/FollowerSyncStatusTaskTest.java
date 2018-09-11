@@ -12,11 +12,10 @@ import java.util.Optional;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.MockitoAnnotations;
 import org.opendaylight.mdsal.binding.api.BindingTransactionChain;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.ReadTransaction;
@@ -28,7 +27,6 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 /**
  * Test for {@link FollowerSyncStatusTask}.
  */
-@RunWith(MockitoJUnitRunner.class)
 public class FollowerSyncStatusTaskTest {
 
     @Mock private Topology topology;
@@ -40,14 +38,15 @@ public class FollowerSyncStatusTaskTest {
 
     @Before
     public void setUp() throws Exception {
-        Mockito.when(dataBroker.createTransactionChain(Matchers.any())).thenReturn(txChain);
+        MockitoAnnotations.initMocks(this);
+        Mockito.when(dataBroker.createTransactionChain(ArgumentMatchers.any())).thenReturn(txChain);
         Mockito.when(txChain.newReadOnlyTransaction()).thenReturn(roTx);
         task = new FollowerSyncStatusTask(1, DatastoreAccess.getInstance(dataBroker), 2);
     }
 
     @Test
     public void call_success1() throws Exception {
-        Mockito.when(roTx.read(Matchers.any(), Matchers.<InstanceIdentifier<Topology>>any()))
+        Mockito.when(roTx.read(ArgumentMatchers.any(), ArgumentMatchers.<InstanceIdentifier<Topology>>any()))
                 .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(topology)));
 
         Assert.assertTrue("Expected healthy cluster, got condition", task.call());
@@ -55,7 +54,7 @@ public class FollowerSyncStatusTaskTest {
 
     @Test
     public void call_success2() throws Exception {
-        Mockito.when(roTx.read(Matchers.any(), Matchers.<InstanceIdentifier<Topology>>any()))
+        Mockito.when(roTx.read(ArgumentMatchers.any(), ArgumentMatchers.<InstanceIdentifier<Topology>>any()))
                 .thenReturn(FluentFutures.immediateFluentFuture(Optional.empty()))
                 .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(topology)));
 
@@ -65,7 +64,7 @@ public class FollowerSyncStatusTaskTest {
 
     @Test
     public void call_fail1() throws Exception {
-        Mockito.when(roTx.read(Matchers.any(), Matchers.<InstanceIdentifier<Topology>>any()))
+        Mockito.when(roTx.read(ArgumentMatchers.any(), ArgumentMatchers.<InstanceIdentifier<Topology>>any()))
                 .thenReturn(FluentFutures.immediateFluentFuture(Optional.empty()))
                 .thenReturn(FluentFutures.immediateFluentFuture(Optional.empty()));
 
@@ -75,7 +74,7 @@ public class FollowerSyncStatusTaskTest {
 
     @Test
     public void call_fail2() throws Exception {
-        Mockito.when(roTx.read(Matchers.any(), Matchers.<InstanceIdentifier<Topology>>any()))
+        Mockito.when(roTx.read(ArgumentMatchers.any(), ArgumentMatchers.<InstanceIdentifier<Topology>>any()))
                 .thenThrow(new IllegalStateException());
 
         Assert.assertTrue("Expected healthy cluster, got condition", task.call());

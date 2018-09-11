@@ -10,16 +10,17 @@ package org.opendaylight.sxp.route.core;
 
 import static org.opendaylight.sxp.route.util.RouteUtil.addressToString;
 
+import com.sun.org.apache.xpath.internal.Arg;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.MockitoAnnotations;
 import org.opendaylight.sxp.route.spi.SystemCall;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212.sxp.cluster.route.RoutingDefinitionBuilder;
@@ -27,7 +28,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.cluster.route.rev161212
 /**
  * Test for {@link LinuxRoutingService}.
  */
-@RunWith(MockitoJUnitRunner.class)
 public class LinuxRoutingServiceTest {
 
     private final String virtualIp = "1.2.3.4", ifName = "eth42:0", netMask = "255.255.255.0";
@@ -38,7 +38,8 @@ public class LinuxRoutingServiceTest {
 
     @Before
     public void setUp() throws Exception {
-        Mockito.when(systemCall.execute(Matchers.anyString())).thenReturn(process);
+        MockitoAnnotations.initMocks(this);
+        Mockito.when(systemCall.execute(ArgumentMatchers.anyString())).thenReturn(process);
         service =
                 new LinuxRoutingService(systemCall, new RoutingDefinitionBuilder().setInterface(ifName)
                         .setNetmask(IpAddressBuilder.getDefaultInstance(netMask))
@@ -58,15 +59,11 @@ public class LinuxRoutingServiceTest {
         return rc;
     }
 
-    private void mockCommand(Exception e) throws InterruptedException {
-        Mockito.when(process.waitFor(Mockito.anyInt(), Mockito.any(TimeUnit.class))).thenThrow(e);
-    }
-
     @Test
     public void executeCommand() throws Exception {
         Assert.assertEquals("Expected \"valid output\", got", mockCommand("valid output"),
                 service.executeCommand("test cmd"));
-        mockCommand(new InterruptedException("invalid"));
+        Mockito.when(systemCall.execute(ArgumentMatchers.anyString())).thenThrow(new IOException());
         Assert.assertEquals("Expected \"\", got", "", service.executeCommand("invalid cmd"));
     }
 
@@ -74,7 +71,7 @@ public class LinuxRoutingServiceTest {
     public void executeCommandRC() throws Exception {
         Assert.assertEquals("Expected 0, got", mockCommand(0), service.executeCommandRC("test cmd"));
         Assert.assertEquals("Expected 100, got", mockCommand(100), service.executeCommandRC("test cmd"));
-        mockCommand(new InterruptedException("invalid"));
+        Mockito.when(systemCall.execute(ArgumentMatchers.anyString())).thenThrow(new IOException());
         Assert.assertEquals("Expected 1, got", 1, service.executeCommandRC("invalid cmd"));
     }
 
