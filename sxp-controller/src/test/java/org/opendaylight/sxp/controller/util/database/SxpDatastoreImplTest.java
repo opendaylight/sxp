@@ -10,19 +10,29 @@ package org.opendaylight.sxp.controller.util.database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.ReadTransaction;
+import org.opendaylight.mdsal.binding.api.TransactionChain;
+import org.opendaylight.mdsal.binding.api.TransactionChainListener;
+import org.opendaylight.mdsal.binding.api.WriteTransaction;
+import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
@@ -42,112 +52,26 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.sxp.database.fields.binding.database.binding.sources.binding.source.sxp.database.bindings.SxpDatabaseBinding;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
+import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({DatastoreAccess.class})
 public class SxpDatastoreImplTest {
 
-    private static SxpDatastoreImpl database;
-    private static DatastoreAccess access;
-    private static Map<NodeId, List<SxpDatabaseBinding>> databaseBindings_Active = new HashMap<>();
-    private static Map<NodeId, List<SxpDatabaseBinding>> databaseBindings_Reconciled = new HashMap<>();
+    @Mock
+    private DataBroker dataBroker;
+    @Mock
+    private ReadTransaction readTransaction;
+    @Mock
+    private WriteTransaction writeTransaction;
 
-    @BeforeClass
-    public static void initClass() {
-        access = PowerMockito.mock(DatastoreAccess.class);
-        PowerMockito.when(
-                access.merge(any(InstanceIdentifier.class), any(BindingSource.class), any(LogicalDatastoreType.class)))
-                .then(invocation -> {
-                    InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
-                    if (identifier.getTargetType() == BindingSource.class) {
-                        Map<NodeId, List<SxpDatabaseBinding>>
-                                map =
-                                ((BindingDatabaseKey) identifier.firstKeyOf(BindingDatabase.class)).getBindingType()
-                                        == BindingDatabase.BindingType.ActiveBindings ? databaseBindings_Active : databaseBindings_Reconciled;
-                        NodeId nodeId = ((BindingSourceKey) identifier.firstKeyOf(BindingSource.class)).getSourceId();
-
-                        if (!map.containsKey(nodeId)) {
-                            map.put(nodeId, new ArrayList<>());
-                        }
-                        map.get(nodeId)
-                                .addAll(((BindingSource) invocation.getArguments()[1]).getSxpDatabaseBindings()
-                                        .getSxpDatabaseBinding());
-                    }
-                    return Futures.immediateCheckedFuture(null);
-                });
-        PowerMockito.when(
-                access.put(any(InstanceIdentifier.class), any(MasterDatabase.class), any(LogicalDatastoreType.class)))
-                .then(invocation -> {
-                    InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
-                    if (identifier.getTargetType() == BindingSource.class) {
-                        Map<NodeId, List<SxpDatabaseBinding>>
-                                map =
-                                ((BindingDatabaseKey) identifier.firstKeyOf(BindingDatabase.class)).getBindingType()
-                                        == BindingDatabase.BindingType.ActiveBindings ? databaseBindings_Active : databaseBindings_Reconciled;
-                        NodeId nodeId = ((BindingSourceKey) identifier.firstKeyOf(BindingSource.class)).getSourceId();
-
-                        if (!map.containsKey(nodeId)) {
-                            map.put(nodeId, new ArrayList<>());
-                        }
-                        map.get(nodeId).clear();
-                        map.get(nodeId)
-                                .addAll(((BindingSource) invocation.getArguments()[1]).getSxpDatabaseBindings()
-                                        .getSxpDatabaseBinding());
-                    }
-                    return Futures.immediateCheckedFuture(null);
-                });
-        PowerMockito.when(access.checkAndDelete(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
-                .then(invocation -> {
-                    InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
-                    if (identifier.getTargetType() == BindingSource.class) {
-                        Map<NodeId, List<SxpDatabaseBinding>>
-                                map =
-                                ((BindingDatabaseKey) identifier.firstKeyOf(BindingDatabase.class)).getBindingType()
-                                        == BindingDatabase.BindingType.ActiveBindings ? databaseBindings_Active : databaseBindings_Reconciled;
-                        NodeId nodeId = ((BindingSourceKey) identifier.firstKeyOf(BindingSource.class)).getSourceId();
-
-                        if (map.containsKey(nodeId)) {
-                            map.get(nodeId).clear();
-                        }
-                    }
-                    return null;
-                });
-        PowerMockito.when(access.readSynchronous(any(InstanceIdentifier.class), any(LogicalDatastoreType.class)))
-                .then(invocation -> {
-                    InstanceIdentifier identifier = (InstanceIdentifier) invocation.getArguments()[0];
-                    Map<NodeId, List<SxpDatabaseBinding>>
-                            map =
-                            ((BindingDatabaseKey) identifier.firstKeyOf(BindingDatabase.class)).getBindingType()
-                                    == BindingDatabase.BindingType.ActiveBindings ? databaseBindings_Active : databaseBindings_Reconciled;
-                    if (identifier.getTargetType() == BindingSource.class) {
-                        NodeId nodeId = ((BindingSourceKey) identifier.firstKeyOf(BindingSource.class)).getSourceId();
-                        return new BindingSourceBuilder().setSourceId(nodeId)
-                                .setSxpDatabaseBindings(new SxpDatabaseBindingsBuilder().setSxpDatabaseBinding(
-                                        map.containsKey(nodeId) ? map.get(nodeId) : new ArrayList<SxpDatabaseBinding>())
-                                        .build())
-                                .build();
-                    } else if (identifier.getTargetType() == BindingDatabase.class) {
-                        List<BindingSource> bindingSources = new ArrayList<BindingSource>();
-                        map.entrySet().stream().forEach(e -> {
-                            bindingSources.add(new BindingSourceBuilder().setSourceId(e.getKey())
-                                    .setSxpDatabaseBindings(
-                                            new SxpDatabaseBindingsBuilder().setSxpDatabaseBinding(e.getValue())
-                                                    .build())
-                                    .build());
-                        });
-                        return new BindingDatabaseBuilder().setBindingSources(
-                                new BindingSourcesBuilder().setBindingSource(bindingSources).build()).build();
-                    }
-                    return null;
-                });
-    }
+    private SxpDatastoreImpl database;
+    private Map<NodeId, List<SxpDatabaseBinding>> databaseBindings_Active = new HashMap<>();
+    private Map<NodeId, List<SxpDatabaseBinding>> databaseBindings_Reconciled = new HashMap<>();
 
     @Before
     public void init() {
+        MockitoAnnotations.initMocks(this);
+        DatastoreAccess access = prepareDataStore(dataBroker, readTransaction, writeTransaction);
         databaseBindings_Reconciled.clear();
         databaseBindings_Active.clear();
         database = new SxpDatastoreImpl(access, "0.0.0.0", "DOMAIN");
@@ -173,7 +97,7 @@ public class SxpDatastoreImplTest {
 
     private <T extends SxpBindingFields, R extends SxpBindingFields> void assertBindings(
             List<T> bindings1, List<R> bindings2) {
-        bindings1.forEach(b -> assertTrue(bindings2.stream().anyMatch(
+        bindings2.forEach(b -> assertTrue(bindings1.stream().anyMatch(
                 r -> Objects.equals(r.getSecurityGroupTag(), b.getSecurityGroupTag())
                         && Objects.equals(r.getIpPrefix(), b.getIpPrefix()))));
     }
@@ -286,5 +210,128 @@ public class SxpDatastoreImplTest {
                         getBinding("2.2.2.2/32", 200, "20.20.20.20")));
         assertEquals("SxpDatastoreImpl\n" + "\t10 1.1.1.1/32\n" + "\t100 1.1.1.1/32\n" + "\t20 2.2.2.2/32\n"
                 + "\t200 2.2.2.2/32\n", database.toString());
+    }
+
+    /**
+     * Prepare {@link DatastoreAccess} mock instance backed by {@link DataBroker} for tests.
+     * <p>
+     * {@link ReadTransaction} and {@link WriteTransaction} are assumed to be created by {@link TransactionChain}.
+     * <p>
+     * {@link WriteTransaction} writes or deletes SXP database bindings into a map.
+     * <p>
+     * {@link ReadTransaction} reads saved SXP database bindings from a map.
+     * <p>
+     * {@link WriteTransaction} is committed successfully.
+     *
+     * @param dataBroker mock of {@link DataBroker}
+     * @param readTransaction mock of {@link ReadTransaction}
+     * @param writeTransaction mock of {@link WriteTransaction}
+     * @return mock of {@link DatastoreAccess}
+     */
+    private DatastoreAccess prepareDataStore(DataBroker dataBroker, ReadTransaction readTransaction,
+            WriteTransaction writeTransaction) {
+        TransactionChain transactionChain = mock(TransactionChain.class);
+        doReturn(CommitInfo.emptyFluentFuture())
+                .when(writeTransaction).commit();
+        prepareTransactionsAnswers(readTransaction, writeTransaction);
+        when(transactionChain.newReadOnlyTransaction())
+                .thenReturn(readTransaction);
+        when(transactionChain.newWriteOnlyTransaction())
+                .thenReturn(writeTransaction);
+        when(dataBroker.createTransactionChain(any(TransactionChainListener.class)))
+                .thenReturn(transactionChain);
+
+        return DatastoreAccess.getInstance(dataBroker);
+    }
+
+    private void prepareTransactionsAnswers(ReadTransaction readTransaction, WriteTransaction writeTransaction) {
+        doAnswer(invocation -> {
+            InstanceIdentifier identifier = invocation.getArgument(1);
+            if (identifier.getTargetType() == BindingSource.class) {
+                Map<NodeId, List<SxpDatabaseBinding>> map = ((BindingDatabaseKey) identifier.firstKeyOf(
+                        BindingDatabase.class)).getBindingType() == BindingDatabase.BindingType.ActiveBindings
+                        ? databaseBindings_Active : databaseBindings_Reconciled;
+                NodeId nodeId = ((BindingSourceKey) identifier.firstKeyOf(BindingSource.class)).getSourceId();
+
+                if (!map.containsKey(nodeId)) {
+                    map.put(nodeId, new ArrayList<>());
+                }
+                map.get(nodeId)
+                        .addAll(((BindingSource) invocation.getArgument(2)).getSxpDatabaseBindings()
+                                .getSxpDatabaseBinding());
+            }
+            return null;
+        }).when(writeTransaction)
+                .merge(any(LogicalDatastoreType.class), any(InstanceIdentifier.class), any(BindingSource.class));
+
+        doAnswer(invocation -> {
+            InstanceIdentifier identifier = invocation.getArgument(1);
+            if (identifier.getTargetType() == BindingSource.class) {
+                Map<NodeId, List<SxpDatabaseBinding>>
+                        map = ((BindingDatabaseKey) identifier.firstKeyOf(
+                        BindingDatabase.class)).getBindingType() == BindingDatabase.BindingType.ActiveBindings
+                        ? databaseBindings_Active : databaseBindings_Reconciled;
+                NodeId nodeId = ((BindingSourceKey) identifier.firstKeyOf(BindingSource.class)).getSourceId();
+
+                if (!map.containsKey(nodeId)) {
+                    map.put(nodeId, new ArrayList<>());
+                }
+                map.get(nodeId).clear();
+                map.get(nodeId)
+                        .addAll(((BindingSource) invocation.getArgument(2)).getSxpDatabaseBindings()
+                                .getSxpDatabaseBinding());
+            }
+            return null;
+        }).when(writeTransaction)
+                .put(any(LogicalDatastoreType.class), any(InstanceIdentifier.class), any(MasterDatabase.class));
+
+        doAnswer(invocation -> {
+            InstanceIdentifier identifier = invocation.getArgument(1);
+            if (identifier.getTargetType() == BindingSource.class) {
+                Map<NodeId, List<SxpDatabaseBinding>>
+                        map =
+                        ((BindingDatabaseKey) identifier.firstKeyOf(BindingDatabase.class))
+                                .getBindingType() == BindingDatabase.BindingType.ActiveBindings
+                                ? databaseBindings_Active : databaseBindings_Reconciled;
+                NodeId nodeId = ((BindingSourceKey) identifier.firstKeyOf(BindingSource.class)).getSourceId();
+
+                if (map.containsKey(nodeId)) {
+                    map.get(nodeId).clear();
+                }
+            }
+            return null;
+        }).when(writeTransaction).delete(any(LogicalDatastoreType.class), any(InstanceIdentifier.class));
+
+        when(readTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class)))
+                .then(invocation -> {
+                    InstanceIdentifier identifier = invocation.getArgument(1);
+                    Map<NodeId, List<SxpDatabaseBinding>>
+                            map = ((BindingDatabaseKey) identifier.firstKeyOf(
+                            BindingDatabase.class)).getBindingType() == BindingDatabase.BindingType.ActiveBindings
+                            ? databaseBindings_Active : databaseBindings_Reconciled;
+                    if (identifier.getTargetType() == BindingSource.class) {
+                        NodeId nodeId = ((BindingSourceKey) identifier.firstKeyOf(BindingSource.class)).getSourceId();
+                        Optional<BindingSource> bindingSource = Optional
+                                .of(new BindingSourceBuilder().setSourceId(nodeId)
+                                        .setSxpDatabaseBindings(new SxpDatabaseBindingsBuilder().setSxpDatabaseBinding(
+                                                map.containsKey(nodeId) ? map.get(nodeId) : new ArrayList<>())
+                                                .build())
+                                        .build());
+                        return FluentFutures.immediateFluentFuture(bindingSource);
+                    } else if (identifier.getTargetType() == BindingDatabase.class) {
+                        List<BindingSource> bindingSources = new ArrayList<>();
+                        map.forEach((key, value) -> bindingSources.add(new BindingSourceBuilder()
+                                .setSourceId(key)
+                                .setSxpDatabaseBindings(
+                                        new SxpDatabaseBindingsBuilder().setSxpDatabaseBinding(value)
+                                                .build())
+                                .build()));
+                        Optional<BindingDatabase> bindingDatabase = Optional
+                                .of(new BindingDatabaseBuilder().setBindingSources(
+                                        new BindingSourcesBuilder().setBindingSource(bindingSources).build()).build());
+                        return FluentFutures.immediateFluentFuture(bindingDatabase);
+                    }
+                    return FluentFutures.immediateFluentFuture(Optional.of(mock(identifier.getTargetType())));
+                });
     }
 }
