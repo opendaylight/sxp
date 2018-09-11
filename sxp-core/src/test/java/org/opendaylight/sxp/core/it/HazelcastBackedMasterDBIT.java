@@ -19,14 +19,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
-import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.database.HazelcastBackedMasterDB;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
@@ -37,17 +36,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 /**
  * Copy-paste from {@link org.opendaylight.sxp.util.database.MasterDatabaseImplTest}
  *
  */
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SxpNode.class})
-@PowerMockIgnore("javax.management.*")
 public class HazelcastBackedMasterDBIT {
 
     private HazelcastBackedMasterDB database;
@@ -58,6 +51,11 @@ public class HazelcastBackedMasterDBIT {
     @BeforeClass
     public static void initClass() {
         BindingOriginsConfig.INSTANCE.addBindingOrigins(BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES);
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        BindingOriginsConfig.INSTANCE.deleteConfiguration();
     }
 
     @Before
