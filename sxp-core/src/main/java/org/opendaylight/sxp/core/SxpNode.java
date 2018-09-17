@@ -8,8 +8,6 @@
 package org.opendaylight.sxp.core;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.Sets;
 import com.google.common.net.InetAddresses;
 import com.google.common.util.concurrent.Futures;
@@ -34,6 +32,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.opendaylight.sxp.core.handler.ConnectionDecoder;
 import org.opendaylight.sxp.core.handler.HandlerFactory;
 import org.opendaylight.sxp.core.handler.MessageDecoder;
@@ -399,8 +399,11 @@ public class SxpNode {
      */
     public Collection<SxpPeerGroup> getPeerGroups() {
         synchronized (peerGroupMap) {
-            return Collections2.transform(peerGroupMap.values(), (SxpPeerGroupBuilder input) ->
-                    input != null ? input.build() : null);
+            return peerGroupMap
+                    .values()
+                    .stream()
+                    .map(input -> input != null ? input.build() : null)
+                    .collect(Collectors.toList());
         }
     }
 
@@ -687,7 +690,10 @@ public class SxpNode {
     private List<SxpConnection> filterConnections(Predicate<SxpConnection> predicate) {
         List<SxpConnection> connections = new ArrayList<>();
         synchronized (sxpDomains) {
-            sxpDomains.values().forEach(d -> connections.addAll(Collections2.filter(d.getConnections(), predicate)));
+            sxpDomains.values().forEach(d -> connections.addAll(d.getConnections()
+                    .stream()
+                    .filter(predicate)
+                    .collect(Collectors.toList())));
         }
         return Collections.unmodifiableList(connections);
     }
@@ -704,7 +710,10 @@ public class SxpNode {
         List<SxpConnection> connections = new ArrayList<>();
         synchronized (sxpDomains) {
             if (sxpDomains.containsKey(Preconditions.checkNotNull(domain))) {
-                connections.addAll(Collections2.filter(sxpDomains.get(domain).getConnections(), predicate));
+                connections.addAll(sxpDomains.get(domain).getConnections()
+                        .stream()
+                        .filter(predicate)
+                        .collect(Collectors.toList()));
             }
         }
         return Collections.unmodifiableList(connections);
