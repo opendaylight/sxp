@@ -30,8 +30,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
+            <groupId>org.opendaylight.odlparent</groupId>
+            <artifactId>odl-apache-commons-lang3</artifactId>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
