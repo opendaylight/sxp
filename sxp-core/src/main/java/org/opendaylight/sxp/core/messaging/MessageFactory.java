@@ -12,13 +12,13 @@ import static org.opendaylight.sxp.core.Constants.MESSAGE_HEADER_TYPE_LENGTH;
 import static org.opendaylight.sxp.core.Constants.MESSAGE_LENGTH_MAX;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Collections2;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 import org.opendaylight.sxp.core.messaging.legacy.LegacyMessageFactory;
 import org.opendaylight.sxp.util.ArraysUtil;
 import org.opendaylight.sxp.util.exception.ErrorCodeDataLengthException;
@@ -768,8 +768,9 @@ public class MessageFactory {
                 capabilitiesAttribute =
                 (CapabilitiesAttribute) AttributeList.get(Preconditions.checkNotNull(message).getAttribute(),
                         AttributeType.Capabilities);
-        return new ArrayList<>(
-                Collections2.transform(capabilitiesAttribute.getCapabilitiesAttributes().getCapabilities(),
-                        CapabilityAttributeFields::getCode));
+        return capabilitiesAttribute.getCapabilitiesAttributes().getCapabilities()
+                .stream()
+                .map(CapabilityAttributeFields::getCode)
+                .collect(Collectors.toList());
     }
 }
