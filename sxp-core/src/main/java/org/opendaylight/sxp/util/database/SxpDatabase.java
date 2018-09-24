@@ -8,7 +8,6 @@
 package org.opendaylight.sxp.util.database;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Collections2;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -238,7 +237,7 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
     }
 
     /**
-     * Filter SxpDatabase and return all bindings that do not match specified filter
+     * Get active SxpDatabase bindings and return those matching specified filter
      *
      * @param database SxpDatabase that will be filtered
      * @param nodeId   Peer specifying bindings  that will be filtered
@@ -251,11 +250,6 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
             return new ArrayList<>();
         }
         List<SxpDatabaseBinding> active = database.getBindings(nodeId);
-        List<SxpDatabaseBinding> filtered = new ArrayList<>();
-        if (!active.isEmpty()) {
-            filtered.addAll(Collections2.filter(active, filter::apply));
-        }
-        return filtered;
+        return active.stream().filter(filter::apply).collect(Collectors.toList());
     }
-
 }
