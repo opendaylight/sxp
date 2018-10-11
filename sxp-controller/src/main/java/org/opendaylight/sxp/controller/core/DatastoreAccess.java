@@ -8,7 +8,6 @@
 package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.FluentFuture;
 import java.util.ArrayList;
 import java.util.List;
@@ -118,7 +117,7 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
-     * Merge data at specified path.
+     * Merge data at specified path without ensuring existence of parents.
      *
      * @param path                 InstanceIdentifier path specifying data
      * @param data                 Data that will be used in operation
@@ -128,6 +127,22 @@ public final class DatastoreAccess implements AutoCloseable {
      */
     public synchronized <T extends DataObject> FluentFuture<? extends CommitInfo> merge(
             InstanceIdentifier<T> path, T data, LogicalDatastoreType logicalDatastoreType) {
+        return merge(path, data, logicalDatastoreType, false);
+    }
+
+    /**
+     * Merge data at specified path.
+     *
+     * @param path InstanceIdentifier path specifying data
+     * @param data Data that will be used in operation
+     * @param logicalDatastoreType Type of datastore where operation will be held
+     * @param createMissingParents If {@code true} missing parents are created
+     * @param <T> Any type extending DataObject
+     * @return Future result of operation
+     */
+    public synchronized <T extends DataObject> FluentFuture<? extends CommitInfo> merge(
+            InstanceIdentifier<T> path, T data, LogicalDatastoreType logicalDatastoreType,
+            boolean createMissingParents) {
         if (!checkParams(path, logicalDatastoreType)) {
             return FluentFutures.immediateCancelledFluentFuture();
         }
@@ -136,12 +151,12 @@ public final class DatastoreAccess implements AutoCloseable {
             LOG.debug("Merge {} {}", logicalDatastoreType, path.getTargetType());
         }
         WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
-        transaction.merge(logicalDatastoreType, path, data);
+        transaction.merge(logicalDatastoreType, path, data, createMissingParents);
         return transaction.commit();
     }
 
     /**
-     * Put data at specified path.
+     * Put data at specified path without ensuring existence of parents.
      *
      * @param path                 InstanceIdentifier path specifying data
      * @param data                 Data that will be used in operation
@@ -151,6 +166,22 @@ public final class DatastoreAccess implements AutoCloseable {
      */
     public synchronized <T extends DataObject> FluentFuture<? extends CommitInfo> put(
             InstanceIdentifier<T> path, T data, LogicalDatastoreType logicalDatastoreType) {
+        return put(path, data, logicalDatastoreType, false);
+    }
+
+    /**
+     * Put data at specified path.
+     *
+     * @param path InstanceIdentifier path specifying data
+     * @param data Data that will be used in operation
+     * @param logicalDatastoreType Type of datastore where operation will be held
+     * @param createMissingParents If {@code true} missing parents are created
+     * @param <T> Any type extending DataObject
+     * @return Future result of operation
+     */
+    public synchronized <T extends DataObject> FluentFuture<? extends CommitInfo> put(
+            InstanceIdentifier<T> path, T data, LogicalDatastoreType logicalDatastoreType,
+            boolean createMissingParents) {
         if (!checkParams(path, logicalDatastoreType)) {
             return FluentFutures.immediateCancelledFluentFuture();
         }
@@ -159,7 +190,7 @@ public final class DatastoreAccess implements AutoCloseable {
             LOG.debug("Put {} {}", logicalDatastoreType, path.getTargetType());
         }
         WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
-        transaction.put(logicalDatastoreType, path, data);
+        transaction.put(logicalDatastoreType, path, data, createMissingParents);
         return transaction.commit();
     }
 
@@ -276,28 +307,12 @@ public final class DatastoreAccess implements AutoCloseable {
     }
 
     /**
-     * Synchronously verify that parent node of the node at specified path exists.
-     *
-     * @param identifier    InstanceIdentifier that will be checked
-     * @param datastoreType Datastore type where datastore will be checked
-     * @param <T>           Any type extending DataObject
-     * @return {@code true} if all parents of provided path exists, {@code false} otherwise
-     */
-    private <T extends DataObject> boolean checkParentExist(final InstanceIdentifier<T> identifier,
-            final LogicalDatastoreType datastoreType) {
-        final InstanceIdentifier.PathArgument[]
-                arguments =
-                Iterables.toArray(identifier.getPathArguments(), InstanceIdentifier.PathArgument.class);
-        return arguments.length < 2 ||
-                readSynchronous(identifier.firstIdentifierOf(arguments[arguments.length - 2].getType()), datastoreType)
-                        != null;
-    }
-
-    /**
-     * Put data at specified path only if its parent node exists and presence condition holds.
+     * Put data at specified path only if presence condition holds.
      * <p>
      * If mustContains is set to {@code true} operation fails if node has not previously exists.
      * If mustContains is set to {@code false} operation fails if node has already exists.
+     * <p>
+     * Parents are created by transaction.
      *
      * @param identifier    InstanceIdentifier path specifying data
      * @param data          Data that will be used in operation
@@ -308,19 +323,19 @@ public final class DatastoreAccess implements AutoCloseable {
      */
     public synchronized <T extends DataObject> boolean checkAndPut(InstanceIdentifier<T> identifier, T data,
             LogicalDatastoreType datastoreType, final boolean mustContains) {
-        final boolean
-                check =
-                checkParentExist(identifier, datastoreType) && (mustContains ?
-                        readSynchronous(identifier, datastoreType) != null :
-                        readSynchronous(identifier, datastoreType) == null);
+        final boolean check = (mustContains ?
+                readSynchronous(identifier, datastoreType) != null :
+                readSynchronous(identifier, datastoreType) == null);
         return check && !put(identifier, data, datastoreType).isCancelled();
     }
 
     /**
-     * Merge data at specified path only if its parent node exists and presence condition holds.
+     * Merge data at specified path only if presence condition holds.
      * <p>
      * If mustContains is set to {@code true} operation fails if node has not previously exists.
      * If mustContains is set to {@code false} operation fails if node has already exists.
+     * <p>
+     * Parents are created by transaction.
      *
      * @param identifier    InstanceIdentifier path specifying data
      * @param data          Data that will be used in operation
@@ -331,15 +346,10 @@ public final class DatastoreAccess implements AutoCloseable {
      */
     public synchronized <T extends DataObject> boolean checkAndMerge(InstanceIdentifier<T> identifier, T data,
             LogicalDatastoreType datastoreType, final boolean mustContains) {
-        final boolean
-                check =
-                checkParentExist(identifier, datastoreType) && (mustContains ?
-                        readSynchronous(identifier, datastoreType) != null :
-                        readSynchronous(identifier, datastoreType) == null);
-        if (check) {
-            return !merge(identifier, data, datastoreType).isCancelled();
-        }
-        return false;
+        final boolean check = (mustContains ?
+                readSynchronous(identifier, datastoreType) != null :
+                readSynchronous(identifier, datastoreType) == null);
+        return check && !merge(identifier, data, datastoreType).isCancelled();
     }
 
     /**
