@@ -261,7 +261,6 @@ public class ConnectionTemplateListenerTest {
         doReturn(CommitInfo.emptyFluentFuture())
                 .when(writeTransaction).commit();
         when(readTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class)))
-                .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(mock(DataObject.class))))
                 .thenReturn(FluentFutures.immediateFluentFuture(Optional.empty()))
                 .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(mock(DataObject.class))));
         when(transactionChain.newReadOnlyTransaction())
