@@ -13,33 +13,40 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.opendaylight.sxp.controller.core.SxpDatastoreNode.getIdentifier;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import org.junit.Before;
+import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.stubbing.Answer;
+import org.opendaylight.controller.md.sal.binding.api.BindingTransactionChain;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
+import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
+import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.controller.md.sal.common.api.data.TransactionChain;
+import org.opendaylight.controller.md.sal.common.api.data.TransactionChainListener;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
-import org.opendaylight.sxp.util.inet.NodeIdConv;
-import org.opendaylight.sxp.util.time.TimeConv;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefixBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv6Prefix;
@@ -54,7 +61,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ad
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddDomainOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddEntryInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddFilterInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.AddNodeInputBuilder;
@@ -71,7 +77,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.De
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteDomainOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteEntryInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteFilterInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.DeleteNodeInputBuilder;
@@ -87,19 +92,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.Ge
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.GetPeerGroupsOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateEntryInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.UpdateFilterOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.NewBinding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.NewBindingBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBinding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.update.entry.input.OriginalBindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.BindingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBinding;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.fields.MasterDatabaseBindingBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntriesBuilder;
@@ -107,86 +104,170 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.do
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpDomains;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpPeerGroups;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.templates.fields.connection.templates.ConnectionTemplate;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.ConnectionsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.databases.fields.MasterDatabaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.domain.fields.domain.filters.DomainFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-import org.opendaylight.yangtools.yang.binding.DataObject;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.IdentifiableItem;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.PathArgument;
 import org.opendaylight.yangtools.yang.common.RpcResult;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({MasterDatastoreImpl.class, DatastoreAccess.class, SxpNode.class})
 public class SxpRpcServiceImplTest {
 
-    private static SxpNode node;
-    private static SxpRpcServiceImpl service;
-    private static DatastoreAccess datastoreAccess;
-    private MasterDatabaseInf masterDatabase;
+    private static final NodeId NODE_ID = NodeId.getDefaultInstance("0.0.0.0");
 
-    @Before
-    public void init() throws ExecutionException, InterruptedException {
-        node = PowerMockito.mock(SxpNode.class);
-        datastoreAccess = mock(DatastoreAccess.class);
-        when(datastoreAccess.checkAndDelete(any(InstanceIdentifier.class), any(LogicalDatastoreType.class))).thenReturn(
-                true);
-        when(datastoreAccess.checkAndPut(any(InstanceIdentifier.class), any(DataObject.class),
-                any(LogicalDatastoreType.class), anyBoolean())).thenReturn(true);
-        when(datastoreAccess.putSynchronous(any(InstanceIdentifier.class), any(DataObject.class),
-                any(LogicalDatastoreType.class))).thenReturn(true);
-        when(datastoreAccess.readSynchronous(eq(getIdentifier("0.0.0.0").child(SxpDomains.class)
-                .child(SxpDomain.class, new SxpDomainKey(SxpNode.DEFAULT_DOMAIN))
-                .child(MasterDatabase.class)), any(LogicalDatastoreType.class))).thenReturn(
-                new MasterDatabaseBuilder().setMasterDatabaseBinding(new ArrayList<>()).build());
-        when(datastoreAccess.readSynchronous(eq(getIdentifier("0.0.0.0")), any(LogicalDatastoreType.class))).thenReturn(
-                mock(SxpNodeIdentity.class));
-        PowerMockito.mockStatic(DatastoreAccess.class);
-        PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(datastoreAccess);
-        when(node.getNodeId()).thenReturn(NodeId.getDefaultInstance("0.0.0.0"));
-        ArrayList<SxpPeerGroup> sxpPeerGroups = new ArrayList<>();
-        sxpPeerGroups.add(mock(SxpPeerGroup.class));
-        when(node.getPeerGroups()).thenReturn(sxpPeerGroups);
-        when(node.getWorker()).thenReturn(new ThreadsWorker());
-        when(node.getPeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
-        when(node.removePeerGroup("TEST")).thenReturn(mock(SxpPeerGroup.class));
-        when(node.removeFilterFromPeerGroup(anyString(), any(FilterType.class), any(FilterSpecific.class))).thenReturn(
-                true);
-        when(node.addPeerGroup(any(SxpPeerGroup.class))).thenReturn(true);
-        when(node.addFilterToPeerGroup(anyString(),
-                any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class)))
-                .thenReturn(true);
-        when(node.updateFilterInPeerGroup(anyString(),
-                any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class)))
-                .thenReturn(
-                        mock(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class));
-        Configuration.register(node);
-        service = new SxpRpcServiceImpl(mock(DataBroker.class));
-        masterDatabase = mock(MasterDatastoreImpl.class);
-        when(node.getBindingMasterDatabase()).thenReturn(masterDatabase);
+    private static Answer<?> generalAnswer;
+    private static Answer<?> addFilterAnswer;
+    private static Answer<?> addPeerGroupAnswer;
+    private static Answer<?> nonEmptyBindingsAnswer;
+    private static Answer<?> addBindingsAnswer;
+
+    @Mock
+    private SxpNode sxpNode;
+    @Mock
+    private SxpDomain sxpDomain;
+    @Mock
+    private SxpPeerGroup sxpPeerGroup;
+    @Mock
+    private DataBroker dataBroker;
+    @Mock
+    private ReadOnlyTransaction readTransaction;
+    @Mock
+    private WriteTransaction writeTransaction;
+
+    private SxpRpcServiceImpl service;
+
+    @BeforeClass
+    public static void setUp() {
+        SxpRpcServiceImplTest.generalAnswer = invocation -> {
+            LogicalDatastoreType datastoreType = (LogicalDatastoreType) invocation.getArguments()[0];
+            InstanceIdentifier<?> identifier = (InstanceIdentifier<?>) invocation.getArguments()[1];
+            if (SxpNodeIdentity.class == identifier.getTargetType()) {
+                Iterable<PathArgument> pathArguments = identifier.getPathArguments();
+                for (PathArgument next : pathArguments) {
+                    if (Node.class == next.getType()) {
+                        NodeKey nodeKey = (NodeKey) ((IdentifiableItem) next).getKey();
+                        if (!"0.0.0.0".equals(nodeKey.getNodeId().getValue())) {
+                            return Futures.immediateCheckedFuture(Optional.absent());
+                        }
+                    }
+                }
+            }
+
+            if (Connection.class == identifier.getTargetType()) {
+                if (LogicalDatastoreType.CONFIGURATION == datastoreType) {
+                    return Futures.immediateCheckedFuture(Optional.absent());
+                }
+            }
+
+            if (ConnectionTemplate.class == identifier.getTargetType()) {
+                if (LogicalDatastoreType.CONFIGURATION == datastoreType) {
+                    return Futures.immediateCheckedFuture(Optional.absent());
+                }
+            }
+
+            if (DomainFilter.class == identifier.getTargetType()) {
+                if (LogicalDatastoreType.CONFIGURATION == datastoreType) {
+                    return Futures.immediateCheckedFuture(Optional.absent());
+                }
+            }
+
+            if (SxpPeerGroups.class == identifier.getTargetType()) {
+                if (LogicalDatastoreType.OPERATIONAL == datastoreType) {
+                    SxpPeerGroups sxpPeerGroup = mock(SxpPeerGroups.class);
+                    when(sxpPeerGroup.getSxpPeerGroup())
+                            .thenReturn(Collections.singletonList(mock(
+                                    org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup.class)));
+                    return Futures.immediateCheckedFuture(Optional.of(sxpPeerGroup));
+                }
+            }
+
+            if (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomain.class == identifier.getTargetType()) {
+                if (LogicalDatastoreType.CONFIGURATION == datastoreType) {
+                    return Futures.immediateCheckedFuture(Optional.absent());
+                }
+            }
+
+            return Futures.immediateCheckedFuture(Optional.of(mock(identifier.getTargetType())));
+        };
+
+        SxpRpcServiceImplTest.addFilterAnswer = invocation -> {
+            LogicalDatastoreType datastoreType = (LogicalDatastoreType) invocation.getArguments()[0];
+            InstanceIdentifier<?> identifier = (InstanceIdentifier<?>) invocation.getArguments()[1];
+            if (SxpFilter.class == identifier.getTargetType()) {
+                if (LogicalDatastoreType.CONFIGURATION == datastoreType) {
+                    return Futures.immediateCheckedFuture(Optional.absent());
+                }
+            }
+
+            return Futures.immediateCheckedFuture(Optional.of(mock(identifier.getTargetType())));
+        };
+
+        SxpRpcServiceImplTest.addPeerGroupAnswer = invocation -> {
+            LogicalDatastoreType datastoreType = (LogicalDatastoreType) invocation.getArguments()[0];
+            InstanceIdentifier<?> identifier = (InstanceIdentifier<?>) invocation.getArguments()[1];
+            if (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup.class == identifier.getTargetType()) {
+                if (LogicalDatastoreType.CONFIGURATION == datastoreType) {
+                    return Futures.immediateCheckedFuture(Optional.absent());
+                }
+            }
+
+            return Futures.immediateCheckedFuture(Optional.of(mock(identifier.getTargetType())));
+        };
+
+        SxpRpcServiceImplTest.nonEmptyBindingsAnswer = invocation -> {
+            LogicalDatastoreType datastoreType = (LogicalDatastoreType) invocation.getArguments()[0];
+            InstanceIdentifier<?> identifier = (InstanceIdentifier<?>) invocation.getArguments()[1];
+            if (MasterDatabase.class == identifier.getTargetType()) {
+                if (LogicalDatastoreType.OPERATIONAL == datastoreType) {
+                    MasterDatabase databaseFields = mock(MasterDatabase.class);
+                    MasterDatabaseBinding databaseBinding = mock(MasterDatabaseBinding.class);
+                    when(databaseBinding.getSecurityGroupTag())
+                            .thenReturn(new Sgt(112));
+                    when(databaseBinding.getIpPrefix())
+                            .thenReturn(IpPrefixBuilder.getDefaultInstance("1.1.1.1/32"));
+                    when(databaseFields.getMasterDatabaseBinding())
+                            .thenReturn(Lists.newArrayList(databaseBinding));
+                    return Futures.immediateCheckedFuture(Optional.of(databaseFields));
+                }
+            }
+
+            return Futures.immediateCheckedFuture(Optional.of(mock(identifier.getTargetType())));
+        };
+
+        SxpRpcServiceImplTest.addBindingsAnswer = invocation -> {
+            InstanceIdentifier<?> identifier = (InstanceIdentifier<?>) invocation.getArguments()[1];
+            return Futures.immediateCheckedFuture(Optional.of(mock(identifier.getTargetType())));
+        };
     }
 
-    private MasterDatabaseBinding getBinding(String prefix, int sgt, String... peers) {
-        MasterDatabaseBindingBuilder bindingBuilder = new MasterDatabaseBindingBuilder();
-        bindingBuilder.setIpPrefix(new IpPrefix(prefix.toCharArray()));
-        bindingBuilder.setSecurityGroupTag(new Sgt(sgt));
-        bindingBuilder.setTimestamp(TimeConv.toDt(System.currentTimeMillis()));
-        PeerSequenceBuilder sequenceBuilder = new PeerSequenceBuilder();
-        sequenceBuilder.setPeer(new ArrayList<>());
-        for (int i = 0; i < peers.length; i++) {
-            sequenceBuilder.getPeer()
-                    .add(new PeerBuilder().setSeq(i).setNodeId(NodeId.getDefaultInstance(peers[i])).build());
-        }
-        bindingBuilder.setPeerSequence(sequenceBuilder.build());
-        return bindingBuilder.build();
+    @After
+    public void cleanRegistration() throws Exception {
+        Configuration.unRegister(sxpNode.getNodeId().getValue());
+    }
+
+    private void initMasterDatabaseOperations(final Answer<?> readAnswer) {
+        MockitoAnnotations.initMocks(this);
+
+        final DatastoreAccess datastoreAccess = prepareDataStore(dataBroker, readTransaction, writeTransaction, readAnswer);
+        final MasterDatabaseInf masterDatabase = new MasterDatastoreImpl(datastoreAccess, NODE_ID.getValue(), SxpNode.DEFAULT_DOMAIN);
+        when(sxpDomain.getMasterDatabase()).thenReturn(masterDatabase);
+        when(sxpNode.getDomain(SxpNode.DEFAULT_DOMAIN)).thenReturn(sxpDomain);
+        when(sxpNode.getWorker()).thenReturn(new ThreadsWorker());
+        when(sxpNode.getNodeId()).thenReturn(NODE_ID);
+        when(sxpNode.getPeerGroup(eq(SxpNode.DEFAULT_DOMAIN))).thenReturn(sxpPeerGroup);
+
+        Configuration.register(sxpNode);
+        service = new SxpRpcServiceImpl(dataBroker);
     }
 
     private org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.fields.Binding getBinding(
@@ -212,66 +293,14 @@ public class SxpRpcServiceImplTest {
     private Connection getConnection(String ip, Integer port) {
         ConnectionBuilder connection = new ConnectionBuilder();
         connection.setTcpPort(port != null ? new PortNumber(port) : null);
-        connection.setPeerAddress(ip != null ? new IpAddress(ip.toCharArray()) : null);
+        connection.setPeerAddress(ip != null ? IpAddressBuilder.getDefaultInstance(ip) : null);
         return connection.build();
     }
 
     @Test
-    public void testAddEntry() throws Exception {
-        when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(
-                Collections.singletonList(mock(MasterDatabaseBinding.class)));
-        AddEntryInputBuilder input = new AddEntryInputBuilder();
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-
-        input.setSgt(new Sgt(20));
-        input.setIpPrefix(new IpPrefix(Ipv4Prefix.getDefaultInstance("2.2.2.2/32")));
-        assertTrue(service.addEntry(input.build()).get().getResult().isResult());
-
-        input.setSgt(null);
-        assertFalse(service.addEntry(input.build()).get().getResult().isResult());
-
-        input.setSgt(new Sgt(20));
-        input.setIpPrefix(null);
-        assertFalse(service.addEntry(input.build()).get().getResult().isResult());
-    }
-
-    @Test
-    public void testDeleteEntry() throws Exception {
-        List<MasterDatabaseBinding> deletedBindings = new ArrayList<>();
-        deletedBindings.add(getBinding("0.0.0.5/32", 20));
-
-        DeleteEntryInputBuilder input = new DeleteEntryInputBuilder();
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-
-        input.setSgt(new Sgt(20));
-        assertFalse(service.deleteEntry(input.build()).get().getResult().isResult());
-
-        List<IpPrefix> ipPrefixes = new ArrayList<>();
-        input.setIpPrefix(ipPrefixes);
-        ipPrefixes.add(new IpPrefix(Ipv4Prefix.getDefaultInstance("0.0.0.5/32")));
-        when(node.removeLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(deletedBindings);
-        input.setSgt(null);
-        assertFalse(service.deleteEntry(input.build()).get().getResult().isResult());
-    }
-
-    private OriginalBinding getOriginalBinding(String s, Integer i) {
-        OriginalBindingBuilder builder = new OriginalBindingBuilder();
-        builder.setSgt(i == null ? null : new Sgt(i));
-        builder.setIpPrefix(s == null ? null : new IpPrefix(Ipv4Prefix.getDefaultInstance(s)));
-        return builder.build();
-    }
-
-    private NewBinding getNewBinding(String s, Integer i) {
-        NewBindingBuilder builder = new NewBindingBuilder();
-        builder.setSgt(i == null ? null : new Sgt(i));
-        builder.setIpPrefix(s == null ? null : new IpPrefix(Ipv4Prefix.getDefaultInstance(s)));
-        return builder.build();
-    }
-
-    @Test
     public void testAddConnection() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
         List<Connection> connections = new ArrayList<>();
         RpcResult<AddConnectionOutput>
                 result =
@@ -305,6 +334,8 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testAddFilter() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.addFilterAnswer);
+
         RpcResult<AddFilterOutput>
                 result =
                 service.addFilter(new AddFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
@@ -326,6 +357,7 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
+
         result =
                 service.addFilter(new AddFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
                         .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
@@ -341,6 +373,8 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testAddPeerGroup() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.addPeerGroupAnswer);
+
         RpcResult<AddPeerGroupOutput>
                 result =
                 service.addPeerGroup(new AddPeerGroupInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build())
@@ -362,7 +396,9 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testDeleteNode() throws Exception {
-        Configuration.unRegister(NodeIdConv.toString(node.getNodeId()));
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        Configuration.unRegister(NODE_ID.getValue());
         RpcResult<DeleteNodeOutput> result = service.deleteNode(
                 new DeleteNodeInputBuilder().setNodeId(new NodeId("0.0.0.0")).build()).get();
         assertNotNull(result);
@@ -373,6 +409,8 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testDeleteConnection() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
         RpcResult<DeleteConnectionOutput>
                 result =
                 service.deleteConnection(new DeleteConnectionInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
@@ -397,6 +435,8 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testDeleteFilter() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
         RpcResult<DeleteFilterOutput>
                 result =
                 service.deleteFilter(new DeleteFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build())
@@ -430,6 +470,8 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testDeletePeerGroup() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
         RpcResult<DeletePeerGroupOutput>
                 result =
                 service.deletePeerGroup(new DeletePeerGroupInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
@@ -452,6 +494,8 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testGetConnections() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
         RpcResult<GetConnectionsOutput> result =
                 service.getConnections(new GetConnectionsInputBuilder().setRequestedNode(new NodeId("0.0.0.0")).build())
                         .get();
@@ -462,60 +506,116 @@ public class SxpRpcServiceImplTest {
     }
 
     @Test
-    public void testGetNodeBindings() throws Exception {
-        RpcResult<GetNodeBindingsOutput>
+    public void testGetNodeBindingsNotExistingDomain() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<GetNodeBindingsOutput>
+                result =
+                service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName("guest")
+                        .setBindingsRange(GetNodeBindingsInput.BindingsRange.All)
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertNotNull(result.getResult().getBinding());
+        assertTrue(result.getResult().getBinding().isEmpty());
+    }
+
+    @Test
+    public void testGetEmptyNodeBindings() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<GetNodeBindingsOutput>
                 result =
                 service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setBindingsRange(GetNodeBindingsInput.BindingsRange.All)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertNotNull(result.getResult().getBinding());
+        assertTrue(result.getResult().getBinding().isEmpty());
+    }
 
-        result =
+    @Test
+    public void testGetNodeBindings() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.nonEmptyBindingsAnswer);
+
+        final RpcResult<GetNodeBindingsOutput>
+                result =
                 service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setBindingsRange(GetNodeBindingsInput.BindingsRange.All)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertNotNull(result.getResult().getBinding());
+        assertFalse(result.getResult().getBinding().isEmpty());
+    }
 
-        result =
+    @Test
+    public void testGetEmptyLocalNodeBindings() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<GetNodeBindingsOutput>
+                result =
                 service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.1"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setBindingsRange(GetNodeBindingsInput.BindingsRange.Local)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertNotNull(result.getResult().getBinding());
+        assertTrue(result.getResult().getBinding().isEmpty());
+    }
 
-        result =
+    @Test
+    public void testGetLocalNodeBindings() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.nonEmptyBindingsAnswer);
+
+        final RpcResult<GetNodeBindingsOutput>
+                result =
                 service.getNodeBindings(new GetNodeBindingsInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setBindingsRange(GetNodeBindingsInput.BindingsRange.Local)
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertNotNull(result.getResult().getBinding());
+        assertFalse(result.getResult().getBinding().isEmpty());
     }
 
     @Test
     public void testGetPeerGroup() throws Exception {
-        RpcResult<GetPeerGroupOutput>
-                result =
-                service.getPeerGroup(new GetPeerGroupInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build())
-                        .get();
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<GetPeerGroupOutput> result = service.getPeerGroup(
+                new GetPeerGroupInputBuilder()
+                        .setRequestedNode(new NodeId("0.0.0.0"))
+                        .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
+                        .build())
+                .get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
-        assertNull(result.getResult().getSxpPeerGroup());
+        assertNotNull(result.getResult().getSxpPeerGroup());
+    }
 
-        result =
-                service.getPeerGroup(new GetPeerGroupInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
+    @Test
+    public void testGetPeerGroupNotExistingNode() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<GetPeerGroupOutput> result = service.getPeerGroup(
+                new GetPeerGroupInputBuilder()
+                        .setRequestedNode(new NodeId("0.0.0.1"))
                         .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
-                        .build()).get();
+                        .build())
+                .get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
@@ -524,76 +624,66 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testGetPeerGroups() throws Exception {
-        RpcResult<GetPeerGroupsOutput>
-                result =
-                service.getPeerGroups(new GetPeerGroupsInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build())
-                        .get();
-        assertNotNull(result);
-        assertTrue(result.isSuccessful());
-        assertNotNull(result.getResult());
-        assertNotNull(result.getResult().getSxpPeerGroup());
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
 
-        result =
-                service.getPeerGroups(new GetPeerGroupsInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build())
-                        .get();
+        final RpcResult<GetPeerGroupsOutput> result = service.getPeerGroups(
+                new GetPeerGroupsInputBuilder().setRequestedNode(new NodeId("0.0.0.0")).build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertNotNull(result.getResult().getSxpPeerGroup());
+        assertFalse(result.getResult().getSxpPeerGroup().isEmpty());
+    }
+
+    @Test
+    public void testGetPeerGroupsNotExistingNode() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<GetPeerGroupsOutput> result = service.getPeerGroups(
+                new GetPeerGroupsInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertNotNull(result.getResult().getSxpPeerGroup());
+        assertTrue(result.getResult().getSxpPeerGroup().isEmpty());
     }
 
     @Test
     public void testAddNode() throws Exception {
-        RpcResult<AddNodeOutput> result = service.addNode(new AddNodeInputBuilder().build()).get();
-        assertNotNull(result);
-        assertTrue(result.isSuccessful());
-        assertNotNull(result.getResult());
-        assertFalse(result.getResult().isResult());
+        // setup
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+        final SxpNode added = mock(SxpNode.class);
+        when(added.getNodeId()).thenReturn(new NodeId("0.0.0.1"));
+        Configuration.register(added);
 
-        result = service.addNode(new AddNodeInputBuilder().setNodeId(node.getNodeId()).build()).get();
+        // test
+        final RpcResult<AddNodeOutput> result = service.addNode(
+                new AddNodeInputBuilder().setNodeId(NodeId.getDefaultInstance("0.0.0.1")).build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertTrue(result.getResult().isResult());
+
+        // teardown
+        Configuration.unRegister("0.0.0.1");
     }
 
     @Test
-    public void testUpdateEntry() throws Exception {
-        List<MasterDatabaseBinding> bindings = new ArrayList<>();
-        bindings.add(getBinding("0.0.0.5/32", 20));
+    public void testAddNodeNullNodeId() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
 
-        UpdateEntryInputBuilder input = new UpdateEntryInputBuilder();
-        input.setDomainName(SxpNode.DEFAULT_DOMAIN);
-        input.setRequestedNode(NodeId.getDefaultInstance("0.0.0.0"));
-
-        input.setNewBinding(getNewBinding("1.1.10.1/32", 50));
-        input.setOriginalBinding(getOriginalBinding("1.1.1.1/32", 450));
-
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
-        when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(new ArrayList<>());
-
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
-        when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(bindings);
-
-        input.setNewBinding(getNewBinding("1.1.10.1/32", null));
-        input.setOriginalBinding(getOriginalBinding("1.1.1.1/32", 450));
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
-
-        input.setNewBinding(getNewBinding(null, 50));
-        input.setOriginalBinding(getOriginalBinding("1.1.1.1/32", 450));
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
-
-        input.setNewBinding(getNewBinding("1.1.10.1/32", 50));
-        input.setOriginalBinding(getOriginalBinding("1.1.1.1/32", null));
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
-
-        input.setNewBinding(getNewBinding("1.1.10.1/32", 50));
-        input.setOriginalBinding(getOriginalBinding(null, 450));
-        assertFalse(service.updateEntry(input.build()).get().getResult().isResult());
+        final RpcResult<AddNodeOutput> result = service.addNode(
+                new AddNodeInputBuilder().build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
     }
 
     @Test
     public void testUpdateFilter() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
         RpcResult<UpdateFilterOutput>
                 result =
                 service.updateFilter(new UpdateFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.1")).build())
@@ -626,10 +716,10 @@ public class SxpRpcServiceImplTest {
     }
 
     @Test
-    public void testDeleteBindings() throws Exception {
-        when(node.removeLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(
-                Collections.singletonList(mock(MasterDatabaseBinding.class)));
-        RpcResult<DeleteBindingsOutput>
+    public void testDeleteBindingsFromNonExistingNode() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<DeleteBindingsOutput>
                 result =
                 service.deleteBindings(new DeleteBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.1"))
@@ -638,8 +728,14 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
+    }
 
-        result =
+    @Test
+    public void testDeleteNullBindings() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<DeleteBindingsOutput>
+                result =
                 service.deleteBindings(new DeleteBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(null)
@@ -648,8 +744,14 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
+    }
 
-        result =
+    @Test
+    public void testDeleteEmptyBindings() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<DeleteBindingsOutput>
+                result =
                 service.deleteBindings(new DeleteBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(new ArrayList<>())
@@ -658,12 +760,18 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
+    }
 
-        result =
+    @Test
+    public void testDeleteBindings() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.nonEmptyBindingsAnswer);
+
+        final RpcResult<DeleteBindingsOutput>
+                result =
                 service.deleteBindings(new DeleteBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(Collections.singletonList(new BindingBuilder().setSgt(new Sgt(112))
-                                .setIpPrefix(Collections.singletonList(new IpPrefix("1.1.1.1/32".toCharArray())))
+                                .setIpPrefix(Collections.singletonList(IpPrefixBuilder.getDefaultInstance("1.1.1.1/32")))
                                 .build()))
                         .build()).get();
         assertNotNull(result);
@@ -675,6 +783,8 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testDeleteDomain() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
         RpcResult<DeleteDomainOutput>
                 result =
                 service.deleteDomain(new DeleteDomainInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
@@ -704,24 +814,11 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testAddDomain() throws Exception {
-        RpcResult<AddDomainOutput>
-                result =
-                service.addDomain(new AddDomainInputBuilder().setNodeId(new NodeId("0.0.0.1")).build()).get();
-        assertNotNull(result);
-        assertTrue(result.isSuccessful());
-        assertNotNull(result.getResult());
-        assertFalse(result.getResult().isResult());
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
 
-        result =
-                service.addDomain(
-                        new AddDomainInputBuilder().setNodeId(new NodeId("0.0.0.0")).setDomainName(null).build()).get();
-        assertNotNull(result);
-        assertTrue(result.isSuccessful());
-        assertNotNull(result.getResult());
-        assertFalse(result.getResult().isResult());
-
-        result =
-                service.addDomain(new AddDomainInputBuilder().setNodeId(new NodeId("0.0.0.0"))
+        final RpcResult<AddDomainOutput> result = service
+                .addDomain(new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.0"))
                         .setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .build()).get();
         assertNotNull(result);
@@ -731,20 +828,95 @@ public class SxpRpcServiceImplTest {
     }
 
     @Test
-    public void testAddBindings() throws Exception {
-        when(node.putLocalBindingsMasterDatabase(anyList(), anyString())).thenReturn(
-                Collections.singletonList(mock(MasterDatabaseBinding.class)));
-        RpcResult<AddBindingsOutput>
-                result =
-                service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
+    public void testAddDomainNullDomainName() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<AddDomainOutput> result = service.addDomain(
+                new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddDomainWithBindings() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<AddDomainOutput> result = service
+                .addDomain(new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setMasterDatabase(
+                                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.MasterDatabaseBuilder()
+                                        .setBinding(Lists.newArrayList(
+                                                getBinding("1.1.1.1/32", "10"),
+                                                getBinding("2.2.2.2/32", "20")))
+                                        .build())
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertTrue(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddDomainNullBindingsOrigin() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.addBindingsAnswer);
+
+        final RpcResult<AddDomainOutput> result = service
+                .addDomain(new AddDomainInputBuilder()
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setMasterDatabase(
+                                new org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.master.database.configuration.MasterDatabaseBuilder()
+                                        .setBinding(Lists.newArrayList(
+                                                getBinding("1.1.1.1/32", "10"),
+                                                getBinding("2.2.2.2/32", "20")))
+                                        .build())
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddDomainToNonExistingNode() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<AddDomainOutput> result = service.addDomain(
+                new AddDomainInputBuilder()
                         .setNodeId(new NodeId("0.0.0.1"))
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
+    }
 
-        result =
+    @Test
+    public void testAddBindingsToNonExistingNode() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<AddBindingsOutput> result =
+                service.addBindings(new AddBindingsInputBuilder()
+                        .setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setNodeId(new NodeId("0.0.0.1"))
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        assertFalse(result.getResult().isResult());
+    }
+
+    @Test
+    public void testAddNullBindings() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<AddBindingsOutput> result =
                 service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
                         .setBinding(null)
@@ -753,23 +925,51 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
+    }
 
-        result =
+    @Test
+    public void testAddEmptyBindings() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<AddBindingsOutput> result =
                 service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
-                        .setBinding(new ArrayList<>())
+                        .setBinding(Collections.emptyList())
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
+    }
 
-        result =
+    @Test
+    public void testAddBindingsNullBindingsOrigin() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
+        final RpcResult<AddBindingsOutput> result =
                 service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
                         .setNodeId(new NodeId("0.0.0.0"))
-                        .setBinding(Collections.singletonList(new BindingBuilder().setSgt(new Sgt(112))
-                                .setIpPrefix(Collections.singletonList(new IpPrefix("1.1.1.1/32".toCharArray())))
-                                .build()))
+                        .setBinding(Lists.newArrayList(
+                                getBinding("1.1.1.1/32", "10"),
+                                getBinding("2.2.2.2/32", "20")))
+                        .build()).get();
+        assertNotNull(result);
+        assertTrue(result.isSuccessful());
+        assertNotNull(result.getResult());
+        Boolean aBoolean = result.getResult().isResult();
+        assertFalse(aBoolean);
+    }
+
+    @Test
+    public void testAddBindings() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.addBindingsAnswer);
+
+        final RpcResult<AddBindingsOutput> result =
+                service.addBindings(new AddBindingsInputBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN)
+                        .setNodeId(new NodeId("0.0.0.0"))
+                        .setBinding(Lists.newArrayList(
+                                getBinding("1.1.1.1/32", "10"),
+                                getBinding("2.2.2.2/32", "20")))
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -780,6 +980,8 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testDeleteDomainFilter() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
         RpcResult<DeleteDomainFilterOutput>
                 result =
                 service.deleteDomainFilter(
@@ -836,6 +1038,8 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testAddDomainFilter() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
         RpcResult<AddDomainFilterOutput>
                 result =
                 service.addDomainFilter(
@@ -891,12 +1095,14 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testClose() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
         service.close();
-        verify(datastoreAccess).close();
     }
 
     @Test
     public void testDeleteConnectionTemplate() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
         RpcResult<DeleteConnectionTemplateOutput>
                 result =
                 service.deleteConnectionTemplate(
@@ -927,7 +1133,7 @@ public class SxpRpcServiceImplTest {
         result =
                 service.deleteConnectionTemplate(
                         new DeleteConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
-                                .setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()))
+                                .setTemplatePrefix(IpPrefixBuilder.getDefaultInstance("0.0.0.0/0"))
                                 .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -937,7 +1143,7 @@ public class SxpRpcServiceImplTest {
         result =
                 service.deleteConnectionTemplate(
                         new DeleteConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
-                                .setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()))
+                                .setTemplatePrefix(IpPrefixBuilder.getDefaultInstance("0.0.0.0/0"))
                                 .setDomainName(SxpNode.DEFAULT_DOMAIN)
                                 .build()).get();
         assertNotNull(result);
@@ -948,6 +1154,8 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testAddConnectionTemplate() throws Exception {
+        initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
+
         RpcResult<AddConnectionTemplateOutput>
                 result =
                 service.addConnectionTemplate(
@@ -976,7 +1184,7 @@ public class SxpRpcServiceImplTest {
 
         result =
                 service.addConnectionTemplate(new AddConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
-                        .setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()))
+                        .setTemplatePrefix(IpPrefixBuilder.getDefaultInstance("0.0.0.0/0"))
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
@@ -986,11 +1194,44 @@ public class SxpRpcServiceImplTest {
         result =
                 service.addConnectionTemplate(new AddConnectionTemplateInputBuilder().setNodeId(new NodeId("0.0.0.0"))
                         .setDomainName(SxpNode.DEFAULT_DOMAIN)
-                        .setTemplatePrefix(new IpPrefix("0.0.0.0/0".toCharArray()))
+                        .setTemplatePrefix(IpPrefixBuilder.getDefaultInstance("0.0.0.0/0"))
                         .build()).get();
         assertNotNull(result);
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertTrue(result.getResult().isResult());
+    }
+
+    /**
+     * Prepare {@link DatastoreAccess} mock instance backed by {@link DataBroker} for tests.
+     * <p>
+     * {@link ReadTransaction} and {@link WriteTransaction} are assumed to be created by {@link TransactionChain}.
+     * <p>
+     * {@link ReadTransaction} reads data according to {@code readAnswer}
+     * <p>
+     * {@link WriteTransaction} is committed successfully.
+     *
+     * @param dataBroker mock of {@link DataBroker}
+     * @param readTransaction mock of {@link ReadTransaction}
+     * @param writeTransaction mock of {@link WriteTransaction}
+     * @param readAnswer {@link Answer} to be returned by {@link ReadTransaction}
+     * @return mock of {@link DatastoreAccess}
+     */
+    @SuppressWarnings("unchecked")
+    private static DatastoreAccess prepareDataStore(DataBroker dataBroker, ReadOnlyTransaction readTransaction,
+            WriteTransaction writeTransaction, Answer<?> readAnswer) {
+        BindingTransactionChain transactionChain = mock(BindingTransactionChain.class);
+        doReturn(Futures.immediateCheckedFuture(null))
+                .when(writeTransaction).submit();
+        when(readTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class)))
+                .thenAnswer(readAnswer);
+        when(transactionChain.newReadOnlyTransaction())
+                .thenReturn(readTransaction);
+        when(transactionChain.newWriteOnlyTransaction())
+                .thenReturn(writeTransaction);
+        when(dataBroker.createTransactionChain(any(TransactionChainListener.class)))
+                .thenReturn(transactionChain);
+
+        return DatastoreAccess.getInstance(dataBroker);
     }
 }
