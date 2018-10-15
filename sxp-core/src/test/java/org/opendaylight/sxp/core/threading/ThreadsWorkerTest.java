@@ -11,56 +11,38 @@ package org.opendaylight.sxp.core.threading;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.opendaylight.sxp.core.SxpConnection;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({MoreExecutors.class})
 public class ThreadsWorkerTest {
 
-    private static ThreadsWorker worker;
-    private static Callable callable;
-    private static Runnable runnable;
-    private static SxpConnection connection;
+    @Mock
+    private Callable callable;
+    @Mock
+    private Runnable runnable;
+    @Mock
+    private SxpConnection connection;
 
-    private static ListeningScheduledExecutorService scheduledExecutorService;
-    private static ListeningExecutorService executorService, executorServiceOutbound, executorServiceInbound;
+    private ThreadsWorker worker;
 
     @Before
     public void init() {
         callable = mock(Callable.class);
         runnable = mock(Runnable.class);
-
         connection = mock(SxpConnection.class);
-        scheduledExecutorService = mock(ListeningScheduledExecutorService.class);
-        executorService = mock(ListeningExecutorService.class);
-        executorServiceInbound = mock(ListeningExecutorService.class);
-        executorServiceOutbound = mock(ListeningExecutorService.class);
-        PowerMockito.mockStatic(MoreExecutors.class);
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class)))
-                .thenReturn(executorService, executorServiceInbound, executorServiceOutbound);
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(ScheduledExecutorService.class)))
-                .thenReturn(scheduledExecutorService);
+        worker = new ThreadsWorker();
     }
 
     @After
@@ -72,50 +54,32 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testScheduleTask() throws Exception {
-        worker = new ThreadsWorker();
-        worker.scheduleTask(callable, 0, TimeUnit.SECONDS);
-        verify(scheduledExecutorService).schedule(any(Callable.class), anyInt(), any(TimeUnit.class));
+        assertNotNull(worker.scheduleTask(callable, 0, TimeUnit.SECONDS));
     }
 
     @Test
     public void testExecuteTaskCallable() throws Exception {
-        worker = new ThreadsWorker();
-        worker.executeTask(callable, ThreadsWorker.WorkerType.DEFAULT);
-        verify(executorService).submit(any(Callable.class));
-
-        worker.executeTask(callable, ThreadsWorker.WorkerType.OUTBOUND);
-        verify(executorServiceOutbound).submit(any(Callable.class));
-
-        worker.executeTask(callable, ThreadsWorker.WorkerType.INBOUND);
-        verify(executorServiceInbound).submit(any(Callable.class));
+        assertNotNull(worker.executeTask(callable, ThreadsWorker.WorkerType.DEFAULT));
+        assertNotNull(worker.executeTask(callable, ThreadsWorker.WorkerType.OUTBOUND));
+        assertNotNull(worker.executeTask(callable, ThreadsWorker.WorkerType.INBOUND));
     }
 
     @Test
     public void testExecuteTaskRunnable() throws Exception {
-        worker = new ThreadsWorker();
-        worker.executeTask(runnable, ThreadsWorker.WorkerType.DEFAULT);
-        verify(executorService).submit(any(Runnable.class));
-
-        worker.executeTask(runnable, ThreadsWorker.WorkerType.OUTBOUND);
-        verify(executorServiceOutbound).submit(any(Runnable.class));
-
-        worker.executeTask(runnable, ThreadsWorker.WorkerType.INBOUND);
-        verify(executorServiceInbound).submit(any(Runnable.class));
+        assertNotNull(worker.executeTask(runnable, ThreadsWorker.WorkerType.DEFAULT));
+        assertNotNull(worker.executeTask(runnable, ThreadsWorker.WorkerType.OUTBOUND));
+        assertNotNull(worker.executeTask(runnable, ThreadsWorker.WorkerType.INBOUND));
     }
 
     @Test
     public void testAddListener() throws Exception {
-        worker = new ThreadsWorker();
         ListenableFuture future = mock(ListenableFuture.class);
         worker.addListener(future, runnable);
-        verify(future).addListener(runnable, executorService);
+        verify(future).addListener(eq(runnable), any(ExecutorService.class));
     }
 
     @Test
     public void testExecuteTaskInSequence_Ordering() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(ScheduledExecutorService.class))).thenCallRealMethod();
-        worker = new ThreadsWorker();
         final CountDownLatch latch = new CountDownLatch(3);
         final int[] samples = {3, 10};
 
@@ -159,9 +123,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testExecuteTaskInSequence_Canceling() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
-        worker = new ThreadsWorker();
-
         final int[] monitor = {0, 0};
 
         ListenableFuture future = worker.executeTaskInSequence((Callable<Void>) () -> {
@@ -206,9 +167,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testExecuteTaskInSequence_Get() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
-        worker = new ThreadsWorker();
-
         final int[] monitor = {0, 0};
 
         ListenableFuture future = worker.executeTaskInSequence((Callable<Void>) () -> {
@@ -244,9 +202,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testCancelTasksInSequence() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
-        worker = new ThreadsWorker();
-
         final int[] monitor = {0, 0};
 
         worker.executeTaskInSequence((Callable<Void>) () -> {
@@ -283,9 +238,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testExecuteTaskInSequence_Ordering_Connection() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(ScheduledExecutorService.class))).thenCallRealMethod();
-        worker = new ThreadsWorker();
         final CountDownLatch latch = new CountDownLatch(3);
         final int[] samples = {3, 10};
 
@@ -329,9 +281,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testExecuteTaskInSequence_Canceling_Connection() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
-        worker = new ThreadsWorker();
-
         final int[] monitor = {0, 0};
 
         ListenableFuture future = worker.executeTaskInSequence((Callable<Void>) () -> {
@@ -376,9 +325,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testExecuteTaskInSequence_Get_Connection() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
-        worker = new ThreadsWorker();
-
         final int[] monitor = {0, 0};
 
         ListenableFuture future = worker.executeTaskInSequence((Callable<Void>) () -> {
@@ -414,9 +360,6 @@ public class ThreadsWorkerTest {
 
     @Test
     public void testCancelTasksInSequence_Connection() throws Exception {
-        PowerMockito.when(MoreExecutors.listeningDecorator(any(AbstractExecutorService.class))).thenCallRealMethod();
-        worker = new ThreadsWorker();
-
         final int[] monitor = {0, 0};
 
         worker.executeTaskInSequence((Callable<Void>) () -> {
