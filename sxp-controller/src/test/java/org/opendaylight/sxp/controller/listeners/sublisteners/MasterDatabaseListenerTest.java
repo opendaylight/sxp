@@ -35,6 +35,7 @@ import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -84,9 +85,9 @@ public class MasterDatabaseListenerTest {
                 .child(MasterDatabase.class)), any(LogicalDatastoreType.class))).thenReturn(
                 new MasterDatabaseBuilder().setMasterDatabaseBinding(new ArrayList<>()).build());
         PowerMockito.mockStatic(Configuration.class);
-        PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(NodesRegister.getRegisteredNode(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(NodesRegister.register(any(SxpNode.class))).thenReturn(sxpNode);
+        PowerMockito.when(NodesRegister.unRegister(anyString())).thenReturn(sxpNode);
     }
 
     private DataObjectModification<MasterDatabase> getObjectModification(MasterDatabase before, MasterDatabase after) {
