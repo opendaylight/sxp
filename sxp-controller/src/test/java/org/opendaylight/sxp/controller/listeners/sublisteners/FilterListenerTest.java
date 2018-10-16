@@ -31,6 +31,7 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterType;
@@ -65,9 +66,9 @@ public class FilterListenerTest {
         identityListener = new FilterListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
         PowerMockito.mockStatic(Configuration.class);
-        PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(NodesRegister.getRegisteredNode(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(NodesRegister.register(any(SxpNode.class))).thenReturn(sxpNode);
+        PowerMockito.when(NodesRegister.unRegister(anyString())).thenReturn(sxpNode);
     }
 
     private DataObjectModification<SxpFilter> getObjectModification(

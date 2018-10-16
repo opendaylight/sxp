@@ -32,7 +32,7 @@ import org.junit.runner.RunWith;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
-import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
@@ -168,7 +168,7 @@ public class SxpRpcServiceImplTest {
                 any(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class)))
                 .thenReturn(
                         mock(org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter.class));
-        Configuration.register(node);
+        NodesRegister.register(node);
         service = new SxpRpcServiceImpl(mock(DataBroker.class));
         masterDatabase = mock(MasterDatastoreImpl.class);
         when(node.getBindingMasterDatabase()).thenReturn(masterDatabase);
@@ -362,7 +362,7 @@ public class SxpRpcServiceImplTest {
 
     @Test
     public void testDeleteNode() throws Exception {
-        Configuration.unRegister(NodeIdConv.toString(node.getNodeId()));
+        NodesRegister.unRegister(NodeIdConv.toString(node.getNodeId()));
         RpcResult<DeleteNodeOutput> result = service.deleteNode(
                 new DeleteNodeInputBuilder().setNodeId(new NodeId("0.0.0.0")).build()).get();
         assertNotNull(result);
@@ -555,6 +555,9 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertTrue(result.getResult().isResult());
+
+        // teardown
+        NodesRegister.unRegister("0.0.0.1");
     }
 
     @Test
