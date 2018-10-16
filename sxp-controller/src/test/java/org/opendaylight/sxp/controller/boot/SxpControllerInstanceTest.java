@@ -28,7 +28,7 @@ import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvid
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceRegistration;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
-import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.DataObject;
@@ -67,7 +67,7 @@ public class SxpControllerInstanceTest {
         controllerInstance.init();
         node = mock(SxpDatastoreNode.class);
         when(node.getNodeId()).thenReturn(new NodeId("1.1.1.1"));
-        Configuration.register(node);
+        NodesRegister.register(node);
     }
 
     @Test

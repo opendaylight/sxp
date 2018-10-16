@@ -30,6 +30,7 @@ import org.opendaylight.sxp.controller.listeners.sublisteners.FilterListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.MasterDatabaseListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.PeerGroupListener;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopologyBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
@@ -100,7 +101,7 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         LOG.warn("Clustering provider closed service for {}", this.getClass().getSimpleName());
         dataChangeListenerRegistrations.forEach(ListenerRegistration<DataTreeChangeListener>::close);
         dataChangeListenerRegistrations.clear();
-        Configuration.getNodes().forEach(n -> {
+        NodesRegister.getNodes().forEach(n -> {
             if (n instanceof SxpDatastoreNode) {
                 ((SxpDatastoreNode) n).close();
             } else {
