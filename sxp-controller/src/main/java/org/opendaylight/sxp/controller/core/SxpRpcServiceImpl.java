@@ -30,6 +30,7 @@ import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.database.spi.MasterDatabaseInf;
@@ -194,7 +195,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
      */
     private <T> ListenableFuture<RpcResult<T>> getResponse(final String nodeId, final T response,
             final Callable<RpcResult<T>> resultCallable) {
-        final SxpNode node = Configuration.getRegisteredNode(nodeId);
+        final SxpNode node = NodesRegister.getRegisteredNode(nodeId);
         if (nodeId == null || (
                 datastoreAccess.readSynchronous(getIdentifier(nodeId), LogicalDatastoreType.CONFIGURATION) == null
                         && datastoreAccess.readSynchronous(getIdentifier(nodeId), LogicalDatastoreType.OPERATIONAL)
@@ -212,7 +213,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
      * @return DatastoreAccess associated with SxpNode or default if nothing found
      */
     private DatastoreAccess getDatastoreAccess(final String nodeId) {
-        final SxpNode node = Configuration.getRegisteredNode(nodeId);
+        final SxpNode node = NodesRegister.getRegisteredNode(nodeId);
         if (node instanceof SxpDatastoreNode) {
             return ((SxpDatastoreNode) node).getDatastoreAccess();
         }
@@ -230,7 +231,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
      * @return master database of specified domain in the node or {@code null} if domain does not exist
      */
     private MasterDatabaseInf getMasterDatabase(final String nodeId, final String domainName) {
-        final org.opendaylight.sxp.core.SxpDomain domain = Configuration.getRegisteredNode(nodeId).getDomain(domainName);
+        final org.opendaylight.sxp.core.SxpDomain domain = NodesRegister.getRegisteredNode(nodeId).getDomain(domainName);
         if (domain == null) {
             return null;
         }
@@ -789,7 +790,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                 }
 
                 // wait until node appears in configuration
-                for (int i = 0; Configuration.getRegisteredNode(nodeId) == null && i < 10; i++) {
+                for (int i = 0; NodesRegister.getRegisteredNode(nodeId) == null && i < 10; i++) {
                     try {
                         Thread.sleep(100);
                     } catch (final InterruptedException e) {
@@ -797,7 +798,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                         LOG.error("Failed to wait for SXP node " + nodeId + " to appear in configuration | {}", e);
                     }
                 }
-                if (Configuration.getRegisteredNode(nodeId) == null) {
+                if (NodesRegister.getRegisteredNode(nodeId) == null) {
                     LOG.error("SXP node " + nodeId + " is not present in configuration");
                     return RpcResultBuilder.success(output.build()).build();
                 }
@@ -895,7 +896,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                     }
 
                     // wait until domain is present in configuration
-                    final SxpNode registeredNode = Configuration.getRegisteredNode(nodeId);
+                    final SxpNode registeredNode = NodesRegister.getRegisteredNode(nodeId);
                     for (int i = 0;
                             (registeredNode == null || registeredNode.getDomain(domainName) == null) && i < 10;
                             i++) {

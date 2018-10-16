@@ -28,7 +28,7 @@ import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
-import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.route.api.RouteReactor;
 import org.opendaylight.sxp.route.spi.Routing;
@@ -258,7 +258,7 @@ public class RouteReactorImpl implements RouteReactor {
      * @return Nodes related to specified virtual ip-address
      */
     private static Collection<SxpNode> findSxpNodesOnVirtualIp(final IpAddress vIpAddress) {
-        return RouteUtil.findSxpNodesOnVirtualIp(vIpAddress, Configuration.getNodes());
+        return RouteUtil.findSxpNodesOnVirtualIp(vIpAddress, NodesRegister.getNodes());
     }
 
     /**

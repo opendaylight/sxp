@@ -44,7 +44,7 @@ import org.opendaylight.sxp.controller.core.SxpConfigRpcServiceImpl;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.core.SxpRpcServiceImpl;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
-import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.controller.rev180629.SxpConfigControllerService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.BindingOrigins;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.BindingOriginsBuilder;
@@ -128,7 +128,7 @@ public class SxpControllerInstanceTest {
         controllerInstance.init();
 
         when(node.getNodeId()).thenReturn(new NodeId("1.1.1.1"));
-        Configuration.register(node);
+        NodesRegister.register(node);
 
         datastoreAccess = prepareDataStore(dataBroker, readTransaction, writeTransaction);
     }
