@@ -8,6 +8,9 @@
 
 package org.opendaylight.sxp.core.service;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -17,15 +20,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.PathType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.StoreType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.security.fields.Tls;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.security.fields.TlsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.tls.security.fields.KeystoreBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.tls.security.fields.TruststoreBuilder;
-import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 
