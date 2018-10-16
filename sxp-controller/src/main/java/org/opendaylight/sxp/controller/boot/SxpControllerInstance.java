@@ -191,8 +191,9 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
             if (n instanceof SxpDatastoreNode) {
                 ((SxpDatastoreNode) n).close();
             } else {
-                n.shutdown();
+                node.shutdown();
             }
+            Configuration.unRegister(node.getNodeId().getValue());
         });
         datastoreAccess.close();
         return Futures.immediateFuture(null);
