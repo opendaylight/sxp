@@ -11,18 +11,19 @@ package org.opendaylight.sxp.controller.listeners;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyList;
-import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId.getDefaultInstance;
 
 import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,7 +36,7 @@ import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.listeners.spi.Listener;
 import org.opendaylight.sxp.core.Configuration;
-import org.opendaylight.sxp.core.SxpNode;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
@@ -80,12 +81,14 @@ public class NodeIdentityListenerTest {
         PowerMockito.mockStatic(DatastoreAccess.class);
         when(sxpNode.shutdown()).thenReturn(Futures.immediateFuture(false));
         when(sxpNode.start()).thenReturn(Futures.immediateFuture(true));
-        when(sxpNode.getWorker()).thenReturn(worker);
-        PowerMockito.when(DatastoreAccess.getInstance(any(DatastoreAccess.class))).thenReturn(datastoreAccess);
-        PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(mock(DatastoreAccess.class));
-        PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
+        when(sxpNode.getWorker()).thenReturn(new ThreadsWorker());
+        when(sxpNode.getNodeId()).thenReturn(getDefaultInstance("0.0.0.0"));
+        NodesRegister.register(sxpNode);
+    }
+
+    @After
+    public void tearDown() {
+        NodesRegister.unRegister(sxpNode.getNodeId().getValue());
     }
 
     @Test
