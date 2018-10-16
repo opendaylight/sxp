@@ -17,7 +17,7 @@ import org.opendaylight.mdsal.binding.api.DataTreeModification;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
-import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.yang.binding.ChildOf;
@@ -57,7 +57,7 @@ public abstract class ListListener<P extends DataObject, C extends ChildOf<? sup
      * @return DatastoreAcces associated with SxpNode or default if nothing found
      */
     protected DatastoreAccess getDatastoreAccess(String nodeId) {
-        SxpNode node = Configuration.getRegisteredNode(nodeId);
+        SxpNode node = NodesRegister.getRegisteredNode(nodeId);
         if (node instanceof SxpDatastoreNode) {
             return ((SxpDatastoreNode) node).getDatastoreAccess();
         }
@@ -117,7 +117,7 @@ public abstract class ListListener<P extends DataObject, C extends ChildOf<? sup
         if (modifiedChilds != null && !modifiedChilds.isEmpty()) {
             modifiedChilds.stream().filter(Objects::nonNull).forEach(modifiedChildContainer -> {
                 final String nodeId = identifier.firstKeyOf(Node.class).getNodeId().getValue();
-                SxpNode sxpNode = Configuration.getRegisteredNode(nodeId);
+                SxpNode sxpNode = NodesRegister.getRegisteredNode(nodeId);
                 modifiedChildContainer.getModifiedChildren().stream().filter(Objects::nonNull).forEach(m -> {
                     //noinspection unchecked
                     DataObjectModification<O> c = (DataObjectModification<O>) m;
