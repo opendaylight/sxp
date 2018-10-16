@@ -29,6 +29,7 @@ import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.listeners.spi.Listener;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
@@ -81,7 +82,7 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
      * @return DatastoreAcces associated with SxpNode or default if nothing found
      */
     private DatastoreAccess getDatastoreAccess(String nodeId) {
-        SxpNode node = Configuration.getRegisteredNode(nodeId);
+        SxpNode node = NodesRegister.getRegisteredNode(nodeId);
         if (node instanceof SxpDatastoreNode) {
             return ((SxpDatastoreNode) node).getDatastoreAccess();
         }
@@ -124,11 +125,11 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                         break;
                 }
             } else {
-                final SxpNode node = Configuration.getRegisteredNode(nodeId);
+                final SxpNode node = NodesRegister.getRegisteredNode(nodeId);
                 switch (c.getRootNode().getModificationType()) {
                     case WRITE:
                         if (c.getRootNode().getDataBefore() == null) {
-                            ListenableFuture<Boolean> nodeStartFuture = Configuration.register(
+                            ListenableFuture<Boolean> nodeStartFuture = NodesRegister.register(
                                     SxpDatastoreNode.createInstance(
                                             NodeId.getDefaultInstance(Preconditions.checkNotNull(nodeId)),
                                             DatastoreAccess.getInstance(nodesDatastoreAccess), c.getRootNode().getDataAfter()))
@@ -140,7 +141,7 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                                 });
                             }, MoreExecutors.directExecutor());
                         } else if (c.getRootNode().getDataAfter() == null) {
-                            Configuration.unRegister(Preconditions.checkNotNull(nodeId)).shutdown();
+                            NodesRegister.unRegister(Preconditions.checkNotNull(nodeId)).shutdown();
                         }
                         break;
                     case SUBTREE_MODIFIED:
@@ -154,14 +155,14 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                                 d -> Objects.nonNull(d.getSecurity()) ? d.getSecurity().getPassword() : null)
                                 || checkDifference(c,
                                 d -> Objects.nonNull(d.getSecurity()) ? d.getSecurity().getTls() : null)) {
-                            Configuration.getRegisteredNode(nodeId).shutdown();
+                            NodesRegister.getRegisteredNode(nodeId).shutdown();
                             if (Objects.nonNull(c.getRootNode().getDataAfter())) {
-                                Configuration.getRegisteredNode(nodeId)
+                                NodesRegister.getRegisteredNode(nodeId)
                                         .setSecurity(c.getRootNode().getDataAfter().getSecurity());
                             } else {
-                                Configuration.getRegisteredNode(nodeId).setSecurity(null);
+                                NodesRegister.getRegisteredNode(nodeId).setSecurity(null);
                             }
-                            Configuration.getRegisteredNode(nodeId).start();
+                            NodesRegister.getRegisteredNode(nodeId).start();
                         } else if (checkDifference(c, SxpNodeFields::getVersion) || checkDifference(c,
                                 SxpNodeFields::getTcpPort) || checkDifference(c, SxpNodeFields::getSourceIp)) {
                             node.getWorker().addListener(node.shutdown(), node::start);
@@ -182,7 +183,7 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                         });
                         break;
                     case DELETE:
-                        Configuration.unRegister(nodeId);
+                        NodesRegister.unRegister(nodeId);
                         if (node instanceof SxpDatastoreNode) {
                             ((SxpDatastoreNode) node).close();
                         } else {
