@@ -187,12 +187,13 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         closeRpcServices();
         dataChangeListenerRegistrations.forEach(ListenerRegistration::close);
         dataChangeListenerRegistrations.clear();
-        Configuration.getNodes().forEach(n -> {
-            if (n instanceof SxpDatastoreNode) {
-                ((SxpDatastoreNode) n).close();
+        Configuration.getNodes().forEach(node -> {
+            if (node instanceof SxpDatastoreNode) {
+                ((SxpDatastoreNode) node).close();
             } else {
-                n.shutdown();
+                node.shutdown();
             }
+            Configuration.unRegister(node.getNodeId().getValue());
         });
         datastoreAccess.close();
         return Futures.immediateFuture(null);
