@@ -37,7 +37,7 @@ import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
-import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.Registration;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -256,7 +256,7 @@ public class SxpRpcServiceImplTest {
         when(sxpNode.getNodeId()).thenReturn(NODE_ID);
         masterDatabase.initDBPropagatingListener(new BindingDispatcher(sxpNode), sxpDomain);
 
-        Configuration.register(sxpNode);
+        Registration.register(sxpNode);
         service = new SxpRpcServiceImpl(dataBroker);
     }
 
@@ -387,7 +387,7 @@ public class SxpRpcServiceImplTest {
     public void testDeleteNode() throws Exception {
         initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
 
-        Configuration.unRegister(NODE_ID.getValue());
+        Registration.unRegister(NODE_ID.getValue());
         RpcResult<DeleteNodeOutput> result = service.deleteNode(
                 new DeleteNodeInputBuilder().setNodeId(new NodeId("0.0.0.0")).build()).get();
         assertNotNull(result);
