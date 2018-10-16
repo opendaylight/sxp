@@ -44,6 +44,7 @@ import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.listeners.spi.Listener;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.Registration;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
@@ -89,12 +90,12 @@ public class NodeIdentityListenerTest {
         when(sxpNode.start()).thenReturn(Futures.immediateFuture(true));
         when(sxpNode.getWorker()).thenReturn(new ThreadsWorker());
         when(sxpNode.getNodeId()).thenReturn(getDefaultInstance("0.0.0.0"));
-        Configuration.register(sxpNode);
+        Registration.register(sxpNode);
     }
 
     @After
     public void tearDown() {
-        Configuration.unRegister(sxpNode.getNodeId().getValue());
+        Registration.unRegister(sxpNode.getNodeId().getValue());
     }
 
     @Test
