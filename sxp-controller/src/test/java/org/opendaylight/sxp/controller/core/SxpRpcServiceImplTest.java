@@ -38,7 +38,7 @@ import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
-import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -262,7 +262,7 @@ public class SxpRpcServiceImplTest {
         when(sxpNode.getNodeId()).thenReturn(NODE_ID);
         masterDatabase.initDBPropagatingListener(new BindingDispatcher(sxpNode), sxpDomain);
 
-        Configuration.register(sxpNode);
+        NodesRegister.register(sxpNode);
         service = new SxpRpcServiceImpl(dataBroker);
     }
 
@@ -393,7 +393,7 @@ public class SxpRpcServiceImplTest {
     public void testDeleteNode() throws Exception {
         initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
 
-        Configuration.unRegister(NODE_ID.getValue());
+        NodesRegister.unRegister(NODE_ID.getValue());
         RpcResult<DeleteNodeOutput> result = service.deleteNode(
                 new DeleteNodeInputBuilder().setNodeId(new NodeId("0.0.0.0")).build()).get();
         assertNotNull(result);
@@ -649,7 +649,7 @@ public class SxpRpcServiceImplTest {
         initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
         final SxpNode added = mock(SxpNode.class);
         when(added.getNodeId()).thenReturn(new NodeId("0.0.0.1"));
-        Configuration.register(added);
+        NodesRegister.register(added);
 
         // test
         final RpcResult<AddNodeOutput> result = service.addNode(
@@ -660,7 +660,7 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.getResult().isResult());
 
         // teardown
-        Configuration.unRegister("0.0.0.1");
+        NodesRegister.unRegister("0.0.0.1");
     }
 
     @Test
