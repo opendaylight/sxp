@@ -8,8 +8,8 @@
 package org.opendaylight.sxp.controller.boot;
 
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -31,11 +31,11 @@ import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.DataTreeIdentifier;
 import org.opendaylight.mdsal.binding.api.ReadTransaction;
 import org.opendaylight.mdsal.binding.api.RpcProviderService;
-import org.opendaylight.mdsal.binding.api.TransactionChain;
-import org.opendaylight.mdsal.binding.api.TransactionChainListener;
 import org.opendaylight.mdsal.binding.api.WriteTransaction;
 import org.opendaylight.mdsal.common.api.CommitInfo;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
+import org.opendaylight.mdsal.common.api.TransactionChain;
+import org.opendaylight.mdsal.common.api.TransactionChainListener;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvider;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceRegistration;
@@ -44,7 +44,7 @@ import org.opendaylight.sxp.controller.core.SxpConfigRpcServiceImpl;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.core.SxpRpcServiceImpl;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
-import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.Registration;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.controller.rev180629.SxpConfigControllerService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.BindingOrigins;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.BindingOriginsBuilder;
@@ -118,7 +118,7 @@ public class SxpControllerInstanceTest {
         controllerInstance.init();
 
         when(node.getNodeId()).thenReturn(new NodeId("1.1.1.1"));
-        Configuration.register(node);
+        Registration.register(node);
 
         datastoreAccess = prepareDataStore(dataBroker, readTransaction, writeTransaction);
     }
