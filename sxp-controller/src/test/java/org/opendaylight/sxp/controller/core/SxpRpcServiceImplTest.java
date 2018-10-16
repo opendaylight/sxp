@@ -37,7 +37,7 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionChainListener;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
-import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.SxpDomain;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.service.BindingDispatcher;
@@ -244,6 +244,11 @@ public class SxpRpcServiceImplTest {
         BindingOriginsConfig.INSTANCE.deleteConfiguration();
     }
 
+    @After
+    public void cleanRegistration() throws Exception {
+        NodesRegister.unRegister(sxpNode.getNodeId().getValue());
+    }
+
     private void initMasterDatabaseOperations(final Answer<?> readAnswer) {
         MockitoAnnotations.initMocks(this);
 
@@ -255,7 +260,7 @@ public class SxpRpcServiceImplTest {
         when(sxpNode.getNodeId()).thenReturn(NODE_ID);
         masterDatabase.initDBPropagatingListener(new BindingDispatcher(sxpNode), sxpDomain);
 
-        Configuration.register(sxpNode);
+        NodesRegister.register(sxpNode);
         service = new SxpRpcServiceImpl(dataBroker);
     }
 
@@ -386,7 +391,7 @@ public class SxpRpcServiceImplTest {
     public void testDeleteNode() throws Exception {
         initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
 
-        Configuration.unRegister(NODE_ID.getValue());
+        NodesRegister.unRegister(NODE_ID.getValue());
         RpcResult<DeleteNodeOutput> result = service.deleteNode(
                 new DeleteNodeInputBuilder().setNodeId(new NodeId("0.0.0.0")).build()).get();
         assertNotNull(result);
@@ -639,9 +644,9 @@ public class SxpRpcServiceImplTest {
     @Test
     public void testAddNode() throws Exception {
         initMasterDatabaseOperations(SxpRpcServiceImplTest.generalAnswer);
-        SxpNode addedNode = mock(SxpNode.class);
-        when(addedNode.getNodeId()).thenReturn(new NodeId("0.0.0.1"));
-        Configuration.register(addedNode);
+        final SxpNode added = mock(SxpNode.class);
+        when(added.getNodeId()).thenReturn(new NodeId("0.0.0.1"));
+        NodesRegister.register(added);
 
         final RpcResult<AddNodeOutput> result = service.addNode(
                 new AddNodeInputBuilder().setNodeId(NodeId.getDefaultInstance("0.0.0.1")).build()).get();
@@ -650,7 +655,8 @@ public class SxpRpcServiceImplTest {
         assertNotNull(result.getResult());
         assertTrue(result.getResult().isResult());
 
-        Configuration.unRegister(addedNode.getNodeId().getValue());
+        // teardown
+        NodesRegister.unRegister("0.0.0.1");
     }
 
     @Test
