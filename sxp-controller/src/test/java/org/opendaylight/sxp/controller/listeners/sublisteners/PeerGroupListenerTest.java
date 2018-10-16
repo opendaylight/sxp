@@ -29,7 +29,7 @@ import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
-import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpPeersBuilder;
@@ -49,7 +49,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({Configuration.class, DatastoreAccess.class})
+@PrepareForTest({NodesRegister.class, DatastoreAccess.class})
 public class PeerGroupListenerTest {
 
     private PeerGroupListener identityListener;
@@ -61,10 +61,10 @@ public class PeerGroupListenerTest {
         datastoreAccess = PowerMockito.mock(DatastoreAccess.class);
         identityListener = new PeerGroupListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
-        PowerMockito.mockStatic(Configuration.class);
-        PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
+        PowerMockito.mockStatic(NodesRegister.class);
+        PowerMockito.when(NodesRegister.getRegisteredNode(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(NodesRegister.register(any(SxpNode.class))).thenReturn(sxpNode);
+        PowerMockito.when(NodesRegister.unRegister(anyString())).thenReturn(sxpNode);
     }
 
     private DataObjectModification<SxpPeerGroup> getObjectModification(

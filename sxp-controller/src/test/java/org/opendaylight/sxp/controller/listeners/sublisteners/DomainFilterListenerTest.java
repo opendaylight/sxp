@@ -28,7 +28,7 @@ import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
-import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.FilterSpecific;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntries;
@@ -53,7 +53,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({Configuration.class, DatastoreAccess.class})
+@PrepareForTest({NodesRegister.class, DatastoreAccess.class})
 public class DomainFilterListenerTest {
 
     private DomainFilterListener identityListener;
@@ -66,10 +66,10 @@ public class DomainFilterListenerTest {
         identityListener = new DomainFilterListener(datastoreAccess);
         sxpNode = mock(SxpNode.class);
         when(sxpNode.addFilterToDomain(anyString(), any(DomainFilter.class))).thenReturn(true);
-        PowerMockito.mockStatic(Configuration.class);
-        PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
+        PowerMockito.mockStatic(NodesRegister.class);
+        PowerMockito.when(NodesRegister.getRegisteredNode(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(NodesRegister.register(any(SxpNode.class))).thenReturn(sxpNode);
+        PowerMockito.when(NodesRegister.getRegisteredNode(anyString())).thenReturn(sxpNode);
     }
 
     private DataObjectModification<DomainFilter> getObjectModification(

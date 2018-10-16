@@ -29,6 +29,7 @@ import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.io.ConfigLoader;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
@@ -197,7 +198,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
      */
     private <T> Future<RpcResult<T>> getResponse(String nodeId, final T response,
             Callable<RpcResult<T>> resultCallable) {
-        SxpNode node = Configuration.getRegisteredNode(nodeId);
+        final SxpNode node = NodesRegister.getRegisteredNode(nodeId);
         if (nodeId == null || (
                 datastoreAccess.readSynchronous(getIdentifier(nodeId), LogicalDatastoreType.CONFIGURATION) == null
                         && datastoreAccess.readSynchronous(getIdentifier(nodeId), LogicalDatastoreType.OPERATIONAL)
@@ -215,7 +216,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
      * @return DatastoreAccess associated with SxpNode or default if nothing found
      */
     private DatastoreAccess getDatastoreAccess(String nodeId) {
-        SxpNode node = Configuration.getRegisteredNode(nodeId);
+        final SxpNode node = NodesRegister.getRegisteredNode(nodeId);
         if (node instanceof SxpDatastoreNode) {
             return ((SxpDatastoreNode) node).getDatastoreAccess();
         }
@@ -228,7 +229,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
      * @return DatastoreAccess associated with SxpNode or default if nothing found
      */
     private DatastoreAccess getDatastoreAccess(String nodeId, String domainName) {
-        SxpNode node = Configuration.getRegisteredNode(nodeId);
+        SxpNode node = NodesRegister.getRegisteredNode(nodeId);
         if (node instanceof SxpDatastoreNode && Objects.nonNull(node.getDomain(domainName)) && node.getDomain(
                 domainName).getMasterDatabase() instanceof MasterDatastoreImpl) {
             return ((MasterDatastoreImpl) node.getDomain(domainName).getMasterDatabase()).getDatastoreAccess();
@@ -856,7 +857,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                                         nodeId))).augmentation(SxpNodeIdentity.class), identityBuilder.build(),
                         getDatastoreType(input.getConfigPersistence()), false));
                 if (output.isResult())
-                    for (int i = 0; Configuration.getRegisteredNode(nodeId) != null && i < 10; i++)
+                    for (int i = 0; NodesRegister.getRegisteredNode(nodeId) != null && i < 10; i++)
                         Thread.sleep(100);
             }
             return RpcResultBuilder.success(output.build()).build();

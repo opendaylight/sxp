@@ -34,7 +34,7 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
-import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
@@ -58,7 +58,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({Configuration.class, DatastoreAccess.class})
+@PrepareForTest({NodesRegister.class, DatastoreAccess.class})
 public class MasterDatabaseListenerTest {
 
     private MasterDatabaseListener identityListener;
@@ -83,10 +83,10 @@ public class MasterDatabaseListenerTest {
                 .child(SxpDomain.class, new SxpDomainKey(SxpNode.DEFAULT_DOMAIN))
                 .child(MasterDatabase.class)), any(LogicalDatastoreType.class))).thenReturn(
                 new MasterDatabaseBuilder().setMasterDatabaseBinding(new ArrayList<>()).build());
-        PowerMockito.mockStatic(Configuration.class);
-        PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
+        PowerMockito.mockStatic(NodesRegister.class);
+        PowerMockito.when(NodesRegister.getRegisteredNode(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(NodesRegister.register(any(SxpNode.class))).thenReturn(sxpNode);
+        PowerMockito.when(NodesRegister.unRegister(anyString())).thenReturn(sxpNode);
     }
 
     private DataObjectModification<MasterDatabase> getObjectModification(MasterDatabase before, MasterDatabase after) {
