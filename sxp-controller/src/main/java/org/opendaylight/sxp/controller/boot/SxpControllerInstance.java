@@ -16,13 +16,16 @@ import java.util.List;
 import java.util.Map;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.DataTreeChangeListener;
+import org.opendaylight.mdsal.binding.api.RpcProviderService;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvider;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceRegistration;
 import org.opendaylight.mdsal.singleton.common.api.ServiceGroupIdentifier;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
+import org.opendaylight.sxp.controller.core.SxpConfigRpcServiceImpl;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
+import org.opendaylight.sxp.controller.core.SxpRpcServiceImpl;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.ConnectionTemplateListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.ConnectionsListener;
@@ -32,45 +35,58 @@ import org.opendaylight.sxp.controller.listeners.sublisteners.FilterListener;
 import org.opendaylight.sxp.controller.listeners.sublisteners.PeerGroupListener;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.controller.rev180629.SxpConfigControllerService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.BindingOrigins;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.BindingOriginsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.OriginType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.binding.origins.BindingOrigin;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.binding.origins.BindingOriginBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.binding.origins.BindingOriginKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.SxpControllerService;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopologyBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyKey;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
+import org.opendaylight.yangtools.concepts.ObjectRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SxpControllerInstance implements ClusterSingletonService, AutoCloseable {
-
-    protected static final Logger LOG = LoggerFactory.getLogger(SxpControllerInstance.class);
-
     public static final ServiceGroupIdentifier IDENTIFIER =
             ServiceGroupIdentifier.create(SxpControllerInstance.class.getName());
+
+    private static final Logger LOG = LoggerFactory.getLogger(SxpControllerInstance.class);
     private static final InstanceIdentifier<BindingOrigins> BINDING_ORIGINS = InstanceIdentifier
             .builder(BindingOrigins.class).build();
+
+    private final List<ListenerRegistration<DataTreeChangeListener>> dataChangeListenerRegistrations = new ArrayList<>();
 
     private DataBroker dataBroker;
     private ClusterSingletonServiceProvider clusteringServiceProvider;
     private DatastoreAccess datastoreAccess;
     private ClusterSingletonServiceRegistration clusterServiceRegistration;
-    private final List<ListenerRegistration<DataTreeChangeListener>>
-            dataChangeListenerRegistrations = new ArrayList<>();
+    private RpcProviderService rpcProviderService;
+    private ObjectRegistration<SxpConfigRpcServiceImpl> sxpConfigRpcServiceRegistration;
+    private ObjectRegistration<SxpRpcServiceImpl> sxpRpcServiceRegistration;
 
     public void init() {
         Preconditions.checkNotNull(dataBroker);
         Preconditions.checkNotNull(clusteringServiceProvider);
+        Preconditions.checkNotNull(rpcProviderService);
         LOG.info("Registering into singleton clustering service");
         this.clusterServiceRegistration =
                 clusteringServiceProvider.registerClusterSingletonService(this);
         LOG.info("Clustering session initiated for {}", this.getClass().getSimpleName());
+    }
+
+    private void registerRpcServices() {
+        sxpRpcServiceRegistration = rpcProviderService.registerRpcImplementation(
+                SxpControllerService.class, new SxpRpcServiceImpl(dataBroker));
+        sxpConfigRpcServiceRegistration = rpcProviderService.registerRpcImplementation(
+                SxpConfigControllerService.class, new SxpConfigRpcServiceImpl(dataBroker));
     }
 
     /**
@@ -86,6 +102,18 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
 
         // ensure default binding origin list entries exist, but do not override them
         defaultOriginPriorities.forEach(this::initBindingOrigin);
+    }
+
+    private void initBindingOriginsInternal(DatastoreAccess datastoreAccess) {
+        // read binding origins from data-store
+        final BindingOrigins bindingOrigins = Preconditions.checkNotNull(datastoreAccess.readSynchronous(
+                BINDING_ORIGINS, LogicalDatastoreType.CONFIGURATION));
+        final List<BindingOrigin> originList = Preconditions.checkNotNull(bindingOrigins.getBindingOrigin());
+
+        // validate origin bindings
+        BindingOriginsConfig.validateBindingOrigins(originList);
+        // put origin bindings to internal map
+        BindingOriginsConfig.INSTANCE.addBindingOrigins(originList);
     }
 
     private void initBindingOrigin(OriginType originType, Integer priority) {
@@ -119,6 +147,9 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         LOG.warn("Instantiating {}", this.getClass().getSimpleName());
         this.datastoreAccess = DatastoreAccess.getInstance(dataBroker);
 
+        // register RPC services to be running on cluster owner only
+        registerRpcServices();
+
         // init binding origins with default values in data-store
         initBindingOriginsInDS(datastoreAccess, BindingOriginsConfig.DEFAULT_ORIGIN_PRIORITIES);
         // validate and init binding origins in internal map
@@ -145,22 +176,16 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         dataChangeListenerRegistrations.add(datastoreListener.register(dataBroker, LogicalDatastoreType.OPERATIONAL));
     }
 
-    private void initBindingOriginsInternal(DatastoreAccess datastoreAccess) {
-        // read binding origins from data-store
-        final BindingOrigins bindingOrigins = Preconditions.checkNotNull(datastoreAccess.readSynchronous(
-                BINDING_ORIGINS, LogicalDatastoreType.CONFIGURATION));
-        final List<BindingOrigin> originList = Preconditions.checkNotNull(bindingOrigins.getBindingOrigin());
-
-        // validate origin bindings
-        BindingOriginsConfig.validateBindingOrigins(originList);
-        // put origin bindings to internal map
-        BindingOriginsConfig.INSTANCE.addBindingOrigins(originList);
+    private void closeRpcServices() {
+        sxpRpcServiceRegistration.close();
+        sxpConfigRpcServiceRegistration.close();
     }
 
     @Override
     public synchronized ListenableFuture<Void> closeServiceInstance() {
         LOG.warn("Clustering provider closed service for {}", this.getClass().getSimpleName());
-        dataChangeListenerRegistrations.forEach(ListenerRegistration<DataTreeChangeListener>::close);
+        closeRpcServices();
+        dataChangeListenerRegistrations.forEach(ListenerRegistration::close);
         dataChangeListenerRegistrations.clear();
         Configuration.getNodes().forEach(n -> {
             if (n instanceof SxpDatastoreNode) {
@@ -187,20 +212,15 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         }
     }
 
-    public DataBroker getDataBroker() {
-        return dataBroker;
-    }
-
     public void setDataBroker(DataBroker dataBroker) {
         this.dataBroker = dataBroker;
-    }
-
-    public ClusterSingletonServiceProvider getClusteringServiceProvider() {
-        return clusteringServiceProvider;
     }
 
     public void setClusteringServiceProvider(ClusterSingletonServiceProvider clusteringServiceProvider) {
         this.clusteringServiceProvider = clusteringServiceProvider;
     }
 
+    public void setRpcProviderService(RpcProviderService rpcProviderService) {
+        this.rpcProviderService = rpcProviderService;
+    }
 }
