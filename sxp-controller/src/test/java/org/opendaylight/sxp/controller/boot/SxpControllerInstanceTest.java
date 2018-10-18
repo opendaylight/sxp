@@ -23,6 +23,7 @@ import org.junit.runner.RunWith;
 import org.opendaylight.mdsal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.DataTreeIdentifier;
+import org.opendaylight.mdsal.binding.api.RpcProviderService;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvider;
@@ -56,6 +57,7 @@ public class SxpControllerInstanceTest {
     private SxpDatastoreNode node;
     private DataBroker dataBroker;
     private ListenerRegistration listenerRegistration;
+    private RpcProviderService rpcProviderService;
 
     @Before
     public void init() {
@@ -81,11 +83,13 @@ public class SxpControllerInstanceTest {
                 serviceRegistration);
         dataBroker = mock(DataBroker.class);
         listenerRegistration = mock(ListenerRegistration.class);
+        rpcProviderService = mock(RpcProviderService.class);
         when(dataBroker.registerDataTreeChangeListener(any(DataTreeIdentifier.class),
                 any(ClusteredDataTreeChangeListener.class))).thenReturn(listenerRegistration);
         controllerInstance = new SxpControllerInstance();
         controllerInstance.setClusteringServiceProvider(serviceProvider);
         controllerInstance.setDataBroker(dataBroker);
+        controllerInstance.setRpcProviderService(rpcProviderService);
         controllerInstance.init();
         node = mock(SxpDatastoreNode.class);
         when(node.getNodeId()).thenReturn(new NodeId("1.1.1.1"));
