@@ -171,7 +171,6 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     private final ListeningExecutorService executor = MoreExecutors.listeningDecorator(
             ThreadsWorker.generateExecutor(1, "SXP-RPC"));
     private static final Logger LOG = LoggerFactory.getLogger(SxpRpcServiceImpl.class.getName());
-
     /**
      * @param requestedNodeId NodeId to be converted
      * @return String representation of NodeId
