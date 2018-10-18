@@ -20,21 +20,27 @@ import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Matchers;
 import org.opendaylight.mdsal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.DataTreeIdentifier;
+import org.opendaylight.mdsal.binding.api.RpcProviderService;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceProvider;
 import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceRegistration;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
+import org.opendaylight.sxp.controller.core.SxpConfigRpcServiceImpl;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
+import org.opendaylight.sxp.controller.core.SxpRpcServiceImpl;
 import org.opendaylight.sxp.core.BindingOriginsConfig;
 import org.opendaylight.sxp.core.Configuration;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.controller.rev180629.SxpConfigControllerService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.BindingOrigins;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.BindingOriginsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.binding.origins.BindingOrigin;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.config.rev180611.binding.origins.BindingOriginBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.SxpControllerService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.DataObject;
@@ -56,6 +62,7 @@ public class SxpControllerInstanceTest {
     private SxpDatastoreNode node;
     private DataBroker dataBroker;
     private ListenerRegistration listenerRegistration;
+    private RpcProviderService rpcProviderService;
 
     @Before
     public void init() {
@@ -81,11 +88,13 @@ public class SxpControllerInstanceTest {
                 serviceRegistration);
         dataBroker = mock(DataBroker.class);
         listenerRegistration = mock(ListenerRegistration.class);
+        rpcProviderService = mock(RpcProviderService.class);
         when(dataBroker.registerDataTreeChangeListener(any(DataTreeIdentifier.class),
                 any(ClusteredDataTreeChangeListener.class))).thenReturn(listenerRegistration);
         controllerInstance = new SxpControllerInstance();
         controllerInstance.setClusteringServiceProvider(serviceProvider);
         controllerInstance.setDataBroker(dataBroker);
+        controllerInstance.setRpcProviderService(rpcProviderService);
         controllerInstance.init();
         node = mock(SxpDatastoreNode.class);
         when(node.getNodeId()).thenReturn(new NodeId("1.1.1.1"));
@@ -117,6 +126,10 @@ public class SxpControllerInstanceTest {
                 eq(LogicalDatastoreType.OPERATIONAL));
         verify(dataBroker, atLeastOnce()).registerDataTreeChangeListener(any(DataTreeIdentifier.class),
                 any(ClusteredDataTreeChangeListener.class));
+        verify(rpcProviderService).registerRpcImplementation(
+                Matchers.eq(SxpControllerService.class), any(SxpRpcServiceImpl.class));
+        verify(rpcProviderService).registerRpcImplementation(
+                eq(SxpConfigControllerService.class), any(SxpConfigRpcServiceImpl.class));
     }
 
     @Test
