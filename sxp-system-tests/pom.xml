@@ -6,10 +6,9 @@
     <version>0.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>ODL :: sxp :: ${project.artifactId}</name>
-    
+
     <modules>
         <module>restconf-client</module>
         <module>sxp-jst</module>
     </modules>
-
 </project>
