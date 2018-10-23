@@ -44,7 +44,7 @@ public class LinuxRoutingServiceTest {
                         .setNetmask(IpAddressBuilder.getDefaultInstance(netMask))
                         .setIpAddress(IpAddressBuilder.getDefaultInstance(virtualIp))
                         .build());
-        mockCommand("");
+        mockCommand("dummy0");
         mockCommand(0);
     }
 
@@ -132,39 +132,39 @@ public class LinuxRoutingServiceTest {
     @Test
     public void removeRouteForCurrentService_0() throws Exception {
         mockCommand(255);
-        Assert.assertFalse("Expected False as Routed was not removed by ifconfig, got",
+        Assert.assertFalse("Expected False as Routed was not removed by ip command, got",
                 service.removeRouteForCurrentService());
     }
 
     @Test
     public void removeRouteForCurrentService_1() throws Exception {
         mockCommand(0);
-        Assert.assertTrue("Expected True as Routed was removed by ifconfig, got",
+        Assert.assertTrue("Expected True as Routed was removed by ip command, got",
                 service.removeRouteForCurrentService());
     }
 
     @Test
     public void addRouteForCurrentService_0() throws Exception {
-        mockCommand("NO ENTRY in ifconfig");
+        mockCommand("");
         mockCommand(255);
-        Assert.assertFalse("Expected False as Routed is not in ifconfig and cannot be added, got",
+        Assert.assertFalse("Expected False as Routed is not in \"ip link show up\" and cannot be added, got",
                 service.addRouteForCurrentService());
     }
 
     @Test
     public void addRouteForCurrentService_1() throws Exception {
         String newLine = System.getProperty("line.separator");
-        mockCommand("eth42:0  Link encap:Ethernet  HWaddr 28:d2:44:e4:39:f3  " + newLine
-                + "          inet addr:1.2.3.4  Bcast:1.2.3.255  Mask:255.255.255.0" + newLine
-                + "          UP BROADCAST MULTICAST  MTU:1500  Metric:1" + newLine);
+        mockCommand("6: dummy0: <BROADCAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000"
+                + newLine
+                + "    link/ether 96:28:26:a5:28:1b brd ff:ff:ff:ff:ff:ff");
         mockCommand(255);
-        Assert.assertTrue("Expected True as Route is in ifconfig, got", service.addRouteForCurrentService());
+        Assert.assertTrue("Expected True as Route is in \"ip link show up\", got", service.addRouteForCurrentService());
         Assert.assertTrue("Expected True as Route was already created, got", service.addRouteForCurrentService());
     }
 
     @Test
     public void addRouteForCurrentService_2() throws Exception {
-        mockCommand("NO ENTRY in ifconfig");
+        mockCommand("");
         mockCommand(0);
         Assert.assertTrue("Expected True as Route succesfully added, got", service.addRouteForCurrentService());
         Assert.assertTrue("Expected True as Route was already created, got", service.addRouteForCurrentService());
@@ -180,19 +180,23 @@ public class LinuxRoutingServiceTest {
     }
 
     @Test
-    public void createVirtualIpRegisteredMatch() throws Exception {
-        Assert.assertEquals("(.*)inet addr:1\\.2\\.3\\.4(.*)Bcast:(.*)Mask:255\\.255\\.255\\.0(.*)",
-                service.createVirtualIpRegisteredMatch());
+    public void createIfaceUnSetIpCmd() throws Exception {
+        Assert.assertEquals("sudo ip addr del 1.2.3.4/255.255.255.0 dev eth42:0", service.createIfaceUnSetIpCmd());
     }
 
     @Test
-    public void createIfaceDownCmd() throws Exception {
-        Assert.assertEquals("sudo ifconfig eth42:0 0.0.0.0 down", service.createIfaceDownCmd());
+    public void createIfaceSetDownCmd() throws Exception {
+        Assert.assertEquals("sudo ip link set dev eth42:0 down", service.createIfaceSetDownCmd());
     }
 
     @Test
-    public void createIfaceUpCmd() throws Exception {
-        Assert.assertEquals("sudo ifconfig eth42:0 1.2.3.4 netmask 255.255.255.0 up", service.createIfaceUpCmd());
+    public void createIfaceSetIpCmd() throws Exception {
+        Assert.assertEquals("sudo ip addr add 1.2.3.4/255.255.255.0 dev eth42:0", service.createIfaceSetIpCmd());
+    }
+
+    @Test
+    public void createIfaceSetUpCmd() throws Exception {
+        Assert.assertEquals("sudo ip link set dev eth42:0 up", service.createIfaceSetUpCmd());
     }
 
     @Test
