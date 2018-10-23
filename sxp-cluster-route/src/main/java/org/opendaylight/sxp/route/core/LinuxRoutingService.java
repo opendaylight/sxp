@@ -121,7 +121,7 @@ public class LinuxRoutingService implements Routing {
 
     @Override
     public synchronized boolean removeRouteForCurrentService() {
-        boolean result = executeCommandRC(createIfaceDownCmd()) == 0;
+        boolean result = (executeCommandRC(createIfaceUnSetIpCmd()) == 0 && executeCommandRC(createIfaceSetDownCmd()) == 0);
         if (result) {
             isRouteActive = false;
         }
@@ -129,24 +129,31 @@ public class LinuxRoutingService implements Routing {
     }
 
     /**
-     * @return Command for destroying virtual interface and ip-address
+     * @return Command for destroying virtual ip-address
      */
     @VisibleForTesting
-    String createIfaceDownCmd() {
-        return String.format("sudo ifconfig %s 0.0.0.0 down", interfaceName);
+    String createIfaceUnSetIpCmd() {
+        return String.format("sudo ip addr del %s/%s dev %s",
+                addressToString(virtualIp), addressToString(netmask), interfaceName);
+    }
+
+    /**
+     * @return Command for setting virtual interface down
+     */
+    @VisibleForTesting
+    String createIfaceSetDownCmd() {
+        return String.format("sudo ip link set dev %s down", interfaceName);
     }
 
     @Override
     public synchronized boolean addRouteForCurrentService() {
         if (isRouteActive) {
             return true;
-        } else if (executeCommand("sudo ifconfig " + interfaceName).replace(System.getProperty("line.separator"), "")
-                .matches(createVirtualIpRegisteredMatch())) {
+        } else if (!executeCommand("sudo ip link show up " + interfaceName).isEmpty()) {
             isRouteActive = true;
             return (true);
         }
-        isRouteActive = (executeCommandRC(createIfaceUpCmd()) == 0);
-        return (isRouteActive);
+        return (executeCommandRC(createIfaceSetIpCmd()) == 0 && executeCommandRC(createIfaceSetUpCmd()) == 0);
     }
 
     @Override
@@ -155,12 +162,20 @@ public class LinuxRoutingService implements Routing {
     }
 
     /**
-     * @return Command for creating virtual interface and ip-address
+     * @return Command for creating virtual ip-address
      */
     @VisibleForTesting
-    String createIfaceUpCmd() {
-        return String.format("sudo ifconfig %s %s netmask %s up", interfaceName, addressToString(virtualIp),
-                addressToString(netmask));
+    String createIfaceSetIpCmd() {
+        return String.format("sudo ip addr add %s/%s dev %s",
+                addressToString(virtualIp), addressToString(netmask), interfaceName);
+    }
+
+    /**
+     * @return Command for setting virtual interface up
+     */
+    @VisibleForTesting
+    String createIfaceSetUpCmd() {
+        return String.format("sudo ip link set dev %s up", interfaceName);
     }
 
     /**
@@ -171,16 +186,6 @@ public class LinuxRoutingService implements Routing {
         // TODO: Replace by specific ip addresses
         return String.format("sudo arping -q -c 1 -S %s -i %s -B", addressToString(virtualIp),
                 interfaceName.split(":")[0]);
-    }
-
-    /**
-     * @return Regex match for testing if route is active
-     */
-    @VisibleForTesting
-    String createVirtualIpRegisteredMatch() {
-        return String.format("(.*)inet addr:%s(.*)Bcast:(.*)Mask:%s(.*)",
-                addressToString(virtualIp).replaceAll("\\.", "\\\\."),
-                addressToString(netmask).replaceAll("\\.", "\\\\."));
     }
 
     @Override
