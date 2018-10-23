@@ -19,5 +19,4 @@
         <module>restconf-client</module>
         <module>sxp-jst</module>
     </modules>
-
 </project>
