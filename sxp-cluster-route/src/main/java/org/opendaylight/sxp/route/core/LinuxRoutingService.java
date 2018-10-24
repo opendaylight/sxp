@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.route.core;
 
 import static org.opendaylight.sxp.route.util.RouteUtil.addressToString;
@@ -121,7 +120,7 @@ public class LinuxRoutingService implements Routing {
 
     @Override
     public synchronized boolean removeRouteForCurrentService() {
-        boolean result = executeCommandRC(createIfaceDownCmd()) == 0;
+        boolean result = (executeCommandRC(createIfaceUnSetIpCmd()) == 0);
         if (result) {
             isRouteActive = false;
         }
@@ -132,21 +131,20 @@ public class LinuxRoutingService implements Routing {
      * @return Command for destroying virtual interface and ip-address
      */
     @VisibleForTesting
-    String createIfaceDownCmd() {
-        return String.format("sudo ifconfig %s 0.0.0.0 down", interfaceName);
+    String createIfaceUnSetIpCmd() {
+        return String.format("sudo ip addr del %s/%s dev %s",
+                addressToString(virtualIp), addressToString(netmask), interfaceName);
     }
 
     @Override
     public synchronized boolean addRouteForCurrentService() {
         if (isRouteActive) {
             return true;
-        } else if (executeCommand("sudo ifconfig " + interfaceName).replace(System.getProperty("line.separator"), "")
-                .matches(createVirtualIpRegisteredMatch())) {
+        } else if (executeCommand("sudo ip addr show").contains(addressToString(virtualIp))) {
             isRouteActive = true;
             return (true);
         }
-        isRouteActive = (executeCommandRC(createIfaceUpCmd()) == 0);
-        return (isRouteActive);
+        return (executeCommandRC(createIfaceSetIpCmd()) == 0);
     }
 
     @Override
@@ -158,9 +156,9 @@ public class LinuxRoutingService implements Routing {
      * @return Command for creating virtual interface and ip-address
      */
     @VisibleForTesting
-    String createIfaceUpCmd() {
-        return String.format("sudo ifconfig %s %s netmask %s up", interfaceName, addressToString(virtualIp),
-                addressToString(netmask));
+    String createIfaceSetIpCmd() {
+        return String.format("sudo ip addr add %s/%s dev %s",
+                addressToString(virtualIp), addressToString(netmask), interfaceName);
     }
 
     /**

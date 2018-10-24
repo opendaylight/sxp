@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.route.core;
 
 import static org.opendaylight.sxp.route.util.RouteUtil.addressToString;
@@ -44,7 +43,7 @@ public class LinuxRoutingServiceTest {
                         .setNetmask(IpAddressBuilder.getDefaultInstance(netMask))
                         .setIpAddress(IpAddressBuilder.getDefaultInstance(virtualIp))
                         .build());
-        mockCommand("");
+        mockCommand(virtualIp);
         mockCommand(0);
     }
 
@@ -147,18 +146,15 @@ public class LinuxRoutingServiceTest {
     public void addRouteForCurrentService_0() throws Exception {
         mockCommand("NO ENTRY in ifconfig");
         mockCommand(255);
-        Assert.assertFalse("Expected False as Routed is not in ifconfig and cannot be added, got",
+        Assert.assertFalse("Expected False as Routed is not in \"ip addr show\" and cannot be added, got",
                 service.addRouteForCurrentService());
     }
 
     @Test
     public void addRouteForCurrentService_1() throws Exception {
-        String newLine = System.getProperty("line.separator");
-        mockCommand("eth42:0  Link encap:Ethernet  HWaddr 28:d2:44:e4:39:f3  " + newLine
-                + "          inet addr:1.2.3.4  Bcast:1.2.3.255  Mask:255.255.255.0" + newLine
-                + "          UP BROADCAST MULTICAST  MTU:1500  Metric:1" + newLine);
+        mockCommand(virtualIp);
         mockCommand(255);
-        Assert.assertTrue("Expected True as Route is in ifconfig, got", service.addRouteForCurrentService());
+        Assert.assertTrue("Expected True as Route is in \"ip addr show\", got", service.addRouteForCurrentService());
         Assert.assertTrue("Expected True as Route was already created, got", service.addRouteForCurrentService());
     }
 
@@ -180,19 +176,13 @@ public class LinuxRoutingServiceTest {
     }
 
     @Test
-    public void createVirtualIpRegisteredMatch() throws Exception {
-        Assert.assertEquals("(.*)inet addr:1\\.2\\.3\\.4(.*)Bcast:(.*)Mask:255\\.255\\.255\\.0(.*)",
-                service.createVirtualIpRegisteredMatch());
+    public void createIfaceUnSetIpCmd() throws Exception {
+        Assert.assertEquals("sudo ip addr del 1.2.3.4/255.255.255.0 dev dummy0", service.createIfaceUnSetIpCmd());
     }
 
     @Test
-    public void createIfaceDownCmd() throws Exception {
-        Assert.assertEquals("sudo ifconfig eth42:0 0.0.0.0 down", service.createIfaceDownCmd());
-    }
-
-    @Test
-    public void createIfaceUpCmd() throws Exception {
-        Assert.assertEquals("sudo ifconfig eth42:0 1.2.3.4 netmask 255.255.255.0 up", service.createIfaceUpCmd());
+    public void createIfaceSetIpCmd() throws Exception {
+        Assert.assertEquals("sudo ip addr add 1.2.3.4/255.255.255.0 dev dummy0", service.createIfaceSetIpCmd());
     }
 
     @Test
