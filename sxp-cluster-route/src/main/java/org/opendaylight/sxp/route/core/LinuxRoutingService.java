@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.route.core;
 
 import static org.opendaylight.sxp.route.util.RouteUtil.addressToString;
@@ -121,7 +120,7 @@ public class LinuxRoutingService implements Routing {
 
     @Override
     public synchronized boolean removeRouteForCurrentService() {
-        boolean result = (executeCommandRC(createIfaceSetDownCmd()) == 0 && executeCommandRC(createIfaceUnSetIpCmd()) == 0);
+        boolean result = (executeCommandRC(createIfaceUnSetIpCmd()) == 0);
         if (result) {
             isRouteActive = false;
         }
@@ -137,23 +136,15 @@ public class LinuxRoutingService implements Routing {
                 addressToString(virtualIp), addressToString(netmask), interfaceName);
     }
 
-    /**
-     * @return Command for setting virtual interface down
-     */
-    @VisibleForTesting
-    String createIfaceSetDownCmd() {
-        return String.format("sudo ip link set dev %s down", interfaceName);
-    }
-
     @Override
     public synchronized boolean addRouteForCurrentService() {
         if (isRouteActive) {
             return true;
-        } else if (!executeCommand("sudo ip link show up " + interfaceName).isEmpty()) {
+        } else if (executeCommand("sudo ip addr show").contains(addressToString(virtualIp))) {
             isRouteActive = true;
             return (true);
         }
-        return (executeCommandRC(createIfaceSetIpCmd()) == 0 && executeCommandRC(createIfaceSetUpCmd()) == 0);
+        return (executeCommandRC(createIfaceSetIpCmd()) == 0);
     }
 
     @Override
@@ -168,14 +159,6 @@ public class LinuxRoutingService implements Routing {
     String createIfaceSetIpCmd() {
         return String.format("sudo ip addr add %s/%s dev %s",
                 addressToString(virtualIp), addressToString(netmask), interfaceName);
-    }
-
-    /**
-     * @return Command for setting virtual interface up
-     */
-    @VisibleForTesting
-    String createIfaceSetUpCmd() {
-        return String.format("sudo ip link set dev %s up", interfaceName);
     }
 
     /**

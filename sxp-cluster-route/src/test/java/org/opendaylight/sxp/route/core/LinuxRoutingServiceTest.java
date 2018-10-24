@@ -5,7 +5,6 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.opendaylight.sxp.route.core;
 
 import static org.opendaylight.sxp.route.util.RouteUtil.addressToString;
@@ -44,7 +43,7 @@ public class LinuxRoutingServiceTest {
                         .setNetmask(IpAddressBuilder.getDefaultInstance(netMask))
                         .setIpAddress(IpAddressBuilder.getDefaultInstance(virtualIp))
                         .build());
-        mockCommand("dummy0");
+        mockCommand(virtualIp);
         mockCommand(0);
     }
 
@@ -147,18 +146,15 @@ public class LinuxRoutingServiceTest {
     public void addRouteForCurrentService_0() throws Exception {
         mockCommand("");
         mockCommand(255);
-        Assert.assertFalse("Expected False as Routed is not in \"ip link show up\" and cannot be added, got",
+        Assert.assertFalse("Expected False as Routed is not in \"ip addr show\" and cannot be added, got",
                 service.addRouteForCurrentService());
     }
 
     @Test
     public void addRouteForCurrentService_1() throws Exception {
-        String newLine = System.getProperty("line.separator");
-        mockCommand("6: dummy0: <BROADCAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000"
-                + newLine
-                + "    link/ether 96:28:26:a5:28:1b brd ff:ff:ff:ff:ff:ff");
+        mockCommand(virtualIp);
         mockCommand(255);
-        Assert.assertTrue("Expected True as Route is in \"ip link show up\", got", service.addRouteForCurrentService());
+        Assert.assertTrue("Expected True as Route is in \"ip addr show\", got", service.addRouteForCurrentService());
         Assert.assertTrue("Expected True as Route was already created, got", service.addRouteForCurrentService());
     }
 
@@ -185,18 +181,8 @@ public class LinuxRoutingServiceTest {
     }
 
     @Test
-    public void createIfaceSetDownCmd() throws Exception {
-        Assert.assertEquals("sudo ip link set dev dummy0 down", service.createIfaceSetDownCmd());
-    }
-
-    @Test
     public void createIfaceSetIpCmd() throws Exception {
         Assert.assertEquals("sudo ip addr add 1.2.3.4/255.255.255.0 dev dummy0", service.createIfaceSetIpCmd());
-    }
-
-    @Test
-    public void createIfaceSetUpCmd() throws Exception {
-        Assert.assertEquals("sudo ip link set dev dummy0 up", service.createIfaceSetUpCmd());
     }
 
     @Test
