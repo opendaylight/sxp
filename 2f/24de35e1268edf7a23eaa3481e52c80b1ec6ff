@@ -1,0 +1,7 @@
+Code-Review+2: Ivan Hrasko <ihrasko@cisco.com>
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Submitted-by: Ivan Hrasko <ihrasko@cisco.com>
+Submitted-at: Fri, 26 Oct 2018 08:42:50 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/76881
+Project: sxp
+Branch: refs/heads/master
