@@ -44,7 +44,7 @@ public class LinuxRoutingServiceTest {
                         .setNetmask(IpAddressBuilder.getDefaultInstance(netMask))
                         .setIpAddress(IpAddressBuilder.getDefaultInstance(virtualIp))
                         .build());
-        mockCommand("dummy0");
+        mockCommand("inet " + virtualIp);
         mockCommand(0);
     }
 
@@ -153,10 +153,7 @@ public class LinuxRoutingServiceTest {
 
     @Test
     public void addRouteForCurrentService_1() throws Exception {
-        String newLine = System.getProperty("line.separator");
-        mockCommand("6: dummy0: <BROADCAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000"
-                + newLine
-                + "    link/ether 96:28:26:a5:28:1b brd ff:ff:ff:ff:ff:ff");
+        mockCommand("inet " + virtualIp);
         mockCommand(255);
         Assert.assertTrue("Expected True as Route is in \"ip link show up\", got", service.addRouteForCurrentService());
         Assert.assertTrue("Expected True as Route was already created, got", service.addRouteForCurrentService());
