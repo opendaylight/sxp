@@ -42,7 +42,7 @@ public class LinuxRoutingServiceTest {
                         .setNetmask(IpAddressBuilder.getDefaultInstance(netMask))
                         .setIpAddress(IpAddressBuilder.getDefaultInstance(virtualIp))
                         .build());
-        mockCommand(virtualIp);
+        mockCommand("inet " + virtualIp);
         mockCommand(0);
     }
 
@@ -147,7 +147,7 @@ public class LinuxRoutingServiceTest {
 
     @Test
     public void addRouteForCurrentService_1() throws Exception {
-        mockCommand(virtualIp);
+        mockCommand("inet " + virtualIp);
         mockCommand(255);
         Assert.assertTrue("Expected True as Route is in \"ip addr show\", got", service.addRouteForCurrentService());
         Assert.assertTrue("Expected True as Route was already created, got", service.addRouteForCurrentService());

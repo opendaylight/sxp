@@ -140,7 +140,7 @@ public class LinuxRoutingService implements Routing {
     public synchronized boolean addRouteForCurrentService() {
         if (isRouteActive) {
             return true;
-        } else if (executeCommand("sudo ip addr show").contains(addressToString(virtualIp))) {
+        } else if (executeCommand("sudo ip addr show").contains("inet " + addressToString(virtualIp))) {
             isRouteActive = true;
             return (true);
         }
