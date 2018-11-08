@@ -10,6 +10,7 @@ package org.opendaylight.sxp.util.database;
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -156,10 +157,11 @@ public abstract class SxpDatabase implements SxpDatabaseInf {
         StringBuilder builder = new StringBuilder(this.getClass().getSimpleName() + "\n");
         List<SxpDatabaseBinding> databaseBindings = getBindings();
         if (!databaseBindings.isEmpty()) {
-            databaseBindings.forEach(b -> builder.append("\t")
-                    .append(b.getSecurityGroupTag().getValue())
+            databaseBindings.sort(Comparator.comparing(binding -> binding.getIpPrefix().stringValue()));
+            databaseBindings.forEach(binding -> builder.append("\t")
+                    .append(binding.getSecurityGroupTag().getValue())
                     .append(" ")
-                    .append(b.getIpPrefix().stringValue())
+                    .append(binding.getIpPrefix().stringValue())
                     .append("\n"));
         }
         return builder.toString();
