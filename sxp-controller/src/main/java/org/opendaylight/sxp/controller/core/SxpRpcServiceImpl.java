@@ -403,6 +403,10 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
             LOG.info("RpcAddDomainFilter event | {}", input.toString());
             if (input.getDomainName() != null && input.getSxpDomainFilter() != null
                     && input.getSxpDomainFilter().getFilterName() != null) {
+                if (NodesRegister.getRegisteredNode(nodeId).getDomain(input.getDomainName()) == null) {
+                    LOG.warn("RpcAddDomainFilter event | domain {} does not exist", input.getDomainName());
+                    return RpcResultBuilder.success(output.build()).build();
+                }
                 final DomainFilterBuilder filter = new DomainFilterBuilder(input.getSxpDomainFilter());
                 filter.setFilterSpecific(getFilterSpecific(filter.getFilterEntries()));
                 output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
@@ -424,6 +428,10 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
         return getResponse(nodeId, output.build(), () -> {
             LOG.info("RpcAddFilter event | {}", input.toString());
+            if (NodesRegister.getRegisteredNode(nodeId).getPeerGroup(input.getPeerGroupName()) == null) {
+                LOG.warn("RpcAddFilter event | peer group {} does not exist", input.getPeerGroupName());
+                return RpcResultBuilder.success(output.build()).build();
+            }
             final SxpFilterBuilder filter = new SxpFilterBuilder(input.getSxpFilter());
             filter.setFilterSpecific(getFilterSpecific(filter.getFilterEntries()));
             if (filter.getFilterSpecific() != null) {

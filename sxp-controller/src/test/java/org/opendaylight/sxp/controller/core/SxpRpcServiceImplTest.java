@@ -13,6 +13,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -102,9 +103,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.Filter
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.filter.entries.fields.filter.entries.AclFilterEntriesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.domain.filter.SxpDomainFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.filter.SxpFilterBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.SxpPeerGroupBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.group.fields.SxpFilter;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.SxpPeerGroups;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connection.templates.fields.connection.templates.ConnectionTemplate;
@@ -135,6 +136,8 @@ public class SxpRpcServiceImplTest {
     private SxpNode sxpNode;
     @Mock
     private SxpDomain sxpDomain;
+    @Mock
+    private SxpPeerGroup sxpPeerGroup;
     @Mock
     private DataBroker dataBroker;
     @Mock
@@ -185,7 +188,8 @@ public class SxpRpcServiceImplTest {
                 if (LogicalDatastoreType.OPERATIONAL == datastoreType) {
                     SxpPeerGroups sxpPeerGroup = mock(SxpPeerGroups.class);
                     when(sxpPeerGroup.getSxpPeerGroup())
-                            .thenReturn(Collections.singletonList(mock(SxpPeerGroup.class)));
+                            .thenReturn(Collections.singletonList(mock(
+                                    org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup.class)));
                     return FluentFutures.immediateFluentFuture(Optional.of(sxpPeerGroup));
                 }
             }
@@ -202,13 +206,25 @@ public class SxpRpcServiceImplTest {
                 }
             }
 
+            if (SxpNodeIdentity.class == identifier.getTargetType()) {
+                Iterable<PathArgument> pathArguments = identifier.getPathArguments();
+                for (PathArgument next : pathArguments) {
+                    if (Node.class == next.getType()) {
+                        NodeKey nodeKey = (NodeKey) ((IdentifiableItem) next).getKey();
+                        if (!"0.0.0.0".equals(nodeKey.getNodeId().getValue())) {
+                            return FluentFutures.immediateFluentFuture(Optional.empty());
+                        }
+                    }
+                }
+            }
+
             return FluentFutures.immediateFluentFuture(Optional.of(mock(identifier.getTargetType())));
         };
 
         SxpRpcServiceImplTest.addPeerGroupAnswer = invocation -> {
             LogicalDatastoreType datastoreType = invocation.getArgument(0);
             InstanceIdentifier<?> identifier = invocation.getArgument(1);
-            if (SxpPeerGroup.class == identifier.getTargetType()) {
+            if (org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.filter.rev150911.sxp.peer.groups.SxpPeerGroup.class == identifier.getTargetType()) {
                 if (LogicalDatastoreType.CONFIGURATION == datastoreType) {
                     return FluentFutures.immediateFluentFuture(Optional.empty());
                 }
@@ -260,6 +276,7 @@ public class SxpRpcServiceImplTest {
         when(sxpNode.getDomain(SxpNode.DEFAULT_DOMAIN)).thenReturn(sxpDomain);
         when(sxpNode.getWorker()).thenReturn(new ThreadsWorker());
         when(sxpNode.getNodeId()).thenReturn(NODE_ID);
+        when(sxpNode.getPeerGroup(eq(SxpNode.DEFAULT_DOMAIN))).thenReturn(sxpPeerGroup);
         masterDatabase.initDBPropagatingListener(new BindingDispatcher(sxpNode), sxpDomain);
 
         NodesRegister.register(sxpNode);
@@ -353,6 +370,7 @@ public class SxpRpcServiceImplTest {
         assertTrue(result.isSuccessful());
         assertNotNull(result.getResult());
         assertFalse(result.getResult().isResult());
+
         result =
                 service.addFilter(new AddFilterInputBuilder().setRequestedNode(new NodeId("0.0.0.0"))
                         .setPeerGroupName(SxpNode.DEFAULT_DOMAIN)
