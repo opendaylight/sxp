@@ -196,15 +196,10 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     private <T> ListenableFuture<RpcResult<T>> getResponse(final String nodeId, final T response,
             final Callable<RpcResult<T>> resultCallable) {
         final SxpNode node = NodesRegister.getRegisteredNode(nodeId);
-        if (nodeId == null || (
-                datastoreAccess.readSynchronous(getIdentifier(nodeId), LogicalDatastoreType.CONFIGURATION) == null
-                        && datastoreAccess.readSynchronous(getIdentifier(nodeId), LogicalDatastoreType.OPERATIONAL)
-                        == null)) {
-            return Futures.immediateFuture(RpcResultBuilder.success(response).build());
-        } else if (node != null) {
+        if (node != null) {
             return node.getWorker().executeTaskInSequence(resultCallable, ThreadsWorker.WorkerType.DEFAULT);
         } else {
-            return executor.submit(resultCallable);
+            return Futures.immediateFuture(RpcResultBuilder.success(response).build());
         }
     }
 

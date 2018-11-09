@@ -206,18 +206,6 @@ public class SxpRpcServiceImplTest {
                 }
             }
 
-            if (SxpNodeIdentity.class == identifier.getTargetType()) {
-                Iterable<PathArgument> pathArguments = identifier.getPathArguments();
-                for (PathArgument next : pathArguments) {
-                    if (Node.class == next.getType()) {
-                        NodeKey nodeKey = (NodeKey) ((IdentifiableItem) next).getKey();
-                        if (!"0.0.0.0".equals(nodeKey.getNodeId().getValue())) {
-                            return FluentFutures.immediateFluentFuture(Optional.empty());
-                        }
-                    }
-                }
-            }
-
             return FluentFutures.immediateFluentFuture(Optional.of(mock(identifier.getTargetType())));
         };
 
@@ -254,7 +242,6 @@ public class SxpRpcServiceImplTest {
 
             return FluentFutures.immediateFluentFuture(Optional.of(mock(identifier.getTargetType())));
         };
-
     }
 
     @AfterClass
