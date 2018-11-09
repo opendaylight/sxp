@@ -186,6 +186,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     }
 
     /**
+     * Execute task on SXP node if exists or return immediately.
+     *
      * @param nodeId         NodeId specifying Node where task will be executed
      * @param response       Response used for failure case
      * @param resultCallable Task representing request
@@ -195,15 +197,10 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     private <T> ListenableFuture<RpcResult<T>> getResponse(final String nodeId, final T response,
             final Callable<RpcResult<T>> resultCallable) {
         final SxpNode node = Configuration.getRegisteredNode(nodeId);
-        if (nodeId == null || (
-                datastoreAccess.readSynchronous(getIdentifier(nodeId), LogicalDatastoreType.CONFIGURATION) == null
-                        && datastoreAccess.readSynchronous(getIdentifier(nodeId), LogicalDatastoreType.OPERATIONAL)
-                        == null)) {
-            return Futures.immediateFuture(RpcResultBuilder.success(response).build());
-        } else if (node != null) {
+        if (node != null) {
             return node.getWorker().executeTaskInSequence(resultCallable, ThreadsWorker.WorkerType.DEFAULT);
         } else {
-            return executor.submit(resultCallable);
+            return Futures.immediateFuture(RpcResultBuilder.success(response).build());
         }
     }
 

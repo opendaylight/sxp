@@ -236,7 +236,6 @@ public class SxpRpcServiceImplTest {
 
             return Futures.immediateCheckedFuture(Optional.of(mock(identifier.getTargetType())));
         };
-
     }
 
     @AfterClass
