@@ -7,10 +7,10 @@
  */
 package org.opendaylight.sxp.util.inet;
 
-import java.lang.reflect.Constructor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

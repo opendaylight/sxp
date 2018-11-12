@@ -7,6 +7,7 @@
  */
 package org.opendaylight.sxp.test.utils.templates;
 
+import java.util.ArrayList;
 import org.opendaylight.sxp.util.time.TimeConv;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.Sgt;
@@ -15,8 +16,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.mast
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.PeerSequenceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.database.rev160308.peer.sequence.fields.peer.sequence.PeerBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
-
-import java.util.ArrayList;
 
 public final class BindingUtils {
 

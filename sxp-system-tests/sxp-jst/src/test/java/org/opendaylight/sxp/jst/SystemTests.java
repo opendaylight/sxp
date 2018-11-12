@@ -1,17 +1,17 @@
 package org.opendaylight.sxp.jst;
 
-import org.opendaylight.sxp.jst.client.SxpBindingRestconfClient;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeoutException;
 import javax.ws.rs.core.Response;
-import org.testng.annotations.Test;
+import org.opendaylight.sxp.jst.client.SxpBindingRestconfClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 import org.testng.reporters.Files;
 
 /**

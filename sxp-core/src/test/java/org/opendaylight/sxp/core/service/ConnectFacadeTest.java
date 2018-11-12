@@ -7,7 +7,6 @@
  */
 package org.opendaylight.sxp.core.service;
 
-import io.netty.bootstrap.ServerBootstrap;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
