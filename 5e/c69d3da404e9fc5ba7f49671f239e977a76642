@@ -1,0 +1,7 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Ivan Hrasko <ihrasko@cisco.com>
+Submitted-by: Ivan Hrasko <ihrasko@cisco.com>
+Submitted-at: Tue, 13 Nov 2018 09:11:04 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/77684
+Project: sxp
+Branch: refs/heads/stable/oxygen
