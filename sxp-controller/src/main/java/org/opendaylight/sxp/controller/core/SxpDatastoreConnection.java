@@ -29,8 +29,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnection {
+    private static final Logger LOG = LoggerFactory.getLogger(SxpDatastoreConnection.class);
 
     private final PortNumber port;
     private final IpAddress address;
@@ -151,6 +154,7 @@ public class SxpDatastoreConnection extends org.opendaylight.sxp.core.SxpConnect
 
     @Override
     public void shutdown() {
+        LOG.debug("Shutting down SXP datastore connection: {}", this);
         super.shutdown();
         Connection
                 connection =

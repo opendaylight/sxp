@@ -43,8 +43,11 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NodeIdentityListener implements ClusteredDataTreeChangeListener<SxpNodeIdentity> {
+    private static final Logger LOG = LoggerFactory.getLogger(NodeIdentityListener.class);
 
     public static final InstanceIdentifier<Topology>
             SUBSCRIBED_PATH =
@@ -95,6 +98,7 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
             final String nodeId = c.getRootPath().getRootIdentifier().firstKeyOf(Node.class).getNodeId().getValue();
             final DatastoreAccess nodesDatastoreAccess = getDatastoreAccess(nodeId);
             if (LogicalDatastoreType.CONFIGURATION.equals(c.getRootPath().getDatastoreType())) {
+                LOG.debug("Configuration change");
                 switch (c.getRootNode().getModificationType()) {
                     case WRITE:
                         if (c.getRootNode().getDataBefore() == null) {
@@ -125,6 +129,7 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                         break;
                 }
             } else {
+                LOG.debug("Operational change");
                 final SxpNode node = NodesRegister.getRegisteredNode(nodeId);
                 switch (c.getRootNode().getModificationType()) {
                     case WRITE:
