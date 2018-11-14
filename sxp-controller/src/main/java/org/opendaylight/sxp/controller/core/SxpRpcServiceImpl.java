@@ -359,8 +359,10 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                                     .child(DomainFilters.class)
                                     .child(DomainFilter.class,
                                             new DomainFilterKey(input.getFilterName(), input.getFilterSpecific()));
-                    output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
-                            || datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+                    final boolean result = datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
+                            || datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL);
+                    LOG.debug("Delete Domain Filter result A: {}", result);
+                    output.setResult(result);
                 } else {
                     final DomainFilters
                             domainFilters =
@@ -379,9 +381,11 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                                                     .child(DomainFilters.class)
                                                     .child(DomainFilter.class, new DomainFilterKey(f.getFilterName(),
                                                             f.getFilterSpecific()));
-                                    output.setResult(output.isResult() || datastoreAccess.checkAndDelete(identifier,
+                                    final boolean result = datastoreAccess.checkAndDelete(identifier,
                                             LogicalDatastoreType.CONFIGURATION) || datastoreAccess.checkAndDelete(
-                                            identifier, LogicalDatastoreType.OPERATIONAL));
+                                            identifier, LogicalDatastoreType.OPERATIONAL);
+                                    LOG.debug("Delete Domain Filter result B: {}", result);
+                                    output.setResult(output.isResult() || result);
                                 });
                     }
                 }
