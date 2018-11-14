@@ -653,6 +653,7 @@ public class SxpDomain implements AutoCloseable {
 
     @Override
     public void close() {
+        LOG.info("Closig SXP domain and its connections: {}", this);
         getConnections().forEach(SxpConnection::shutdown);
         try {
             sxpDatabase.close();
