@@ -168,7 +168,7 @@ import org.slf4j.LoggerFactory;
 
 public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
-    private final DatastoreAccess datastoreAccess;
+    private final DatastoreAccess serviceDatastoreAccess;
     private final ListeningExecutorService executor = MoreExecutors.listeningDecorator(
             ThreadsWorker.generateExecutor(1, "SXP-RPC"));
     private static final Logger LOG = LoggerFactory.getLogger(SxpRpcServiceImpl.class.getName());
@@ -182,7 +182,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     }
 
     public SxpRpcServiceImpl(final DataBroker broker) {
-        this.datastoreAccess = DatastoreAccess.getInstance(broker);
+        this.serviceDatastoreAccess = DatastoreAccess.getInstance(broker);
         LOG.info("RpcService started for {}", this.getClass().getSimpleName());
     }
 
@@ -214,7 +214,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
         if (node instanceof SxpDatastoreNode) {
             return ((SxpDatastoreNode) node).getDatastoreAccess();
         }
-        return datastoreAccess;
+        return serviceDatastoreAccess;
     }
 
     /**
@@ -477,8 +477,8 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                                 .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
                                 .child(ConnectionTemplates.class)
                                 .child(ConnectionTemplate.class, new ConnectionTemplateKey(input.getTemplatePrefix()));
-                output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
-                        || datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
+                output.setResult(serviceDatastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION)
+                        || serviceDatastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL));
             }
             return RpcResultBuilder.success(output.build()).build();
         });
@@ -542,7 +542,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
     @Override
     public void close() {
         executor.shutdown();
-        datastoreAccess.close();
+        serviceDatastoreAccess.close();
     }
 
     @Override
@@ -665,7 +665,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                     && input.getTemplatePrefix() != null) {
                 final ConnectionTemplateBuilder builder = new ConnectionTemplateBuilder(input);
 
-                output.setResult(datastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
+                output.setResult(serviceDatastoreAccess.checkAndPut(getIdentifier(nodeId).child(SxpDomains.class)
                                 .child(SxpDomain.class, new SxpDomainKey(input.getDomainName()))
                                 .child(ConnectionTemplates.class)
                                 .child(ConnectionTemplate.class, new ConnectionTemplateKey(builder.getTemplatePrefix())),
@@ -785,7 +785,7 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
 
                 final String nodeId = getNodeId(input.getNodeId());
                 final LogicalDatastoreType datastoreType = getDatastoreType(input.getConfigPersistence());
-                ConfigLoader.initTopologyNode(nodeId, getDatastoreType(input.getConfigPersistence()), datastoreAccess);
+                ConfigLoader.initTopologyNode(nodeId, getDatastoreType(input.getConfigPersistence()), serviceDatastoreAccess);
 
                 // put node to data-store
                 final boolean putSxpNodeToDs = putSxpNodeToDs(nodeId, buildSxpNode(input), datastoreType);
@@ -859,11 +859,11 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
             final LogicalDatastoreType datastoreType) {
         final InstanceIdentifier<SxpNodeIdentity> path = getIdentifier(nodeId);
         // do not allow replacing of existing node
-        if (datastoreAccess.readSynchronous(path, datastoreType) != null) {
+        if (serviceDatastoreAccess.readSynchronous(path, datastoreType) != null) {
             LOG.warn("SXP node " + nodeId + " has already exist");
             return false;
         }
-        return datastoreAccess.putSynchronous(path, node, datastoreType);
+        return serviceDatastoreAccess.putSynchronous(path, node, datastoreType);
     }
 
     @Override
