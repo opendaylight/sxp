@@ -10,8 +10,6 @@ package org.opendaylight.sxp.controller.boot;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import java.util.ArrayList;
-import java.util.List;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -25,13 +23,7 @@ import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.core.SxpRpcServiceImpl;
 import org.opendaylight.sxp.controller.listeners.NodeIdentityListener;
-import org.opendaylight.sxp.controller.listeners.sublisteners.ConnectionTemplateListener;
-import org.opendaylight.sxp.controller.listeners.sublisteners.ConnectionsListener;
-import org.opendaylight.sxp.controller.listeners.sublisteners.DomainFilterListener;
-import org.opendaylight.sxp.controller.listeners.sublisteners.DomainListener;
-import org.opendaylight.sxp.controller.listeners.sublisteners.FilterListener;
-import org.opendaylight.sxp.controller.listeners.sublisteners.MasterDatabaseListener;
-import org.opendaylight.sxp.controller.listeners.sublisteners.PeerGroupListener;
+import org.opendaylight.sxp.controller.listeners.sublisteners.*;
 import org.opendaylight.sxp.core.Configuration;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.controller.rev141002.SxpControllerService;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
@@ -43,6 +35,9 @@ import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SxpControllerInstance implements ClusterSingletonService, AutoCloseable {
     public static final ServiceGroupIdentifier IDENTIFIER =
@@ -121,12 +116,13 @@ public class SxpControllerInstance implements ClusterSingletonService, AutoClose
         closeRpcServices();
         dataChangeListenerRegistrations.forEach(ListenerRegistration::close);
         dataChangeListenerRegistrations.clear();
-        Configuration.getNodes().forEach(n -> {
-            if (n instanceof SxpDatastoreNode) {
-                ((SxpDatastoreNode) n).close();
+        Configuration.getNodes().forEach(node -> {
+            if (node instanceof SxpDatastoreNode) {
+                ((SxpDatastoreNode) node).close();
             } else {
-                n.shutdown();
+                node.shutdown();
             }
+            Configuration.unRegister(node.getNodeId().getValue());
         });
         datastoreAccess.close();
         return Futures.immediateFuture(null);
