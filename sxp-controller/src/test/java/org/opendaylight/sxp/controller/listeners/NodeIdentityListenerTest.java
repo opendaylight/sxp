@@ -35,7 +35,6 @@ import org.opendaylight.sxp.controller.core.DatastoreAccess;
 import org.opendaylight.sxp.controller.core.SxpDatastoreNode;
 import org.opendaylight.sxp.controller.listeners.spi.Listener;
 import org.opendaylight.sxp.core.Configuration;
-import org.opendaylight.sxp.core.NodesRegister;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.core.threading.ThreadsWorker;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
@@ -59,7 +58,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({NodesRegister.class, DatastoreAccess.class})
+@PrepareForTest({Configuration.class, DatastoreAccess.class})
 public class NodeIdentityListenerTest {
 
     private NodeIdentityListener identityListener;
@@ -77,16 +76,16 @@ public class NodeIdentityListenerTest {
         worker = new ThreadsWorker();
         sxpNode = mock(SxpDatastoreNode.class);
         when(sxpNode.getDatastoreAccess()).thenReturn(datastoreAccess);
-        PowerMockito.mockStatic(NodesRegister.class);
+        PowerMockito.mockStatic(Configuration.class);
         PowerMockito.mockStatic(DatastoreAccess.class);
         when(sxpNode.shutdown()).thenReturn(Futures.immediateFuture(false));
         when(sxpNode.start()).thenReturn(Futures.immediateFuture(true));
         when(sxpNode.getWorker()).thenReturn(worker);
         PowerMockito.when(DatastoreAccess.getInstance(any(DatastoreAccess.class))).thenReturn(datastoreAccess);
         PowerMockito.when(DatastoreAccess.getInstance(any(DataBroker.class))).thenReturn(mock(DatastoreAccess.class));
-        PowerMockito.when(NodesRegister.getRegisteredNode(anyString())).thenReturn(sxpNode);
-        PowerMockito.when(NodesRegister.register(any(SxpNode.class))).thenReturn(sxpNode);
-        PowerMockito.when(NodesRegister.unRegister(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(Configuration.getRegisteredNode(anyString())).thenReturn(sxpNode);
+        PowerMockito.when(Configuration.register(any(SxpNode.class))).thenReturn(sxpNode);
+        PowerMockito.when(Configuration.unRegister(anyString())).thenReturn(sxpNode);
     }
 
     @Test

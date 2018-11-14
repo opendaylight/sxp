@@ -5,6 +5,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.sxp.core;
 
 import static org.junit.Assert.assertTrue;
@@ -15,6 +16,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.capabilities.fields.Capabilities;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.CapabilityType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
@@ -49,6 +51,20 @@ public class ConfigurationTest {
         when(versionMock.getIntValue()).thenReturn(0);
         capabilities = Configuration.getCapabilities(versionMock);
         assertTrue(capabilities.getCapability().contains(CapabilityType.None));
+    }
+
+    @Test
+    public void testRegisterNode() {
+        SxpNode nodeMock = PowerMockito.mock(SxpNode.class);
+        String nodeIdString = "127.0.0.1";
+        NodeId nodeId = new NodeId(nodeIdString);
+        when(nodeMock.getNodeId()).thenReturn(nodeId);
+        Configuration.register(nodeMock);
+        Assert.assertEquals(1, Configuration.getNodes().size());
+        SxpNode registeredNode = Configuration.getRegisteredNode(nodeIdString);
+        Assert.assertEquals(registeredNode, nodeMock);
+        Configuration.unRegister(nodeIdString);
+        Assert.assertEquals(0, Configuration.getNodes().size());
     }
 
 }
