@@ -85,6 +85,7 @@ public final class DatastoreAccess implements AutoCloseable {
     private <T extends DataObject> boolean checkParams(
             final InstanceIdentifier<T> path, final LogicalDatastoreType logicalDatastoreType) {
         if (closed) {
+            LOG.error("DatastoreAccess is closed.");
             return false;
         }
         Preconditions.checkNotNull(bindingTransactionChain);

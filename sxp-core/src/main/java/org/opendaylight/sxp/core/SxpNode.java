@@ -1162,6 +1162,7 @@ public class SxpNode {
      * @return Removed SxpConnection
      */
     public SxpConnection removeConnection(InetSocketAddress destination) {
+        LOG.debug("Removing SXP connection: {}", this);
         SxpConnection connection = null;
         synchronized (sxpDomains) {
             for (SxpDomain domain : sxpDomains.values()) {
@@ -1246,6 +1247,7 @@ public class SxpNode {
      * Shutdown all Connections
      */
     public void shutdownConnections() {
+        LOG.debug("Shutting down all of SXP node: {} connections", this);
         getDomains().forEach(SxpDomain::close);
     }
 
@@ -1253,19 +1255,18 @@ public class SxpNode {
      * Administratively shutdown.
      */
     public ListenableFuture<Boolean> shutdown() {
-        SxpNode node = this;
+        LOG.debug("Shutting down SXP node: {}", this);
         return bindServerFuture.updateAndGet(listenableFuture -> {
             if (isEnabled() && (Objects.nonNull(listenableFuture))) {
                 if (!listenableFuture.isDone()) {
-                    return Futures.transformAsync(listenableFuture, input -> node.shutdown(), worker.getDefaultExecutorService());
+                    return Futures.transformAsync(listenableFuture, input -> this.shutdown(), worker.getDefaultExecutorService());
                 } else {
                     return worker.executeTask(() -> {
                         if (Objects.nonNull(serverChannel)) {
                             serverChannel.close().awaitUninterruptibly();
-                            LOG.info("{} Server stopped", node);
+                            LOG.info("{} Server stopped", this);
                         }
                         setRetryOpenTimerPeriod(0);
-                        shutdownConnections();
                         return isEnabled();
                     }, ThreadsWorker.WorkerType.DEFAULT);
                 }

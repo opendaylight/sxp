@@ -1461,10 +1461,11 @@ public class SxpConnection {
      * or purge learned Bindings if Listener mode
      */
     public synchronized void shutdown() {
+        LOG.debug("Shutting down SXP connection: {}", this);
         if (isModeListener()) {
             try {
-                getOwner().getSvcBindingHandler().processPurgeAllMessage(this).get();
                 LOG.info("{} PURGE bindings ", this);
+                getOwner().getSvcBindingHandler().processPurgeAllMessage(this).get();
             } catch (InterruptedException | ExecutionException e) {
                 LOG.error("{} Error PURGE bindings ", this, e);
             }

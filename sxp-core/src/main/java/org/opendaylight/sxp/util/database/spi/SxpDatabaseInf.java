@@ -43,14 +43,6 @@ public interface SxpDatabaseInf extends AutoCloseable {
     <T extends SxpBindingFields> List<SxpDatabaseBinding> addBinding(NodeId nodeId, List<T> bindings);
 
     /**
-     * Delete all binding learned from specified peer
-     *
-     * @param nodeId Specifying peer from which bindings will be removed
-     * @return List of bindings that were actually removed
-     */
-    List<SxpDatabaseBinding> deleteBindings(NodeId nodeId);
-
-    /**
      * Delete specified bindings from peer
      *
      * @param nodeId   Specifying peer from which bindings will be removed
@@ -59,6 +51,14 @@ public interface SxpDatabaseInf extends AutoCloseable {
      * @return List of bindings that were actually removed
      */
     <T extends SxpBindingFields> List<SxpDatabaseBinding> deleteBindings(NodeId nodeId, List<T> bindings);
+
+    /**
+     * Delete all binding learned from specified peer
+     *
+     * @param nodeId Specifying peer from which bindings will be removed
+     * @return List of bindings that were actually removed
+     */
+    List<SxpDatabaseBinding> deleteBindings(NodeId nodeId);
 
     /**
      * Delete all bindings from peer that were previously set for reconciliation
