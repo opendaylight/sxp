@@ -1463,8 +1463,8 @@ public class SxpConnection {
     public synchronized void shutdown() {
         if (isModeListener()) {
             try {
-                getOwner().getSvcBindingHandler().processPurgeAllMessage(this).get();
                 LOG.info("{} PURGE bindings ", this);
+                getOwner().getSvcBindingHandler().processPurgeAllMessage(this).get();
             } catch (InterruptedException | ExecutionException e) {
                 LOG.error("{} Error PURGE bindings ", this, e);
             }
