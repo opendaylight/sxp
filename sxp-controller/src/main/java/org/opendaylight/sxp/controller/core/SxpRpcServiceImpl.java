@@ -500,9 +500,13 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                                                 nodeId)))
                                 .build();
                 LOG.info("RpcDeleteNode event | {}", input.toString());
-                output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION));
-                output.setResult(datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL)
-                        || output.isResult());
+                final boolean config = datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.CONFIGURATION);
+                if (config) {
+                    output.setResult(true);
+                    return RpcResultBuilder.success(output.build()).build();
+                }
+                final boolean operational = datastoreAccess.checkAndDelete(identifier, LogicalDatastoreType.OPERATIONAL);
+                output.setResult(operational);
             }
             return RpcResultBuilder.success(output.build()).build();
         });
@@ -791,20 +795,6 @@ public class SxpRpcServiceImpl implements SxpControllerService, AutoCloseable {
                 final boolean putSxpNodeToDs = putSxpNodeToDs(nodeId, buildSxpNode(input), datastoreType);
                 if (!putSxpNodeToDs) {
                     LOG.error("Failed to put SXP node " + nodeId + " to data store");
-                    return RpcResultBuilder.success(output.build()).build();
-                }
-
-                // wait until node appears in configuration
-                for (int i = 0; NodesRegister.getRegisteredNode(nodeId) == null && i < 10; i++) {
-                    try {
-                        Thread.sleep(100);
-                    } catch (final InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        LOG.error("Failed to wait for SXP node " + nodeId + " to appear in configuration | {}", e);
-                    }
-                }
-                if (NodesRegister.getRegisteredNode(nodeId) == null) {
-                    LOG.error("SXP node " + nodeId + " is not present in configuration");
                     return RpcResultBuilder.success(output.build()).build();
                 }
 
