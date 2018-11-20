@@ -85,6 +85,7 @@ public final class DatastoreAccess implements AutoCloseable {
     private <T extends DataObject> boolean checkParams(
             final InstanceIdentifier<T> path, final LogicalDatastoreType logicalDatastoreType) {
         if (closed) {
+            LOG.debug("DatastoreAccess is closed.");
             return false;
         }
         Preconditions.checkNotNull(bindingTransactionChain);
@@ -103,11 +104,9 @@ public final class DatastoreAccess implements AutoCloseable {
      */
     public synchronized <T extends DataObject> FluentFuture<? extends CommitInfo> delete(
             final InstanceIdentifier<T> path, final LogicalDatastoreType logicalDatastoreType) {
+        LOG.debug("Delete {} {}", logicalDatastoreType, path.getTargetType());
         if (!checkParams(path, logicalDatastoreType)) {
             return FluentFutures.immediateCancelledFluentFuture();
-        }
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Delete {} {}", logicalDatastoreType, path.getTargetType());
         }
         synchronized (dataBroker) {
             final WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
@@ -127,13 +126,11 @@ public final class DatastoreAccess implements AutoCloseable {
      */
     public synchronized <T extends DataObject> FluentFuture<? extends CommitInfo> merge(
             final InstanceIdentifier<T> path, final T data, final LogicalDatastoreType logicalDatastoreType) {
+        LOG.debug("Merge {} {}", logicalDatastoreType, path.getTargetType());
         if (!checkParams(path, logicalDatastoreType)) {
             return FluentFutures.immediateCancelledFluentFuture();
         }
         Preconditions.checkNotNull(data);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Merge {} {}", logicalDatastoreType, path.getTargetType());
-        }
         final WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
         transaction.merge(logicalDatastoreType, path, data);
         return transaction.commit();
@@ -150,13 +147,11 @@ public final class DatastoreAccess implements AutoCloseable {
      */
     public synchronized <T extends DataObject> FluentFuture<? extends CommitInfo> put(
             final InstanceIdentifier<T> path, final T data, final LogicalDatastoreType logicalDatastoreType) {
+        LOG.debug("Put {} {}", logicalDatastoreType, path.getTargetType());
         if (!checkParams(path, logicalDatastoreType)) {
             return FluentFutures.immediateCancelledFluentFuture();
         }
         Preconditions.checkNotNull(data);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Put {} {}", logicalDatastoreType, path.getTargetType());
-        }
         final WriteTransaction transaction = bindingTransactionChain.newWriteOnlyTransaction();
         transaction.put(logicalDatastoreType, path, data);
         return transaction.commit();
@@ -172,6 +167,7 @@ public final class DatastoreAccess implements AutoCloseable {
      */
     public synchronized <T extends DataObject> FluentFuture<java.util.Optional<T>> read(
             final InstanceIdentifier<T> path, final LogicalDatastoreType logicalDatastoreType) {
+        LOG.debug("Read {}", path);
         if (!checkParams(path, logicalDatastoreType)) {
             return FluentFutures.immediateCancelledFluentFuture();
         }
@@ -191,6 +187,7 @@ public final class DatastoreAccess implements AutoCloseable {
      */
     public synchronized <T extends DataObject> boolean mergeSynchronous(
             final InstanceIdentifier<T> path, final T data, final LogicalDatastoreType logicalDatastoreType) {
+        LOG.debug("Merge {}", path);
         try {
             merge(path, data, logicalDatastoreType).get();
         } catch (final InterruptedException e) {
@@ -215,6 +212,7 @@ public final class DatastoreAccess implements AutoCloseable {
      */
     public synchronized <T extends DataObject> boolean putSynchronous(
             final InstanceIdentifier<T> path, final T data, final LogicalDatastoreType logicalDatastoreType) {
+        LOG.debug("Put synchronous {}", path);
         try {
             put(path, data, logicalDatastoreType).get();
         } catch (final InterruptedException e) {
@@ -238,6 +236,7 @@ public final class DatastoreAccess implements AutoCloseable {
      */
     public synchronized <T extends DataObject> boolean deleteSynchronous(
             final InstanceIdentifier<T> path, final LogicalDatastoreType logicalDatastoreType) {
+        LOG.debug("Delete synchronous {}", path);
         try {
             delete(path, logicalDatastoreType).get();
         } catch (final InterruptedException e) {
@@ -261,6 +260,7 @@ public final class DatastoreAccess implements AutoCloseable {
      */
     public synchronized <T extends DataObject> T readSynchronous(
             final InstanceIdentifier<T> path, final LogicalDatastoreType logicalDatastoreType) {
+        LOG.debug("Read synchronous {}", path);
         try {
             final Optional<T> result = read(path, logicalDatastoreType).get();
             return result.orElse(null);
@@ -293,6 +293,7 @@ public final class DatastoreAccess implements AutoCloseable {
     public synchronized <T extends DataObject> boolean checkAndPut(
             final InstanceIdentifier<T> identifier, final T data, final LogicalDatastoreType datastoreType,
             final boolean isUpdating) {
+        LOG.debug("Check and put {}", identifier);
         final boolean check = (isUpdating ?
                 readSynchronous(identifier, datastoreType) != null :
                 readSynchronous(identifier, datastoreType) == null);
@@ -318,6 +319,7 @@ public final class DatastoreAccess implements AutoCloseable {
     public synchronized <T extends DataObject> boolean checkAndMerge(
             final InstanceIdentifier<T> identifier, final T data, final LogicalDatastoreType datastoreType,
             final boolean isUpdating) {
+        LOG.debug("Check and merge {}", identifier);
         final boolean check = (isUpdating ?
                 readSynchronous(identifier, datastoreType) != null :
                 readSynchronous(identifier, datastoreType) == null);
@@ -336,6 +338,7 @@ public final class DatastoreAccess implements AutoCloseable {
      */
     public synchronized <T extends DataObject> boolean checkAndDelete(
             final InstanceIdentifier<T> identifier, final LogicalDatastoreType datastoreType) {
+        LOG.debug("Check and delete {}", identifier);
         if (readSynchronous(identifier, datastoreType) != null) {
             return !delete(identifier, datastoreType).isCancelled();
         }
@@ -356,6 +359,7 @@ public final class DatastoreAccess implements AutoCloseable {
      */
     public synchronized <T extends DataObject> boolean putIfNotExists(
             final InstanceIdentifier<T> identifier, final T data, final LogicalDatastoreType datastoreType) {
+        LOG.debug("Put if not exist {}", identifier);
         if (readSynchronous(identifier, datastoreType) != null) {
             LOG.warn("Node to be created {} has already exist", identifier);
             return false;
