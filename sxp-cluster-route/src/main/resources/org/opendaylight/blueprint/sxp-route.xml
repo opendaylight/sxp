@@ -30,18 +30,4 @@
         <argument ref="clusterSingletonServiceProvider"/>
         <argument ref="routeReactorZip"/>
     </bean>
-
-    <bean id="clusterSanityWatchdogInstance" destroy-method="close"
-          class="org.opendaylight.sxp.route.ClusterSanityWatchdogInstance">
-        <argument ref="dataBroker"/>
-        <argument ref="clusterSingletonServiceProvider"/>
-        <argument value="8"/>
-        <argument value="3"/>
-        <property name="services">
-            <list value-type="org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService">
-                <ref component-id="sxpClusterRouteManager"/>
-                <ref component-id="sxpControllerInstance"/>
-            </list>
-        </property>
-    </bean>
 </blueprint>
