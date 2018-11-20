@@ -5,8 +5,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
-package org.opendaylight.sxp.route.core;
+package org.opendaylight.sxp.controller.util.cluster;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -38,5 +37,4 @@ public class FollowerSyncStatusTaskFactoryTest {
         Assert.assertNotNull("Expected functional task, got",
                 taskFactory.createFollowerSyncStatusTask(datastoreAccess));
     }
-
 }

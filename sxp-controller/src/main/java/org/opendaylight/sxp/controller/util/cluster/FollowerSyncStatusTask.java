@@ -5,8 +5,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
-package org.opendaylight.sxp.route.core;
+package org.opendaylight.sxp.controller.util.cluster;
 
 import com.google.common.base.Preconditions;
 import java.util.Objects;
@@ -18,7 +17,7 @@ import org.opendaylight.sxp.util.time.SxpTimerTask;
 /**
  * Purpose: provides logic for checking if cluster nodes are healthy
  */
-public class FollowerSyncStatusTask extends SxpTimerTask<Boolean> {
+final class FollowerSyncStatusTask extends SxpTimerTask<Boolean> {
 
     private final DatastoreAccess datastoreAccess;
     private int datastoreConsequentFailCounter;
@@ -30,7 +29,7 @@ public class FollowerSyncStatusTask extends SxpTimerTask<Boolean> {
      * @param period          Value representing time in some Time unit
      * @param datastoreAccess way to readDS synchronously
      */
-    protected FollowerSyncStatusTask(int period, final DatastoreAccess datastoreAccess, final int consequentFailLimit) {
+    FollowerSyncStatusTask(int period, final DatastoreAccess datastoreAccess, final int consequentFailLimit) {
         super(period);
         this.datastoreAccess = Objects.requireNonNull(datastoreAccess);
         this.consequentFailLimit = consequentFailLimit;
