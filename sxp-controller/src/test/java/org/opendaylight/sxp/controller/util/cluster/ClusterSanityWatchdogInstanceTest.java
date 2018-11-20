@@ -5,10 +5,8 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+package org.opendaylight.sxp.controller.util.cluster;
 
-package org.opendaylight.sxp.route;
-
-import java.util.Collections;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,7 +50,7 @@ public class ClusterSanityWatchdogInstanceTest {
                 .thenReturn(serviceRegistration);
 
         watchdogInstance = new ClusterSanityWatchdogInstance(dataBroker, singletonServiceProvider, 1, 3);
-        watchdogInstance.setServices(Collections.singletonList(singletonService));
+        watchdogInstance.setService(singletonService);
     }
 
     private void setClusterHealth(boolean healty) {
@@ -113,5 +111,4 @@ public class ClusterSanityWatchdogInstanceTest {
         Mockito.timeout(TIMEOUT);
         Mockito.verify(singletonService, Mockito.never()).closeServiceInstance();
     }
-
 }

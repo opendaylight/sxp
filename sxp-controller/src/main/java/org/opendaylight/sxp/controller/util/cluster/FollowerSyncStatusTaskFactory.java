@@ -5,8 +5,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
-package org.opendaylight.sxp.route.core;
+package org.opendaylight.sxp.controller.util.cluster;
 
 import java.util.Objects;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
@@ -14,7 +13,7 @@ import org.opendaylight.sxp.controller.core.DatastoreAccess;
 /**
  * Purpose: create follower synchronization status tasks
  */
-public class FollowerSyncStatusTaskFactory {
+final class FollowerSyncStatusTaskFactory {
 
     private final int period;
     private final int consequentFailLimit;
@@ -23,7 +22,7 @@ public class FollowerSyncStatusTaskFactory {
      * @param period              repeat period [s]
      * @param consequentFailLimit max.amount of consequent DS read failures
      */
-    public FollowerSyncStatusTaskFactory(final int period, final int consequentFailLimit) {
+    FollowerSyncStatusTaskFactory(final int period, final int consequentFailLimit) {
         this.period = period;
         this.consequentFailLimit = consequentFailLimit;
     }
