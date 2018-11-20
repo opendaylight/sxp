@@ -5,8 +5,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
-package org.opendaylight.sxp.route.core;
+package org.opendaylight.sxp.controller.util.cluster;
 
 import java.util.Optional;
 import org.junit.Assert;
@@ -80,5 +79,4 @@ public class FollowerSyncStatusTaskTest {
         Assert.assertTrue("Expected healthy cluster, got condition", task.call());
         Assert.assertFalse("Expected isolated cluster, got healthy one", task.call());
     }
-
 }
