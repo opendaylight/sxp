@@ -19,7 +19,13 @@
         <property name="clusteringServiceProvider" ref="clusterSingletonServiceProviderRef"/>
         <property name="rpcProviderService" ref="rpcProviderServiceRef"/>
     </bean>
-    <!-- Services -->
-    <service ref="sxpControllerInstance"
-             interface="org.opendaylight.mdsal.singleton.common.api.ClusterSingletonService"/>
+
+    <bean id="clusterSanityWatchdogInstance" destroy-method="close"
+      class="org.opendaylight.sxp.controller.util.cluster.ClusterSanityWatchdogInstance">
+        <argument ref="dataBrokerRef"/>
+        <argument ref="clusterSingletonServiceProviderRef"/>
+        <argument value="8"/>
+        <argument value="3"/>
+        <property name="service" ref="sxpControllerInstance"/>
+    </bean>
 </blueprint>

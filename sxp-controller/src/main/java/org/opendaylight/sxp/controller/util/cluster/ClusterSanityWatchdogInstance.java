@@ -5,18 +5,14 @@
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+package org.opendaylight.sxp.controller.util.cluster;
 
-package org.opendaylight.sxp.route;
-
-import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -29,7 +25,6 @@ import org.opendaylight.mdsal.singleton.common.api.ClusterSingletonServiceRegist
 import org.opendaylight.mdsal.singleton.common.api.ServiceGroupIdentifier;
 import org.opendaylight.sxp.controller.boot.SxpControllerInstance;
 import org.opendaylight.sxp.controller.core.DatastoreAccess;
-import org.opendaylight.sxp.route.core.FollowerSyncStatusTaskFactory;
 import org.opendaylight.sxp.util.time.SxpTimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,19 +33,18 @@ import org.slf4j.LoggerFactory;
  * Purpose: provides workaround for closing {@link ClusterSingletonService}, if {@link ClusterSingletonServiceProvider} does not close them
  * TODO remove when cluster will always close its instances when switching
  */
-public class ClusterSanityWatchdogInstance implements AutoCloseable, ClusterSingletonService {
-
-    protected static final Logger LOG = LoggerFactory.getLogger(ClusterSanityWatchdogInstance.class);
+public final class ClusterSanityWatchdogInstance implements AutoCloseable, ClusterSingletonService {
+    private static final Logger LOG = LoggerFactory.getLogger(ClusterSanityWatchdogInstance.class);
 
     private final ListeningScheduledExecutorService scheduledExecutorService;
     private final FollowerSyncStatusTaskFactory taskFactory;
     private final AtomicBoolean isActive = new AtomicBoolean(false);
-    private final Set<ClusterSingletonService> singletonServices = Sets.newConcurrentHashSet();
     private final DataBroker dataBroker;
 
     private DatastoreAccess datastoreAccess;
     private ClusterSingletonServiceRegistration clusterServiceRegistration;
     private ListenableFuture<Boolean> timer = Futures.immediateCancelledFuture();
+    private ClusterSingletonService watchedService;
 
     /**
      * @param broker                          service providing access to Datastore
@@ -105,7 +99,7 @@ public class ClusterSanityWatchdogInstance implements AutoCloseable, ClusterSing
                     }
                 } else {
                     LOG.info("Detected cluster isolation condition");
-                    singletonServices.forEach(ClusterSingletonService::closeServiceInstance);
+                    watchedService.closeServiceInstance();
                 }
             }
 
@@ -123,10 +117,10 @@ public class ClusterSanityWatchdogInstance implements AutoCloseable, ClusterSing
     /**
      * Adds services that will be guarded by {@link ClusterSanityWatchdogInstance}
      *
-     * @param services services that will be added
+     * @param service service that will be added watched
      */
-    public void setServices(List<ClusterSingletonService> services) {
-        singletonServices.addAll(Objects.requireNonNull(services));
+    public void setService(ClusterSingletonService service) {
+        watchedService = service;
     }
 
     @Override
