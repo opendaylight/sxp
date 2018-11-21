@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.opendaylight.sxp</groupId>
     <artifactId>sxp-system-tests</artifactId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.1</version>
     <packaging>pom</packaging>
     <name>ODL :: sxp :: ${project.artifactId}</name>
     
