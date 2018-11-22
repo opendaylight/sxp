@@ -18,10 +18,8 @@
             <domain-name>global</domain-name>
             <connections xmlns="urn:opendaylight:sxp:node">
             </connections>
-            <master-database xmlns="urn:opendaylight:sxp:node"></master-database>
         </sxp-domain>
     </sxp-domains>
-
 
     <tcp-port xmlns="urn:opendaylight:sxp:node">64999</tcp-port>
     <description xmlns="urn:opendaylight:sxp:node">ODL SXP 1.1.5.1 Controller
@@ -35,5 +33,4 @@
     </security>
     <version xmlns="urn:opendaylight:sxp:node">version4</version>
     <source-ip xmlns="urn:opendaylight:sxp:node">127.0.0.1</source-ip>
-
 </node>
