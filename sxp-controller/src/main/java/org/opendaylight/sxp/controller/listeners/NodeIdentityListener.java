@@ -118,9 +118,6 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
                         nodesDatastoreAccess.checkAndDelete(
                                 c.getRootPath().getRootIdentifier().firstIdentifierOf(Node.class),
                                 LogicalDatastoreType.OPERATIONAL);
-                        if (!this.datastoreAccess.equals(nodesDatastoreAccess)) {
-                            nodesDatastoreAccess.close();
-                        }
                         break;
                 }
             } else {
@@ -193,5 +190,4 @@ public class NodeIdentityListener implements ClusteredDataTreeChangeListener<Sxp
             }
         });
     }
-
 }

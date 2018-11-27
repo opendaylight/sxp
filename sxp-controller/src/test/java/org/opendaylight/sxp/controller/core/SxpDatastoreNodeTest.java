@@ -14,7 +14,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyList;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,6 +34,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeI
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.TimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
@@ -68,8 +68,8 @@ public class SxpDatastoreNodeTest {
         when(nodeIdentity.getTcpPort()).thenReturn(new PortNumber(64999));
         when(nodeIdentity.getSourceIp()).thenReturn(IpAddressBuilder.getDefaultInstance(ID));
         when(nodeIdentity.getTcpPort()).thenReturn(PortNumber.getDefaultInstance("64999"));
+        when(nodeIdentity.getTimers()).thenReturn(new TimersBuilder().build());
         dispatcher = mock(BindingDispatcher.class);
-
         node = SxpDatastoreNode.createInstance(NodeIdConv.createNodeId(ID), datastoreAccess, nodeIdentity);
         node.addDomain(new SxpDomainBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN).build());
         PowerMockito.field(SxpNode.class, "serverChannel").set(node, mock(Channel.class));
@@ -120,12 +120,13 @@ public class SxpDatastoreNodeTest {
 
     @Test
     public void testShutdown() throws Exception {
-        node.shutdown();
-        verify(datastoreAccess, atLeastOnce()).close();
+        node.start();
+        assertTrue((Boolean) node.shutdown().get());
     }
 
     @Test
     public void testClose() throws Exception {
+        node.start();
         SxpConnection
                 connection =
                 node.addConnection(new ConnectionBuilder().setPeerAddress(IpAddressBuilder.getDefaultInstance("1.1.1.1"))
@@ -135,7 +136,6 @@ public class SxpDatastoreNodeTest {
                         .setVersion(Version.Version4)
                         .build(), SxpNode.DEFAULT_DOMAIN);
         node.close();
-        verify(datastoreAccess, atLeastOnce()).close();
         assertTrue(connection.isStateOff());
     }
 }
