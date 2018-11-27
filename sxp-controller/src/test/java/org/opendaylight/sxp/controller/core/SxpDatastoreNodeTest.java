@@ -39,6 +39,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeI
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.TimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
@@ -74,7 +75,7 @@ public class SxpDatastoreNodeTest {
         when(nodeIdentity.getTcpPort()).thenReturn(new PortNumber(64999));
         when(nodeIdentity.getSourceIp()).thenReturn(IpAddressBuilder.getDefaultInstance(ID));
         when(nodeIdentity.getTcpPort()).thenReturn(PortNumber.getDefaultInstance("64999"));
-
+        when(nodeIdentity.getTimers()).thenReturn(new TimersBuilder().build());
         node = SxpDatastoreNode.createInstance(NodeIdConv.createNodeId(ID), datastoreAccess, nodeIdentity);
         node.addDomain(new SxpDomainBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN).build());
     }
@@ -120,11 +121,13 @@ public class SxpDatastoreNodeTest {
 
     @Test
     public void testShutdown() throws Exception {
-        node.shutdown();
+        node.start();
+        assertTrue((Boolean) node.shutdown().get());
     }
 
     @Test
     public void testClose() throws Exception {
+        node.start();
         SxpConnection
                 connection =
                 node.addConnection(new ConnectionBuilder().setPeerAddress(IpAddressBuilder.getDefaultInstance("1.1.1.1"))
