@@ -9,11 +9,13 @@
 package org.opendaylight.sxp.controller.core;
 
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.controller.util.database.MasterDatastoreImpl;
 import org.opendaylight.sxp.controller.util.database.SxpDatastoreImpl;
@@ -42,11 +44,14 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SxpDatastoreNode class represent Sxp aware entity that reflect its current stare to Operational Datastore
  */
 public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implements AutoCloseable {
+    private static final Logger LOG = LoggerFactory.getLogger(SxpDatastoreNode.class);
 
     /**
      * @param nodeId Id representing Node in Topology
@@ -170,8 +175,18 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
 
     @Override
     public synchronized ListenableFuture shutdown() {
-        datastoreAccess.close();
-        return super.shutdown();
+        try {
+            super.shutdown().get();
+            datastoreAccess.close();
+            return Futures.immediateFuture(Boolean.TRUE);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOG.error("Failed to shutdown SXP node {}", this);
+            return Futures.immediateFailedFuture(e);
+        } catch (ExecutionException e) {
+            LOG.error("Failed to shutdown SXP node {}", this);
+            return Futures.immediateFailedFuture(e);
+        }
     }
 
     @Override
