@@ -72,9 +72,9 @@ public class SxpDatastoreNodeTest {
         when(nodeIdentity.getName()).thenReturn("NAME");
         when(nodeIdentity.getSecurity()).thenReturn(security);
         when(nodeIdentity.getMappingExpanded()).thenReturn(150);
-        when(nodeIdentity.getTcpPort()).thenReturn(new PortNumber(64999));
+        when(nodeIdentity.getTcpPort()).thenReturn(new PortNumber(64977));
         when(nodeIdentity.getSourceIp()).thenReturn(IpAddressBuilder.getDefaultInstance(ID));
-        when(nodeIdentity.getTcpPort()).thenReturn(PortNumber.getDefaultInstance("64999"));
+        when(nodeIdentity.getTcpPort()).thenReturn(PortNumber.getDefaultInstance("64977"));
         when(nodeIdentity.getTimers()).thenReturn(new TimersBuilder().build());
         node = SxpDatastoreNode.createInstance(NodeIdConv.createNodeId(ID), datastoreAccess, nodeIdentity);
         node.addDomain(new SxpDomainBuilder().setDomainName(SxpNode.DEFAULT_DOMAIN).build());
@@ -97,7 +97,7 @@ public class SxpDatastoreNodeTest {
         SxpConnection
                 sxpConnection =
                 node.addConnection(new ConnectionBuilder().setPeerAddress(IpAddressBuilder.getDefaultInstance("1.1.1.1"))
-                        .setTcpPort(new PortNumber(64999))
+                        .setTcpPort(new PortNumber(64977))
                         .setMode(ConnectionMode.Both)
                         .setVersion(Version.Version4)
                         .build(), SxpNode.DEFAULT_DOMAIN);
@@ -121,21 +121,33 @@ public class SxpDatastoreNodeTest {
 
     @Test
     public void testShutdown() throws Exception {
-        node.start();
-        assertTrue((Boolean) node.shutdown().get());
+        node.start().get();
+        assertTrue(node.shutdown().get());
+    }
+
+    /**
+     * Test that it is possible to successfully start/stop the same node more than once.
+     */
+    @Test
+    public void testDoubleShutdown() throws Exception {
+        node.start().get();
+        assertTrue(node.shutdown().get());
+        node.start().get();
+        assertTrue(node.shutdown().get());
     }
 
     @Test
     public void testClose() throws Exception {
-        node.start();
+        node.start().get();
         SxpConnection
                 connection =
-                node.addConnection(new ConnectionBuilder().setPeerAddress(IpAddressBuilder.getDefaultInstance("1.1.1.1"))
-                        .setTcpPort(new PortNumber(64999))
-                        .setMode(ConnectionMode.Both)
-                        .setState(ConnectionState.On)
-                        .setVersion(Version.Version4)
-                        .build(), SxpNode.DEFAULT_DOMAIN);
+                node.addConnection(
+                        new ConnectionBuilder().setPeerAddress(IpAddressBuilder.getDefaultInstance("1.1.1.1"))
+                                .setTcpPort(new PortNumber(64977))
+                                .setMode(ConnectionMode.Both)
+                                .setState(ConnectionState.On)
+                                .setVersion(Version.Version4)
+                                .build(), SxpNode.DEFAULT_DOMAIN);
         node.close();
         assertTrue(connection.isStateOff());
     }
