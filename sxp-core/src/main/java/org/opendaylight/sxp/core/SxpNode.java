@@ -1253,25 +1253,26 @@ public class SxpNode {
      * Administratively shutdown.
      */
     public ListenableFuture<Boolean> shutdown() {
-        SxpNode node = this;
-        return bindServerFuture.updateAndGet(listenableFuture -> {
-            if (isEnabled() && (Objects.nonNull(listenableFuture))) {
-                if (!listenableFuture.isDone()) {
-                    return Futures.transformAsync(listenableFuture, input -> node.shutdown(), worker.getDefaultExecutorService());
-                } else {
-                    return worker.executeTask(() -> {
-                        if (Objects.nonNull(serverChannel)) {
-                            serverChannel.close().awaitUninterruptibly();
-                            LOG.info("{} Server stopped", node);
-                        }
-                        setRetryOpenTimerPeriod(0);
-                        shutdownConnections();
-                        return isEnabled();
-                    }, ThreadsWorker.WorkerType.DEFAULT);
-                }
+        return worker.executeTask(() -> {
+            if (!isEnabled()) {
+                LOG.info("{} Server already stopped", this);
+                return Boolean.FALSE;
             }
-            return listenableFuture;
-        });
+            final ChannelFuture future = serverChannel.close();
+            future.awaitUninterruptibly();
+            if (future.isCancelled()) {
+                LOG.info("{} Server could not be stopped because operation was cancelled", this);
+                return Boolean.FALSE;
+            } else if (!future.isSuccess()) {
+                LOG.error("{} Server could not be stopped because {}", this, future.cause());
+                return Boolean.FALSE;
+            } else {
+                LOG.info("{} Server stopped", this);
+                setRetryOpenTimerPeriod(0);
+                shutdownConnections();
+                return Boolean.TRUE;
+            }
+        }, ThreadsWorker.WorkerType.DEFAULT);
     }
 
     /**
@@ -1279,24 +1280,28 @@ public class SxpNode {
      */
     public ListenableFuture<Boolean> start() {
         this.sourceIp = InetAddresses.forString(Search.getAddress(getNodeIdentity().getSourceIp()));
-        return bindServerFuture.updateAndGet(listenableFuture -> {
-            if (!isEnabled() && (Objects.isNull(listenableFuture) || listenableFuture.isDone())) {
-                return getWorker().executeTask(() -> {
-                    ChannelFuture channelFuture = ConnectFacade.createServer(this, handlerFactoryServer,
-                            ConnectFacade.collectAllPasswords(this));
-                    boolean success = channelFuture.syncUninterruptibly().isSuccess();
-                    if (success) {
-                        serverChannel = channelFuture.channel();
-                        LOG.info("{} Server created [{}:{}]", this, getSourceIp().getHostAddress(), getServerPort());
-                    } else {
-                        LOG.warn("{} Server [{}:{}] Could not be created", this, getSourceIp().getHostAddress(),
-                                getServerPort(), channelFuture.cause());
-                    }
-                    return success;
-                }, ThreadsWorker.WorkerType.DEFAULT);
+        return getWorker().executeTask(() -> {
+            if (isEnabled()) {
+                LOG.info("{} Server already created [{}:{}]", this, getSourceIp().getHostAddress(), getServerPort());
+                return Boolean.FALSE;
             }
-            return listenableFuture;
-        });
+            ChannelFuture future = ConnectFacade.createServer(
+                    this, handlerFactoryServer, ConnectFacade.collectAllPasswords(this));
+            future.awaitUninterruptibly();
+            if (future.isCancelled()) {
+                LOG.info("{} Server could not created [{}:{}] because operation was cancelled",
+                        this, getSourceIp().getHostAddress(), getServerPort());
+                return Boolean.FALSE;
+            } else if (!future.isSuccess()) {
+                LOG.error("{} Server could not created [{}:{}] because {}",
+                        this, getSourceIp().getHostAddress(), getServerPort(), future.cause());
+                return Boolean.FALSE;
+            } else {
+                serverChannel = future.channel();
+                LOG.info("{} Server created [{}:{}]", this, getSourceIp().getHostAddress(), getServerPort());
+                return Boolean.TRUE;
+            }
+        }, ThreadsWorker.WorkerType.DEFAULT);
     }
 
     /**

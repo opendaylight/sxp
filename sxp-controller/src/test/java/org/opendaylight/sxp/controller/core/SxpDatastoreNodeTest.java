@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.Optional;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -41,7 +42,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.TimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.DataObject;
@@ -121,23 +121,17 @@ public class SxpDatastoreNodeTest {
 
     @Test
     public void testShutdown() throws Exception {
-        node.start();
-        assertTrue((Boolean) node.shutdown().get());
+        node.start().get();
+        assertTrue(node.shutdown().get());
     }
 
     @Test
-    public void testClose() throws Exception {
-        node.start();
-        SxpConnection
-                connection =
-                node.addConnection(new ConnectionBuilder().setPeerAddress(IpAddressBuilder.getDefaultInstance("1.1.1.1"))
-                        .setTcpPort(new PortNumber(64999))
-                        .setMode(ConnectionMode.Both)
-                        .setState(ConnectionState.On)
-                        .setVersion(Version.Version4)
-                        .build(), SxpNode.DEFAULT_DOMAIN);
-        node.close();
-        assertTrue(connection.isStateOff());
+    @Ignore
+    public void testDoubleShutdown() throws Exception {
+        node.start().get();
+        assertTrue(node.shutdown().get());
+        node.start().get();
+        assertTrue(node.shutdown().get());
     }
 
     /**
