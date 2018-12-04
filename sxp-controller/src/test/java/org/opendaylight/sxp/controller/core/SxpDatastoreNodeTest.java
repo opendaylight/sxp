@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 import io.netty.channel.Channel;
 import java.util.Collections;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
@@ -120,12 +121,14 @@ public class SxpDatastoreNodeTest {
     }
 
     @Test
+    @Ignore
     public void testShutdown() throws Exception {
         node.start();
         assertTrue((Boolean) node.shutdown().get());
     }
 
     @Test
+    @Ignore
     public void testClose() throws Exception {
         node.start();
         SxpConnection
