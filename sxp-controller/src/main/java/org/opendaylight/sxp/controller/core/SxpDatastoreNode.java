@@ -173,13 +173,13 @@ public class SxpDatastoreNode extends org.opendaylight.sxp.core.SxpNode implemen
     }
 
     @Override
-    public synchronized ListenableFuture shutdown() {
+    public synchronized ListenableFuture<Boolean> shutdown() {
         LOG.debug("Shutting down SXPDatastoreNode {}", this);
         return Futures.transformAsync(super.shutdown(), this::closeDatastoreAccess,
                 getWorker().getDefaultExecutorService());
     }
 
-    private ListenableFuture closeDatastoreAccess(Boolean input) {
+    private ListenableFuture<Boolean> closeDatastoreAccess(Boolean input) {
         LOG.debug("Closing DatastoreAccess of SXPDatastoreNode {}", this);
         datastoreAccess.close();
         return Futures.immediateFuture(input);
