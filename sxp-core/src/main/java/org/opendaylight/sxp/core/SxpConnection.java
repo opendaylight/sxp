@@ -1416,23 +1416,20 @@ public class SxpConnection {
                     // either when connection established, failed, or got cancelled
                     connectFuture.addListener((FutureListener<Void>) future -> {
                         retryOpenSchedulerLock.lock();
-                        try {
-                            if (future.isCancelled()) {
-                                LOG.debug("{} Connection reopen was cancelled.", this);
+                        if (future.isCancelled()) {
+                            LOG.debug("{} Connection reopen was cancelled.", this);
+                            return;
+                        }
+                        if (!future.isSuccess()) {
+                            if (scheduledRetryOpen.isCancelled()) {
+                                LOG.debug("{} Failed to connect to remote peer, but scheduled connection reopen" +
+                                        "was cancelled, so not scheduling another retry", this);
                                 return;
                             }
-                            if (!future.isSuccess()) {
-                                if (scheduledRetryOpen.isCancelled()) {
-                                    LOG.debug("{} Failed to connect to remote peer, but scheduled connection reopen" +
-                                            "was cancelled, so not scheduling another retry", this);
-                                    return;
-                                }
-                                LOG.warn("{} Failed to connect to remote peer, scheduling retry", this);
-                                scheduleRetryOpen();
-                            }
-                        } finally {
+                            LOG.warn("{} Failed to connect to remote peer, scheduling retry", this);
                             retryOpenScheduledOrRunning = false;
                             retryOpenSchedulerLock.unlock();
+                            scheduleRetryOpen();
                         }
                     });
                 } catch (InterruptedException | ExecutionException ex) {
