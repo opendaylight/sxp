@@ -9,7 +9,7 @@
   </parent>
   <groupId>org.opendaylight.sxp</groupId>
   <artifactId>sxp-karaf</artifactId>
-  <version>1.6.4-SNAPSHOT</version>
+  <version>1.6.4</version>
   <packaging>pom</packaging>
   <!-- <name> formatting is used by autorelease to parse and notify projects on
        build failure. Please do not modify this unless you have a good reason. -->

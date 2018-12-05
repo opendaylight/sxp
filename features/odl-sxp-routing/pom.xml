@@ -11,7 +11,7 @@
 
     <groupId>org.opendaylight.sxp</groupId>
     <artifactId>odl-sxp-routing</artifactId>
-    <version>1.6.4-SNAPSHOT</version>
+    <version>1.6.4</version>
 
     <name>Feature :: OpenDaylight :: Sxp :: Cluster routing</name>
 
