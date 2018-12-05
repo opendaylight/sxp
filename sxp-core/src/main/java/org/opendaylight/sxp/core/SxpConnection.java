@@ -1429,6 +1429,7 @@ public class SxpConnection {
                                     return;
                                 }
                                 LOG.warn("{} Failed to connect to remote peer, scheduling retry", this);
+                                retryOpenScheduledOrRunning = false;
                                 scheduleRetryOpen();
                             }
                         } finally {
