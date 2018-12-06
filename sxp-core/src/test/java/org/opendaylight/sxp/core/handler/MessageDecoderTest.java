@@ -30,6 +30,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentMatchers;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpConnection.ChannelHandlerContextType;
 import org.opendaylight.sxp.core.SxpNode;
@@ -51,31 +53,38 @@ public class MessageDecoderTest {
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    @Mock
     private SxpConnection connection;
+    @Mock
     private SxpNode sxpNode;
-    private ChannelInboundHandler decoder;
+    @Mock
     private ChannelHandlerContext channelHandlerContext;
+    @Mock
+    private Channel channel;
+
+    private ChannelInboundHandler decoder;
 
     @Before
     public void init() throws Exception {
-        sxpNode = mock(SxpNode.class);
-        NodeId nodeId = new NodeId("10.10.10.10");
-        when(sxpNode.getNodeId()).thenReturn(nodeId);
-        Context context = new Context(sxpNode, Version.Version4);
-        connection = mock(SxpConnection.class);
+        MockitoAnnotations.initMocks(this);
+        final NodeId nodeId = new NodeId("10.10.10.10");
+        final Context context = new Context(sxpNode, Version.Version4);
+
+        when(channel.localAddress()).thenReturn(mock(SocketAddress.class));
+        when(channel.remoteAddress()).thenReturn(mock(SocketAddress.class));
+        when(channelHandlerContext.channel()).thenReturn(channel);
+
         when(connection.getOwner()).thenReturn(sxpNode);
         when(connection.getContext()).thenReturn(context);
         when(connection.getOwnerId()).thenReturn(nodeId);
         when(connection.getVersion()).thenReturn(Version.Version4);
         when(connection.getLocalAddress()).thenReturn(new InetSocketAddress("20.20.20.20", 0));
         when(connection.getDestination()).thenReturn(new InetSocketAddress("10.10.10.10", 0));
+
+        when(sxpNode.getNodeId()).thenReturn(nodeId);
         when(sxpNode.getConnection(any(SocketAddress.class))).thenReturn(connection);
+
         decoder = MessageDecoder.createClientProfile(sxpNode);
-        channelHandlerContext = mock(ChannelHandlerContext.class);
-        Channel channel = mock(Channel.class);
-        when(channel.localAddress()).thenReturn(mock(SocketAddress.class));
-        when(channel.remoteAddress()).thenReturn(mock(SocketAddress.class));
-        when(channelHandlerContext.channel()).thenReturn(channel);
     }
 
     @Test
@@ -109,6 +118,9 @@ public class MessageDecoderTest {
 
     @Test
     public void testChannelInactive() throws Exception {
+        when(connection.getContextType(eq(channelHandlerContext))).thenReturn(ChannelHandlerContextType.SPEAKER_CNTXT);
+        when(connection.isStateOn(eq(ChannelHandlerContextType.SPEAKER_CNTXT))).thenReturn(true);
+
         decoder.channelInactive(channelHandlerContext);
         verify(connection).setStateOff(eq(channelHandlerContext));
 

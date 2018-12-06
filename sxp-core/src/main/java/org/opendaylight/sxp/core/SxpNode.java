@@ -1258,6 +1258,8 @@ public class SxpNode {
                 LOG.info("{} Server already stopped", this);
                 return Boolean.FALSE;
             }
+            setRetryOpenTimerPeriod(0);
+            shutdownConnections();
             final ChannelFuture future = serverChannel.close();
             future.awaitUninterruptibly();
             if (future.isCancelled()) {
@@ -1268,8 +1270,6 @@ public class SxpNode {
                 return Boolean.FALSE;
             } else {
                 LOG.info("{} Server successfully stopped", this);
-                setRetryOpenTimerPeriod(0);
-                shutdownConnections();
                 return Boolean.TRUE;
             }
         }, ThreadsWorker.WorkerType.DEFAULT);

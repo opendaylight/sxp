@@ -34,10 +34,10 @@ public abstract class AbstractStrategy implements Strategy {
                     ctx.writeAndFlush(MessageFactory.createPurgeAll());
                     break;
             }
-        }
-        connection.setStateOff(ctx);
-        if (connection.getInitCtxs().isEmpty()) {
-            connection.scheduleRetryOpen();
+            connection.setStateOff(ctx);
+            if (connection.getInitCtxs().isEmpty()) {
+                connection.scheduleRetryOpen();
+            }
         }
     }
 
