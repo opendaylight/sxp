@@ -9,7 +9,7 @@
     </parent>
     <groupId>org.opendaylight.sxp</groupId>
     <artifactId>features-aggregator</artifactId>
-    <version>1.6.4-SNAPSHOT</version>
+    <version>1.6.5-SNAPSHOT</version>
     <!-- <name> formatting is used by autorelease to parse and notify projects on
          build failure. Please do not modify this unless you have a good reason. -->
     <name>ODL :: sxp :: ${project.artifactId}</name>
