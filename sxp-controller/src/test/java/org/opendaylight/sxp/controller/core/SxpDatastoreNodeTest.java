@@ -15,8 +15,10 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.Optional;
 import org.junit.Before;
@@ -33,6 +35,7 @@ import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.sxp.core.SxpConnection;
 import org.opendaylight.sxp.core.SxpNode;
 import org.opendaylight.sxp.util.inet.NodeIdConv;
+import org.opendaylight.sxp.util.netty.ImmediateCancelledFuture;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
@@ -41,14 +44,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.TimersBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionMode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yangtools.util.concurrent.FluentFutures;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 public class SxpDatastoreNodeTest {
-
     private final static String ID = "127.0.0.1";
 
     @Mock
@@ -138,18 +139,16 @@ public class SxpDatastoreNodeTest {
 
     @Test
     public void testClose() throws Exception {
+        final SxpConnection sxpConnection = mock(SxpConnection.class);
+        when(sxpConnection.getDomainName()).thenReturn(SxpNode.DEFAULT_DOMAIN);
+        when(sxpConnection.getDestination()).thenReturn(InetSocketAddress.createUnresolved("127.0.0.2", 64977));
+        when(sxpConnection.openConnection()).thenReturn(new ImmediateCancelledFuture<>());
+
         node.start().get();
-        SxpConnection
-                connection =
-                node.addConnection(
-                        new ConnectionBuilder().setPeerAddress(IpAddressBuilder.getDefaultInstance("1.1.1.1"))
-                                .setTcpPort(new PortNumber(64977))
-                                .setMode(ConnectionMode.Both)
-                                .setState(ConnectionState.On)
-                                .setVersion(Version.Version4)
-                                .build(), SxpNode.DEFAULT_DOMAIN);
+        node.addConnection(sxpConnection);
+        verify(sxpConnection).openConnection();
         node.close();
-        assertTrue(connection.isStateOff());
+        verify(sxpConnection).shutdown();
     }
 
     /**
