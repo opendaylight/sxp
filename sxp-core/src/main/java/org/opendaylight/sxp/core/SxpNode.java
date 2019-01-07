@@ -1253,26 +1253,26 @@ public class SxpNode {
      * Administratively shutdown.
      */
     public ListenableFuture<Boolean> shutdown() {
-        return worker.executeTask(() -> {
+        return bindServerFuture.updateAndGet(future -> {
             if (!isEnabled()) {
                 LOG.info("{} Server already stopped", this);
-                return Boolean.FALSE;
+                return Futures.immediateFuture(Boolean.FALSE);
             }
-            final ChannelFuture future = serverChannel.close();
-            future.awaitUninterruptibly();
-            if (future.isCancelled()) {
+            final ChannelFuture close = serverChannel.close();
+            close.syncUninterruptibly();
+            if (close.isCancelled()) {
                 LOG.warn("{} Server could not be stopped because operation was cancelled", this);
-                return Boolean.FALSE;
-            } else if (!future.isSuccess()) {
-                LOG.error("{} Server could not be stopped because {}", this, future.cause());
-                return Boolean.FALSE;
+                return Futures.immediateFuture(Boolean.FALSE);
+            } else if (!close.isSuccess()) {
+                LOG.error("{} Server could not be stopped because {}", this, close.cause());
+                return Futures.immediateFuture(Boolean.FALSE);
             } else {
                 LOG.info("{} Server successfully stopped", this);
                 setRetryOpenTimerPeriod(0);
                 shutdownConnections();
-                return Boolean.TRUE;
+                return Futures.immediateFuture(Boolean.TRUE);
             }
-        }, ThreadsWorker.WorkerType.DEFAULT);
+        });
     }
 
     /**
@@ -1280,28 +1280,29 @@ public class SxpNode {
      */
     public ListenableFuture<Boolean> start() {
         this.sourceIp = InetAddresses.forString(Search.getAddress(getNodeIdentity().getSourceIp()));
-        return getWorker().executeTask(() -> {
+        return bindServerFuture.updateAndGet(futures -> {
             if (isEnabled()) {
                 LOG.info("{} Server already created [{}:{}]", this, getSourceIp().getHostAddress(), getServerPort());
-                return Boolean.FALSE;
+                return Futures.immediateFuture(Boolean.FALSE);
             }
-            ChannelFuture future = ConnectFacade.createServer(
+            ChannelFuture create = ConnectFacade.createServer(
                     this, handlerFactoryServer, ConnectFacade.collectAllPasswords(this));
-            future.awaitUninterruptibly();
-            if (future.isCancelled()) {
+            create.syncUninterruptibly();
+            if (create.isCancelled()) {
                 LOG.warn("{} Server could not be created [{}:{}] because operation was cancelled",
                         this, getSourceIp().getHostAddress(), getServerPort());
-                return Boolean.FALSE;
-            } else if (!future.isSuccess()) {
+                return Futures.immediateFuture(Boolean.FALSE);
+            } else if (!create.isSuccess()) {
                 LOG.error("{} Server could not be created [{}:{}] because {}",
-                        this, getSourceIp().getHostAddress(), getServerPort(), future.cause());
-                return Boolean.FALSE;
+                        this, getSourceIp().getHostAddress(), getServerPort(), create.cause());
+                return Futures.immediateFuture(Boolean.FALSE);
             } else {
-                serverChannel = future.channel();
-                LOG.info("{} Server successfully created [{}:{}]", this, getSourceIp().getHostAddress(), getServerPort());
-                return Boolean.TRUE;
+                serverChannel = create.channel();
+                LOG.info("{} Server successfully created [{}:{}]", this, getSourceIp().getHostAddress(),
+                        getServerPort());
+                return Futures.immediateFuture(Boolean.TRUE);
             }
-        }, ThreadsWorker.WorkerType.DEFAULT);
+        });
     }
 
     /**

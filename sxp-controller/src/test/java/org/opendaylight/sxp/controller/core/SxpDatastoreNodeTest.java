@@ -37,6 +37,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.SxpNodeIdentity;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.network.topology.topology.node.sxp.domains.SxpDomainBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.Connection;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.connections.fields.connections.ConnectionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.fields.Security;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.node.rev160308.sxp.node.identity.fields.TimersBuilder;
@@ -44,7 +45,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Conn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.ConnectionState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.sxp.protocol.rev141002.Version;
 import org.opendaylight.yangtools.util.concurrent.FluentFutures;
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 public class SxpDatastoreNodeTest {
@@ -138,18 +138,19 @@ public class SxpDatastoreNodeTest {
 
     @Test
     public void testClose() throws Exception {
+       final Connection connection = new ConnectionBuilder()
+               .setPeerAddress(IpAddressBuilder.getDefaultInstance("1.1.1.1"))
+               .setTcpPort(new PortNumber(64977))
+               .setMode(ConnectionMode.Both)
+               .setState(ConnectionState.On)
+               .setVersion(Version.Version4)
+               .build();
+        final SxpConnection sxpConnection = node.addConnection(connection, SxpNode.DEFAULT_DOMAIN);
+
         node.start().get();
-        SxpConnection
-                connection =
-                node.addConnection(
-                        new ConnectionBuilder().setPeerAddress(IpAddressBuilder.getDefaultInstance("1.1.1.1"))
-                                .setTcpPort(new PortNumber(64977))
-                                .setMode(ConnectionMode.Both)
-                                .setState(ConnectionState.On)
-                                .setVersion(Version.Version4)
-                                .build(), SxpNode.DEFAULT_DOMAIN);
         node.close();
-        assertTrue(connection.isStateOff());
+
+        assertTrue(sxpConnection.isStateOff());
     }
 
     /**
@@ -157,7 +158,7 @@ public class SxpDatastoreNodeTest {
      * <p>
      * {@link ReadTransaction} and {@link WriteTransaction} are assumed to be created by {@link TransactionChain}.
      * <p>
-     * {@link ReadTransaction} reads a mock instance of {@link DataObject} on any read.
+     * {@link ReadTransaction} reads {@link Optional#empty()} on any read.
      * {@link WriteTransaction} is committed successfully.
      *
      * @param dataBroker mock of {@link DataBroker}
@@ -171,7 +172,7 @@ public class SxpDatastoreNodeTest {
         doReturn(CommitInfo.emptyFluentFuture())
                 .when(writeTransaction).commit();
         when(readTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class)))
-                .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(mock(DataObject.class))));
+                .thenAnswer(invocation -> FluentFutures.immediateFluentFuture(Optional.empty()));
         when(transactionChain.newReadOnlyTransaction())
                 .thenReturn(readTransaction);
         when(transactionChain.newWriteOnlyTransaction())
