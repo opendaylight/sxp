@@ -35,6 +35,10 @@ public final class Configuration {
 
     public static final String TOPOLOGY_NAME = "sxp";
 
+    private Configuration() {
+        throw new IllegalStateException("Configuration singleton class");
+    }
+
     /**
      * @param version Version according which Capabilities are generated
      * @return Capabilities supported by provided version of SXP peer
