@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -102,8 +101,6 @@ public class SxpNode {
     protected final Map<String, SxpPeerGroupBuilder> peerGroupMap = new HashMap<>();
     protected final Map<String, SxpDomain> sxpDomains = new HashMap<>();
 
-    private final AtomicReference<ListenableFuture> openConnectionFuture = new AtomicReference<>();
-    private final AtomicReference<ListenableFuture<Boolean>> bindServerFuture = new AtomicReference<>();
     private final ReentrantLock md5UpdateLock = new ReentrantLock();
     private volatile boolean processingConnectionData;
     private final ThreadsWorker worker;
@@ -1074,26 +1071,22 @@ public class SxpNode {
     /**
      * Start all Connections that are in state Off
      */
-    public ListenableFuture openConnections() {
+    public synchronized ListenableFuture openConnections() {
         if (!isEnabled()) {
             return Futures.immediateCancelledFuture();
         }
         final SxpNode node = this;
-        return openConnectionFuture.updateAndGet(listenableFuture -> {
-            if (Objects.isNull(listenableFuture) || listenableFuture.isDone()) {
-                return worker.executeTask(() -> {
-                    int connectionsAllSize = getAllConnections().size();
-                    int connectionsOnSize = getAllOnConnections().size();
-                    List<SxpConnection> connections = filterConnections(INACTIVE_CONNECTION_FILTER::test);
-                    LOG.info("{} Opening connections [X/O/All=\"{}/{}/{}\"]", node, connections.size(), connectionsOnSize,
-                            connectionsAllSize);
-                    for (SxpConnection connection : connections) {
-                        connection.openConnection();
-                    }
-                }, ThreadsWorker.WorkerType.DEFAULT);
+
+        return worker.executeTask(() -> {
+            int connectionsAllSize = getAllConnections().size();
+            int connectionsOnSize = getAllOnConnections().size();
+            List<SxpConnection> connections = filterConnections(INACTIVE_CONNECTION_FILTER::test);
+            LOG.info("{} Opening connections [X/O/All=\"{}/{}/{}\"]", node, connections.size(), connectionsOnSize,
+                    connectionsAllSize);
+            for (SxpConnection connection : connections) {
+                connection.openConnection();
             }
-            return listenableFuture;
-        });
+        }, ThreadsWorker.WorkerType.DEFAULT);
     }
 
     /**
@@ -1252,57 +1245,55 @@ public class SxpNode {
     /**
      * Administratively shutdown.
      */
-    public ListenableFuture<Boolean> shutdown() {
-        return bindServerFuture.updateAndGet(future -> {
-            if (!isEnabled()) {
-                LOG.info("{} Server already stopped", this);
-                return Futures.immediateFuture(Boolean.FALSE);
-            }
-            final ChannelFuture close = serverChannel.close();
-            close.awaitUninterruptibly();
-            if (close.isCancelled()) {
-                LOG.warn("{} Server could not be stopped because operation was cancelled", this);
-                return Futures.immediateFuture(Boolean.FALSE);
-            } else if (!close.isSuccess()) {
-                LOG.error("{} Server could not be stopped because {}", this, close.cause());
-                return Futures.immediateFuture(Boolean.FALSE);
-            } else {
-                LOG.info("{} Server successfully stopped", this);
-                setRetryOpenTimerPeriod(0);
-                shutdownConnections();
-                return Futures.immediateFuture(Boolean.TRUE);
-            }
-        });
+    public synchronized ListenableFuture<Boolean> shutdown() {
+        LOG.debug("Shutting down server for SXP node {}", this);
+        if (!isEnabled()) {
+            LOG.info("{} Server already stopped", this);
+            return Futures.immediateFuture(Boolean.FALSE);
+        }
+        final ChannelFuture close = serverChannel.close();
+        close.awaitUninterruptibly();
+        if (close.isCancelled()) {
+            LOG.warn("{} Server could not be stopped because operation was cancelled", this);
+            return Futures.immediateFuture(Boolean.FALSE);
+        } else if (!close.isSuccess()) {
+            LOG.error("{} Server could not be stopped because {}", this, close.cause());
+            return Futures.immediateFuture(Boolean.FALSE);
+        } else {
+            LOG.info("{} Server successfully stopped", this);
+            setRetryOpenTimerPeriod(0);
+            shutdownConnections();
+            return Futures.immediateFuture(Boolean.TRUE);
+        }
     }
 
     /**
      * Start SxpNode
      */
-    public ListenableFuture<Boolean> start() {
+    public synchronized ListenableFuture<Boolean> start() {
+        LOG.debug("Starting server for SXP node {}", this);
         this.sourceIp = InetAddresses.forString(Search.getAddress(getNodeIdentity().getSourceIp()));
-        return bindServerFuture.updateAndGet(future -> {
-            if (isEnabled()) {
-                LOG.info("{} Server already created [{}:{}]", this, getSourceIp().getHostAddress(), getServerPort());
-                return Futures.immediateFuture(Boolean.FALSE);
-            }
-            ChannelFuture create = ConnectFacade.createServer(
-                    this, handlerFactoryServer, ConnectFacade.collectAllPasswords(this));
-            create.awaitUninterruptibly();
-            if (create.isCancelled()) {
-                LOG.warn("{} Server could not be created [{}:{}] because operation was cancelled",
-                        this, getSourceIp().getHostAddress(), getServerPort());
-                return Futures.immediateFuture(Boolean.FALSE);
-            } else if (!create.isSuccess()) {
-                LOG.error("{} Server could not be created [{}:{}] because {}",
-                        this, getSourceIp().getHostAddress(), getServerPort(), create.cause());
-                return Futures.immediateFuture(Boolean.FALSE);
-            } else {
-                serverChannel = create.channel();
-                LOG.info("{} Server successfully created [{}:{}]", this, getSourceIp().getHostAddress(),
-                        getServerPort());
-                return Futures.immediateFuture(Boolean.TRUE);
-            }
-        });
+        if (isEnabled()) {
+            LOG.info("{} Server already created [{}:{}]", this, getSourceIp().getHostAddress(), getServerPort());
+            return Futures.immediateFuture(Boolean.FALSE);
+        }
+        ChannelFuture create = ConnectFacade.createServer(
+                this, handlerFactoryServer, ConnectFacade.collectAllPasswords(this));
+        create.awaitUninterruptibly();
+        if (create.isCancelled()) {
+            LOG.warn("{} Server could not be created [{}:{}] because operation was cancelled",
+                    this, getSourceIp().getHostAddress(), getServerPort());
+            return Futures.immediateFuture(Boolean.FALSE);
+        } else if (!create.isSuccess()) {
+            LOG.error("{} Server could not be created [{}:{}] because {}",
+                    this, getSourceIp().getHostAddress(), getServerPort(), create.cause());
+            return Futures.immediateFuture(Boolean.FALSE);
+        } else {
+            serverChannel = create.channel();
+            LOG.info("{} Server successfully created [{}:{}]", this, getSourceIp().getHostAddress(),
+                    getServerPort());
+            return Futures.immediateFuture(Boolean.TRUE);
+        }
     }
 
     /**
@@ -1338,6 +1329,7 @@ public class SxpNode {
      *
      */
     private void doUpdateMD5keys() {
+        LOG.debug("{} - Updating MD5 keys", this);
         md5UpdateLock.lock();
         try {
             if (processingConnectionData) {
@@ -1348,32 +1340,31 @@ public class SxpNode {
             md5UpdateLock.unlock();
         }
 
-        LOG.debug("{} - Updating MD5 keys", this);
-        bindServerFuture.updateAndGet(listenableFuture -> {
-            if (isEnabled() && listenableFuture != null && listenableFuture.isDone()) {
-                Map<InetAddress, byte[]> keyMapping;
-                md5UpdateLock.lock();
-                try { // exclusive password extraction from all node connections
-                    //revoke processing flag
-                    processingConnectionData = false;
-                    //read keyMap
-                    keyMapping = ConnectFacade.collectAllPasswords(this);
-                } finally {
-                    md5UpdateLock.unlock();
-                }
+        if (!isEnabled()) {
+            LOG.debug("Skipping MD5 update - node {} is not enabled", this);
+            return;
+        }
 
-                synchronized (md5UpdateLock) {
-                    if (serverChannel != null) {
-                        LOG.debug("{} - shutting down the server", this);
-                        serverChannel.close().awaitUninterruptibly();
-                    }
-                    serverChannel = ConnectFacade.createServer(this, handlerFactoryServer, keyMapping)
-                            .awaitUninterruptibly().channel();
-                    LOG.info("{} Server created", this);
-                }
+        Map<InetAddress, byte[]> keyMapping;
+        md5UpdateLock.lock();
+        try { // exclusive password extraction from all node connections
+            //revoke processing flag
+            processingConnectionData = false;
+            //read keyMap
+            keyMapping = ConnectFacade.collectAllPasswords(this);
+        } finally {
+            md5UpdateLock.unlock();
+        }
+
+        synchronized (md5UpdateLock) {
+            if (serverChannel != null) {
+                LOG.debug("{} - shutting down the server", this);
+                serverChannel.close().awaitUninterruptibly();
             }
-            return listenableFuture;
-        });
+            serverChannel = ConnectFacade.createServer(this, handlerFactoryServer, keyMapping)
+                    .awaitUninterruptibly().channel();
+            LOG.info("{} Server created", this);
+        }
     }
 
     /**
