@@ -21,6 +21,10 @@ public final class Configuration {
     public static final boolean NETTY_LOGGER_HANDLER = false;
     public static final boolean SET_COMPOSITION_ATTRIBUTE_COMPACT_NO_RESERVED_FIELDS = true;
 
+    private Configuration() {
+        throw new IllegalStateException("Configuration singleton class");
+    }
+
     /**
      * Retrieve SXP peer {@link Capabilities} according to SXP {@link Version}.
      *

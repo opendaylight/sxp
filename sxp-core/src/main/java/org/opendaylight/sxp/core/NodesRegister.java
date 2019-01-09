@@ -17,6 +17,10 @@ import org.opendaylight.sxp.util.inet.NodeIdConv;
 public final class NodesRegister {
     private static final Map<String, SxpNode> NODES = new ConcurrentHashMap<>();
 
+    private NodesRegister() {
+        throw new IllegalStateException("NodesRegister singleton class");
+    }
+
     /**
      * Get all registered nodes.
      *
