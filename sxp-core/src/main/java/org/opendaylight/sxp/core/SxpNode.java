@@ -1075,14 +1075,12 @@ public class SxpNode {
         if (!isEnabled()) {
             return Futures.immediateCancelledFuture();
         }
-        final SxpNode node = this;
-
         return worker.executeTask(() -> {
             int connectionsAllSize = getAllConnections().size();
             int connectionsOnSize = getAllOnConnections().size();
-            List<SxpConnection> connections = filterConnections(INACTIVE_CONNECTION_FILTER::test);
-            LOG.info("{} Opening connections [X/O/All=\"{}/{}/{}\"]", node, connections.size(), connectionsOnSize,
-                    connectionsAllSize);
+            List<SxpConnection> connections = filterConnections(INACTIVE_CONNECTION_FILTER);
+            LOG.info("{} Opening connections [X/O/All=\"{}/{}/{}\"]",
+                    this, connections.size(), connectionsOnSize, connectionsAllSize);
             for (SxpConnection connection : connections) {
                 connection.openConnection();
             }
