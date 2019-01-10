@@ -108,7 +108,7 @@ public class SxpNode {
     private SslContextFactory sslContextFactory;
     private final SxpNodeIdentityBuilder nodeBuilder;
     private final NodeId nodeId;
-    private Channel serverChannel;
+    private volatile Channel serverChannel;
     private final Map<TimerType, ListenableScheduledFuture<?>> timers = new EnumMap<>(TimerType.class);
 
     /**
