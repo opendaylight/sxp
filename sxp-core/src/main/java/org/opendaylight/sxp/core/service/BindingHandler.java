@@ -319,9 +319,10 @@ public final class BindingHandler {
             final SxpDomain sxpDomain = connection.getOwner().getDomain(connection.getDomainName());
             SxpBindingFilter<?, ? extends SxpFilterFields> filter = connection.getFilter(FilterType.Inbound);
             synchronized (sxpDomain) {
-                List<SxpDatabaseBinding> removed = sxpDomain.getSxpDatabase().deleteBindings(connection.getId()),
-                        replace =
-                                SxpDatabase.getReplaceForBindings(removed, sxpDomain.getSxpDatabase(), filterMap);
+                List<SxpDatabaseBinding> removed = sxpDomain.getSxpDatabase()
+                        .deleteBindings(connection.getId());
+                List<SxpDatabaseBinding> replace = SxpDatabase
+                        .getReplaceForBindings(removed, sxpDomain.getSxpDatabase(), filterMap);
                 sxpDomain.getMasterDatabase().deleteBindings(removed);
                 sxpDomain.getMasterDatabase().addBindings(replace);
                 sxpDomain.pushToSharedSxpDatabases(connection.getId(), filter, removed, replace);
