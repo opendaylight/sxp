@@ -18,7 +18,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-import org.opendaylight.mdsal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.DataTreeChangeListener;
 import org.opendaylight.mdsal.binding.api.DataTreeIdentifier;
@@ -44,7 +43,7 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-public class NodeIdentityListener implements ClusteredDataTreeChangeListener<SxpNodeIdentity> {
+public class NodeIdentityListener implements DataTreeChangeListener<SxpNodeIdentity> {
 
     public static final InstanceIdentifier<Topology>
             SUBSCRIBED_PATH =

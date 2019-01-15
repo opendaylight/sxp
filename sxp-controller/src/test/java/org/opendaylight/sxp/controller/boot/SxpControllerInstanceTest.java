@@ -27,8 +27,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.opendaylight.mdsal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.mdsal.binding.api.DataBroker;
+import org.opendaylight.mdsal.binding.api.DataTreeChangeListener;
 import org.opendaylight.mdsal.binding.api.DataTreeIdentifier;
 import org.opendaylight.mdsal.binding.api.ReadTransaction;
 import org.opendaylight.mdsal.binding.api.RpcProviderService;
@@ -116,7 +116,7 @@ public class SxpControllerInstanceTest {
         when(serviceProvider.registerClusterSingletonService(any(ClusterSingletonService.class)))
                 .thenReturn(serviceRegistration);
         when(dataBroker.registerDataTreeChangeListener(any(DataTreeIdentifier.class),
-                any(ClusteredDataTreeChangeListener.class))).thenReturn(listenerRegistration);
+                any(DataTreeChangeListener.class))).thenReturn(listenerRegistration);
         when(rpcProviderService.registerRpcImplementation(eq(SxpControllerService.class), any(SxpRpcServiceImpl.class)))
                 .thenReturn(sxpRpcServiceRegistration);
         when(rpcProviderService.registerRpcImplementation(eq(SxpConfigControllerService.class), any(SxpConfigRpcServiceImpl.class)))
@@ -163,7 +163,7 @@ public class SxpControllerInstanceTest {
         verify(writeTransaction, times(2))
                 .merge(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class), any(DataObject.class));
         verify(dataBroker, atLeastOnce()).registerDataTreeChangeListener(any(DataTreeIdentifier.class),
-                any(ClusteredDataTreeChangeListener.class));
+                any(DataTreeChangeListener.class));
         verify(rpcProviderService).registerRpcImplementation(
                 eq(SxpControllerService.class), any(SxpRpcServiceImpl.class));
         verify(rpcProviderService).registerRpcImplementation(

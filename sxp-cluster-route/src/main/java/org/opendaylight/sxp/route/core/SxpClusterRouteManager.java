@@ -19,9 +19,9 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
-import org.opendaylight.mdsal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.DataObjectModification;
+import org.opendaylight.mdsal.binding.api.DataTreeChangeListener;
 import org.opendaylight.mdsal.binding.api.DataTreeIdentifier;
 import org.opendaylight.mdsal.binding.api.DataTreeModification;
 import org.opendaylight.mdsal.common.api.CommitInfo;
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * Purpose: listen to changes in sxp cluster route configuration and delegate route update task
  */
 public class SxpClusterRouteManager
-        implements ClusteredDataTreeChangeListener<SxpClusterRoute>, ClusterSingletonService, AutoCloseable {
+        implements DataTreeChangeListener<SxpClusterRoute>, ClusterSingletonService, AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(SxpClusterRouteManager.class);
     private static final FutureCallback<CommitInfo> LOGGING_CALLBACK = new FutureCallback<CommitInfo>() {
