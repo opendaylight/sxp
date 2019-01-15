@@ -1246,7 +1246,7 @@ public class SxpNode {
             LOG.warn("{} Server could not be stopped because operation was cancelled", this);
             return Futures.immediateFuture(Boolean.FALSE);
         } else if (!close.isSuccess()) {
-            LOG.error("{} Server could not be stopped because {}", this, close.cause());
+            LOG.error("{} Server could not be stopped because {}", this, close.cause().getMessage());
             return Futures.immediateFuture(Boolean.FALSE);
         } else {
             LOG.info("{} Server successfully stopped", this);
@@ -1275,7 +1275,7 @@ public class SxpNode {
             return Futures.immediateFuture(Boolean.FALSE);
         } else if (!create.isSuccess()) {
             LOG.error("{} Server could not be created [{}:{}] because {}",
-                    this, getSourceIp().getHostAddress(), getServerPort(), create.cause());
+                    this, getSourceIp().getHostAddress(), getServerPort(), create.cause().getMessage());
             return Futures.immediateFuture(Boolean.FALSE);
         } else {
             serverChannel = create.channel();
