@@ -158,7 +158,8 @@
             <dependency>
                 <groupId>com.github.aenniw</groupId>
                 <artifactId>jrobot-remote-server</artifactId>
-                <version>3.5.0</version>
+                <version>3.6.0</version>
+                <type>pom</type>
             </dependency>
             <dependency>
                 <groupId>org.robotframework</groupId>
