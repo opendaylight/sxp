@@ -112,25 +112,23 @@ public class SxpControllerInstanceTest {
     @Test
     public void initTopology_1() throws Exception {
         SxpControllerInstance.initTopology(datastoreAccess, LogicalDatastoreType.CONFIGURATION);
-        verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess, times(2)).putIfNotExists(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.CONFIGURATION));
     }
 
     @Test
     public void initTopology_2() throws Exception {
         SxpControllerInstance.initTopology(datastoreAccess, LogicalDatastoreType.OPERATIONAL);
-        verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess, times(2)).putIfNotExists(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
     }
 
     @Test
     public void instantiateServiceInstance() throws Exception {
         controllerInstance.instantiateServiceInstance();
-        verify(datastoreAccess, times(3)).putIfNotExists(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess, times(5)).putIfNotExists(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.CONFIGURATION));
-        verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
-                eq(LogicalDatastoreType.CONFIGURATION));
-        verify(datastoreAccess, times(2)).merge(any(InstanceIdentifier.class), any(DataObject.class),
+        verify(datastoreAccess, times(2)).putIfNotExists(any(InstanceIdentifier.class), any(DataObject.class),
                 eq(LogicalDatastoreType.OPERATIONAL));
         verify(dataBroker, atLeastOnce()).registerDataTreeChangeListener(any(DataTreeIdentifier.class),
                 any(ClusteredDataTreeChangeListener.class));
