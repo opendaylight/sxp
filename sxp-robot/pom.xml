@@ -15,6 +15,7 @@
         <dependency>
             <groupId>com.github.aenniw</groupId>
             <artifactId>jrobot-remote-server</artifactId>
+            <version>3.5.1</version>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.sxp</groupId>
