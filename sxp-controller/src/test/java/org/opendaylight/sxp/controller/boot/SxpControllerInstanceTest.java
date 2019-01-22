@@ -143,14 +143,14 @@ public class SxpControllerInstanceTest {
     public void initTopology_1() throws Exception {
         SxpControllerInstance.initTopology(datastoreAccess, LogicalDatastoreType.CONFIGURATION);
         verify(writeTransaction, times(2))
-                .merge(eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class), any(DataObject.class));
+                .put(eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class), any(DataObject.class));
     }
 
     @Test
     public void initTopology_2() throws Exception {
         SxpControllerInstance.initTopology(datastoreAccess, LogicalDatastoreType.OPERATIONAL);
         verify(writeTransaction, times(2))
-                .merge(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class), any(DataObject.class));
+                .put(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class), any(DataObject.class));
     }
 
     @Test
@@ -159,9 +159,9 @@ public class SxpControllerInstanceTest {
         verify(writeTransaction, never())
                 .put(eq(LogicalDatastoreType.CONFIGURATION), eq(BINDING_ORIGINS), any());
         verify(writeTransaction, times(2))
-                .merge(eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class), any(DataObject.class));
+                .put(eq(LogicalDatastoreType.CONFIGURATION), any(InstanceIdentifier.class), any(DataObject.class));
         verify(writeTransaction, times(2))
-                .merge(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class), any(DataObject.class));
+                .put(eq(LogicalDatastoreType.OPERATIONAL), any(InstanceIdentifier.class), any(DataObject.class));
         verify(dataBroker, atLeastOnce()).registerDataTreeChangeListener(any(DataTreeIdentifier.class),
                 any(ClusteredDataTreeChangeListener.class));
         verify(rpcProviderService).registerRpcImplementation(
@@ -218,7 +218,13 @@ public class SxpControllerInstanceTest {
         doReturn(CommitInfo.emptyFluentFuture())
                 .when(writeTransaction).commit();
         when(readTransaction.read(any(LogicalDatastoreType.class), any(InstanceIdentifier.class)))
-                .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(mock(DataObject.class))));
+                .thenAnswer(invocation -> {
+                    final InstanceIdentifier identifier = invocation.getArgument(1);
+                    if (BindingOrigin.class == identifier.getTargetType()) {
+                        return FluentFutures.immediateFluentFuture(Optional.of(mock(DataObject.class)));
+                    }
+                    return FluentFutures.immediateFluentFuture(Optional.empty());
+                });
         when(readTransaction.read(eq(LogicalDatastoreType.CONFIGURATION), eq(BINDING_ORIGINS)))
                 .thenReturn(FluentFutures.immediateFluentFuture(Optional.of(SxpControllerInstanceTest.origins)));
         when(transactionChain.newReadOnlyTransaction())
