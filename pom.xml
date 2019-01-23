@@ -19,7 +19,6 @@
         <module>sxp-core</module>
         <module>sxp-controller</module>
         <module>sxp-cluster-route</module>
-        <module>sxp-robot</module>
         <module>features</module>
         <module>sxp-system-tests</module>
     </modules>
@@ -152,28 +151,6 @@
                 <version>${restconf.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-
-            <!-- CSIT testing dependency-->
-            <dependency>
-                <groupId>com.github.aenniw</groupId>
-                <artifactId>jrobot-remote-server</artifactId>
-                <version>3.5.1</version>
-            </dependency>
-            <dependency>
-                <groupId>org.robotframework</groupId>
-                <artifactId>javalib-core</artifactId>
-                <version>1.2.1</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.xmlrpc</groupId>
-                <artifactId>xmlrpc-common</artifactId>
-                <version>3.1.3</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.ws.commons.util</groupId>
-                <artifactId>ws-commons-util</artifactId>
-                <version>1.0.2</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
