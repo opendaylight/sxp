@@ -19,7 +19,6 @@
         <module>odl-sxp-core</module>
         <module>odl-sxp-controller</module>
         <module>odl-sxp-routing</module>
-        <module>odl-sxp-robot</module>
         <module>features-sxp</module>
     </modules>
 </project>
