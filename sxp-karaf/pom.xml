@@ -19,7 +19,7 @@
   </prerequisites>
 
     <properties>
-        <karaf.localFeature>odl-sxp-controller</karaf.localFeature>
+        <karaf.localFeature>odl-sxp-routing</karaf.localFeature>
     </properties>
 
     <dependencies>
