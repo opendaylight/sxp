@@ -280,7 +280,6 @@ public class RouteReactorImpl implements RouteReactor {
     @Override
     public ListenableFuture<Void> wipeRouting() {
         routingServiceMap.forEach((vIpAddress, routingService) -> {
-            findSxpNodesOnVirtualIp(vIpAddress).forEach(SxpNode::shutdown);
             final boolean succeeded = routingService.removeRouteForCurrentService();
             if (succeeded) {
                 LOG.debug("wiped out route: {}", routingService);
