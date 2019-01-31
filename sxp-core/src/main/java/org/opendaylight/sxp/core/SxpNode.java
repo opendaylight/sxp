@@ -1260,7 +1260,6 @@ public class SxpNode {
         } else {
             LOG.info("{} Server successfully stopped", this);
             setRetryOpenTimerPeriod(0);
-            shutdownConnections();
             return Futures.immediateFuture(Boolean.TRUE);
         }
     }
