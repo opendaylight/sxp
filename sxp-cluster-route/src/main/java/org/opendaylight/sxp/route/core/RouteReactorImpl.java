@@ -281,7 +281,6 @@ public class RouteReactorImpl implements RouteReactor {
     @Override
     public FluentFuture<? extends CommitInfo> wipeRouting() {
         routingServiceMap.forEach((vIpAddress, routingService) -> {
-            findSxpNodesOnVirtualIp(vIpAddress).forEach(SxpNode::shutdown);
             final boolean succeeded = routingService.removeRouteForCurrentService();
             if (succeeded) {
                 LOG.debug("wiped out route: {}", routingService);
