@@ -1,4 +1,5 @@
 # UUID                                                             	Group Name
 #
+63c8822cfe6e7f0d68c70657d452e0812b6cf5db                           	saml/odl-gerrit-sxp-committers
 c9025ab9ddc1e3171919e085449f22c54f8f7b54                           	GitHub Replication
 ldap:cn=odl-gerrit-sxp-committers,ou=Groups,dc=freestandards,dc=org	ldap/odl-gerrit-sxp-committers
