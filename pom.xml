@@ -41,8 +41,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <packaging-suffix>jar</packaging-suffix>
 
-        <controller.mdsal.version>1.9.0-SNAPSHOT</controller.mdsal.version>
-        <restconf.version>1.9.0-SNAPSHOT</restconf.version>
+        <controller.mdsal.version>1.9.0</controller.mdsal.version>
+        <restconf.version>1.9.0</restconf.version>
 
         <!-- EPOLL artifacts -->
         <os.detected.classifier>linux-x86_64</os.detected.classifier>
